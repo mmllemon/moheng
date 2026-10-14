@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import {
-  Activity, Banknote, ClipboardList, FileSignature, FolderKanban, HandCoins, ReceiptText, Workflow, FileCheck2,
+  Activity, Banknote, ClipboardList, FileSignature, FolderKanban, HandCoins, ReceiptText, Workflow, FileCheck2, Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -15,6 +15,7 @@ const costTabs = [
   { to: '/workspace/downstream', label: '分供合同与结算', icon: Banknote },
   { to: '/workspace/costs', label: '实际成本', icon: ReceiptText },
   { to: '/workspace/analysis', label: '成本分析', icon: Activity },
+  { to: '/workspace/members', label: '项目成员', icon: Users },
 ];
 function TabLink({ tab }: { tab: { to: string; label: string; icon: LucideIcon } }) {
   const Icon = tab.icon;

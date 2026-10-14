@@ -1,8 +1,10 @@
 # 墨衡｜施工单位成本管理系统
 
-版本：MVP 1.9.0-rc.1 验证候选（Windows 原生部署优先）
+版本：MVP 2.0.0-rc.1 验证候选（Windows 原生部署优先）
 
 本项目参考《施工单位成本管理系统完整设计方案 v1.0》。全局经营总览跨项目汇总；单项目业务统一通过项目工作台访问，工作台内保留业主主合同、目标成本、进度款、变更签证、竣工结算与应收、分供合同与结算、实际成本和成本分析等独立业务页面。
+
+> **v2.0.0-rc.1 更新**：继续推进 WP2–WP8。新增八类权限过滤的 CSV 台账报表、目标成本 CSV 列映射/服务端预检/确认前复检、本机未提交草稿、项目成员与角色管理页面，以及基于当前台账动态生成的待办与预警。新增静态候选检查和审计覆盖源码契约检查。没有改动既有财务状态机、结算/应收应付金额口径或 Prisma Schema/migrations。WP8 的严格类型检查、生产构建、PostgreSQL 与浏览器 E2E、Windows 实机部署仍需在 Node.js 24+ 环境完成，详见 `docs/阶段验收记录-v2.0.0-rc.1.md` 与 `docs/WP2-WP8实施计划与状态-v2.0.0-rc.1.md`。
 
 > **v1.9.0-rc.1 更新**：依据《施工单位成本管理系统完整设计方案 v1.0》做差距驱动的增量开发：新增“操作追溯”只读页面与权限受限查询 API，支持按项目、业务对象、关键字、日期范围检索，展开变更快照并导出防公式注入的 CSV；经营总览增加“查看全部操作”入口。未修改 Prisma Schema/数据库迁移及合同、结算、应收应付金额规则。下一阶段计划与未实现能力边界见 `docs/下一阶段开发计划与实施记录-v1.9.0-rc.1.md`，验收记录见 `docs/阶段验收记录-v1.9.0-rc.1.md`。
 
@@ -118,12 +120,20 @@ docker compose logs -f api
 
 登录页和应用导航使用内嵌 SVG 品牌标识“墨衡”。右上角“界面设置”入口打开独立的浮层卡片，提供象牙雅白、香槟曜金、黑曜极光、冰川天青及跟随系统主题；支持跟随主题/靛青/青玉/朱砂强调色、舒朗/紧凑密度、宽屏和减少动效。顶部命令面板支持 Ctrl/Cmd+K、方向键、Enter 与 Esc；表格行支持 J/K 和方向键巡检。经营总览采用非对称 Bento 布局，图表只展示实际台账中的项目快照，不伪造时间趋势。设置保存在当前浏览器，不写入业务数据库。
 
+## v2.0 工作包功能
+
+- **报表中心**：目标成本、实际成本、业主进度款、变更签证、业主应收、业主收退款、分供合同、分供应付八类 CSV。每次最多 10,000 行，服务端按项目权限重新查询；这不是原生 XLSX。
+- **目标成本导入**：支持常见中英文表头自动映射与手动列映射、逐行校验、服务端预检，以及提交前二次预检。存在任何错误时禁止导入；父级需先于子级。当前其他财务台账不开放批量导入。
+- **项目成员与权限**：项目内根据现有角色授权添加已启用账号、更新角色；API 做真实权限检查并记录审计，最后一个项目负责人不能被降级。
+- **待办与预警**：根据可访问项目实时生成审批、凭证、逾期应收/应付、待结算、合同到期及目标成本超支任务；自动刷新，不保存已读状态。
+- **本机草稿**：目标成本新建/编辑可选择恢复浏览器本机草稿，正式业务写入始终需要用户显式保存。此功能不是离线同步，不支持离线提交财务事务。
+
 ## Git 仓库
 
 本项目已初始化 Git，默认分支为 `main`。解压普通源码 ZIP 后可查看提交说明；若需获得完整 Git 提交历史，请下载交付的 `.bundle` 文件并执行：
 
 ```powershell
-git clone .\moheng-v1.9.0-rc.1.bundle moheng
+git clone .\moheng-v2.0.0-rc.1.bundle moheng
 cd moheng
 git log --oneline --decorate -5
 ```
@@ -141,6 +151,7 @@ git log --oneline --decorate -5
 
 ```text
 scripts/windows/prepare-windows.ps1       # 安装、构建、迁移、种子数据
+scripts/windows/verify-release-candidate.ps1 # Node 24+ 发布门禁（类型检查/测试/构建/Prisma）
 scripts/windows/start-windows.ps1         # 以当前用户启动 API，并轮询数据库健康检查
 scripts/windows/stop-windows.ps1          # 校验进程身份后停止 API，防止 PID 复用误杀
 scripts/windows/register-startup-task.ps1 # 注册系统开机任务（需管理员）
@@ -148,7 +159,7 @@ scripts/windows/unregister-startup-task.ps1
 scripts/windows/run-api.ps1               # 任务计划程序调用的前台运行器
 ```
 
-其他命令：`npm run validate:release-candidate`（静态候选一致性检查，覆盖分供合同、可选明细结算、应付/付款核销、退款反向核销、质保金/预付款/发票、往来单位主档及单位经营档案、Windows 进程生命周期保护）、`npm test`、`npm run build`、`npm run lint`、`npm run db:generate`、`npm run db:deploy`、`npm run db:seed`。
+其他命令：`npm run validate:release-candidate`（串联原有业务回归契约、WP2–WP8 检查与审计覆盖源码检查）、`npm test`、`npm run build`、`npm run lint`、`npm run db:generate`、`npm run db:deploy`、`npm run db:seed`。
 
 ## 安全与验收提示
 
@@ -156,13 +167,16 @@ scripts/windows/run-api.ps1               # 任务计划程序调用的前台运
 2. 普通用户只能访问存在 `ProjectMember` 关系的项目；全局管理员可跨项目访问。
 3. PostgreSQL 使用 `DECIMAL` 保存金额；前端展示数字不应取代正式财务对账。税额、含税口径、四舍五入与冲销机制需要在正式上线前进一步统一。
 4. 刷新令牌仅保存 SHA-256 哈希，刷新时使用单条 SQL 原子消费，降低令牌重放风险。
-5. 本轮已完成结算/应付与往来单位主数据、单位经营档案的源码增量实现及静态/独立逻辑检查；尚未在本环境完成完整依赖安装、完整 TypeScript 类型检查、浏览器交互回归或 Windows 实机验收。最新检查结果以 `docs/阶段验收记录-v1.9.0-rc.1.md` 为准；由于当前环境缺少项目依赖且 Node 为 22（项目要求 Node 24+），这些检查不等同于完整构建或生产验收；当前候选包尚未包含 `package-lock.json`，应在可访问 npm registry 的 Node.js 24 环境中生成并复核依赖锁文件。首次部署必须在 Node.js 24+ 的 Windows 测试机验证依赖安装、迁移、登录、令牌续期、用户授权、凭证上传/下载、A/B/C 生效规则、金额并发重算、备份恢复及关键金额流程。Windows 还必须给凭证目录配置专用 NTFS ACL。
+5. 本轮已完成结算/应付与往来单位主数据、单位经营档案的源码增量实现及静态/独立逻辑检查；完整依赖安装、严格类型检查、浏览器端到端回归、Prisma/PostgreSQL 集成及 Windows 实机验收仍未完成。当前环境只有 Node.js 22（项目要求 24+），且 npm registry DNS 不可用，因此当前结果不能替代生产构建。应在 Node.js 24+ 的 Windows/CI 环境生成并提交 `package-lock.json` 后执行 WP8 验收。首次部署必须在 Node.js 24+ 的 Windows 测试机验证依赖安装、迁移、登录、令牌续期、用户授权、凭证上传/下载、A/B/C 生效规则、金额并发重算、备份恢复及关键金额流程。Windows 还必须给凭证目录配置专用 NTFS ACL。
 
 ## 文档
 
 - [用户操作手册](docs/用户操作手册.md)
 - [开发维护指南](docs/开发维护指南.md)
-- [v1.9.0-rc.1 阶段验收记录](docs/阶段验收记录-v1.9.0-rc.1.md)
+- [v2.0.0-rc.1 阶段验收记录](docs/阶段验收记录-v2.0.0-rc.1.md)
+- [WP2–WP8 实施计划与状态](docs/WP2-WP8实施计划与状态-v2.0.0-rc.1.md)
+- [WP8 Windows 与浏览器端到端验收清单](docs/WP8-Windows与浏览器端到端验收清单-v2.0.0-rc.1.md)
+- [v1.9.0-rc.1 阶段验收记录（历史）](docs/阶段验收记录-v1.9.0-rc.1.md)
 - [下一阶段开发计划与实施记录](docs/下一阶段开发计划与实施记录-v1.9.0-rc.1.md)
 - [v1.8.0-rc.1 阶段验收记录（历史）](docs/阶段验收记录-v1.8.0-rc.1.md)
 - [v1.7.0-rc.1 阶段验收记录（历史）](docs/阶段验收记录-v1.7.0-rc.1.md)

@@ -5,6 +5,9 @@ import ProjectWorkspaceLayout from './components/ProjectWorkspaceLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AuditLogsPage from './pages/AuditLogsPage';
+import ReportCenterPage from './pages/ReportCenterPage';
+import NotificationsPage from './pages/NotificationsPage';
+import ProjectMembersPage from './pages/ProjectMembersPage';
 import ProjectOverviewPage from './pages/ProjectOverviewPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ContractsPage from './pages/ContractsPage';
@@ -60,10 +63,13 @@ export default function App() {
         <Route index element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
+        <Route path="reports" element={<ReportCenterPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="parties" element={<BusinessPartiesPage />} />
         <Route path="parties/:id" element={<BusinessPartyDetailPage />} />
         <Route path="workspace" element={<NeedProject><ProjectWorkspaceLayout /></NeedProject>}>
           <Route index element={<ProjectOverviewPage />} />
+          <Route path="members" element={<ProjectMembersPage />} />
           <Route path="contracts" element={<ContractsPage />} />
           <Route path="budget" element={<BudgetPage />} />
           <Route path="progress-bills" element={<ProgressBillsPage />} />

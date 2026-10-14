@@ -90,6 +90,37 @@ export async function budgetRoutes(app: FastifyInstance) {
     }
   });
 
+  app.post('/:projectId/budget/import-csv/preview', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    const rawSchema = z.object({ rows: z.array(z.unknown()).min(1).max(5000) });
+    const parsedBody = rawSchema.safeParse(request.body);
+    if (!parsedBody.success) return failure(reply, 400, 'VALIDATION_ERROR', '预检数据格式不正确，单次最多 5,000 行', parsedBody.error.flatten());
+
+    const parsedRows = parsedBody.data.rows.map((row, index) => ({ index, result: budgetInput.omit({ sortOrder: true }).extend({ sortOrder: z.number().int().optional() }).safeParse(row) }));
+    const rowIssues = parsedRows.map(({ index, result }) => ({ rowNumber: index + 2, code: result.success ? result.data.code : '', errors: result.success ? [] : result.error.issues.map((issue) => `${issue.path.join('.') || '行'}：${issue.message}`), data: result.success ? result.data : null }));
+    const validRows = rowIssues.filter((row) => row.data !== null) as Array<{ rowNumber: number; code: string; errors: string[]; data: z.infer<typeof budgetInput> }>;
+    const codeRows = new Map<string, number[]>();
+    for (const row of validRows) codeRows.set(row.code, [...(codeRows.get(row.code) ?? []), row.rowNumber]);
+    for (const [code, lineNumbers] of codeRows) if (lineNumbers.length > 1) for (const lineNumber of lineNumbers) { const issue = rowIssues[lineNumber - 2]; if (issue) issue.errors.push(`编号“${code}”在导入文件中重复`); }
+
+    const codes = validRows.map((row) => row.code);
+    const existing = codes.length ? await prisma.budgetItem.findMany({ where: { projectId, code: { in: codes }, deletedAt: null }, select: { code: true } }) : [];
+    const existingCodes = new Set(existing.map((row) => row.code));
+    for (const row of validRows) if (existingCodes.has(row.code)) { const issue = rowIssues[row.rowNumber - 2]; if (issue) issue.errors.push(`编号“${row.code}”已存在于当前项目`); }
+
+    const importedCodesBefore = new Set<string>();
+    const existingParents = new Set((await prisma.budgetItem.findMany({ where: { projectId, deletedAt: null }, select: { id: true, code: true } })).flatMap((row) => [row.id, row.code]));
+    for (const row of validRows.sort((a, b) => a.rowNumber - b.rowNumber)) {
+      const parentRef = (row.data as { parentId?: string | null }).parentId;
+      if (parentRef && !importedCodesBefore.has(parentRef) && !existingParents.has(parentRef)) { const issue = rowIssues[row.rowNumber - 2]; if (issue) issue.errors.push(`上级“${parentRef}”不存在或位于子级之后`); }
+      if (row.code) importedCodesBefore.add(row.code);
+    }
+    const normalized = rowIssues.map((row) => ({ rowNumber: row.rowNumber, code: row.code, valid: row.errors.length === 0, errors: row.errors }));
+    return success({ rows: normalized, total: normalized.length, validCount: normalized.filter((row) => row.valid).length, invalidCount: normalized.filter((row) => !row.valid).length, canImport: normalized.length > 0 && normalized.every((row) => row.valid) });
+  });
+
   app.post('/:projectId/budget/import-csv', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };

@@ -30,7 +30,7 @@ function flattenTree(nodes: FlatNode[], depth = 0): { node: FlatNode; depth: num
 }
 function exportCsv(rows: BudgetItem[], filename: string) {
   const codeById = new Map(rows.map((row) => [row.id, row.code]));
-  const escape = (value: unknown) => { const text = String(value ?? ''); return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text; };
+  const escape = (value: unknown) => { let text = String(value ?? ''); const numeric = typeof value === 'number' && Number.isFinite(value); if (!numeric && typeof value === 'string' && /^[\u0000-\u0020]*[=+\-@]/.test(text)) text = `'${text}`; return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text; };
   // Parent references are exported as human-readable codes so the file can be imported into another project.
   const body = [['code', 'name', 'parentId', 'unit', 'quantity', 'unitPrice', 'totalPrice', 'sortOrder'], ...rows.map((r) => [r.code, r.name, r.parentId ? (codeById.get(r.parentId) ?? '') : '', r.unit ?? '', r.quantity ?? '', r.unitPrice ?? '', r.totalPrice, r.sortOrder])].map((row) => row.map(escape).join(',')).join('\r\n');
   const blob = new Blob(['\uFEFF', body], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
@@ -60,8 +60,40 @@ const budgetSchema = z.object({
 });
 function BudgetDialog({ projectId, items, editing, onClose }: { projectId: string; items: BudgetItem[]; editing?: BudgetItem; onClose: () => void }) {
   const queryClient = useQueryClient(); const [serverError, setServerError] = useState('');
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<BudgetValues>({ resolver: zodResolver(budgetSchema) as never, defaultValues: editing ? { parentId: editing.parentId ?? '', code: editing.code, name: editing.name, unit: editing.unit ?? '', quantity: editing.quantity ?? '', unitPrice: editing.unitPrice ?? '', totalPrice: editing.totalPrice, sortOrder: editing.sortOrder } : { parentId: '', code: '', name: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: 0 } });
+  const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = useForm<BudgetValues>({ resolver: zodResolver(budgetSchema) as never, defaultValues: editing ? { parentId: editing.parentId ?? '', code: editing.code, name: editing.name, unit: editing.unit ?? '', quantity: editing.quantity ?? '', unitPrice: editing.unitPrice ?? '', totalPrice: editing.totalPrice, sortOrder: editing.sortOrder } : { parentId: '', code: '', name: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: 0 } });
   const quantity = watch('quantity'); const unitPrice = watch('unitPrice'); const totalPrice = watch('totalPrice');
+  const draftKey = `moheng:budget-draft:${projectId}:${editing?.id ?? 'new'}`;
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftNotice, setDraftNotice] = useState('');
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsedDraft = JSON.parse(raw) as Partial<BudgetValues>;
+        if (window.confirm('发现上次未提交的目标成本清单草稿，是否恢复？草稿只保存在当前浏览器，不会自动写入正式台账。')) {
+          reset({
+            parentId: parsedDraft.parentId ?? (editing?.parentId ?? ''), code: parsedDraft.code ?? (editing?.code ?? ''), name: parsedDraft.name ?? (editing?.name ?? ''),
+            unit: parsedDraft.unit ?? (editing?.unit ?? ''), quantity: parsedDraft.quantity ?? (editing?.quantity ?? ''),
+            unitPrice: parsedDraft.unitPrice ?? (editing?.unitPrice ?? ''), totalPrice: parsedDraft.totalPrice ?? (editing?.totalPrice ?? ''), sortOrder: parsedDraft.sortOrder ?? (editing?.sortOrder ?? 0),
+          });
+          setDraftNotice('已恢复本地草稿；点击“保存条目”后才会写入正式台账。');
+        } else localStorage.removeItem(draftKey);
+      }
+    } catch { setDraftNotice('本地草稿无法读取，已继续使用表单当前值。'); }
+    setDraftReady(true);
+  }, [draftKey, editing, reset]);
+  useEffect(() => {
+    if (!draftReady) return;
+    const subscription = watch((values) => {
+      try { localStorage.setItem(draftKey, JSON.stringify(values)); } catch { /* Local drafts are optional when browser storage is unavailable. */ }
+    });
+    return () => subscription.unsubscribe();
+  }, [draftKey, draftReady, watch]);
+  function clearLocalDraft() {
+    reset(editing ? { parentId: editing.parentId ?? '', code: editing.code, name: editing.name, unit: editing.unit ?? '', quantity: editing.quantity ?? '', unitPrice: editing.unitPrice ?? '', totalPrice: editing.totalPrice, sortOrder: editing.sortOrder } : { parentId: '', code: '', name: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: 0 });
+    try { localStorage.removeItem(draftKey); } catch { /* Ignore unavailable local storage. */ }
+    setDraftNotice('已清除本地草稿。');
+  }
   const submit = handleSubmit(async (values) => {
     setServerError('');
     const body = { ...values, parentId: editing ? (editing.parentId ?? null) : (values.parentId || null), unit: values.unit || null, quantity: values.quantity === '' ? null : Number(values.quantity), unitPrice: values.unitPrice === '' ? null : Number(values.unitPrice), totalPrice: values.totalPrice === '' ? Math.round((Number(values.quantity || 0) * Number(values.unitPrice || 0) + Number.EPSILON) * 100) / 100 : Number(values.totalPrice) };
@@ -69,6 +101,7 @@ function BudgetDialog({ projectId, items, editing, onClose }: { projectId: strin
       if (editing) await api.patch(`/projects/${projectId}/budget/items/${editing.id}`, body);
       else await api.post(`/projects/${projectId}/budget/items`, body);
       await queryClient.invalidateQueries({ queryKey: ['budget', projectId] }); await queryClient.invalidateQueries({ queryKey: ['analysis', projectId] }); await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      try { localStorage.removeItem(draftKey); } catch { /* Local draft storage is optional. */ }
       onClose();
     } catch (error) { setServerError(error instanceof ApiError ? error.message : '保存失败，请检查字段'); }
   });
@@ -86,18 +119,42 @@ function BudgetDialog({ projectId, items, editing, onClose }: { projectId: strin
       <div className="field"><label>排序值</label><input type="number" step="1" {...register('sortOrder')} /></div>
     </div>
     <div className="calculated-total"><span>本条合价预览</span><strong>{formatMoney(total)}</strong></div>
+    {draftNotice && <div className="inline-notice"><FileSpreadsheet size={15} /><span>{draftNotice}</span></div>}
     {serverError && <div className="form-alert">{serverError}</div>}
-    <div className="dialog-footer"><Button variant="secondary" onClick={onClose}>取消</Button><Button type="submit" disabled={isSubmitting}>{isSubmitting ? '保存中…' : '保存条目'}</Button></div></form>
+    <div className="dialog-footer"><Button variant="ghost" type="button" onClick={clearLocalDraft}>清除本地草稿</Button><Button variant="secondary" onClick={onClose}>稍后继续</Button><Button type="submit" disabled={isSubmitting}>{isSubmitting ? '保存中…' : '保存条目'}</Button></div></form>
   </div></div>;
 }
 
 type PreviewRow = { code: string; name: string; parentId?: string | null; unit?: string | null; quantity?: number | null; unitPrice?: number | null; totalPrice?: number; sortOrder?: number; error?: string };
+type ImportField = 'code' | 'name' | 'parentId' | 'unit' | 'quantity' | 'unitPrice' | 'totalPrice' | 'sortOrder';
+type ImportMapping = Record<ImportField, string>;
+type RawBudgetImport = { headers: string[]; rows: string[][] };
+const importFields: Array<{ key: ImportField; label: string; required?: boolean }> = [
+  { key: 'code', label: '清单编号', required: true }, { key: 'name', label: '清单名称', required: true },
+  { key: 'parentId', label: '上级编号 / ID' }, { key: 'unit', label: '单位' }, { key: 'quantity', label: '工程量' },
+  { key: 'unitPrice', label: '综合单价' }, { key: 'totalPrice', label: '目标合价' }, { key: 'sortOrder', label: '排序值' },
+];
+const importHeaderAliases: Record<ImportField, string[]> = {
+  code: ['code', '编号', '清单编号', '项目编号'], name: ['name', '名称', '清单名称', '项目名称'],
+  parentId: ['parentId', 'parentCode', '上级编号', '上级清单编号', '上级ID', '上级清单'], unit: ['unit', '单位'],
+  quantity: ['quantity', '工程量', '数量'], unitPrice: ['unitPrice', '单价', '综合单价'],
+  totalPrice: ['totalPrice', '合价', '目标合价', '目标成本'], sortOrder: ['sortOrder', '排序值', '排序'],
+};
+function suggestImportMapping(headers: string[]): ImportMapping {
+  const normalize = (value: string) => value.replace(/[\s_（）()]/g, '').toLocaleLowerCase();
+  const normalized = headers.map(normalize);
+  return Object.fromEntries(importFields.map(({ key }) => {
+    const aliases = importHeaderAliases[key].map(normalize);
+    const index = normalized.findIndex((header) => aliases.includes(header));
+    return [key, index >= 0 ? headers[index] : ''];
+  })) as ImportMapping;
+}
 
 export default function BudgetPage() {
   const projectId = useUiStore((state) => state.selectedProjectId)!;
   const queryClient = useQueryClient(); const fileRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<BudgetItem | undefined>(); const [dialogOpen, setDialogOpen] = useState(false);
-  const [preview, setPreview] = useState<PreviewRow[] | null>(null); const [notice, setNotice] = useState(''); const [serverError, setServerError] = useState('');
+  const [preview, setPreview] = useState<PreviewRow[] | null>(null); const [rawImport, setRawImport] = useState<RawBudgetImport | null>(null); const [columnMap, setColumnMap] = useState<ImportMapping>({ code: '', name: '', parentId: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: '' }); const [mappingDirty, setMappingDirty] = useState(false); const [notice, setNotice] = useState(''); const [serverError, setServerError] = useState('');
   const budgetQuery = useQuery({ queryKey: ['budget', projectId], queryFn: () => api.get<BudgetItem[]>(`/projects/${projectId}/budget`) });
   const analysisQuery = useQuery({ queryKey: ['analysis', projectId], queryFn: () => api.get<Analysis>(`/projects/${projectId}/analysis/three-way`) });
   const rows = budgetQuery.data ?? [];
@@ -108,38 +165,83 @@ export default function BudgetPage() {
     return { targetCost: leaves.reduce((sum, item) => sum + item.totalPrice, 0), leafCount: leaves.length };
   }, [rows]);
 
+  function mapImportRows(raw: RawBudgetImport, mapping: ImportMapping): PreviewRow[] {
+    const selected = importFields.map(({ key }) => mapping[key]).filter(Boolean);
+    if (!mapping.code || !mapping.name) throw new Error('请为“清单编号”和“清单名称”指定来源列。');
+    if (new Set(selected).size !== selected.length) throw new Error('同一 CSV 列不能映射给多个字段，请调整列映射。');
+    return raw.rows.map((row, index) => {
+      const get = (key: ImportField) => { const header = mapping[key]; const i = header ? raw.headers.indexOf(header) : -1; return i < 0 ? '' : (row[i] ?? '').trim(); };
+      const code = get('code'); const name = get('name'); const parentId = get('parentId') || null;
+      const numeric = (key: 'quantity' | 'unitPrice' | 'totalPrice' | 'sortOrder') => { const value = get(key); if (!value) return null; const n = Number(value); return Number.isFinite(n) && n >= 0 ? n : Number.NaN; };
+      let error = !code ? '缺少编号' : !name ? '缺少名称' : '';
+      const quantity = numeric('quantity'); const unitPrice = numeric('unitPrice'); const totalPrice = numeric('totalPrice'); const sortValue = numeric('sortOrder');
+      if ([quantity, unitPrice, totalPrice, sortValue].some((n) => Number.isNaN(n))) error = [error, '数值列必须为非负数字'].filter(Boolean).join('；');
+      return { code, name, parentId, unit: get('unit') || null, quantity, unitPrice, totalPrice: totalPrice ?? undefined, sortOrder: sortValue ?? index, error: error || undefined };
+    });
+  }
+
+  async function buildImportPreview(raw: RawBudgetImport, mapping: ImportMapping) {
+    setServerError('');
+    try {
+      const parsed = mapImportRows(raw, mapping);
+      const seen = new Set<string>();
+      for (const row of parsed) {
+        if (row.code && seen.has(row.code)) row.error = [row.error, '编号重复'].filter(Boolean).join('；');
+        if (row.code) seen.add(row.code);
+      }
+      if (!parsed.length) throw new Error('没有有效数据行');
+      const previewResult = await api.post<{ rows: Array<{ rowNumber: number; valid: boolean; errors: string[] }>; canImport: boolean; invalidCount: number }>(`/projects/${projectId}/budget/import-csv/preview`, {
+        rows: parsed.map(({ error: _localError, ...row }) => row),
+      });
+      const merged = parsed.map((row, index) => {
+        const remote = previewResult.rows[index];
+        const issues = [row.error, ...(remote?.errors ?? [])].filter(Boolean);
+        return { ...row, error: issues.length ? [...new Set(issues)].join('；') : undefined };
+      });
+      setPreview(merged); setMappingDirty(false);
+      if (previewResult.invalidCount) setServerError(`服务端预检发现 ${previewResult.invalidCount} 行有问题。修正错误或调整列映射后重新校验；未导入任何记录。`);
+    } catch (error) { setServerError(error instanceof Error ? error.message : '无法校验 CSV 文件'); setPreview(null); }
+  }
+
   async function readImport(file: File) {
-    setNotice(''); setServerError('');
+    setNotice(''); setServerError(''); setPreview(null);
     try {
       const content = parseCsv(await file.text());
       if (content.length < 2) throw new Error('文件没有数据行');
       const headers = content[0].map((v) => v.trim());
-      const required = ['code', 'name'];
-      if (required.some((key) => !headers.includes(key))) throw new Error('CSV 表头至少需要包含 code、name 两列，可选 parentId、unit、quantity、unitPrice、totalPrice、sortOrder。');
-      const get = (row: string[], key: string) => { const i = headers.indexOf(key); return i < 0 ? '' : (row[i] ?? '').trim(); };
-      const seen = new Set<string>();
-      const parsed: PreviewRow[] = content.slice(1).map((row, index) => {
-        const code = get(row, 'code'); const name = get(row, 'name'); const parentId = get(row, 'parentId') || get(row, 'parentCode') || null;
-        const numeric = (key: string) => { const value = get(row, key); if (!value) return null; const n = Number(value); return Number.isFinite(n) && n >= 0 ? n : Number.NaN; };
-        let error = !code ? '缺少编号' : !name ? '缺少名称' : '';
-        if (code && seen.has(code)) error = '编号重复'; if (code) seen.add(code);
-        const quantity = numeric('quantity'); const unitPrice = numeric('unitPrice'); const totalPrice = numeric('totalPrice'); const sortValue = numeric('sortOrder');
-        if ([quantity, unitPrice, totalPrice, sortValue].some((n) => Number.isNaN(n))) error = '数值列必须为非负数字';
-        return { code, name, parentId, unit: get(row, 'unit') || null, quantity, unitPrice, totalPrice: totalPrice ?? undefined, sortOrder: sortValue ?? index, error: error || undefined };
-      });
-      setPreview(parsed); if (!parsed.length) throw new Error('没有有效数据行');
+      if (headers.some((header) => !header)) throw new Error('CSV 存在空表头，请修正后重试。');
+      const normalizedHeaders = headers.map((header) => header.replace(/[\s_（）()]/g, '').toLocaleLowerCase());
+      if (new Set(normalizedHeaders).size !== normalizedHeaders.length) throw new Error('CSV 存在重复表头，请先为每一列设置唯一名称。');
+      const raw = { headers, rows: content.slice(1) };
+      const mapping = suggestImportMapping(headers);
+      if (!mapping.code || !mapping.name) {
+        setRawImport(raw); setColumnMap(mapping); setMappingDirty(true); setPreview([]);
+        if (fileRef.current) fileRef.current.value = '';
+        setServerError('无法自动识别清单编号或清单名称，请在预览中手工设置列映射。');
+        return;
+      }
+      setRawImport(raw); setColumnMap(mapping); setMappingDirty(false);
+      await buildImportPreview(raw, mapping);
     } catch (error) { setServerError(error instanceof Error ? error.message : '无法读取文件'); }
     if (fileRef.current) fileRef.current.value = '';
   }
 
   async function confirmImport() {
-    if (!preview) return;
+    if (!preview || !rawImport) return;
+    if (mappingDirty) { setServerError('列映射已更改，请先点击“重新校验映射”。'); return; }
     const invalid = preview.filter((row) => row.error);
     if (invalid.length) { setServerError(`还有 ${invalid.length} 行存在错误，请修正 CSV 后重新上传。`); return; }
     setServerError(''); setNotice('');
     try {
-      const result = await api.post<{ imported: number }>(`/projects/${projectId}/budget/import-csv`, { rows: preview.map(({ error: _error, ...row }) => row) });
-      await queryClient.invalidateQueries({ queryKey: ['budget', projectId] }); await queryClient.invalidateQueries({ queryKey: ['analysis', projectId] });
+      const cleanRows = preview.map(({ error: _error, ...row }) => row);
+      const preflight = await api.post<{ canImport: boolean; invalidCount: number; rows: Array<{ rowNumber: number; valid: boolean; errors: string[] }> }>(`/projects/${projectId}/budget/import-csv/preview`, { rows: cleanRows });
+      if (!preflight.canImport) {
+        setPreview(preview.map((row, index) => ({ ...row, error: preflight.rows[index]?.errors.join('；') || row.error || undefined })));
+        setServerError('预检后发现数据或编号状态已变化，未导入任何记录。请检查错误行后重试。');
+        return;
+      }
+      const result = await api.post<{ imported: number }>(`/projects/${projectId}/budget/import-csv`, { rows: cleanRows });
+      await queryClient.invalidateQueries({ queryKey: ['budget', projectId] }); await queryClient.invalidateQueries({ queryKey: ['analysis', projectId] }); await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setNotice(`已成功导入 ${result.imported} 条清单记录。`); setPreview(null);
     } catch (error) { setServerError(error instanceof ApiError ? error.message : '导入失败'); }
   }
@@ -161,6 +263,6 @@ export default function BudgetPage() {
     <div className="data-note"><span className="note-mark">i</span><span>本版 CSV 导入要求父级清单在子级之前；导入前会校验必填列、编号重复和数值格式。原生 .xlsx 模板映射尚未实现，可在 Excel 中另存为 CSV UTF-8 后导入。</span></div>
 
     {dialogOpen && <BudgetDialog projectId={projectId} items={rows} editing={editing} onClose={() => setDialogOpen(false)} />}
-    {preview && <div className="modal-backdrop"><div className="dialog import-dialog"><div className="dialog-header"><div><span className="eyebrow">IMPORT PREVIEW</span><h2>导入预览</h2><p>共 {preview.length} 行，错误行不会提交。</p></div><button className="icon-button" onClick={() => setPreview(null)}><X size={18} /></button></div><div className="import-preview-wrap"><table className="data-table"><thead><tr><th>行</th><th>编号</th><th>名称</th><th>上级编号/ID</th><th className="align-right">数量</th><th className="align-right">单价</th><th>校验</th></tr></thead><tbody>{preview.slice(0, 100).map((row, i) => <tr className={row.error ? 'import-row-error' : ''} key={`${row.code}-${i}`}><td>{i + 2}</td><td>{row.code}</td><td>{row.name}</td><td>{row.parentId || '—'}</td><td className="align-right">{row.quantity ?? '—'}</td><td className="align-right">{row.unitPrice ?? '—'}</td><td>{row.error ? <span className="text-danger">{row.error}</span> : <span className="text-success">通过</span>}</td></tr>)}</tbody></table>{preview.length > 100 && <div className="preview-more">仅展示前 100 行，提交时将校验全部 {preview.length} 行。</div>}</div>{serverError && <div className="form-alert">{serverError}</div>}<div className="dialog-footer"><Button variant="secondary" onClick={() => setPreview(null)}>取消</Button><Button onClick={() => void confirmImport()} disabled={preview.some((row) => row.error)}><Import size={15} />确认导入 {preview.length} 行</Button></div></div></div>}
+    {preview && <div className="modal-backdrop"><div className="dialog import-dialog"><div className="dialog-header"><div><span className="eyebrow">IMPORT PREVIEW</span><h2>导入预览</h2><p>共 {preview.length} 行，错误行不会提交。</p></div><button className="icon-button" onClick={() => { setPreview(null); setRawImport(null); setMappingDirty(false); }} aria-label="关闭导入预览"><X size={18} /></button></div><div className="import-mapping-panel"><div className="import-mapping-heading"><div><strong>字段映射</strong><small>系统先按常见中英文表头自动匹配，请核对后重新校验。</small></div><Button type="button" variant="secondary" onClick={() => rawImport && void buildImportPreview(rawImport, columnMap)} disabled={!rawImport || !columnMap.code || !columnMap.name || !mappingDirty}>重新校验映射</Button></div><div className="import-mapping-grid">{importFields.map((field) => <label className="import-mapping-field" key={field.key}><span>{field.label}{field.required ? ' *' : ''}</span><SelectField aria-label={`${field.label}来源列`} value={columnMap[field.key]} onChange={(event) => { setColumnMap((current) => ({ ...current, [field.key]: event.target.value })); setMappingDirty(true); }}><option value="">不映射</option>{rawImport?.headers.map((header, index) => <option key={`${header}-${index}`} value={header}>{header}</option>)}</SelectField></label>)}</div>{mappingDirty && <small className="import-mapping-warning">当前映射尚未重新校验，不能确认导入。</small>}</div><div className="import-preview-wrap"><table className="data-table"><thead><tr><th>行</th><th>编号</th><th>名称</th><th>上级编号/ID</th><th className="align-right">数量</th><th className="align-right">单价</th><th>校验</th></tr></thead><tbody>{preview.slice(0, 100).map((row, i) => <tr className={row.error ? 'import-row-error' : ''} key={`${row.code}-${i}`}><td>{i + 2}</td><td>{row.code}</td><td>{row.name}</td><td>{row.parentId || '—'}</td><td className="align-right">{row.quantity ?? '—'}</td><td className="align-right">{row.unitPrice ?? '—'}</td><td>{row.error ? <span className="text-danger">{row.error}</span> : <span className="text-success">通过</span>}</td></tr>)}</tbody></table>{preview.length > 100 && <div className="preview-more">仅展示前 100 行，提交时将校验全部 {preview.length} 行。</div>}</div>{serverError && <div className="form-alert">{serverError}</div>}<div className="dialog-footer"><Button variant="secondary" onClick={() => { setPreview(null); setRawImport(null); setMappingDirty(false); }}>取消</Button><Button onClick={() => void confirmImport()} disabled={!rawImport || mappingDirty || preview.some((row) => row.error) || !columnMap.code || !columnMap.name}><Import size={15} />确认导入 {preview.length} 行</Button></div></div></div>}
   </div>;
 }

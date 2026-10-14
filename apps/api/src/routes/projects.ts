@@ -164,13 +164,13 @@ export async function projectRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     if (!(await canAccessProject(user.sub, user.role, id))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const members = await prisma.projectMember.findMany({ where: { projectId: id }, include: { user: { select: { id: true, name: true, email: true } } } });
-    return success(members.map((m) => ({ id: m.id, role: m.role, ...m.user })));
+    return success(members.map((m) => ({ ...m.user, id: m.id, userId: m.userId, role: m.role, createdAt: m.createdAt })));
   });
 
   app.post('/:id/members', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { id } = request.params as { id: string };
-    const parsed = z.object({ userId: z.string().trim().min(1), role: z.nativeEnum(ProjectRole) }).safeParse(request.body);
+    const parsed = z.object({ userId: z.string().trim().min(1).optional(), email: z.string().trim().email().max(254).optional(), role: z.nativeEnum(ProjectRole) }).refine((v) => Boolean(v.userId || v.email), '必须提供 userId 或 email').safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '项目成员资料有误', parsed.error.flatten());
 
     const project = await prisma.project.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
@@ -185,22 +185,46 @@ export async function projectRoutes(app: FastifyInstance) {
       : actorMembership?.role === 'MANAGER' ? ['ESTIMATOR', 'VIEWER'] : [];
     if (!assignable.includes(parsed.data.role)) return failure(reply, 403, 'MEMBER_ROLE_ASSIGNMENT_FORBIDDEN', '当前权限不允许分配该项目角色');
 
-    const target = await prisma.user.findFirst({ where: { id: parsed.data.userId, isActive: true }, select: { id: true, name: true, email: true } });
+    const target = await prisma.user.findFirst({ where: { isActive: true, ...(parsed.data.userId ? { id: parsed.data.userId } : { email: parsed.data.email!.trim().toLowerCase() }) }, select: { id: true, name: true, email: true } });
     if (!target) return failure(reply, 404, 'ACTIVE_USER_NOT_FOUND', '目标账号不存在或已停用');
-    const existing = await prisma.projectMember.findUnique({ where: { projectId_userId: { projectId: id, userId: target.id } } });
-    const saved = await prisma.$transaction(async (tx) => {
-      const member = await tx.projectMember.upsert({
-        where: { projectId_userId: { projectId: id, userId: target.id } },
-        create: { projectId: id, userId: target.id, role: parsed.data.role },
-        update: { role: parsed.data.role },
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        // Serialize membership changes per project so two concurrent demotions
+        // cannot both observe the other owner and leave the project ownerless.
+        await tx.$queryRaw`SELECT "id" FROM "Project" WHERE "id" = ${id} FOR UPDATE`;
+        const currentActorMembership = user.role === 'ADMIN' ? null : await tx.projectMember.findUnique({
+          where: { projectId_userId: { projectId: id, userId: user.sub } }, select: { role: true },
+        });
+        if (user.role !== 'ADMIN' && !currentActorMembership) throw new Error('PROJECT_ACCESS_DENIED');
+        const currentAssignable: ProjectRole[] = user.role === 'ADMIN'
+          ? ['OWNER', 'MANAGER', 'ESTIMATOR', 'VIEWER']
+          : currentActorMembership?.role === 'OWNER' ? ['MANAGER', 'ESTIMATOR', 'VIEWER']
+          : currentActorMembership?.role === 'MANAGER' ? ['ESTIMATOR', 'VIEWER'] : [];
+        if (!currentAssignable.includes(parsed.data.role)) throw new Error('MEMBER_ROLE_ASSIGNMENT_FORBIDDEN');
+
+        const existing = await tx.projectMember.findUnique({ where: { projectId_userId: { projectId: id, userId: target.id } } });
+        if (existing?.role === 'OWNER' && parsed.data.role !== 'OWNER') {
+          const otherOwners = await tx.projectMember.count({ where: { projectId: id, role: 'OWNER', userId: { not: target.id } } });
+          if (otherOwners === 0) throw new Error('PROJECT_OWNER_REQUIRED');
+        }
+        const member = await tx.projectMember.upsert({
+          where: { projectId_userId: { projectId: id, userId: target.id } },
+          create: { projectId: id, userId: target.id, role: parsed.data.role },
+          update: { role: parsed.data.role },
+        });
+        await tx.auditLog.create({ data: {
+          projectId: id, userId: user.sub, entity: 'ProjectMember', entityId: member.id,
+          action: existing ? 'PROJECT_MEMBER_ROLE_UPDATED' : 'PROJECT_MEMBER_ADDED',
+          changes: { targetUserId: target.id, targetEmail: target.email, from: existing?.role ?? null, to: parsed.data.role },
+        } });
+        return { member, existed: Boolean(existing) };
       });
-      await tx.auditLog.create({ data: {
-        projectId: id, userId: user.sub, entity: 'ProjectMember', entityId: member.id,
-        action: existing ? 'PROJECT_MEMBER_ROLE_UPDATED' : 'PROJECT_MEMBER_ADDED',
-        changes: { targetUserId: target.id, targetEmail: target.email, from: existing?.role ?? null, to: parsed.data.role },
-      } });
-      return member;
-    });
-    return reply.code(existing ? 200 : 201).send(success({ id: saved.id, role: saved.role, ...target }));
+      return reply.code(result.existed ? 200 : 201).send(success({ ...target, id: result.member.id, userId: target.id, role: result.member.role }));
+    } catch (error) {
+      if (error instanceof Error && error.message === 'PROJECT_OWNER_REQUIRED') return failure(reply, 409, 'PROJECT_OWNER_REQUIRED', '项目至少需要保留一名项目负责人；请先分配另一名负责人再调整此角色');
+      if (error instanceof Error && error.message === 'PROJECT_ACCESS_DENIED') return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+      if (error instanceof Error && error.message === 'MEMBER_ROLE_ASSIGNMENT_FORBIDDEN') return failure(reply, 403, 'MEMBER_ROLE_ASSIGNMENT_FORBIDDEN', '当前权限不允许分配该项目角色');
+      throw error;
+    }
   });
 }
