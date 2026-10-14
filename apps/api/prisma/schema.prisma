@@ -1,0 +1,1085 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum BusinessPartyRole {
+  OWNER
+  MATERIAL_SUPPLIER
+  LABOR_SUBCONTRACTOR
+  PROFESSIONAL_SUBCONTRACTOR
+  EQUIPMENT_LESSOR
+  SERVICE_PROVIDER
+  OTHER
+}
+
+enum BusinessPartyStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ProjectRole {
+  OWNER
+  MANAGER
+  ESTIMATOR
+  VIEWER
+}
+
+enum ProjectStatus {
+  CONSTRUCTION
+  SETTLEMENT_PENDING
+  SETTLED
+  PAUSED
+}
+
+enum CostType {
+  LABOR
+  MATERIAL
+  MACHINE
+  SUBCONTRACT
+  INDIRECT
+}
+
+enum ProgressBillStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum ChangeStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  CONFIRMED
+  REJECTED
+}
+
+enum ChangeDirection {
+  INCREASE
+  DECREASE
+}
+
+enum EvidenceClass {
+  A
+  B
+  C
+}
+
+enum ExternalConfirmationStatus {
+  NOT_CONFIRMED
+  PENDING_SUPPLEMENT
+  PENDING_VERIFICATION
+  EFFECTIVE
+  REJECTED
+  DISPUTED
+}
+
+enum InternalAmountReviewStatus {
+  NOT_REQUIRED
+  PENDING
+  COMPLETED
+}
+
+enum DownstreamContractType {
+  LABOR_SUBCONTRACT
+  PROFESSIONAL_SUBCONTRACT
+  MATERIAL_PURCHASE
+  EQUIPMENT_LEASE
+  SERVICE
+  OTHER
+}
+
+enum DownstreamContractStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  SETTLED
+  TERMINATED
+}
+
+enum DownstreamPaymentType {
+  ADVANCE
+  PROGRESS
+  SETTLEMENT
+  RETENTION
+  REFUND
+  OTHER
+}
+
+enum DownstreamSettlementType {
+  PROGRESS
+  FINAL
+  ADJUSTMENT
+}
+
+enum DownstreamSettlementStatus {
+  DRAFT
+  SUBMITTED
+  INTERNAL_APPROVED
+  COUNTERPARTY_CONFIRMED
+  POSTED
+  REJECTED
+}
+
+enum DownstreamPayableType {
+  SETTLEMENT
+  ADJUSTMENT
+  RETENTION_RELEASE
+}
+
+enum DownstreamInvoiceStatus {
+  RECEIVED
+  VERIFIED
+  REJECTED
+}
+
+enum DownstreamRetentionMovementType {
+  RETAIN
+  RELEASE
+  FORFEIT
+}
+
+enum OwnerSettlementType {
+  FINAL
+  ADJUSTMENT
+}
+
+enum OwnerSettlementStatus {
+  DRAFT
+  SUBMITTED
+  INTERNAL_APPROVED
+  COUNTERPARTY_CONFIRMED
+  POSTED
+  REJECTED
+}
+
+enum OwnerReceivableType {
+  PROGRESS_BILL
+  FINAL_SETTLEMENT
+  ADJUSTMENT
+  RETENTION_RELEASE
+  MANUAL_ADJUSTMENT
+}
+
+enum OwnerReceivableStatus {
+  OPEN
+  PARTIALLY_RECEIVED
+  RECEIVED
+  VOID
+}
+
+enum OwnerReceiptType {
+  RECEIPT
+  REFUND
+  ADVANCE
+  ADVANCE_REFUND
+}
+
+enum OwnerRetentionMovementType {
+  WITHHOLD
+  RELEASE
+  WAIVE
+}
+
+enum OwnerAdvanceMovementType {
+  RECEIPT
+  DEDUCTION
+  REFUND
+}
+
+model User {
+  id           String          @id @default(cuid())
+  name         String
+  email        String          @unique
+  passwordHash String
+  role         UserRole        @default(USER)
+  isActive     Boolean         @default(true)
+  memberships  ProjectMember[]
+  refreshTokens RefreshToken[]
+  auditLogs    AuditLog[]
+  costEntries  CostEntry[]
+  createdChanges Change[] @relation("ChangeCreator")
+  submittedChanges Change[] @relation("ChangeSubmitter")
+  internallyApprovedChanges Change[] @relation("ChangeInternalApprover")
+  recordedExternalConfirmations Change[] @relation("ChangeExternalRecorder")
+  verifiedExternalConfirmations Change[] @relation("ChangeExternalVerifier")
+  completedAmountReviews Change[] @relation("ChangeInternalAmountReviewCompleter")
+  createdDownstreamContracts DownstreamContract[] @relation("DownstreamContractCreator")
+  createdDownstreamAdjustments DownstreamContractAdjustment[] @relation("DownstreamAdjustmentCreator")
+  createdDownstreamPayments DownstreamContractPayment[] @relation("DownstreamPaymentCreator")
+  createdDownstreamSettlements DownstreamContractSettlement[] @relation("DownstreamSettlementCreator")
+  submittedDownstreamSettlements DownstreamContractSettlement[] @relation("DownstreamSettlementSubmitter")
+  approvedDownstreamSettlements DownstreamContractSettlement[] @relation("DownstreamSettlementApprover")
+  recordedDownstreamSettlementConfirmations DownstreamContractSettlement[] @relation("DownstreamSettlementConfirmationRecorder")
+  rejectedDownstreamSettlements DownstreamContractSettlement[] @relation("DownstreamSettlementRejector")
+  createdDownstreamPayables DownstreamPayable[] @relation("DownstreamPayableCreator")
+  createdDownstreamInvoices DownstreamSupplierInvoice[] @relation("DownstreamInvoiceCreator")
+  postedDownstreamSettlementPostings DownstreamSettlementPosting[] @relation("DownstreamSettlementPoster")
+  createdDownstreamRetentionMovements DownstreamRetentionMovement[] @relation("DownstreamRetentionMovementCreator")
+  createdOwnerSettlements OwnerContractSettlement[] @relation("OwnerSettlementCreator")
+  submittedOwnerSettlements OwnerContractSettlement[] @relation("OwnerSettlementSubmitter")
+  approvedOwnerSettlements OwnerContractSettlement[] @relation("OwnerSettlementApprover")
+  recordedOwnerSettlementConfirmations OwnerContractSettlement[] @relation("OwnerSettlementConfirmationRecorder")
+  rejectedOwnerSettlements OwnerContractSettlement[] @relation("OwnerSettlementRejector")
+  postedOwnerSettlementPostings OwnerSettlementPosting[] @relation("OwnerSettlementPoster")
+  createdOwnerReceivables OwnerReceivable[] @relation("OwnerReceivableCreator")
+  createdOwnerReceipts OwnerReceipt[] @relation("OwnerReceiptCreator")
+  createdOwnerRetentionMovements OwnerRetentionMovement[] @relation("OwnerRetentionMovementCreator")
+  createdOwnerAdvanceMovements OwnerAdvanceMovement[] @relation("OwnerAdvanceMovementCreator")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+model BusinessParty {
+  id                  String              @id @default(cuid())
+  name                String
+  normalizedName      String
+  identityVerified    Boolean             @default(false)
+  identityVerificationNote String?
+  creditCode          String?             @unique
+  roles               BusinessPartyRole[] @default([])
+  status              BusinessPartyStatus @default(ACTIVE)
+  formerNames         String[]            @default([])
+  legalRepresentative String?
+  address             String?
+  contactName         String?
+  phone               String?
+  email               String?
+  taxNo               String?
+  invoiceTitle        String?
+  notes               String?
+  projectsAsOwner     Project[]           @relation("ProjectOwnerParty")
+  downstreamContracts DownstreamContract[] @relation("DownstreamContractCounterparty")
+  costEntries         CostEntry[]         @relation("CostEntryBusinessParty")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([name])
+  @@index([normalizedName])
+  @@index([status, updatedAt])
+  @@index([roles], type: Gin)
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  name           String
+  code           String         @unique
+  type           String         @default("HOUSING")
+  ownerName      String
+  ownerPartyId   String?
+  contractAmount Decimal        @db.Decimal(18, 2)
+  originalContractAmount Decimal @db.Decimal(18, 2)
+  startDate      DateTime
+  plannedEndDate DateTime?
+  status         ProjectStatus  @default(CONSTRUCTION)
+  address        String?
+  managerName    String?
+  members        ProjectMember[]
+  ownerParty     BusinessParty? @relation("ProjectOwnerParty", fields: [ownerPartyId], references: [id], onDelete: Restrict)
+  mainContract   MainContract?
+  budgetItems    BudgetItem[]
+  costEntries    CostEntry[]
+  progressBills  ProgressBill[]
+  changes        Change[]
+  downstreamContracts DownstreamContract[]
+  ownerSettlements OwnerContractSettlement[]
+  ownerReceivables OwnerReceivable[]
+  ownerReceipts OwnerReceipt[]
+  ownerRetentionMovements OwnerRetentionMovement[]
+  ownerAdvanceMovements OwnerAdvanceMovement[]
+  ownerSettlementPostings OwnerSettlementPosting[]
+  auditLogs      AuditLog[]
+  baselineMigrationReconciliations ContractBaselineMigrationReconciliation[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  @@index([status, deletedAt])
+  @@index([ownerPartyId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model ProjectMember {
+  id        String      @id @default(cuid())
+  projectId String
+  userId    String
+  role      ProjectRole @default(ESTIMATOR)
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt DateTime    @default(now())
+
+  @@unique([projectId, userId])
+  @@index([userId])
+}
+
+model MainContract {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  contractNo          String
+  name                String
+  signedAt            DateTime?
+  amount              Decimal  @db.Decimal(18, 2)
+  taxIncluded         Boolean  @default(true)
+  retentionRate       Decimal  @default(0.03) @db.Decimal(7, 5)
+  advanceDeductionRate Decimal @default(0) @db.Decimal(7, 5)
+  paymentTerms        String?
+  guaranteeEndAt      DateTime?
+  notes               String?
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  progressBills       ProgressBill[]
+  changes             Change[]
+  ownerSettlements    OwnerContractSettlement[]
+  ownerReceivables    OwnerReceivable[]
+  ownerReceipts       OwnerReceipt[]
+  ownerRetentionMovements OwnerRetentionMovement[]
+  ownerAdvanceMovements OwnerAdvanceMovement[]
+  ownerSettlementPostings OwnerSettlementPosting[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model BudgetItem {
+  id          String       @id @default(cuid())
+  projectId   String
+  parentId    String?
+  code        String
+  name        String
+  unit        String?
+  quantity    Decimal?     @db.Decimal(18, 3)
+  unitPrice   Decimal?     @db.Decimal(18, 4)
+  totalPrice  Decimal      @default(0) @db.Decimal(18, 2)
+  level       Int          @default(1)
+  sortOrder   Int          @default(0)
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  parent      BudgetItem?  @relation("BudgetItemTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    BudgetItem[] @relation("BudgetItemTree")
+  costEntries CostEntry[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  @@unique([projectId, code])
+  @@index([projectId, parentId, sortOrder])
+}
+
+model CostEntry {
+  id           String    @id @default(cuid())
+  projectId    String
+  type         CostType
+  date         DateTime
+  amount       Decimal   @db.Decimal(18, 2)
+  taxAmount    Decimal?  @db.Decimal(18, 2)
+  budgetItemId String?
+  downstreamContractId String?
+  businessPartyId String?
+  description  String
+  quantity     Decimal?  @db.Decimal(18, 3)
+  unit         String?
+  unitPrice    Decimal?  @db.Decimal(18, 4)
+  invoiceNo    String?
+  vendorName   String?
+  teamName     String?
+  notes        String?
+  createdById  String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  budgetItem   BudgetItem? @relation(fields: [budgetItemId], references: [id], onDelete: Restrict)
+  downstreamContract DownstreamContract? @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  businessParty BusinessParty? @relation("CostEntryBusinessParty", fields: [businessPartyId], references: [id], onDelete: Restrict)
+  createdBy    User      @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@index([projectId, type, date, deletedAt])
+  @@index([downstreamContractId, deletedAt])
+  @@index([businessPartyId])
+}
+
+model ProgressBill {
+  id           String              @id @default(cuid())
+  projectId    String
+  mainContractId String?
+  periodNo     Int
+  applyDate    DateTime
+  measureDate  DateTime?
+  amount       Decimal             @db.Decimal(18, 2)
+  approvedAmount Decimal?           @db.Decimal(18, 2)
+  paidAmount   Decimal             @default(0) @db.Decimal(18, 2)
+  status       ProgressBillStatus  @default(DRAFT)
+  notes        String?
+  project      Project             @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract MainContract?       @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  payments     ProgressPayment[]
+  ownerReceivable OwnerReceivable?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  deletedAt    DateTime?
+
+  @@unique([projectId, periodNo])
+  @@index([projectId, status])
+  @@index([mainContractId])
+}
+
+model ProgressPayment {
+  id              String       @id @default(cuid())
+  progressBillId  String
+  amount          Decimal      @db.Decimal(18, 2)
+  paidAt           DateTime
+  referenceNo      String?
+  type             String       @default("RECEIPT")
+  originalReceiptNo String?
+  notes            String?
+  progressBill     ProgressBill @relation(fields: [progressBillId], references: [id], onDelete: Restrict)
+  createdAt        DateTime     @default(now())
+
+  @@index([progressBillId, paidAt])
+}
+
+model Change {
+  id                         String                    @id @default(cuid())
+  projectId                  String
+  mainContractId             String?
+  code                       String
+  name                       String
+  type                       String                    @default("ENGINEERING_CHANGE")
+  direction                  ChangeDirection           @default(INCREASE)
+  occurredAt                 DateTime
+  description                String?
+  submittedAmount            Decimal                   @db.Decimal(18, 2)
+  approvedAmount             Decimal?                  @db.Decimal(18, 2)
+  status                     ChangeStatus              @default(DRAFT)
+  decisionNote               String?
+  createdById                String?
+  submittedById              String?
+  internalApprovedById       String?
+  internalApprovedAt         DateTime?
+  evidenceClass              EvidenceClass?
+  externalConfirmerName      String?
+  externalConfirmerAuthority String?
+  externalConfirmedAt        DateTime?
+  externalConfirmedAmount    Decimal?                  @db.Decimal(18, 2)
+  externalConfirmationScope  String?
+  evidenceReference          String?
+  evidenceContext            String?
+  evidenceFiles              Json?
+  externalConfirmationStatus ExternalConfirmationStatus @default(NOT_CONFIRMED)
+  externalRecordedById       String?
+  evidenceVerifiedById       String?
+  evidenceVerifiedAt         DateTime?
+  evidenceVerificationNote   String?
+  internalAmountReviewStatus InternalAmountReviewStatus @default(NOT_REQUIRED)
+  internalAmountReviewReferenceAmount Decimal? @db.Decimal(18, 2)
+  internalAmountReviewExternalAmount Decimal? @db.Decimal(18, 2)
+  internalAmountReviewTriggeredAt DateTime?
+  internalAmountReviewCompletedAt DateTime?
+  internalAmountReviewCompletedById String?
+  internalAmountReviewNote String?
+  effectiveAt                DateTime?
+  project                    Project                   @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract               MainContract?             @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  createdBy                  User?                     @relation("ChangeCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  submittedBy                User?                     @relation("ChangeSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  internalApprovedBy         User?                     @relation("ChangeInternalApprover", fields: [internalApprovedById], references: [id], onDelete: Restrict)
+  externalRecordedBy         User?                     @relation("ChangeExternalRecorder", fields: [externalRecordedById], references: [id], onDelete: Restrict)
+  evidenceVerifiedBy         User?                     @relation("ChangeExternalVerifier", fields: [evidenceVerifiedById], references: [id], onDelete: Restrict)
+  internalAmountReviewCompletedBy User?                 @relation("ChangeInternalAmountReviewCompleter", fields: [internalAmountReviewCompletedById], references: [id], onDelete: Restrict)
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+  deletedAt                  DateTime?
+
+  @@unique([projectId, code])
+  @@index([projectId, status])
+  @@index([mainContractId])
+  @@index([projectId, externalConfirmationStatus])
+  @@index([projectId, internalAmountReviewStatus])
+  @@index([createdById])
+  @@index([submittedById])
+}
+
+
+model DownstreamContract {
+  id                 String                  @id @default(cuid())
+  projectId          String
+  contractNo         String
+  name               String
+  type               DownstreamContractType
+  counterpartyName   String
+  counterpartyPartyId String?
+  scope              String?
+  signedAt           DateTime?
+  startDate          DateTime?
+  plannedEndDate     DateTime?
+  originalAmount     Decimal                 @db.Decimal(18, 2)
+  taxIncluded        Boolean                 @default(true)
+  paymentTerms       String?
+  status             DownstreamContractStatus @default(DRAFT)
+  notes              String?
+  createdById        String
+  project            Project                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  counterpartyParty  BusinessParty?          @relation("DownstreamContractCounterparty", fields: [counterpartyPartyId], references: [id], onDelete: Restrict)
+  createdBy          User                    @relation("DownstreamContractCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  adjustments        DownstreamContractAdjustment[]
+  paymentPlans       DownstreamPaymentPlan[]
+  payments           DownstreamContractPayment[]
+  settlements        DownstreamContractSettlement[]
+  payables           DownstreamPayable[]
+  supplierInvoices   DownstreamSupplierInvoice[]
+  retentionMovements DownstreamRetentionMovement[]
+  settlementPostings DownstreamSettlementPosting[]
+  costEntries        CostEntry[]
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  deletedAt          DateTime?
+
+  @@unique([projectId, contractNo])
+  @@index([projectId, status, deletedAt])
+  @@index([projectId, type])
+  @@index([counterpartyName])
+  @@index([counterpartyPartyId])
+}
+
+// Only already-effective, signed downstream amendments are recorded here.
+// The signed base amount remains immutable; current contract value is calculated from it.
+model DownstreamContractAdjustment {
+  id                 String          @id @default(cuid())
+  downstreamContractId String
+  code               String
+  name               String
+  direction          ChangeDirection
+  amount             Decimal         @db.Decimal(18, 2)
+  effectiveAt        DateTime
+  documentReference  String
+  notes              String?
+  createdById        String
+  downstreamContract DownstreamContract @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  createdBy          User            @relation("DownstreamAdjustmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt          DateTime        @default(now())
+
+  @@unique([downstreamContractId, code])
+  @@index([downstreamContractId, effectiveAt])
+}
+
+model DownstreamPaymentPlan {
+  id                 String          @id @default(cuid())
+  downstreamContractId String
+  stageName          String
+  dueAt              DateTime
+  plannedAmount      Decimal         @db.Decimal(18, 2)
+  notes              String?
+  downstreamContract DownstreamContract @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  payments           DownstreamContractPayment[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([downstreamContractId, dueAt])
+}
+
+model DownstreamContractPayment {
+  id                 String             @id @default(cuid())
+  downstreamContractId String
+  paymentPlanId      String?
+  refundOfPaymentId  String?
+  type               DownstreamPaymentType @default(PROGRESS)
+  amount             Decimal            @db.Decimal(18, 2)
+  paidAt             DateTime
+  referenceNo        String?
+  notes              String?
+  createdById        String
+  downstreamContract DownstreamContract @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  paymentPlan        DownstreamPaymentPlan? @relation(fields: [paymentPlanId], references: [id], onDelete: Restrict)
+  refundOfPayment    DownstreamContractPayment? @relation("DownstreamPaymentRefund", fields: [refundOfPaymentId], references: [id], onDelete: Restrict)
+  refunds            DownstreamContractPayment[] @relation("DownstreamPaymentRefund")
+  allocations        DownstreamPaymentAllocation[]
+  createdBy          User               @relation("DownstreamPaymentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt          DateTime           @default(now())
+
+  @@index([downstreamContractId, paidAt])
+  @@index([paymentPlanId])
+  @@index([refundOfPaymentId])
+  @@unique([downstreamContractId, referenceNo])
+}
+
+
+// A settlement can be amount-only. Optional lines are supporting detail and never
+// required to create, confirm, or post a settlement.
+model DownstreamContractSettlement {
+  id                       String                      @id @default(cuid())
+  downstreamContractId     String
+  settlementNo             String
+  type                     DownstreamSettlementType
+  status                   DownstreamSettlementStatus @default(DRAFT)
+  submittedAmount          Decimal                     @db.Decimal(18, 2)
+  confirmedAmount           Decimal?                    @db.Decimal(18, 2)
+  postedDeltaAmount         Decimal?                    @db.Decimal(18, 2)
+  advanceRecoveryAmount     Decimal                     @default(0) @db.Decimal(18, 2)
+  retentionAmount           Decimal                     @default(0) @db.Decimal(18, 2)
+  otherDeductionAmount      Decimal                     @default(0) @db.Decimal(18, 2)
+  netPayableAmount          Decimal?                    @db.Decimal(18, 2)
+  dueAt                     DateTime?
+  confirmationReference     String?
+  confirmationDate          DateTime?
+  notes                     String?
+  createdById               String
+  submittedById             String?
+  internalApprovedById      String?
+  counterpartyRecordedById  String?
+  rejectedById              String?
+  rejectedAt                DateTime?
+  rejectionReason           String?
+  submittedAt               DateTime?
+  internalApprovedAt        DateTime?
+  counterpartyConfirmedAt   DateTime?
+  postedAt                  DateTime?
+  downstreamContract        DownstreamContract         @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  createdBy                 User                        @relation("DownstreamSettlementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  submittedBy               User?                       @relation("DownstreamSettlementSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  internalApprovedBy        User?                       @relation("DownstreamSettlementApprover", fields: [internalApprovedById], references: [id], onDelete: Restrict)
+  counterpartyRecordedBy    User?                       @relation("DownstreamSettlementConfirmationRecorder", fields: [counterpartyRecordedById], references: [id], onDelete: Restrict)
+  rejectedBy                User?                       @relation("DownstreamSettlementRejector", fields: [rejectedById], references: [id], onDelete: Restrict)
+  lines                     DownstreamSettlementLine[]
+  payable                   DownstreamPayable?
+  posting                   DownstreamSettlementPosting?
+  retentionMovement         DownstreamRetentionMovement?
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+
+  @@unique([downstreamContractId, settlementNo])
+  @@index([downstreamContractId, status, createdAt])
+  @@index([downstreamContractId, type, postedAt])
+}
+
+model DownstreamSettlementLine {
+  id             String                       @id @default(cuid())
+  settlementId   String
+  description    String
+  quantity       Decimal?                     @db.Decimal(18, 3)
+  unit           String?
+  unitPrice      Decimal?                     @db.Decimal(18, 4)
+  amount         Decimal                      @db.Decimal(18, 2)
+  sortOrder      Int                          @default(0)
+  settlement     DownstreamContractSettlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  createdAt      DateTime                     @default(now())
+
+  @@index([settlementId, sortOrder])
+}
+
+model DownstreamSettlementPosting {
+  id                    String                       @id @default(cuid())
+  settlementId          String                       @unique
+  downstreamContractId  String
+  cumulativeBefore      Decimal                      @db.Decimal(18, 2)
+  deltaAmount           Decimal                      @db.Decimal(18, 2)
+  cumulativeAfter       Decimal                      @db.Decimal(18, 2)
+  postedAt              DateTime                     @default(now())
+  postedById            String
+  settlement            DownstreamContractSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  downstreamContract    DownstreamContract           @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  postedBy              User                         @relation("DownstreamSettlementPoster", fields: [postedById], references: [id], onDelete: Restrict)
+
+  @@index([downstreamContractId, postedAt])
+}
+
+model DownstreamPayable {
+  id                       String                    @id @default(cuid())
+  downstreamContractId     String
+  payableNo                String
+  type                     DownstreamPayableType
+  settlementId             String?                   @unique
+  retentionMovementId      String?                   @unique
+  grossAmount              Decimal                   @db.Decimal(18, 2)
+  advanceRecoveryAmount    Decimal                   @default(0) @db.Decimal(18, 2)
+  retentionAmount          Decimal                   @default(0) @db.Decimal(18, 2)
+  otherDeductionAmount     Decimal                   @default(0) @db.Decimal(18, 2)
+  netAmount                Decimal                   @db.Decimal(18, 2)
+  dueAt                    DateTime?
+  notes                    String?
+  createdById              String
+  postedAt                 DateTime                  @default(now())
+  downstreamContract       DownstreamContract       @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  settlement               DownstreamContractSettlement? @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  retentionMovement        DownstreamRetentionMovement? @relation(fields: [retentionMovementId], references: [id], onDelete: Restrict)
+  createdBy                User                      @relation("DownstreamPayableCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  paymentAllocations       DownstreamPaymentAllocation[]
+  invoiceAllocations       DownstreamInvoiceAllocation[]
+  schedules                DownstreamPayableSchedule[]
+  createdAt                DateTime                  @default(now())
+
+  @@unique([downstreamContractId, payableNo])
+  @@index([downstreamContractId, dueAt, postedAt])
+  @@index([downstreamContractId, type])
+}
+
+model DownstreamPayableSchedule {
+  id          String                       @id @default(cuid())
+  payableId   String
+  scheduleNo  String
+  dueAt       DateTime
+  amount      Decimal                      @db.Decimal(18, 2)
+  notes       String?
+  payable     DownstreamPayable            @relation(fields: [payableId], references: [id], onDelete: Restrict)
+  allocations DownstreamPaymentAllocation[]
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
+
+  @@unique([payableId, scheduleNo])
+  @@index([payableId, dueAt])
+}
+
+// Signed allocation values: payments allocate positive amounts, refunds reverse allocations with negative values.
+model DownstreamPaymentAllocation {
+  id          String                    @id @default(cuid())
+  paymentId   String
+  payableId         String
+  payableScheduleId String?
+  amount            Decimal                   @db.Decimal(18, 2)
+  notes             String?
+  payment           DownstreamContractPayment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  payable           DownstreamPayable         @relation(fields: [payableId], references: [id], onDelete: Restrict)
+  payableSchedule   DownstreamPayableSchedule? @relation(fields: [payableScheduleId], references: [id], onDelete: Restrict)
+  createdAt         DateTime                  @default(now())
+
+  @@index([paymentId, payableId])
+  @@index([payableId, createdAt])
+  @@index([payableScheduleId])
+}
+
+model DownstreamRetentionMovement {
+  id                    String                           @id @default(cuid())
+  downstreamContractId  String
+  settlementId          String?                          @unique
+  type                  DownstreamRetentionMovementType
+  amount                Decimal                          @db.Decimal(18, 2)
+  effectiveAt           DateTime                         @default(now())
+  reference              String?
+  notes                  String?
+  createdById            String
+  downstreamContract    DownstreamContract              @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  settlement             DownstreamContractSettlement?   @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  createdBy              User                             @relation("DownstreamRetentionMovementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  payable                DownstreamPayable?
+  createdAt              DateTime                         @default(now())
+
+  @@index([downstreamContractId, effectiveAt])
+}
+
+model DownstreamSupplierInvoice {
+  id                    String                    @id @default(cuid())
+  downstreamContractId  String
+  invoiceNo             String
+  invoiceDate           DateTime
+  amount                Decimal                   @db.Decimal(18, 2)
+  taxAmount             Decimal                   @default(0) @db.Decimal(18, 2)
+  taxIncluded           Boolean                   @default(true)
+  status                DownstreamInvoiceStatus   @default(RECEIVED)
+  notes                 String?
+  verificationNote      String?
+  verifiedAt            DateTime?
+  createdById           String
+  downstreamContract    DownstreamContract        @relation(fields: [downstreamContractId], references: [id], onDelete: Restrict)
+  createdBy             User                      @relation("DownstreamInvoiceCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  allocations           DownstreamInvoiceAllocation[]
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  @@unique([downstreamContractId, invoiceNo])
+  @@index([downstreamContractId, status, invoiceDate])
+}
+
+model DownstreamInvoiceAllocation {
+  id          String                     @id @default(cuid())
+  invoiceId   String
+  payableId   String
+  amount      Decimal                    @db.Decimal(18, 2)
+  notes       String?
+  invoice     DownstreamSupplierInvoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  payable     DownstreamPayable          @relation(fields: [payableId], references: [id], onDelete: Restrict)
+  createdAt   DateTime                   @default(now())
+
+  @@unique([invoiceId, payableId])
+  @@index([payableId])
+}
+
+
+model OwnerContractSettlement {
+  id                       String                 @id @default(cuid())
+  projectId                String
+  mainContractId           String
+  settlementNo             String
+  type                     OwnerSettlementType
+  status                   OwnerSettlementStatus  @default(DRAFT)
+  submittedAmount          Decimal                @db.Decimal(18, 2)
+  confirmedAmount          Decimal?               @db.Decimal(18, 2)
+  postedDeltaAmount        Decimal?               @db.Decimal(18, 2)
+  previousCumulativeAmount Decimal?               @db.Decimal(18, 2)
+  cumulativeAfterAmount    Decimal?               @db.Decimal(18, 2)
+  advanceDeductionAmount   Decimal                @default(0) @db.Decimal(18, 2)
+  retentionAmount          Decimal                @default(0) @db.Decimal(18, 2)
+  otherDeductionAmount     Decimal                @default(0) @db.Decimal(18, 2)
+  netReceivableAmount      Decimal?               @db.Decimal(18, 2)
+  dueAt                    DateTime?
+  confirmationReference    String?
+  confirmedAt              DateTime?
+  rejectionReason          String?
+  notes                    String?
+  createdById              String
+  submittedById            String?
+  approvedById             String?
+  confirmedById            String?
+  rejectedById             String?
+  postedAt                 DateTime?
+  project                  Project                @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract             MainContract           @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  createdBy                User                   @relation("OwnerSettlementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  submittedBy              User?                  @relation("OwnerSettlementSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  approvedBy               User?                  @relation("OwnerSettlementApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  confirmedBy              User?                  @relation("OwnerSettlementConfirmationRecorder", fields: [confirmedById], references: [id], onDelete: Restrict)
+  rejectedBy               User?                  @relation("OwnerSettlementRejector", fields: [rejectedById], references: [id], onDelete: Restrict)
+  lines                    OwnerSettlementLine[]
+  posting                  OwnerSettlementPosting?
+  receivable               OwnerReceivable?
+  retentionMovements       OwnerRetentionMovement[]
+  advanceMovements         OwnerAdvanceMovement[]
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+
+  @@unique([projectId, settlementNo])
+  @@index([projectId, status, type])
+  @@index([mainContractId, status])
+}
+
+model OwnerSettlementLine {
+  id           String                 @id @default(cuid())
+  settlementId String
+  description  String
+  quantity     Decimal?               @db.Decimal(18, 3)
+  unit         String?
+  unitPrice    Decimal?               @db.Decimal(18, 4)
+  amount       Decimal                @db.Decimal(18, 2)
+  sortOrder    Int                    @default(0)
+  settlement   OwnerContractSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+
+  @@index([settlementId, sortOrder])
+}
+
+model OwnerSettlementPosting {
+  id                       String                 @id @default(cuid())
+  projectId                String
+  mainContractId           String
+  settlementId             String                 @unique
+  previousCumulativeAmount Decimal                @db.Decimal(18, 2)
+  deltaAmount              Decimal                @db.Decimal(18, 2)
+  cumulativeAfterAmount    Decimal                @db.Decimal(18, 2)
+  postedAt                 DateTime               @default(now())
+  postedById               String
+  project                  Project                @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract             MainContract           @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  settlement               OwnerContractSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  postedBy                 User                   @relation("OwnerSettlementPoster", fields: [postedById], references: [id], onDelete: Restrict)
+
+  @@index([projectId, postedAt])
+  @@index([mainContractId, postedAt])
+}
+
+model OwnerReceivable {
+  id                       String                @id @default(cuid())
+  projectId                String
+  mainContractId           String
+  receivableNo             String
+  type                     OwnerReceivableType
+  title                    String
+  sourceSettlementId       String?               @unique
+  sourceProgressBillId     String?               @unique
+  sourceRetentionMovementId String?              @unique
+  grossAmount              Decimal               @db.Decimal(18, 2)
+  advanceDeductionAmount   Decimal               @default(0) @db.Decimal(18, 2)
+  retentionAmount          Decimal               @default(0) @db.Decimal(18, 2)
+  otherDeductionAmount     Decimal               @default(0) @db.Decimal(18, 2)
+  netAmount                Decimal               @db.Decimal(18, 2)
+  dueAt                    DateTime?
+  status                   OwnerReceivableStatus @default(OPEN)
+  notes                    String?
+  createdById              String
+  postedAt                 DateTime              @default(now())
+  project                  Project               @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract             MainContract          @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  sourceSettlement        OwnerContractSettlement? @relation(fields: [sourceSettlementId], references: [id], onDelete: Restrict)
+  sourceProgressBill      ProgressBill?          @relation(fields: [sourceProgressBillId], references: [id], onDelete: Restrict)
+  sourceRetentionMovement OwnerRetentionMovement? @relation(fields: [sourceRetentionMovementId], references: [id], onDelete: Restrict)
+  createdBy               User                  @relation("OwnerReceivableCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  schedules               OwnerReceivableSchedule[]
+  allocations             OwnerReceiptAllocation[]
+
+  @@unique([projectId, receivableNo])
+  @@index([projectId, status, dueAt])
+  @@index([mainContractId, status])
+}
+
+model OwnerReceivableSchedule {
+  id            String          @id @default(cuid())
+  receivableId  String
+  scheduleNo    String
+  dueAt         DateTime
+  amount        Decimal         @db.Decimal(18, 2)
+  notes         String?
+  receivable    OwnerReceivable @relation(fields: [receivableId], references: [id], onDelete: Restrict)
+  allocations   OwnerReceiptAllocation[]
+  createdAt     DateTime        @default(now())
+
+  @@unique([receivableId, scheduleNo])
+  @@index([dueAt])
+}
+
+model OwnerReceipt {
+  id                String          @id @default(cuid())
+  projectId         String
+  mainContractId    String
+  receiptNo         String
+  type              OwnerReceiptType @default(RECEIPT)
+  amount            Decimal         @db.Decimal(18, 2)
+  receivedAt        DateTime
+  referenceNo       String?
+  notes             String?
+  originalReceiptId String?
+  createdById       String
+  project           Project         @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract      MainContract    @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  originalReceipt   OwnerReceipt?   @relation("OwnerReceiptRefund", fields: [originalReceiptId], references: [id], onDelete: Restrict)
+  refunds           OwnerReceipt[]  @relation("OwnerReceiptRefund")
+  createdBy         User            @relation("OwnerReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  allocations       OwnerReceiptAllocation[]
+  advanceMovements  OwnerAdvanceMovement[]
+  createdAt         DateTime        @default(now())
+
+  @@unique([projectId, receiptNo])
+  @@index([mainContractId, receivedAt])
+  @@index([originalReceiptId])
+}
+
+model OwnerReceiptAllocation {
+  id             String                  @id @default(cuid())
+  receiptId      String
+  receivableId   String
+  scheduleId     String?
+  amount         Decimal                 @db.Decimal(18, 2)
+  reversesId     String?
+  notes          String?
+  receipt        OwnerReceipt            @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+  receivable     OwnerReceivable         @relation(fields: [receivableId], references: [id], onDelete: Restrict)
+  schedule       OwnerReceivableSchedule? @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  reverses       OwnerReceiptAllocation?  @relation("OwnerReceiptAllocationReversal", fields: [reversesId], references: [id], onDelete: Restrict)
+  reversedBy     OwnerReceiptAllocation[] @relation("OwnerReceiptAllocationReversal")
+  createdAt      DateTime                @default(now())
+
+  @@index([receiptId])
+  @@index([receivableId])
+  @@index([scheduleId])
+}
+
+model OwnerRetentionMovement {
+  id            String                      @id @default(cuid())
+  projectId     String
+  mainContractId String
+  settlementId  String?
+  type          OwnerRetentionMovementType
+  amount        Decimal                     @db.Decimal(18, 2)
+  effectiveAt   DateTime
+  reference     String?
+  notes         String?
+  createdById   String
+  project       Project                     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract  MainContract                @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  settlement    OwnerContractSettlement?    @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  receivable    OwnerReceivable?
+  createdBy     User                        @relation("OwnerRetentionMovementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime                    @default(now())
+
+  @@index([mainContractId, effectiveAt])
+  @@index([projectId, type])
+}
+
+model OwnerAdvanceMovement {
+  id            String                    @id @default(cuid())
+  projectId     String
+  mainContractId String
+  receiptId     String?
+  settlementId  String?
+  type          OwnerAdvanceMovementType
+  amount        Decimal                   @db.Decimal(18, 2)
+  occurredAt    DateTime
+  reference     String?
+  notes         String?
+  createdById   String
+  project       Project                   @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract  MainContract              @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  receipt       OwnerReceipt?             @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+  settlement    OwnerContractSettlement?  @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  createdBy     User                      @relation("OwnerAdvanceMovementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime                  @default(now())
+
+  @@index([mainContractId, occurredAt])
+  @@index([projectId, type])
+}
+
+model DocumentSequence {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model ContractBaselineMigrationReconciliation {
+  id                         BigInt   @id @default(autoincrement())
+  migrationKey               String
+  projectId                  String
+  previousOriginalAmount     Decimal  @db.Decimal(18, 2)
+  mainContractAmount         Decimal? @db.Decimal(18, 2)
+  reconciledOriginalAmount   Decimal  @db.Decimal(18, 2)
+  previousEffectiveAmount    Decimal  @db.Decimal(18, 2)
+  reconciledEffectiveAmount  Decimal  @db.Decimal(18, 2)
+  reason                     String
+  createdAt                  DateTime @default(now()) @db.Timestamp(3)
+  project                    Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@unique([migrationKey, projectId])
+  @@index([projectId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  projectId  String?
+  userId     String
+  entity     String
+  entityId   String
+  action     String
+  changes    Json?
+  createdAt  DateTime @default(now())
+  project    Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([projectId, createdAt])
+  @@index([entity, entityId])
+}

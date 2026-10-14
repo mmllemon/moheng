@@ -1,0 +1,60 @@
+# 可选部署方式。Windows 原生部署请优先参考 docs/开发维护指南.md。
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cost_management}
+      POSTGRES_USER: ${POSTGRES_USER:-cms_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cms_user} -d ${POSTGRES_DB:-cost_management}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cms_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cost_management}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-系统管理员}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@local.test}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD in .env}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+      EVIDENCE_STORAGE_DIR: ${EVIDENCE_STORAGE_DIR:-/app/apps/api/data/evidence}
+    volumes:
+      - evidence-data:/app/apps/api/data/evidence
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  evidence-data:
