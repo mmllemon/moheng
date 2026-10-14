@@ -14,6 +14,10 @@ const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const server = await read('apps/api/src/server.ts');
+const auditRoute = await read('apps/api/src/routes/audit-logs.ts');
+const auditCsv = await read('apps/api/src/lib/audit-log-csv.ts');
+const auditCsvTests = await read('apps/api/src/lib/audit-log-csv.test.ts');
+const auditPage = await read('apps/web/src/pages/AuditLogsPage.tsx');
 const schema = await read('apps/api/prisma/schema.prisma');
 const projectRoute = await read('apps/api/src/routes/projects.ts');
 const contractRoute = await read('apps/api/src/routes/contracts.ts');
@@ -35,6 +39,7 @@ const analysisPage = await read('apps/web/src/pages/AnalysisPage.tsx');
 const appRoutes = await read('apps/web/src/App.tsx');
 const userTypes = await read('apps/web/src/types.ts');
 const dashboardPage = await read('apps/web/src/pages/DashboardPage.tsx');
+const auditPlan = await read('docs/下一阶段开发计划与实施记录-v1.9.0-rc.1.md');
 const projectOverviewPage = await read('apps/web/src/pages/ProjectOverviewPage.tsx');
 const workspaceLayout = await read('apps/web/src/components/ProjectWorkspaceLayout.tsx');
 const contractsPage = await read('apps/web/src/pages/ContractsPage.tsx');
@@ -69,8 +74,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 1.8.0-rc.1',
-  rootPackage.version === '1.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.8.0-rc.1'"));
+check('package, API and Web versions agree on 1.9.0-rc.1',
+  rootPackage.version === '1.9.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.9.0-rc.1'"));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
 check('previously shipped migration remains byte-for-byte unchanged',
@@ -488,6 +493,28 @@ check('unit edit dialog has a constrained scroll region and a persistent footer 
   partyDetailPage.includes('party-edit-dialog') && partyDetailPage.includes('party-edit-content') &&
   (await read('apps/web/src/styles.css')).includes('.party-edit-content') &&
   (await read('apps/web/src/styles.css')).includes('overflow-y: auto'));
+
+check('audit log endpoint constrains regular users to project memberships and supports read-only filters/pagination',
+  server.includes('auditLogRoutes') && server.includes("prefix: '/api/audit-logs'") &&
+  auditRoute.includes("members: { some: { userId: user.sub } }") && auditRoute.includes("projectId: { in: projectIds }") &&
+  auditRoute.includes('pageSize') && auditRoute.includes('from') && auditRoute.includes('to') &&
+  auditRoute.includes("format === 'csv'") && !auditRoute.includes('auditLog.update') && !auditRoute.includes('auditLog.delete'));
+
+check('audit CSV has BOM/escaping, formula-injection protection and sensitive-key redaction tests',
+  auditCsv.includes('UTF-8 BOM') && auditCsv.includes('safeCell') && auditCsv.includes('sanitizeAuditChanges') &&
+  auditCsv.includes('/^[\\u0000-\\u0020]*[=+\\-@]/') &&
+  auditCsvTests.includes('formula injection') && auditCsvTests.includes('redact credential-like keys') && auditCsvTests.includes('startsWith'));
+
+check('audit UI is routed and accessible from primary navigation and dashboard recent-activity panel',
+  appRoutes.includes('<Route path="audit-logs" element={<AuditLogsPage />} />') &&
+  layout.includes("{ to: '/audit-logs', label: '操作追溯'") &&
+  dashboardPage.includes("navigate('/audit-logs')") && auditPage.includes('应用筛选') &&
+  auditPage.includes('变更快照') && auditPage.includes('导出 CSV') && auditPage.includes('EmptyState') && auditPage.includes('ErrorBlock'));
+
+check('next-step plan records current partial alignment, explicit conflicts and deferred higher-risk scope',
+  auditPlan.includes('当前完成度与对齐度判断') && auditPlan.includes('不直接照搬项') &&
+  auditPlan.includes('WP2') && auditPlan.includes('WP3') && auditPlan.includes('WP7') &&
+  auditPlan.includes('Node.js 20') && auditPlan.includes('不新增数据表/迁移'));
 
 const failures = checks.filter((entry) => !entry.passed);
 for (const entry of checks) {

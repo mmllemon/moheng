@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Building2, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, ClipboardList, FileText, FolderKanban,
   Gauge, HandCoins, LayoutDashboard, LogOut, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
-  ArrowUpRight, Command, CornerDownLeft, Keyboard, X,
+  ArrowUpRight, Command, CornerDownLeft, Keyboard, X, History,
 } from 'lucide-react';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
@@ -18,6 +18,7 @@ import { useAnimatedPresence } from './useAnimatedPresence';
 const navigation = [
   { to: '/', label: '经营总览', icon: LayoutDashboard, group: '工作台', end: true },
   { to: '/projects', label: '项目管理', icon: FolderKanban, group: '工作台', end: true },
+  { to: '/audit-logs', label: '操作追溯', icon: History, group: '工作台', end: true },
   { to: '/parties', label: '往来单位库', icon: Building2, group: '工作台', end: false },
   { to: '/workspace', label: '项目工作台', icon: ClipboardList, group: '项目业务', end: false },
   { to: '/settings/users', label: '账号与项目权限', icon: UserCog, group: '系统设置', end: true },
@@ -136,7 +137,7 @@ export default function Layout() {
   }, [commandPaletteOpen, quickItems, activeCommandIndex]);
 
   const isGlobalOverview = location.pathname === '/';
-  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/parties');
+  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/parties') || location.pathname === '/audit-logs';
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const workspacePageLabel = location.pathname === '/workspace/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : workspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = workspacePageLabel ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : '工作台');
@@ -194,8 +195,8 @@ export default function Layout() {
       </header>
       {location.pathname !== '/projects' && <div className={`project-context-bar ${isGlobalContext ? 'global-context-bar' : ''}`}>
         {isGlobalContext ? <>
-          <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : '全部可访问项目'}</div>
-          <div className="context-right">统计范围：{user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}</div>
+          <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : location.pathname === '/audit-logs' ? '全局操作追溯' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : location.pathname === '/audit-logs' ? '按项目权限控制记录可见范围' : '全部可访问项目'}</div>
+          <div className="context-right">{location.pathname === '/audit-logs' ? '可筛选、查看变更快照并导出' : `统计范围：${user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}`}</div>
         </> : <>
           <div className="context-left"><span className="context-pulse" /><span>当前项目</span>{projectsQuery.isLoading ? <LoadingBlock label="加载项目" /> : <div className="project-switcher"><SelectField className="project-context-select" aria-label="切换当前项目" value={activeProject?.id ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)}><option value="">请选择项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></div>}{activeProject && <StatusBadge status={activeProject.status} />}</div>
           <div className="context-right">数据范围：{activeProject ? activeProject.code : '请选择项目'} <span className="context-separator">·</span> 项目级视图</div>

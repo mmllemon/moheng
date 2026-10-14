@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import ProjectWorkspaceLayout from './components/ProjectWorkspaceLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import AuditLogsPage from './pages/AuditLogsPage';
 import ProjectOverviewPage from './pages/ProjectOverviewPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ContractsPage from './pages/ContractsPage';
@@ -58,6 +59,7 @@ export default function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
+        <Route path="audit-logs" element={<AuditLogsPage />} />
         <Route path="parties" element={<BusinessPartiesPage />} />
         <Route path="parties/:id" element={<BusinessPartyDetailPage />} />
         <Route path="workspace" element={<NeedProject><ProjectWorkspaceLayout /></NeedProject>}>

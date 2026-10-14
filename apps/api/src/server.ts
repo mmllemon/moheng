@@ -22,6 +22,7 @@ import { budgetRoutes } from './routes/budget.js';
 import { costRoutes } from './routes/costs.js';
 import { progressBillRoutes } from './routes/progress-bills.js';
 import { changeRoutes } from './routes/changes.js';
+import { auditLogRoutes } from './routes/audit-logs.js';
 import { analysisRoutes } from './routes/analysis.js';
 import { businessPartyRoutes } from './routes/business-parties.js';
 import { ownerFinanceRoutes } from './routes/owner-finance.js';
@@ -54,13 +55,13 @@ await app.register(jwt, { secret: env.JWT_SECRET });
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 await app.register(swagger, {
   openapi: {
-    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: '1.8.0-rc.1' },
+    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: '1.9.0-rc.1' },
     servers: [{ url: '/' }],
     tags: [
       { name: 'auth', description: '登录与会话' }, { name: 'projects', description: '项目管理' }, { name: 'contracts', description: '主合同与下游合同' },
       { name: 'budget', description: '目标成本清单' }, { name: 'costs', description: '实际成本' },
       { name: 'progress-bills', description: '进度款' }, { name: 'owner-finance', description: '业主竣工结算与应收账款' }, { name: 'changes', description: '变更签证' },
-      { name: 'analysis', description: '成本分析' }, { name: 'business-parties', description: '往来单位主数据与单位经营档案' },
+      { name: 'analysis', description: '成本分析' }, { name: 'audit-logs', description: '操作追溯与审计记录' }, { name: 'business-parties', description: '往来单位主数据与单位经营档案' },
     ],
   },
 });
@@ -112,6 +113,7 @@ await app.register(costRoutes, { prefix: '/api/projects' });
 await app.register(progressBillRoutes, { prefix: '/api/projects' });
 await app.register(changeRoutes, { prefix: '/api/projects' });
 await app.register(analysisRoutes, { prefix: '/api' });
+await app.register(auditLogRoutes, { prefix: '/api/audit-logs' });
 await app.register(businessPartyRoutes, { prefix: '/api/parties' });
 
 app.setNotFoundHandler((request, reply) => {
