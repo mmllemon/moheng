@@ -1,3 +1,4 @@
+import DatePicker from '../components/DatePicker';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -93,12 +94,12 @@ export default function ContractsPage() {
       <form onSubmit={save} noValidate><div className="form-grid two-cols">
         <div className="field span-2"><BusinessPartyPicker value={watch('counterpartyPartyId')} name={watch('counterpartyName') ?? ''} label="建设单位 / 合同相对方" autoCreateOnSubmit roles={['OWNER']} required onChange={(id, name) => { setValue('counterpartyPartyId', id, { shouldDirty: true, shouldValidate: true }); setValue('counterpartyName', name, { shouldDirty: true, shouldValidate: true }); }} />{errors.counterpartyName && <small className="field-error">{errors.counterpartyName.message}</small>}<input type="hidden" {...register('counterpartyName')} /></div>
         <div className="field"><label>合同编号</label><input {...register('contractNo')} placeholder="留空则自动生成；也可填写正式合同编号" />{errors.contractNo && <small className="field-error">{errors.contractNo.message}</small>}</div>
-        <div className="field"><label>签订日期</label><input type="date" {...register('signedAt')} /></div>
+        <div className="field"><label>签订日期</label><DatePicker {...register('signedAt')} /></div>
         <div className="field span-2"><label>合同名称 <b>*</b></label><input {...register('name')} placeholder="施工总承包合同" />{errors.name && <small className="field-error">{errors.name.message}</small>}</div>
         <div className="field span-2"><label>原始合同金额（元） <b>*</b></label><input type="number" step="0.01" min="0" readOnly={Boolean(contract)} {...register('amount')} />{errors.amount && <small className="field-error">{errors.amount.message}</small>}{contract && <small className="field-hint">正式主合同已建档，原始金额不可修改；增减调整请在“变更签证”中登记并按外部凭证生效。</small>}</div>
         <div className="field"><label>质保金比例</label><div className="input-suffix"><input type="number" min="0" max="100" step="0.1" {...register('retentionRate')} /><span>%</span></div>{errors.retentionRate && <small className="field-error">{errors.retentionRate.message}</small>}</div>
         <div className="field"><label>预付款回扣比例</label><div className="input-suffix"><input type="number" min="0" max="100" step="0.1" {...register('advanceDeductionRate')} /><span>%</span></div>{errors.advanceDeductionRate && <small className="field-error">{errors.advanceDeductionRate.message}</small>}</div>
-        <div className="field"><label>质保金到期日</label><input type="date" {...register('guaranteeEndAt')} /></div>
+        <div className="field"><label>质保金到期日</label><DatePicker {...register('guaranteeEndAt')} /></div>
         <div className="field"><label>价税口径</label><label className="checkbox-line"><input type="checkbox" {...register('taxIncluded')} />合同金额含税</label></div>
         <div className="field span-2"><label>付款方式及条件</label><textarea rows={3} {...register('paymentTerms')} placeholder="例如：按月计量申报，审批后 28 天内付款。以正式合同为准。" /></div>
         <div className="field span-2"><label>备注</label><textarea rows={2} {...register('notes')} placeholder="合同特别条款、暂定金说明等" /></div>

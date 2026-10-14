@@ -1,3 +1,4 @@
+import SelectField from '../components/SelectField';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
@@ -103,7 +104,7 @@ export default function UserManagementPage() {
         return <tr key={user.id}>
           <td><strong className="table-primary-text">{user.name}</strong><small className="table-subtext">{user.email}</small></td>
           <td><StatusBadge status={user.role === 'ADMIN' ? 'ADMIN' : 'USER'} /><small className="table-subtext">{user.isActive ? '账号启用' : '账号停用'}</small></td>
-          <td>{projectId ? <select aria-label={`${user.name} 的项目角色`} value={selectedRole} onChange={(event) => setRoleDrafts((prev) => ({ ...prev, [user.id]: event.target.value as ProjectRole }))} disabled={!user.isActive}><option value="OWNER">项目负责人</option><option value="MANAGER">项目经理</option><option value="ESTIMATOR">预算/成本经办</option><option value="VIEWER">只读查看</option></select> : <span className="text-muted">先选择项目</span>}</td>
+          <td>{projectId ? <SelectField aria-label={`${user.name} 的项目角色`} value={selectedRole} onChange={(event) => setRoleDrafts((prev) => ({ ...prev, [user.id]: event.target.value as ProjectRole }))} disabled={!user.isActive}><option value="OWNER">项目负责人</option><option value="MANAGER">项目经理</option><option value="ESTIMATOR">预算/成本经办</option><option value="VIEWER">只读查看</option></SelectField> : <span className="text-muted">先选择项目</span>}</td>
           <td>{formatDate(user.createdAt)}</td>
           <td>{projectId ? <Button variant="secondary" disabled={!user.isActive || assignRole.isPending || (member?.role === selectedRole)} onClick={() => assignRole.mutate({ userId: user.id, role: selectedRole })}>{member ? '更新角色' : '加入项目'}</Button> : <span className="text-muted">—</span>}</td>
         </tr>;

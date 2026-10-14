@@ -1,3 +1,4 @@
+import SelectField from './SelectField';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +13,7 @@ import type { Project } from '../types';
 import { LoadingBlock, StatusBadge } from './Ui';
 import BrandMark from './BrandMark';
 import UiPreferencesBar from './UiPreferencesBar';
+import { useAnimatedPresence } from './useAnimatedPresence';
 
 const navigation = [
   { to: '/', label: '经营总览', icon: LayoutDashboard, group: '工作台', end: true },
@@ -44,8 +46,10 @@ export default function Layout() {
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const [quickSearch, setQuickSearch] = useState('');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const commandPalettePresence = useAnimatedPresence(commandPaletteOpen, 210);
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
   const commandInputRef = useRef<HTMLInputElement>(null);
 
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
@@ -173,9 +177,8 @@ export default function Layout() {
           <span className="topbar-divider" />
           <div className="quick-actions-wrap">
             <button type="button" className={`notification-button ${quickActionsOpen ? 'is-active' : ''}`} title="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} onClick={() => { setCommandPaletteOpen(false); setQuickActionsOpen((open) => !open); }}><Zap size={18} /></button>
-            {quickActionsOpen && <>
-              <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />
-              <div className="quick-action-panel" role="menu" aria-label="快捷操作菜单">
+            {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
+            {quickActionsPresence.mounted && <div className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="menu" aria-label="快捷操作菜单" aria-hidden={!quickActionsOpen}>
                 <div className="quick-action-heading"><strong>快捷操作</strong><span>跳转到常用业务模块</span></div>
                 <button type="button" role="menuitem" onClick={() => { navigate('/workspace/costs'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Wallet size={16} /></span><span><strong>新增成本记录</strong><small>登记人工、材料、机械及其他费用</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
                 <button type="button" role="menuitem" onClick={() => { navigate('/workspace/progress-bills'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><HandCoins size={16} /></span><span><strong>进度款管理</strong><small>业主申报、审批与回款登记</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
@@ -183,27 +186,26 @@ export default function Layout() {
                 <button type="button" role="menuitem" onClick={() => { navigate('/workspace/downstream'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><FileText size={16} /></span><span><strong>分供合同与付款</strong><small>分包/采购/租赁合同与支付台账</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
                 <button type="button" role="menuitem" onClick={() => { navigate('/workspace/downstream?view=finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={16} /></span><span><strong>结算与应付账款</strong><small>确认结算、应付核销、质保金与发票核对</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
                 <button type="button" role="menuitem" onClick={() => { navigate('/workspace/changes'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Workflow size={16} /></span><span><strong>变更签证</strong><small>查看送审与核定状态</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-              </div>
-            </>}
+            </div>}
           </div>
+          <UiPreferencesBar />
           <div className="topbar-user"><div className="avatar avatar-small">{user?.name?.slice(0, 1) ?? '管'}</div><span>{user?.name ?? '用户'}</span><ChevronDown size={13} className="topbar-user-chevron" /></div>
         </div>
       </header>
-      <UiPreferencesBar />
-      <div className={`project-context-bar ${isGlobalContext ? 'global-context-bar' : ''}`}>
+      {location.pathname !== '/projects' && <div className={`project-context-bar ${isGlobalContext ? 'global-context-bar' : ''}`}>
         {isGlobalContext ? <>
           <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : '全部可访问项目'}</div>
           <div className="context-right">统计范围：{user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}</div>
         </> : <>
-          <div className="context-left"><span className="context-pulse" /><span>当前项目</span>{projectsQuery.isLoading ? <LoadingBlock label="加载项目" /> : <div className="project-switcher"><select aria-label="切换当前项目" value={activeProject?.id ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)}><option value="">请选择项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</select><ChevronDown size={14} /></div>}{activeProject && <StatusBadge status={activeProject.status} />}</div>
+          <div className="context-left"><span className="context-pulse" /><span>当前项目</span>{projectsQuery.isLoading ? <LoadingBlock label="加载项目" /> : <div className="project-switcher"><SelectField className="project-context-select" aria-label="切换当前项目" value={activeProject?.id ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)}><option value="">请选择项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></div>}{activeProject && <StatusBadge status={activeProject.status} />}</div>
           <div className="context-right">数据范围：{activeProject ? activeProject.code : '请选择项目'} <span className="context-separator">·</span> 项目级视图</div>
         </>}
-      </div>
+      </div>}
       <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
-      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v1.7.0-rc.1</span></footer>
+      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v1.8.0-rc.1</span></footer>
     </div>
 
-    {commandPaletteOpen && <div className="command-palette-layer">
+    {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>
       <button type="button" className="command-palette-backdrop" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)} />
       <section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
         <div className="command-palette-search"><Search size={18} /><input ref={commandInputRef} value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="输入项目名称、编号或业务模块…" aria-label="搜索项目或业务页面" /><kbd>ESC</kbd><button type="button" className="command-close" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)}><X size={16} /></button></div>

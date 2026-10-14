@@ -52,6 +52,10 @@ const ownerFinanceMigration = await read('apps/api/prisma/migrations/20261014030
 const downstreamWorkspace = await read('apps/web/src/pages/DownstreamWorkspacePage.tsx');
 const loginPage = await read('apps/web/src/pages/LoginPage.tsx');
 const uiPreferences = await read('apps/web/src/components/UiPreferencesBar.tsx');
+const selectField = await read('apps/web/src/components/SelectField.tsx');
+const datePicker = await read('apps/web/src/components/DatePicker.tsx');
+const animatedPresence = await read('apps/web/src/components/useAnimatedPresence.ts');
+const projectsPage = await read('apps/web/src/pages/ProjectsPage.tsx');
 const brandMark = await read('apps/web/src/components/BrandMark.tsx');
 const indexHtml = await read('apps/web/index.html');
 const layout = await read('apps/web/src/components/Layout.tsx');
@@ -65,8 +69,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 1.7.0-rc.1',
-  rootPackage.version === '1.7.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.7.0-rc.1'"));
+check('package, API and Web versions agree on 1.8.0-rc.1',
+  rootPackage.version === '1.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.8.0-rc.1'"));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
 check('previously shipped migration remains byte-for-byte unchanged',
@@ -357,10 +361,10 @@ check('historical documentation preserves the unit master, owner finance, combin
   (await read('docs/编号规则与用户身份安全说明-v1.5.0-rc.1.md')).includes('浏览器密码管理器') &&
   (await read('docs/阶段验收记录-v1.5.0-rc.1.md')).includes('非生产验收通过版'));
 
-check('v1.7 UI refactor preserves the MoHeng brand and synchronizes footer version',
+check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
   indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
-  layout.includes('<strong>墨衡</strong>') && layout.includes('v1.7.0-rc.1') &&
+  layout.includes('<strong>墨衡</strong>') && layout.includes('v1.8.0-rc.1') &&
   loginPage.includes('<strong>墨衡</strong>') && !(await read('apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
 check('navigation group captions are removed while visual divider and group regions remain',
@@ -377,6 +381,33 @@ check('UI preferences support four Pro-Tier themes, system mode, density, accent
   (await read('apps/web/src/auth-store.ts')).includes('moheng:ui-preferences') &&
   (await read('apps/web/src/styles.css')).includes(':root[data-theme-name="obsidian"]') &&
   (await read('apps/web/src/styles.css')).includes(':root[data-density="compact"]'));
+
+check('UI preferences are a standalone top-right popover with presence-aware close animation',
+  uiPreferences.includes('ui-preferences-popover') && uiPreferences.includes('useAnimatedPresence(open, 190)') &&
+  uiPreferences.includes('aria-expanded={open}') && (await read('apps/web/src/styles.css')).includes('.ui-preferences-popover.is-closing'));
+
+check('native dropdowns are replaced by keyboard-accessible custom listboxes and preserve form refs',
+  selectField.includes('role="combobox"') && selectField.includes('role="listbox"') &&
+  selectField.includes('role="option"') && selectField.includes('aria-activedescendant') &&
+  selectField.includes('ForwardedRef<HTMLSelectElement>') && selectField.includes("dispatchEvent(new Event('change'"));
+
+check('native date popups are replaced by a custom bounded calendar with keyboard navigation and clear/today actions',
+  datePicker.includes('role="dialog"') && datePicker.includes('PageUp') && datePicker.includes('PageDown') &&
+  datePicker.includes('isDisabled') && datePicker.includes('chooseDate(todayValue)') && datePicker.includes('clearDate') &&
+  datePicker.includes('useAnimatedPresence(open, 190)') && datePicker.includes('type="date"') &&
+  (await read('apps/web/src/styles.css')).includes('.date-picker-popover.is-closing'));
+
+check('project portfolio hides redundant project switcher, presents sourced operating summaries, and animates modal exit',
+  layout.includes("location.pathname !== '/projects'") && projectsPage.includes('当前有效合同额合计') &&
+  projectsPage.includes('snapshot?.targetCost') && projectsPage.includes('snapshot?.actualCost') &&
+  projectsPage.includes('snapshot?.receivedAmount') && projectsPage.includes('project-modal-backdrop') &&
+  projectsPage.includes('closeWithMotion') && (await read('apps/web/src/styles.css')).includes('@keyframes projectDialogEnter'));
+
+check('presence helper and overlay animation states support smooth entry/exit transitions',
+  animatedPresence.includes('window.setTimeout(() => setMounted(false), duration)') &&
+  (await read('apps/web/src/styles.css')).includes('.select-popover.is-visible') &&
+  (await read('apps/web/src/styles.css')).includes('.date-picker-popover.is-visible') &&
+  (await read('apps/web/src/styles.css')).includes('.command-palette-layer.is-closing'));
 
 check('global command palette supports Ctrl/Cmd+K, arrow selection, Enter navigation, Escape, and list keyboard inspection',
   layout.includes('command-palette') && layout.includes("event.key === 'ArrowDown'") &&

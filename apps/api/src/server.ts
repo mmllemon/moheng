@@ -54,7 +54,7 @@ await app.register(jwt, { secret: env.JWT_SECRET });
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 await app.register(swagger, {
   openapi: {
-    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: '1.7.0-rc.1' },
+    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: '1.8.0-rc.1' },
     servers: [{ url: '/' }],
     tags: [
       { name: 'auth', description: '登录与会话' }, { name: 'projects', description: '项目管理' }, { name: 'contracts', description: '主合同与下游合同' },

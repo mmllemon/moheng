@@ -1,3 +1,4 @@
+import SelectField from '../components/SelectField';
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -76,7 +77,7 @@ function BudgetDialog({ projectId, items, editing, onClose }: { projectId: strin
     <div className="dialog-header"><div><span className="eyebrow">TARGET COST / ITEM</span><h2>{editing ? '编辑清单条目' : '新增清单条目'}</h2><p>合价默认由工程量 × 单价计算，亦可手工覆盖。</p></div><button className="icon-button" onClick={onClose}><X size={18} /></button></div>
     <form onSubmit={submit} noValidate><div className="form-grid two-cols">
       <div className="field"><label>清单编号 <b>*</b></label><input {...register('code')} placeholder="010101" />{errors.code && <small className="field-error">{errors.code.message}</small>}</div>
-      <div className="field"><label>上级清单</label><select {...register('parentId')} disabled={Boolean(editing)}><option value="">顶级清单</option>{items.filter((item) => item.id !== editing?.id).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</select></div>
+      <div className="field"><label>上级清单</label><SelectField {...register('parentId')} disabled={Boolean(editing)}><option value="">顶级清单</option>{items.filter((item) => item.id !== editing?.id).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</SelectField></div>
       <div className="field span-2"><label>清单名称 <b>*</b></label><input {...register('name')} placeholder="分部分项工程名称" />{errors.name && <small className="field-error">{errors.name.message}</small>}</div>
       <div className="field"><label>单位</label><input {...register('unit')} placeholder="m³、t、项" /></div>
       <div className="field"><label>工程量</label><input type="number" min="0" step="0.001" {...register('quantity')} /></div>
