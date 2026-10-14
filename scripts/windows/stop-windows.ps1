@@ -29,7 +29,7 @@ $commandLine = [string]$processInfo.CommandLine
 $isThisApi = $processInfo.Name -ieq 'node.exe' -and
     $commandLine.IndexOf($serverScript, [StringComparison]::OrdinalIgnoreCase) -ge 0
 if (-not $isThisApi) {
-    throw "PID=$pidValue 当前并非可确认的筑衡 API 进程。为避免误杀其他程序，未停止进程，也未删除 PID 文件。请核对进程命令行后手工处理。"
+    throw "PID=$pidValue 当前并非可确认的墨衡 API 进程。为避免误杀其他程序，未停止进程，也未删除 PID 文件。请核对进程命令行后手工处理。"
 }
 
 $targetProcess = Get-Process -Id $pidValue -ErrorAction SilentlyContinue
@@ -55,4 +55,4 @@ if (-not $targetProcess.WaitForExit(5000)) {
     throw "已发送停止命令，但 PID=$pidValue 仍未退出。请检查进程状态后再清理 PID 文件。"
 }
 Remove-Item $pidFile -Force -ErrorAction SilentlyContinue
-Write-Host "已停止并验证筑衡 API 进程 PID=$pidValue。" -ForegroundColor Green
+Write-Host "已停止并验证墨衡 API 进程 PID=$pidValue。" -ForegroundColor Green

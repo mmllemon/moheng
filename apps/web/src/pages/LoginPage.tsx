@@ -9,8 +9,8 @@ import BrandMark from '../components/BrandMark';
 import { useAuthStore } from '../auth-store';
 
 const loginSchema = z.object({ email: z.string().email('请输入有效邮箱'), password: z.string().min(1, '请输入密码') });
-const REMEMBER_ACCOUNT_KEY = 'zhuheng:remember-account';
-const REMEMBERED_EMAIL_KEY = 'zhuheng:remembered-email';
+const REMEMBER_ACCOUNT_KEY = 'moheng:remember-account';
+const REMEMBERED_EMAIL_KEY = 'moheng:remembered-email';
 function readRememberedEmail() { try { return typeof window !== 'undefined' && window.localStorage.getItem(REMEMBER_ACCOUNT_KEY) === '1' ? window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? '' : ''; } catch { return ''; } }
 function readRememberAccountPreference() { try { return typeof window !== 'undefined' && window.localStorage.getItem(REMEMBER_ACCOUNT_KEY) === '1'; } catch { return false; } }
 type LoginValues = z.infer<typeof loginSchema>;
@@ -34,14 +34,14 @@ export default function LoginPage() {
 
   return <div className="login-screen">
     <div className="login-art-panel">
-      <div className="login-brand"><BrandMark /><div><strong>筑衡</strong><span>PROJECT COST OS</span></div></div>
+      <div className="login-brand"><BrandMark /><div><strong>墨衡</strong><span>ENGINEERING BUSINESS DESK</span></div></div>
       <div className="login-art-copy"><div className="login-overline"><span />施工项目经营管理平台</div><h1>让每一笔成本<br /><em>都有迹可循。</em></h1><p>从合同、目标成本到实际发生与进度回款，建立施工项目经营数据的统一视图。</p>
         <div className="login-feature-list"><div><CheckCircle2 size={17} /><span>合同与目标成本持续对照</span></div><div><CheckCircle2 size={17} /><span>关键金额变更保留审计记录</span></div><div><CheckCircle2 size={17} /><span>项目维度的数据访问控制</span></div></div>
       </div>
       <div className="login-art-footer"><span>CONSTRUCTION FINANCE WORKSPACE</span><span>01 / PROJECT CONTROL</span></div>
       <div className="art-grid art-grid-a" /><div className="art-grid art-grid-b" /><div className="art-line art-line-a" /><div className="art-line art-line-b" />
     </div>
-    <div className="login-form-panel"><div className="login-form-wrap"><div className="login-mobile-brand"><BrandMark /><strong>筑衡</strong></div><div className="login-heading"><div className="login-symbol"><LockKeyhole size={19} /></div><h2>欢迎回来</h2><p>登录你的项目工作空间</p></div>
+    <div className="login-form-panel"><div className="login-form-wrap"><div className="login-mobile-brand"><BrandMark /><strong>墨衡</strong></div><div className="login-heading"><div className="login-symbol"><LockKeyhole size={19} /></div><h2>欢迎回来</h2><p>登录你的项目工作空间</p></div>
       <form className="login-form" onSubmit={submit} noValidate>
         <label>工作邮箱</label><div className={`input-with-icon ${errors.email ? 'input-invalid' : ''}`}><Mail size={17} /><input type="email" autoComplete="username" placeholder="name@company.com" {...register('email')} /></div>{errors.email && <span className="field-error">{errors.email.message}</span>}
         <label>登录密码</label><div className={`input-with-icon ${errors.password ? 'input-invalid' : ''}`}><LockKeyhole size={17} /><input type="password" autoComplete="current-password" placeholder="请输入密码" {...register('password')} /></div>{errors.password && <span className="field-error">{errors.password.message}</span>}
@@ -51,6 +51,6 @@ export default function LoginPage() {
       </form>
       <div className="login-safety"><ShieldCheck size={16} /><span>安全会话验证 · 访问权限按项目控制</span></div>
       <div className="demo-credentials"><strong>首次登录</strong><span>请使用部署时配置的管理员账号。</span><small>若无法登录，请联系维护人员检查账号初始化状态。</small></div>
-    </div><div className="login-copyright">© 2026 筑衡项目成本管理 · 内部业务系统</div></div>
+    </div><div className="login-copyright">© 2026 墨衡工程经营管理 · 内部业务系统</div></div>
   </div>;
 }

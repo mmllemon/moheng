@@ -51,6 +51,10 @@ const ownerSettlementMathTests = await read('apps/api/src/lib/owner-settlement-m
 const ownerFinanceMigration = await read('apps/api/prisma/migrations/20261014030000_owner_settlement_receivables_document_sequence/migration.sql');
 const downstreamWorkspace = await read('apps/web/src/pages/DownstreamWorkspacePage.tsx');
 const loginPage = await read('apps/web/src/pages/LoginPage.tsx');
+const uiPreferences = await read('apps/web/src/components/UiPreferencesBar.tsx');
+const brandMark = await read('apps/web/src/components/BrandMark.tsx');
+const indexHtml = await read('apps/web/index.html');
+const layout = await read('apps/web/src/components/Layout.tsx');
 const docNumber = await read('apps/api/src/lib/document-number.ts');
 const progressBillsPage = await read('apps/web/src/pages/ProgressBillsPage.tsx');
 const startWindows = await read('scripts/windows/start-windows.ps1');
@@ -61,8 +65,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 1.5.0-rc.1',
-  rootPackage.version === '1.5.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.5.0-rc.1'"));
+check('package, API and Web versions agree on 1.6.0-rc.1',
+  rootPackage.version === '1.6.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.6.0-rc.1'"));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
 check('previously shipped migration remains byte-for-byte unchanged',
@@ -274,8 +278,8 @@ check('project workspace groups business pages behind a shared tab navigation wh
   appRoutes.includes('path="budget" element={<BudgetPage />') &&
   appRoutes.includes('path="progress-bills" element={<ProgressBillsPage />') &&
   appRoutes.includes('path="changes" element={<ChangesPage />') &&
-  workspaceLayout.includes('项目驾驶舱') && workspaceLayout.includes('业主侧 · 收入') &&
-  workspaceLayout.includes('成本支出侧') && workspaceLayout.includes('业主主合同') &&
+  workspaceLayout.includes('项目驾驶舱') && workspaceLayout.includes('workspace-nav-income') &&
+  workspaceLayout.includes('workspace-nav-cost') && workspaceLayout.includes('业主主合同') &&
   workspaceLayout.includes('预算与目标成本') && workspaceLayout.includes('进度款') &&
   workspaceLayout.includes('变更签证') && workspaceLayout.includes('分供合同与结算') &&
   workspaceLayout.includes('workspace-nav-separator'));
@@ -345,13 +349,41 @@ check('selecting a unit previews reusable contact, address and invoicing data; c
   partyPicker.includes("setSearch(''); onChange(null, '')") &&
   (await read('apps/web/src/styles.css')).includes('--surface-muted: var(--neutral-100)'));
 
-check('v1.5 documentation covers unit master, owner-side finance, combined navigation and numbering',
+check('historical documentation preserves the unit master, owner finance, combined navigation and numbering design',
   (await read('docs/往来单位主数据与经营档案设计说明-v1.4.0-rc.1.md')).includes('identityVerified') &&
   (await read('docs/往来单位主数据与经营档案设计说明-v1.4.0-rc.1.md')).includes('检索名称只帮助匹配，不替代法律身份核验') &&
   (await read('docs/结算与应付账款模型设计说明-v1.3.0-rc.1.md')).includes('可选') &&
   (await read('docs/业主结算与应收账款设计说明-v1.5.0-rc.1.md')).includes('负向调整') &&
   (await read('docs/编号规则与用户身份安全说明-v1.5.0-rc.1.md')).includes('浏览器密码管理器') &&
   (await read('docs/阶段验收记录-v1.5.0-rc.1.md')).includes('非生产验收通过版'));
+
+check('v1.6 product rebrand uses the MoHeng SVG mark and updates login, page title and footer',
+  brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
+  indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
+  layout.includes('<strong>墨衡</strong>') && layout.includes('v1.6.0-rc.1') &&
+  loginPage.includes('<strong>墨衡</strong>') && !(await read('apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
+
+check('navigation group captions are removed while visual divider and group regions remain',
+  workspaceLayout.includes('workspace-nav-separator') && workspaceLayout.includes('workspace-nav-income') &&
+  workspaceLayout.includes('workspace-nav-cost') && !workspaceLayout.includes('workspace-nav-group-label') &&
+  !(workspaceLayout.includes('业主侧 · 收入')) && !(workspaceLayout.includes('成本支出侧')));
+
+check('UI preferences bar supports light/dark/system theme, density, three accents, wide content and reduced motion',
+  layout.includes('<UiPreferencesBar />') && uiPreferences.includes("setTheme('light')") &&
+  uiPreferences.includes("setTheme('dark')") && uiPreferences.includes("setTheme('system')") &&
+  uiPreferences.includes("setDensity('compact')") && uiPreferences.includes("setAccent('jade')") &&
+  uiPreferences.includes('toggleWideContent') && uiPreferences.includes('toggleReduceMotion') &&
+  (await read('apps/web/src/auth-store.ts')).includes('moheng:ui-preferences') &&
+  (await read('apps/web/src/styles.css')).includes(':root[data-theme="dark"]') &&
+  (await read('apps/web/src/styles.css')).includes(':root[data-density="compact"]'));
+
+check('owner finance UI is restructured into metrics and four interactive content tabs with responsive sticky tables',
+  ownerFinancePage.includes("useState<'settlements' | 'receivables' | 'cashflow' | 'retention'>('settlements')") &&
+  ownerFinancePage.includes('owner-finance-tabs') && ownerFinancePage.includes('owner-finance-metrics') &&
+  ownerFinancePage.includes("activeTab === 'cashflow'") && ownerFinancePage.includes("activeTab === 'retention'") &&
+  (await read('apps/web/src/styles.css')).includes('.owner-finance-metrics') &&
+  (await read('apps/web/src/styles.css')).includes('.owner-finance-table-wrap') &&
+  (await read('apps/web/src/styles.css')).includes('@media (max-width: 640px)'));
 
 check('legacy ambiguous names require explicit unit selection and same-name duplicate creation is admin-controlled',
   partyHelper.includes("if (matches.length > 1) throw new Error('BUSINESS_PARTY_NAME_AMBIGUOUS')") &&
@@ -404,7 +436,7 @@ check('automatic business numbers use transaction-backed project/type/year seque
   contractsPage.includes('留空则自动生成') && downstreamPage.includes('留空则自动生成'));
 
 check('login remembers account only in local storage and delegates password retention to browser password manager',
-  loginPage.includes('zhuheng:remembered-email') && loginPage.includes('rememberAccount') &&
+  loginPage.includes('moheng:remembered-email') && loginPage.includes('rememberAccount') &&
   loginPage.includes('autoComplete="username"') && loginPage.includes('autoComplete="current-password"') &&
   loginPage.includes('密码由浏览器密码管理器安全保存') && !loginPage.includes('localStorage.setItem(\'password\'') );
 

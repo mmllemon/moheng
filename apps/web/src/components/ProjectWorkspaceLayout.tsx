@@ -24,9 +24,9 @@ export default function ProjectWorkspaceLayout() {
   return <div className="project-workspace">
     <nav className="project-workspace-tabs" aria-label="项目业务工作台">
       <div className="workspace-nav-overview"><TabLink tab={{ to: '/workspace', label: '项目驾驶舱', icon: FolderKanban }} /></div>
-      <div className="workspace-nav-group workspace-nav-income" aria-label="业主侧收入业务"><span className="workspace-nav-group-label">业主侧 · 收入</span><div className="workspace-nav-group-tabs">{incomeTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
+      <div className="workspace-nav-group workspace-nav-income" role="group" aria-label="业主侧业务"><div className="workspace-nav-group-tabs">{incomeTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
       <span className="workspace-nav-separator" aria-hidden="true"><span /></span>
-      <div className="workspace-nav-group workspace-nav-cost" aria-label="成本支出侧业务"><span className="workspace-nav-group-label">成本支出侧</span><div className="workspace-nav-group-tabs">{costTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
+      <div className="workspace-nav-group workspace-nav-cost" role="group" aria-label="成本与支出业务"><div className="workspace-nav-group-tabs">{costTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
     </nav>
     <div className="workspace-content"><Outlet /></div>
   </div>;

@@ -22,7 +22,7 @@ $action = New-ScheduledTaskAction -Execute $powershell -Argument $arguments -Wor
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero)
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description '筑衡施工单位成本管理系统 API（Windows 原生）' -Force | Out-Null
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description '墨衡施工单位成本管理系统 API（Windows 原生）' -Force | Out-Null
 Start-ScheduledTask -TaskName $TaskName
 Write-Host "开机启动任务已注册并启动：$TaskName" -ForegroundColor Green
 Write-Host "日志位置：$apiRoot\logs\api-service.log"

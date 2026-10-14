@@ -10,6 +10,7 @@ import { useAuthStore, useUiStore } from '../auth-store';
 import type { Project } from '../types';
 import { LoadingBlock, StatusBadge } from './Ui';
 import BrandMark from './BrandMark';
+import UiPreferencesBar from './UiPreferencesBar';
 
 const navigation = [
   { to: '/', label: '经营总览', icon: LayoutDashboard, group: '工作台', end: true },
@@ -84,7 +85,7 @@ export default function Layout() {
 
   return <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
     <aside className="sidebar">
-      <div className="brand"><BrandMark />{!collapsed && <div className="brand-word"><strong>筑衡</strong><span>PROJECT COST OS</span></div>}</div>
+      <div className="brand"><BrandMark />{!collapsed && <div className="brand-word"><strong>墨衡</strong><span>ENGINEERING BUSINESS DESK</span></div>}</div>
       <div className="side-label">{!collapsed && '工作空间'}</div>
       {['工作台', '项目业务', ...(user?.role === 'ADMIN' ? ['系统设置'] : [])].map((group) => <div className="nav-group" key={group}>
         {!collapsed && <div className="nav-group-title">{group}</div>}
@@ -96,14 +97,14 @@ export default function Layout() {
         })}
       </div>)}
       <div className="sidebar-grow" />
-      {!collapsed && <div className="sidebar-note"><div className="sidebar-note-icon"><Gauge size={16} /></div><div><strong>成本健康度</strong><span>按项目持续跟踪</span></div><ChevronDown size={15} /></div>}
+      {!collapsed && <div className="sidebar-note"><div className="sidebar-note-icon"><Gauge size={16} /></div><div><strong>经营健康度</strong><span>收入与支出持续跟踪</span></div><ChevronDown size={15} /></div>}
       <button className="collapse-button" onClick={toggleSidebar}>{collapsed ? <ChevronsRight size={17} /> : <><ChevronsLeft size={17} /><span>收起导航</span></>}</button>
       <div className="user-panel"><div className="avatar">{user?.name?.slice(0, 1) ?? '管'}</div>{!collapsed && <><div className="user-meta"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div><button title="退出登录" className="icon-button logout-button" onClick={logout}><LogOut size={16} /></button></>}</div>
     </aside>
 
     <div className="main-shell">
       <header className="topbar">
-        <div className="breadcrumb"><span>施工成本管理</span><span className="crumb-separator">/</span><strong>{currentPageLabel}</strong></div>
+        <div className="breadcrumb"><span>工程经营管理</span><span className="crumb-separator">/</span><strong>{currentPageLabel}</strong></div>
         <div className="topbar-tools">
           <div className="quick-search-wrap">
             <Search size={16} />
@@ -130,6 +131,7 @@ export default function Layout() {
           <div className="topbar-user"><div className="avatar avatar-small">{user?.name?.slice(0, 1) ?? '管'}</div><span>{user?.name ?? '用户'}</span></div>
         </div>
       </header>
+      <UiPreferencesBar />
       <div className={`project-context-bar ${isGlobalContext ? 'global-context-bar' : ''}`}>
         {isGlobalContext ? <>
           <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : '全部可访问项目'}</div>
@@ -140,7 +142,7 @@ export default function Layout() {
         </>}
       </div>
       <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
-      <footer className="app-footer"><span>筑衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v1.4.0-rc.1</span></footer>
+      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v1.6.0-rc.1</span></footer>
     </div>
   </div>;
 }

@@ -9,7 +9,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $apiRoot = Join-Path $repoRoot 'apps\api'
 $apiEnv = Join-Path $apiRoot '.env'
 
-Write-Host '筑衡 Windows 原生部署准备' -ForegroundColor Cyan
+Write-Host '墨衡 Windows 原生部署准备' -ForegroundColor Cyan
 
 $nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
 if (-not $nodeCommand) {

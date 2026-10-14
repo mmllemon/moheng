@@ -80,7 +80,7 @@ if (-not $healthy) {
     throw "API 未能在 20 秒内通过数据库健康检查：$healthUrl。请检查日志：$outLog 和 $errLog"
 }
 
-Write-Host "筑衡 API 已启动且健康检查通过，PID=$($process.Id)" -ForegroundColor Green
+Write-Host "墨衡 API 已启动且健康检查通过，PID=$($process.Id)" -ForegroundColor Green
 Write-Host "系统地址：http://localhost:$port"
 Write-Host "健康检查：$healthUrl"
 Write-Host "API 文档：http://localhost:$port/docs/"
