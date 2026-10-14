@@ -65,8 +65,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 1.6.0-rc.1',
-  rootPackage.version === '1.6.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.6.0-rc.1'"));
+check('package, API and Web versions agree on 1.7.0-rc.1',
+  rootPackage.version === '1.7.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '1.7.0-rc.1'"));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
 check('previously shipped migration remains byte-for-byte unchanged',
@@ -357,10 +357,10 @@ check('historical documentation preserves the unit master, owner finance, combin
   (await read('docs/编号规则与用户身份安全说明-v1.5.0-rc.1.md')).includes('浏览器密码管理器') &&
   (await read('docs/阶段验收记录-v1.5.0-rc.1.md')).includes('非生产验收通过版'));
 
-check('v1.6 product rebrand uses the MoHeng SVG mark and updates login, page title and footer',
+check('v1.7 UI refactor preserves the MoHeng brand and synchronizes footer version',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
   indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
-  layout.includes('<strong>墨衡</strong>') && layout.includes('v1.6.0-rc.1') &&
+  layout.includes('<strong>墨衡</strong>') && layout.includes('v1.7.0-rc.1') &&
   loginPage.includes('<strong>墨衡</strong>') && !(await read('apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
 check('navigation group captions are removed while visual divider and group regions remain',
@@ -368,14 +368,27 @@ check('navigation group captions are removed while visual divider and group regi
   workspaceLayout.includes('workspace-nav-cost') && !workspaceLayout.includes('workspace-nav-group-label') &&
   !(workspaceLayout.includes('业主侧 · 收入')) && !(workspaceLayout.includes('成本支出侧')));
 
-check('UI preferences bar supports light/dark/system theme, density, three accents, wide content and reduced motion',
-  layout.includes('<UiPreferencesBar />') && uiPreferences.includes("setTheme('light')") &&
-  uiPreferences.includes("setTheme('dark')") && uiPreferences.includes("setTheme('system')") &&
-  uiPreferences.includes("setDensity('compact')") && uiPreferences.includes("setAccent('jade')") &&
+check('UI preferences support four Pro-Tier themes, system mode, density, accents, wide content and reduced motion',
+  layout.includes('<UiPreferencesBar />') && uiPreferences.includes("setTheme(choice.value)") &&
+  uiPreferences.includes("setTheme('system')") && uiPreferences.includes('象牙雅白') && uiPreferences.includes('香槟曜金') &&
+  uiPreferences.includes('黑曜极光') && uiPreferences.includes('冰川天青') && uiPreferences.includes("setDensity('compact')") &&
+  uiPreferences.includes("setAccent('jade')") && uiPreferences.includes("setAccent('theme')") &&
   uiPreferences.includes('toggleWideContent') && uiPreferences.includes('toggleReduceMotion') &&
   (await read('apps/web/src/auth-store.ts')).includes('moheng:ui-preferences') &&
-  (await read('apps/web/src/styles.css')).includes(':root[data-theme="dark"]') &&
+  (await read('apps/web/src/styles.css')).includes(':root[data-theme-name="obsidian"]') &&
   (await read('apps/web/src/styles.css')).includes(':root[data-density="compact"]'));
+
+check('global command palette supports Ctrl/Cmd+K, arrow selection, Enter navigation, Escape, and list keyboard inspection',
+  layout.includes('command-palette') && layout.includes("event.key === 'ArrowDown'") &&
+  layout.includes("event.key === 'ArrowUp'") && layout.includes("event.key === 'Enter'") &&
+  layout.includes('scrollIntoView') && layout.includes('setSelectedProjectId(item.id)') &&
+  (await read('apps/web/src/styles.css')).includes('--ease-spring') &&
+  (await read('apps/web/src/styles.css')).includes('.command-palette-layer'));
+
+check('Pro-Tier surface styling includes tabular numerics, floating table rows and reduced-motion fallback',
+  (await read('apps/web/src/styles.css')).includes('font-variant-numeric: tabular-nums') &&
+  (await read('apps/web/src/styles.css')).includes('border-spacing: 0 3px') &&
+  (await read('apps/web/src/styles.css')).includes(':root[data-motion="reduced"]'));
 
 check('owner finance UI is restructured into metrics and four interactive content tabs with responsive sticky tables',
   ownerFinancePage.includes("useState<'settlements' | 'receivables' | 'cashflow' | 'retention'>('settlements')") &&

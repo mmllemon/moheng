@@ -15,9 +15,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearSession: () => set({ accessToken: null, user: null }),
 }));
 
-export type UiTheme = 'light' | 'dark' | 'system';
+export type UiTheme = 'ivory' | 'champagne' | 'obsidian' | 'glacier' | 'system';
 export type UiDensity = 'comfortable' | 'compact';
-export type UiAccent = 'indigo' | 'jade' | 'cinnabar';
+export type UiAccent = 'theme' | 'indigo' | 'jade' | 'cinnabar';
 
 type UiPreferences = {
   theme: UiTheme;
@@ -27,16 +27,16 @@ type UiPreferences = {
   wideContent: boolean;
 };
 const UI_PREFERENCES_KEY = 'moheng:ui-preferences';
-const defaultUiPreferences: UiPreferences = { theme: 'light', density: 'comfortable', accent: 'indigo', reduceMotion: false, wideContent: false };
+const defaultUiPreferences: UiPreferences = { theme: 'ivory', density: 'comfortable', accent: 'theme', reduceMotion: false, wideContent: false };
 function readUiPreferences(): UiPreferences {
   try {
     const raw = localStorage.getItem(UI_PREFERENCES_KEY);
     if (!raw) return defaultUiPreferences;
-    const value = JSON.parse(raw) as Partial<UiPreferences>;
+    const value = JSON.parse(raw) as Partial<UiPreferences> & { theme?: UiTheme | 'dark' };
     return {
-      theme: value.theme === 'dark' || value.theme === 'system' ? value.theme : 'light',
+      theme: value.theme === 'champagne' || value.theme === 'obsidian' || value.theme === 'glacier' || value.theme === 'system' ? value.theme : value.theme === 'dark' ? 'obsidian' : 'ivory',
       density: value.density === 'compact' ? 'compact' : 'comfortable',
-      accent: value.accent === 'jade' || value.accent === 'cinnabar' ? value.accent : 'indigo',
+      accent: value.accent === 'indigo' || value.accent === 'jade' || value.accent === 'cinnabar' ? value.accent : 'theme',
       reduceMotion: Boolean(value.reduceMotion),
       wideContent: Boolean(value.wideContent),
     };

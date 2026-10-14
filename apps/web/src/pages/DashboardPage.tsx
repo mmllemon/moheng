@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, ArrowUpRight, Banknote, CircleAlert, ClipboardCheck, Coins, FolderKanban, Gauge, HandCoins, ReceiptText, Wallet } from 'lucide-react';
+import ReactECharts from 'echarts-for-react';
+import { ArrowRight, ArrowUpRight, CircleAlert, ClipboardCheck, Coins, FolderKanban, Gauge, HandCoins, ReceiptText, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
-import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, formatWan, LoadingBlock, MetricCard, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, formatWan, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import type { Project } from '../types';
 
 type PortfolioProject = Project & {
@@ -27,6 +28,8 @@ const statusOptions = [{ value: 'ALL', label: '全部项目状态' }, { value: '
 export default function DashboardPage() {
   const navigate = useNavigate();
   const setSelectedProjectId = useUiStore((state) => state.setSelectedProjectId);
+  const uiTheme = useUiStore((state) => state.theme);
+  const uiAccent = useUiStore((state) => state.accent);
   const dashboard = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<DashboardData>('/dashboard') });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -41,14 +44,65 @@ export default function DashboardPage() {
   if (dashboard.error) return <div className="page-wrap"><ErrorBlock message={(dashboard.error as Error).message} retry={() => void dashboard.refetch()} /></div>;
 
   const totals = data!.totals;
+  const chartProjects = [...data!.projects].sort((left, right) => right.contractAmount - left.contractAmount).slice(0, 6);
+  const recoveryRatio = totals.contractAmount > 0 ? totals.receivedAmount / totals.contractAmount : null;
+  const costRatio = totals.targetCost > 0 ? totals.actualCost / totals.targetCost : null;
+  const chartColors = uiAccent === 'jade'
+    ? ['#2a9d82', '#d2a15f', '#6484bf']
+    : uiAccent === 'cinnabar'
+      ? ['#bf6354', '#d9aa61', '#638cb1']
+      : uiTheme === 'champagne'
+        ? ['#b45309', '#d6ad70', '#829478']
+        : uiTheme === 'glacier'
+          ? ['#0284c7', '#78b8d7', '#4da88e']
+          : ['#6366f1', '#e6a25f', '#42a889'];
+  const isDarkChart = uiTheme === 'obsidian' || (uiTheme === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+  const axisText = isDarkChart ? '#a1a1aa' : '#8792a4';
+  const axisLine = isDarkChart ? 'rgba(255,255,255,.10)' : '#e5eaf2';
+  const portfolioOption = {
+    color: chartColors,
+    animationDuration: 260,
+    animationEasing: 'cubicOut',
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, valueFormatter: (value: number) => formatMoney(value, 0) },
+    legend: { top: 0, right: 6, icon: 'circle', itemWidth: 7, itemHeight: 7, textStyle: { color: axisText, fontSize: 10 } },
+    grid: { left: 12, right: 14, top: 31, bottom: 37, containLabel: true },
+    xAxis: { type: 'category', data: chartProjects.map((project) => project.name), axisLabel: { color: axisText, fontSize: 9, interval: 0, width: 72, overflow: 'truncate' }, axisLine: { lineStyle: { color: axisLine } }, axisTick: { show: false } },
+    yAxis: { type: 'value', axisLabel: { color: axisText, fontSize: 9, formatter: (value: number) => value >= 10000 ? `${(value / 10000).toFixed(0)}万` : `${value}` }, splitLine: { lineStyle: { color: axisLine, type: 'dashed' } } },
+    series: [
+      { name: '有效合同额', type: 'bar', barMaxWidth: 13, data: chartProjects.map((project) => project.contractAmount), itemStyle: { borderRadius: [3, 3, 0, 0] } },
+      { name: '目标成本', type: 'bar', barMaxWidth: 13, data: chartProjects.map((project) => project.targetCost), itemStyle: { borderRadius: [3, 3, 0, 0] } },
+      { name: '实际成本', type: 'bar', barMaxWidth: 13, data: chartProjects.map((project) => project.actualCost), itemStyle: { borderRadius: [3, 3, 0, 0] } },
+    ],
+  };
   return <div className="page-wrap dashboard-page">
     <PageHeader eyebrow="PORTFOLIO / OVERVIEW" title="经营总览" subtitle="跨项目查看合同规模、目标成本、实际发生、业主回款与待跟进事项。此页不受当前项目选择影响。" actions={<Button onClick={() => navigate('/projects')}><FolderKanban size={16} />项目管理</Button>} />
     {data!.projects.length === 0 ? <EmptyState title="还没有可访问的项目" description="创建项目或请管理员为你的账号分配项目权限。" action={() => navigate('/projects')} /> : <>
-      <section className="portfolio-kpi-grid metric-grid">
-        <MetricCard label="可访问项目数" value={String(totals.projectCount)} detail="按当前账号权限统计" icon={FolderKanban} tone="blue" />
-        <MetricCard label="当前有效合同额" value={formatWan(totals.contractAmount)} detail="所有可访问项目合计" icon={Banknote} tone="purple" />
-        <MetricCard label="累计实际成本" value={formatWan(totals.actualCost)} detail={`目标成本 ${formatWan(totals.targetCost)}`} icon={Coins} tone={totals.actualCost > totals.targetCost && totals.targetCost > 0 ? 'orange' : 'green'} />
-        <MetricCard label="累计业主回款" value={formatWan(totals.receivedAmount)} detail={totals.contractAmount > 0 ? `合同额回款比 ${(totals.receivedAmount / totals.contractAmount * 100).toFixed(1)}%` : '尚无合同金额'} icon={Wallet} tone="green" />
+      <section className="portfolio-bento-grid">
+        <article className="panel portfolio-hero-panel">
+          <div className="portfolio-hero-top">
+            <div className="portfolio-hero-main"><span className="portfolio-hero-kicker">CONTRACT PORTFOLIO / 经营资产</span><span className="portfolio-hero-label">当前有效合同额</span><strong>{formatMoney(totals.contractAmount, 0)}</strong><p><span className="portfolio-count-chip"><FolderKanban size={12} />{totals.projectCount} 个项目</span> 按当前账号权限汇总，随台账实时更新</p></div>
+            <div className="portfolio-hero-support"><div><span>目标成本</span><strong>{formatWan(totals.targetCost)}</strong></div><div><span>实际已发生成本</span><strong>{formatWan(totals.actualCost)}</strong></div></div>
+          </div>
+          <div className="portfolio-chart-heading"><div><h3>项目经营对比</h3><p>合同额、目标成本与实际成本 · 当前金额快照</p></div><span className="chart-mini-label">金额：元</span></div>
+          {chartProjects.length ? <ReactECharts option={portfolioOption} style={{ height: 242 }} notMerge lazyUpdate /> : <div className="compact-empty">暂无可绘制的项目数据</div>}
+          <div className="portfolio-chart-footnote">按有效合同额排序展示前 {chartProjects.length} 个项目；该图用于结构对比，不代表月度趋势或完工成本预测。</div>
+        </article>
+        <aside className="portfolio-metric-stack">
+          <article className="panel portfolio-side-metric portfolio-receipt-metric">
+            <div className="portfolio-side-heading"><span className="portfolio-side-icon"><Wallet size={16} /></span><span>累计业主回款</span><span className="portfolio-side-overline">COLLECTED</span></div>
+            <strong>{formatWan(totals.receivedAmount)}</strong>
+            <div className="portfolio-progress-track"><span style={{ width: `${Math.max(0, Math.min(100, (recoveryRatio ?? 0) * 100))}%` }} /></div>
+            <div className="portfolio-side-foot"><span>回款 / 合同额</span><b>{recoveryRatio == null ? '—' : `${(recoveryRatio * 100).toFixed(1)}%`}</b></div>
+            <small>{recoveryRatio == null ? '当前尚无有效合同金额' : recoveryRatio >= 1 ? '累计回款已达到合同额' : '按当前有效合同额计算'}</small>
+          </article>
+          <article className="panel portfolio-side-metric portfolio-cost-metric">
+            <div className="portfolio-side-heading"><span className="portfolio-side-icon"><Coins size={16} /></span><span>累计实际成本</span><span className="portfolio-side-overline">ACTUAL COST</span></div>
+            <strong>{formatWan(totals.actualCost)}</strong>
+            <div className="portfolio-progress-track cost-track"><span style={{ width: `${Math.max(0, Math.min(100, (costRatio ?? 0) * 100))}%` }} /></div>
+            <div className="portfolio-side-foot"><span>目标成本 {formatWan(totals.targetCost)}</span><b className={costRatio != null && costRatio > 1 ? 'text-danger' : ''}>{costRatio == null ? '—' : `${(costRatio * 100).toFixed(1)}%`}</b></div>
+            <small>{costRatio == null ? '尚未建立目标成本基线' : costRatio > 1 ? '实际成本高于当前目标成本' : '实际成本 / 目标成本'}</small>
+          </article>
+        </aside>
       </section>
 
       <section className="panel portfolio-panel">
