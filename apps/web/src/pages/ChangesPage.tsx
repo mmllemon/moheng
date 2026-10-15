@@ -9,6 +9,7 @@ import { BadgeCheck, ClipboardCheck, Download, FileCheck2, FilePlus2, GitPullReq
 import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
+import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { ChangeRecord, ChangeStatus, EvidenceClass, ExternalConfirmationStatus } from '../types';
 import { Button, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 
@@ -258,7 +259,7 @@ export default function ChangesPage() {
     } catch (err) { setError(err instanceof ApiError ? err.message : '凭证下载失败'); }
   };
   return <div className="page-wrap">
-    <PageHeader eyebrow="CONTRACT / CHANGES" title="变更签证" subtitle="业主侧变更必须关联主合同；内部审批、外部确认和凭证核验分开记录。" actions={<Button disabled={!mainContractQuery.data} onClick={() => setCreating(true)}><Plus size={16} />新增变更</Button>} />
+    <PageHeader eyebrow="CONTRACT / CHANGES" title="变更签证" subtitle="业主侧变更必须关联主合同；内部审批、外部确认和凭证核验分开记录。" actions={<><ProjectLedgerReportButton reportKey="changes" /><Button disabled={!mainContractQuery.data} onClick={() => setCreating(true)}><Plus size={16} />新增变更</Button></>} />
     {!mainContractQuery.data && <div className="inline-notice"><FileCheck2 size={17} /><span>当前项目尚未建立主合同，不能新建业主侧变更签证。请先完成主合同建档。</span><Button variant="secondary" onClick={() => navigate('/contracts')}>前往主合同管理</Button></div>}
     {mainContractQuery.data && <div className="inline-notice"><FileCheck2 size={17} /><span>当前变更台账归属主合同：<strong>{mainContractQuery.data.contractNo}</strong> · {mainContractQuery.data.name}</span></div>}
     {notice && <div className="success-notice"><BadgeCheck size={16} />{notice}</div>}{error && <div className="form-alert">{error}</div>}

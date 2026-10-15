@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
+import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { BudgetItem, CostEntry, CostType } from '../types';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
@@ -107,7 +108,7 @@ export default function CostsPage() {
   if (costsQuery.error || budgetQuery.error || downstreamQuery.error) return <div className="page-wrap"><ErrorBlock message={(costsQuery.error ?? budgetQuery.error ?? downstreamQuery.error as Error).toString()} retry={() => { void costsQuery.refetch(); void budgetQuery.refetch(); void downstreamQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap">
-    <PageHeader eyebrow="PROJECT COST / ACTUALS" title="实际成本录入" subtitle="按人工、材料、机械、分包和间接费分类登记，形成实际发生的成本台账。" actions={<><Button variant="secondary" onClick={() => exportCosts(filtered)}><Download size={15} />导出 CSV</Button><Button onClick={() => setDialogOpen(true)}><Plus size={16} />新增成本</Button></>} />
+    <PageHeader eyebrow="PROJECT COST / ACTUALS" title="实际成本录入" subtitle="按人工、材料、机械、分包和间接费分类登记，形成实际发生的成本台账。" actions={<><ProjectLedgerReportButton reportKey="actual-cost" /><Button variant="secondary" onClick={() => exportCosts(filtered)}><Download size={15} />导出 CSV</Button><Button onClick={() => setDialogOpen(true)}><Plus size={16} />新增成本</Button></>} />
     {notice && <div className="success-notice">{notice}<button onClick={() => setNotice('')}><X size={14} /></button></div>}{serverError && <div className="form-alert">{serverError}</div>}
     <div className="cost-type-cards">{costTypes.filter((item) => item.value !== 'ALL').map((item) => { const subtotal = rows.filter((r) => r.type === item.value).reduce((sum, row) => sum + row.amount, 0); return <button className={`cost-type-card ${type === item.value ? 'active' : ''}`} key={item.value} onClick={() => setType(type === item.value ? 'ALL' : item.value as CostType)}><span className={`cost-type-symbol ${typeClasses[item.value as CostType]}`}><Receipt size={17} /></span><span className="cost-type-label">{item.label}</span><strong>{formatMoney(subtotal, 0)}</strong><small>{rows.filter((r) => r.type === item.value).length} 条记录</small></button>; })}</div>
     <div className="panel data-table-panel"><div className="panel-heading"><div><h3>成本明细台账</h3><p>当前筛选 {filtered.length} 条 · 合计 {formatMoney(total)}</p></div><div className="table-heading-actions"><span className="filter-label"><Filter size={14} />筛选</span><SelectField value={type} onChange={(e) => setType(e.target.value as CostType | 'ALL')} className="table-filter-select">{costTypes.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</SelectField></div></div>

@@ -1,4 +1,4 @@
-export type ReportStudioDomain = 'PROJECT' | 'COMPANY';
+export type ReportStudioDomain = 'PROJECT' | 'COMPANY' | 'PARTY';
 export type ReportStudioScope = 'PERSONAL' | 'PROJECT' | 'SYSTEM';
 export type ReportStudioFieldType = 'TEXT' | 'NUMBER' | 'MONEY' | 'DATE' | 'BOOLEAN';
 export interface ReportStudioField { id: string; label: string; type: ReportStudioFieldType; description?: string }
@@ -17,7 +17,7 @@ export interface ReportStudioDefinition {
 }
 export interface ReportStudioTemplate {
   id: string; reportKey: string; domain: ReportStudioDomain | null; name: string; description: string; scope: ReportStudioScope;
-  projectId: string | null; ownerUserId: string | null; version: number; publishedVersion: number | null;
+  projectId: string | null; businessPartyId?: string | null; ownerUserId: string | null; version: number; publishedVersion: number | null;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'; definition: ReportStudioDefinition;
   editable?: boolean; createdAt: string; updatedAt: string;
 }

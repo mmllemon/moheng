@@ -49,8 +49,8 @@ const dataset: ReportStudioDataset = {
   domain: 'PROJECT', generatedAt: '2026-10-15T00:00:00.000Z', projectId: 'project-1', accessibleProjectCount: 1, warnings: [],
   sources: {
     project: { name: '测试项目' },
-    contracts: [{ contractNo: 'HT-001', amount: 100 }, { contractNo: 'HT-002', amount: 200 }],
-    receipts: [{ receiptNo: 'SK-001', amount: 20 }, { receiptNo: 'SK-002', amount: 30 }, { receiptNo: 'SK-003', amount: 40 }],
+    contracts: [{ id: 'contract-1', contractNo: 'HT-001', amount: 100 }, { id: 'contract-2', contractNo: 'HT-002', amount: 200 }],
+    receipts: [{ id: 'receipt-1', receiptNo: 'SK-001', amount: 20 }, { id: 'receipt-2', receiptNo: 'SK-002', amount: 30 }, { id: 'receipt-3', receiptNo: 'SK-003', amount: 40 }],
   },
 };
 
@@ -58,13 +58,19 @@ test('renders exact single-value cells and expands independent repeating regions
   const result = renderReportStudio(definition(), dataset);
   const rows = result.sheets[0]!.rows;
   assert.equal(rows[0]![1]!.value, '测试项目');
+  // Both fields in each repeated row must come from the same source record, never by matching row index across sources.
   assert.equal(rows[2]![0]!.value, 'HT-001');
+  assert.equal(rows[2]![1]!.value, 100);
   assert.equal(rows[3]![0]!.value, 'HT-002');
+  assert.equal(rows[3]![1]!.value, 200);
   assert.equal(rows[4]![0]!.value, '固定结尾');
   assert.equal(rows[5]![0]!.value, '收款流水');
   assert.equal(rows[6]![0]!.value, 'SK-001');
+  assert.equal(rows[6]![1]!.value, 20);
   assert.equal(rows[7]![0]!.value, 'SK-002');
+  assert.equal(rows[7]![1]!.value, 30);
   assert.equal(rows[8]![0]!.value, 'SK-003');
+  assert.equal(rows[8]![1]!.value, 40);
   assert.equal(rows[9]![0]!.value, '报告结束');
   assert.equal(result.sheets[0]!.frozenRows, 2);
 });
@@ -89,7 +95,7 @@ test('empty repeating regions render one blank template row rather than removing
 
 
 test('preserves monetary values as exact decimal text when spreadsheet numeric precision would round cents', () => {
-  const result = renderReportStudio(definition(), { ...dataset, sources: { ...dataset.sources, contracts: [{ contractNo: 'HT-LARGE', amount: '90071992547409.93' }] } });
+  const result = renderReportStudio(definition(), { ...dataset, sources: { ...dataset.sources, contracts: [{ id: 'contract-large', contractNo: 'HT-LARGE', amount: '90071992547409.93' }] } });
   assert.equal(result.sheets[0]!.rows[2]![1]!.value, '90071992547409.93');
 });
 

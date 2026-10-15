@@ -8,6 +8,7 @@ import { ArrowDownToLine, Check, CircleDollarSign, Clock3, Plus, Send, WalletCar
 import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
+import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { ProgressBill, ProgressBillStatus } from '../types';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 
@@ -70,7 +71,7 @@ export default function ProgressBillsPage() {
   };
 
   return <div className="page-wrap">
-    <PageHeader eyebrow="REVENUE / CASH COLLECTION" title="进度款管理" subtitle="业主进度款申报必须关联项目主合同；申请、审批和到账记录再归集到项目。" actions={<Button disabled={!mainContractQuery.data} onClick={() => setCreating(true)}><Plus size={16} />新建申报</Button>} />
+    <PageHeader eyebrow="REVENUE / CASH COLLECTION" title="进度款管理" subtitle="业主进度款申报必须关联项目主合同；申请、审批和到账记录再归集到项目。" actions={<><ProjectLedgerReportButton reportKey="progress-bills" /><Button disabled={!mainContractQuery.data} onClick={() => setCreating(true)}><Plus size={16} />新建申报</Button></>} />
     {!mainContractQuery.data && <div className="inline-notice"><WalletCards size={17} /><span>当前项目尚未建立主合同，不能新建对业主进度款申报。请先完成主合同建档。</span><Button variant="secondary" onClick={() => navigate('/contracts')}>前往主合同管理</Button></div>}
     {mainContractQuery.data && <div className="inline-notice"><WalletCards size={17} /><span>当前申报归属主合同：<strong>{mainContractQuery.data.contractNo}</strong> · {mainContractQuery.data.name}</span></div>}
     {finalSettlementPosted && <div className="inline-notice settlement-closed-notice"><Check size={17} /><span>该主合同最终结算已过账。新的到账/退款及净应收调整请统一在“竣工结算与应收”办理，避免进度款入口绕过最终结算后的应收余额控制。</span><Button variant="secondary" onClick={() => navigate('/workspace/owner-finance')}>前往竣工结算与应收</Button></div>}

@@ -10,13 +10,14 @@ import { loadReportStudioDataset, reportStudioSources, type ReportStudioDomain }
 import { domainFromStudioReportKey, STUDIO_REPORT_KEYS, studioReportKey, validateReportStudioDefinition } from '../lib/report-studio-definition.js';
 import { previewReportStudio, renderReportStudio } from '../lib/report-studio-render.js';
 
-const domainSchema = z.enum(['PROJECT', 'COMPANY']);
+const domainSchema = z.enum(['PROJECT', 'COMPANY', 'PARTY']);
 const createSchema = z.object({
   domain: domainSchema,
   name: z.string().trim().min(1).max(100),
   description: z.string().trim().max(300).default(''),
   scope: z.enum(['PERSONAL', 'PROJECT', 'SYSTEM']).default('PERSONAL'),
   projectId: z.string().trim().min(1).nullable().optional(),
+  businessPartyId: z.string().trim().min(1).nullable().optional(),
   definition: z.unknown(),
 }).strict();
 const updateSchema = z.object({
@@ -28,6 +29,19 @@ const updateSchema = z.object({
 
 async function hasProject(user: AuthUser, projectId: string): Promise<boolean> {
   return canAccessProject(user.sub, user.role, projectId);
+}
+async function hasBusinessParty(user: AuthUser, businessPartyId: string): Promise<boolean> {
+  const party = await prisma.businessParty.findUnique({ where: { id: businessPartyId }, select: { id: true } });
+  if (!party) return false;
+  if (user.role === 'ADMIN') return true;
+  const visibleLinkedProject = await prisma.project.findFirst({
+    where: { deletedAt: null, members: { some: { userId: user.sub } }, OR: [
+      { ownerPartyId: businessPartyId },
+      { downstreamContracts: { some: { counterpartyPartyId: businessPartyId, deletedAt: null } } },
+      { costEntries: { some: { businessPartyId, downstreamContractId: null, deletedAt: null } } },
+    ] }, select: { id: true },
+  });
+  return Boolean(visibleLinkedProject);
 }
 async function canRead(template: { scope: string; status: string; ownerUserId: string | null; projectId: string | null }, user: AuthUser): Promise<boolean> {
   if (template.scope === 'SYSTEM') return template.status === 'PUBLISHED' || user.role === 'ADMIN';
@@ -46,13 +60,13 @@ async function canEdit(template: { scope: string; ownerUserId: string | null; pr
   return false;
 }
 function payloadTemplate(template: {
-  id: string; reportKey: string; name: string; description: string | null; scope: string; projectId: string | null; ownerUserId: string | null;
+  id: string; reportKey: string; name: string; description: string | null; scope: string; projectId: string | null; businessPartyId: string | null; ownerUserId: string | null;
   version: number; publishedVersion: number | null; status: string; definition: unknown; publishedDefinition: unknown; createdById: string;
   updatedById: string; createdAt: Date; updatedAt: Date;
 }) {
   return {
     id: template.id, domain: domainFromStudioReportKey(template.reportKey), reportKey: template.reportKey, name: template.name,
-    description: template.description ?? '', scope: template.scope, projectId: template.projectId, ownerUserId: template.ownerUserId,
+    description: template.description ?? '', scope: template.scope, projectId: template.projectId, businessPartyId: template.businessPartyId, ownerUserId: template.ownerUserId,
     version: template.version, publishedVersion: template.publishedVersion, status: template.status,
     definition: template.definition,
     createdById: template.createdById, updatedById: template.updatedById,
@@ -66,16 +80,18 @@ function parsedDomain(value: unknown): ReportStudioDomain | null {
 export async function reportStudioRoutes(app: FastifyInstance) {
   app.get('/catalog', { preHandler: authRequired }, async (request, reply) => {
     const parsed = domainSchema.safeParse((request.query as { domain?: unknown }).domain);
-    if (!parsed.success) return failure(reply, 400, 'REPORT_STUDIO_DOMAIN_REQUIRED', '请选择项目级或公司级报表');
+    if (!parsed.success) return failure(reply, 400, 'REPORT_STUDIO_DOMAIN_REQUIRED', '请选择项目级、公司级或往来单位档案报表');
     return success({ domain: parsed.data, sources: reportStudioSources.filter((source) => source.domains.includes(parsed.data)) });
   });
 
   app.get('/templates', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
-    const parsed = z.object({ domain: domainSchema, projectId: z.string().trim().optional() }).safeParse(request.query);
+    const parsed = z.object({ domain: domainSchema, projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional() }).safeParse(request.query);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '报表模板筛选条件无效', parsed.error.flatten());
     if (parsed.data.domain === 'PROJECT' && !parsed.data.projectId) return failure(reply, 400, 'PROJECT_ID_REQUIRED', '项目级模板列表需要项目编号');
     if (parsed.data.projectId && !(await hasProject(user, parsed.data.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目报表的权限');
+    if (parsed.data.domain === 'PARTY' && !parsed.data.businessPartyId) return failure(reply, 400, 'BUSINESS_PARTY_ID_REQUIRED', '往来单位档案报表需要指定单位');
+    if (parsed.data.businessPartyId && !(await hasBusinessParty(user, parsed.data.businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
     const key = studioReportKey(parsed.data.domain);
     const where = {
       reportKey: key,
@@ -88,6 +104,12 @@ export async function reportStudioRoutes(app: FastifyInstance) {
           ...(user.role === 'ADMIN' ? [{ scope: 'SYSTEM' as const, status: 'DRAFT' as const }] : []),
           { scope: 'SYSTEM' as const, status: 'PUBLISHED' as const },
         ],
+      } : parsed.data.domain === 'PARTY' ? {
+        OR: [
+          { scope: 'PERSONAL' as const, ownerUserId: user.sub, businessPartyId: parsed.data.businessPartyId },
+          { scope: 'SYSTEM' as const, status: 'PUBLISHED' as const, businessPartyId: null },
+          ...(user.role === 'ADMIN' ? [{ scope: 'SYSTEM' as const, status: 'DRAFT' as const, businessPartyId: null }] : []),
+        ],
       } : {
         OR: [
           { scope: 'PERSONAL' as const, ownerUserId: user.sub },
@@ -99,7 +121,11 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     const candidates = await prisma.reportTemplate.findMany({ where, orderBy: [{ scope: 'asc' }, { updatedAt: 'desc' }] });
     const filtered = candidates.filter((template) => {
       if (template.scope === 'PROJECT') return template.projectId === parsed.data.projectId;
-      if (template.scope === 'PERSONAL') return parsed.data.domain === 'PROJECT' ? template.projectId === parsed.data.projectId : template.projectId === null;
+      if (template.scope === 'PERSONAL') {
+        if (parsed.data.domain === 'PROJECT') return template.projectId === parsed.data.projectId;
+        if (parsed.data.domain === 'PARTY') return template.projectId === null && template.businessPartyId === parsed.data.businessPartyId;
+        return template.projectId === null && template.businessPartyId === null;
+      }
       return true;
     });
     const readable = await Promise.all(filtered.map(async (template) => ({ template, canRead: await canRead(template, user) })));
@@ -119,7 +145,10 @@ export async function reportStudioRoutes(app: FastifyInstance) {
       if (!(await canAccessProject(user.sub, user.role, input.projectId, ['OWNER', 'MANAGER'])) && input.scope !== 'PERSONAL') return failure(reply, 403, 'PROJECT_REPORT_TEMPLATE_EDIT_DENIED', '只有项目负责人或经理可以创建项目共享模板');
       if (!(await hasProject(user, input.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目报表的权限');
     }
-    if (input.domain === 'COMPANY' && input.scope === 'PROJECT') return failure(reply, 400, 'REPORT_TEMPLATE_SCOPE_INVALID', '公司级模板不能使用项目共享范围');
+    if (input.domain !== 'PROJECT' && input.scope === 'PROJECT') return failure(reply, 400, 'REPORT_TEMPLATE_SCOPE_INVALID', '公司级或单位档案级模板不能使用项目共享范围');
+    if (input.domain === 'PARTY' && input.scope === 'PERSONAL' && !input.businessPartyId) return failure(reply, 400, 'BUSINESS_PARTY_ID_REQUIRED', '单位档案个人模板必须绑定往来单位');
+    if (input.domain === 'PARTY' && input.businessPartyId && !(await hasBusinessParty(user, input.businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
+    if (input.domain !== 'PARTY' && input.businessPartyId) return failure(reply, 400, 'REPORT_TEMPLATE_SCOPE_INVALID', '只有单位档案报表可以绑定往来单位');
     if (input.scope === 'PROJECT' && !input.projectId) return failure(reply, 400, 'PROJECT_ID_REQUIRED', '项目共享模板必须指定项目');
     const validated = validateReportStudioDefinition(input.definition);
     if (!validated.success) return failure(reply, 400, 'REPORT_STUDIO_DEFINITION_INVALID', validated.message, validated.details);
@@ -129,6 +158,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
       const created = await tx.reportTemplate.create({ data: {
         reportKey, name: input.name, description: input.description, scope: input.scope,
         projectId: input.scope === 'PROJECT' || (input.domain === 'PROJECT' && input.scope === 'PERSONAL') ? input.projectId ?? null : null,
+        businessPartyId: input.domain === 'PARTY' && input.scope === 'PERSONAL' ? input.businessPartyId ?? null : null,
         ownerUserId: input.scope === 'PERSONAL' ? user.sub : input.scope === 'PROJECT' ? user.sub : null,
         version: 1, status: 'DRAFT', definition: validated.data as unknown as Prisma.InputJsonObject,
         createdById: user.sub, updatedById: user.sub,
@@ -146,6 +176,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     const template = await prisma.reportTemplate.findUnique({ where: { id } });
     if (!template || !domainFromStudioReportKey(template.reportKey)) return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在');
     if (!(await canRead(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有访问该模板的权限');
+    if (template.businessPartyId && !(await hasBusinessParty(user, template.businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
     const editable = await canEdit(template, user);
     const definition = template.status === 'PUBLISHED' && template.publishedDefinition && !editable ? template.publishedDefinition : template.definition;
     return success({ ...payloadTemplate({ ...template, definition }), editable });
@@ -159,11 +190,12 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     const current = await prisma.reportTemplate.findUnique({ where: { id } });
     if (!current || !domainFromStudioReportKey(current.reportKey)) return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在');
     if (!(await canEdit(current, user))) return failure(reply, 403, 'REPORT_TEMPLATE_EDIT_DENIED', '你没有编辑该模板的权限');
+    if (current.businessPartyId && !(await hasBusinessParty(user, current.businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
     if (current.version !== parsed.data.expectedVersion) return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后重新加载');
     if (current.status === 'ARCHIVED') return failure(reply, 409, 'REPORT_TEMPLATE_ARCHIVED', '归档模板不能修改');
     const validated = validateReportStudioDefinition(parsed.data.definition);
     if (!validated.success) return failure(reply, 400, 'REPORT_STUDIO_DEFINITION_INVALID', validated.message, validated.details);
-    if (studioReportKey(validated.data.domain) !== current.reportKey) return failure(reply, 400, 'REPORT_STUDIO_DOMAIN_MISMATCH', '模板不能更改项目级/公司级范围；请复制为新模板');
+    if (studioReportKey(validated.data.domain) !== current.reportKey) return failure(reply, 400, 'REPORT_STUDIO_DOMAIN_MISMATCH', '模板不能更改项目级/公司级/单位档案范围；请复制为新模板');
     try {
       const changedTemplate = await prisma.$transaction(async (tx) => {
         const changed = await tx.reportTemplate.updateMany({ where: { id, version: parsed.data.expectedVersion, status: { not: 'ARCHIVED' } }, data: {
@@ -189,6 +221,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     const template = await prisma.reportTemplate.findUnique({ where: { id } });
     if (!template || !domainFromStudioReportKey(template.reportKey)) return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在');
     if (!(await canEdit(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_PUBLISH_DENIED', '你没有发布模板的权限');
+    if (template.businessPartyId && !(await hasBusinessParty(user, template.businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
     if (template.status === 'ARCHIVED') return failure(reply, 409, 'REPORT_TEMPLATE_ARCHIVED', '归档模板不能发布');
     const validated = validateReportStudioDefinition(template.definition);
     if (!validated.success) return failure(reply, 409, 'REPORT_STUDIO_DEFINITION_INVALID', '模板定义无效，请修复后再发布', validated.details);
@@ -211,16 +244,18 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     const template = await prisma.reportTemplate.findUnique({ where: { id } });
     if (!template || !domainFromStudioReportKey(template.reportKey)) return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在');
     if (!(await canRead(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有访问该模板历史的权限');
+    if (template.businessPartyId && !(await hasBusinessParty(user, template.businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
     return success(await prisma.reportTemplateRevision.findMany({ where: { templateId: id }, orderBy: { createdAt: 'desc' }, take: 100, select: { id: true, version: true, action: true, createdById: true, createdAt: true } }));
   });
 
   app.post('/preview', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
-    const parsed = z.object({ templateId: z.string().trim().min(1), projectId: z.string().trim().optional() }).strict().safeParse(request.body);
+    const parsed = z.object({ templateId: z.string().trim().min(1), projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional() }).strict().safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '预览参数无效', parsed.error.flatten());
     const template = await prisma.reportTemplate.findUnique({ where: { id: parsed.data.templateId } });
     if (!template || !domainFromStudioReportKey(template.reportKey) || template.status === 'ARCHIVED') return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在或已归档');
     if (!(await canRead(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有预览该模板的权限');
+    if (template.businessPartyId && !(await hasBusinessParty(user, template.businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
     const editable = await canEdit(template, user);
     const definitionRaw = template.status === 'PUBLISHED' && template.publishedDefinition && !editable ? template.publishedDefinition : template.definition;
     const validated = validateReportStudioDefinition(definitionRaw);
@@ -229,8 +264,12 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     const effectiveProjectId = domain === 'PROJECT' ? parsed.data.projectId ?? template.projectId ?? undefined : undefined;
     if (domain === 'PROJECT' && !effectiveProjectId) return failure(reply, 400, 'PROJECT_ID_REQUIRED', '项目级报表预览需要指定项目');
     if (domain === 'PROJECT' && template.projectId && effectiveProjectId !== template.projectId) return failure(reply, 403, 'REPORT_TEMPLATE_PROJECT_MISMATCH', '项目模板只能用于其所属项目；如需其他项目，请另存模板');
+    const effectivePartyId = domain === 'PARTY' ? parsed.data.businessPartyId ?? template.businessPartyId ?? undefined : undefined;
+    if (domain === 'PARTY' && !effectivePartyId) return failure(reply, 400, 'BUSINESS_PARTY_ID_REQUIRED', '单位档案级报表预览需要指定往来单位');
+    if (domain === 'PARTY' && template.businessPartyId && effectivePartyId !== template.businessPartyId) return failure(reply, 403, 'REPORT_TEMPLATE_PARTY_MISMATCH', '此个人模板只能用于绑定的往来单位');
+    if (effectivePartyId && !(await hasBusinessParty(user, effectivePartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
     try {
-      const dataset = await loadReportStudioDataset(user, domain, effectiveProjectId);
+      const dataset = await loadReportStudioDataset(user, domain, effectiveProjectId, effectivePartyId);
       const rendered = renderReportStudio(validated.data, dataset);
       return success(previewReportStudio(rendered));
     } catch (error) {
@@ -245,7 +284,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
   app.post('/templates/:id/xlsx/jobs', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const id = (request.params as { id: string }).id;
-    const parsed = z.object({ projectId: z.string().trim().optional() }).strict().safeParse(request.body ?? {});
+    const parsed = z.object({ projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional() }).strict().safeParse(request.body ?? {});
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '导出范围无效', parsed.error.flatten());
     const template = await prisma.reportTemplate.findUnique({ where: { id } });
     if (!template || !domainFromStudioReportKey(template.reportKey)) return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在');
@@ -258,7 +297,11 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     const projectId = validated.data.domain === 'PROJECT' ? parsed.data.projectId ?? template.projectId ?? undefined : undefined;
     if (validated.data.domain === 'PROJECT' && template.projectId && projectId !== template.projectId) return failure(reply, 403, 'REPORT_TEMPLATE_PROJECT_MISMATCH', '项目模板只能用于其所属项目；如需其他项目，请另存模板');
     if (projectId && !(await hasProject(user, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目报表的权限');
-    const requestPayload = { templateId: template.id, templateVersion: template.publishedVersion ?? template.version, templateDefinition: validated.data, domain: validated.data.domain, projectId };
+    const businessPartyId = validated.data.domain === 'PARTY' ? parsed.data.businessPartyId ?? template.businessPartyId ?? undefined : undefined;
+    if (validated.data.domain === 'PARTY' && !businessPartyId) return failure(reply, 400, 'BUSINESS_PARTY_ID_REQUIRED', '单位档案级报表必须指定往来单位');
+    if (validated.data.domain === 'PARTY' && template.businessPartyId && businessPartyId !== template.businessPartyId) return failure(reply, 403, 'REPORT_TEMPLATE_PARTY_MISMATCH', '此个人模板只能用于绑定的往来单位');
+    if (businessPartyId && !(await hasBusinessParty(user, businessPartyId))) return failure(reply, 403, 'BUSINESS_PARTY_ACCESS_DENIED', '你没有访问该往来单位经营档案的权限');
+    const requestPayload = { templateId: template.id, templateVersion: template.publishedVersion ?? template.version, templateDefinition: validated.data, domain: validated.data.domain, projectId, businessPartyId };
     const rawKey = request.headers['idempotency-key'];
     if (Array.isArray(rawKey)) return failure(reply, 400, 'IDEMPOTENCY_KEY_INVALID', 'Idempotency-Key 请求头只能有一个值');
     const idempotencyKey = rawKey?.trim() || null;

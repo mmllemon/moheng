@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
+import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
 
 type DownstreamContractType = 'LABOR_SUBCONTRACT' | 'PROFESSIONAL_SUBCONTRACT' | 'MATERIAL_PURCHASE' | 'EQUIPMENT_LEASE' | 'SERVICE' | 'OTHER';
@@ -148,7 +149,7 @@ export default function DownstreamContractsPage() {
   if (query.error) return <div className="page-wrap"><ErrorBlock message={(query.error as Error).message} retry={() => void query.refetch()} /></div>;
   const rows = query.data?.items ?? []; const summary = query.data?.summary;
   return <div className="page-wrap">
-    <PageHeader eyebrow="PROJECT COST / COMMITMENTS" title="分供合同台账" subtitle="统一管理分包、材料采购、机械租赁与服务合同；合同金额、实际成本和现金支付分别核算。" actions={<Button onClick={() => setCreating(true)}><Plus size={16} />新增分供合同</Button>} />
+    <PageHeader eyebrow="PROJECT COST / COMMITMENTS" title="分供合同台账" subtitle="统一管理分包、材料采购、机械租赁与服务合同；合同金额、实际成本和现金支付分别核算。" actions={<><ProjectLedgerReportButton reportKey="downstream-contracts" /><Button onClick={() => setCreating(true)}><Plus size={16} />新增分供合同</Button></>} />
     {notice && <div className="success-notice">{notice}<button className="icon-button" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></button></div>}{error && <div className="form-alert">{error}</div>}
     <div className="change-summary-grid downstream-summary-grid">
       <div className="change-summary"><span className="change-summary-label">分供合同数</span><strong>{summary?.contractCount ?? 0}</strong><small>含草稿及历史合同</small></div>

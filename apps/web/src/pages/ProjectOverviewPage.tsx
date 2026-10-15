@@ -4,6 +4,7 @@ import { Activity, AlertTriangle, ArrowRight, Banknote, CalendarClock, CheckCirc
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
+import { ProjectSummaryReportButton } from '../components/ReportLaunchButton';
 import { Button, ErrorBlock, formatDate, formatMoney, formatWan, LoadingBlock, MetricCard, PageHeader, StatusBadge, percentage } from '../components/Ui';
 import type { Analysis, ChangeRecord, ProgressBill, Project } from '../types';
 
@@ -50,7 +51,7 @@ export default function ProjectOverviewPage() {
   };
 
   return <div className="page-wrap project-overview-page">
-    <PageHeader eyebrow="PROJECT WORKSPACE / PROJECT BRIEF" title="项目驾驶舱" subtitle="围绕当前项目查看收入合同、目标成本、已发生成本、回款与分供合同概况。" actions={<Button variant="secondary" onClick={() => navigate('/workspace/analysis')}><Activity size={15} />查看成本分析</Button>} />
+    <PageHeader eyebrow="PROJECT WORKSPACE / PROJECT BRIEF" title="项目驾驶舱" subtitle="围绕当前项目查看收入合同、目标成本、已发生成本、回款与分供合同概况。" actions={<><ProjectSummaryReportButton /><Button variant="secondary" onClick={() => navigate('/workspace/analysis')}><Activity size={15} />查看成本分析</Button></>} />
     <section className="project-identity-panel panel">
       <div className="project-identity-main"><div className="project-identity-mark">{project.name.slice(0, 1)}</div><div><div className="project-identity-meta"><span>{project.code}</span><StatusBadge status={project.status} /></div><h2>{project.name}</h2><p>{project.ownerPartyId ? <Link to={`/parties/${project.ownerPartyId}`}>{project.ownerName} ↗</Link> : project.ownerName} · 项目经理：{project.managerName || '未填写'}</p></div></div>
       <div className="project-identity-facts"><div><span>开工日期</span><strong>{formatDate(project.startDate)}</strong></div><div><span>计划竣工</span><strong>{formatDate(project.plannedEndDate)}</strong></div><div><span>地址</span><strong>{project.address || '未填写'}</strong></div></div>

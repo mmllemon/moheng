@@ -4,6 +4,7 @@ import { reportStudioSources, type ReportStudioDomain, type ReportStudioSource }
 export const STUDIO_REPORT_KEYS = {
   PROJECT: 'studio.project',
   COMPANY: 'studio.company',
+  PARTY: 'studio.party',
 } as const;
 export type StudioReportKey = typeof STUDIO_REPORT_KEYS[keyof typeof STUDIO_REPORT_KEYS];
 
@@ -36,7 +37,7 @@ const pageSchema = z.object({
 
 const definitionSchema = z.object({
   schemaVersion: z.literal(2),
-  domain: z.enum(['PROJECT', 'COMPANY']),
+  domain: z.enum(['PROJECT', 'COMPANY', 'PARTY']),
   title: z.string().trim().min(1).max(160),
   description: z.string().max(500).default(''),
   workbook: z.record(z.string(), z.unknown()),
@@ -191,12 +192,13 @@ export function validateReportStudioDefinition(input: unknown): ReportStudioVali
 }
 
 export function studioReportKey(domain: ReportStudioDomain): StudioReportKey {
-  return domain === 'PROJECT' ? STUDIO_REPORT_KEYS.PROJECT : STUDIO_REPORT_KEYS.COMPANY;
+  return domain === 'PROJECT' ? STUDIO_REPORT_KEYS.PROJECT : domain === 'PARTY' ? STUDIO_REPORT_KEYS.PARTY : STUDIO_REPORT_KEYS.COMPANY;
 }
 
 export function domainFromStudioReportKey(key: string): ReportStudioDomain | null {
   if (key === STUDIO_REPORT_KEYS.PROJECT) return 'PROJECT';
   if (key === STUDIO_REPORT_KEYS.COMPANY) return 'COMPANY';
+  if (key === STUDIO_REPORT_KEYS.PARTY) return 'PARTY';
   return null;
 }
 

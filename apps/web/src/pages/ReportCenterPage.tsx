@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowDownToLine, CheckCircle2, FileSpreadsheet, FolderKanban, Info, RefreshCw, ShieldCheck, Settings2, Building2, Eye } from 'lucide-react';
+import { ArrowDownToLine, CheckCircle2, FileSpreadsheet, FolderKanban, Info, RefreshCw, ShieldCheck, Settings2, Building2, Eye, ChartNoAxesCombined } from 'lucide-react';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
 import type { Project } from '../types';
@@ -10,6 +10,14 @@ import SelectField from '../components/SelectField';
 import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 
 type Report = { key: string; label: string; description: string; dateField: string; rowLimit: number };
+type ReportCategory = 'ALL' | 'COST' | 'OWNER' | 'DOWNSTREAM';
+const reportCategoryKeys: Record<ReportCategory, string[]> = { ALL: [], COST: ['target-cost', 'actual-cost'], OWNER: ['progress-bills', 'changes', 'owner-receivables', 'owner-receipts'], DOWNSTREAM: ['downstream-contracts', 'downstream-payables'] };
+const reportCategoryLabels: Array<{ key: ReportCategory; label: string; description: string }> = [
+  { key: 'ALL', label: '全部台账', description: '八类标准报表' },
+  { key: 'COST', label: '目标与实际成本', description: '预算清单、实际成本' },
+  { key: 'OWNER', label: '业主合同与收款', description: '进度款、变更、应收和收退款' },
+  { key: 'DOWNSTREAM', label: '分供合同与付款', description: '分供合同、应付台账' },
+];
 
 const catalogFallback: Report[] = [
   { key: 'target-cost', label: '目标成本清单', description: '项目清单编号、父级、工程量、单价、目标合价与最近更新时间。', dateField: '更新时间', rowLimit: 10000 },
@@ -27,6 +35,7 @@ export default function ReportCenterPage() {
   const selectedProjectId = useUiStore((state) => state.selectedProjectId);
   const [projectId, setProjectId] = useState(selectedProjectId ?? '');
   const [reportKey, setReportKey] = useState('target-cost');
+  const [reportCategory, setReportCategory] = useState<ReportCategory>('ALL');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [busy, setBusy] = useState(false);
@@ -36,6 +45,7 @@ export default function ReportCenterPage() {
   const catalogQuery = useQuery({ queryKey: ['reports-catalog'], queryFn: () => api.get<Report[]>('/reports/catalog') });
   const catalog = catalogQuery.data ?? catalogFallback;
   const selected = useMemo(() => catalog.find((item) => item.key === reportKey) ?? catalogFallback[0], [catalog, reportKey]);
+  const visibleCatalog = useMemo(() => reportCategory === 'ALL' ? catalog : catalog.filter((report) => reportCategoryKeys[reportCategory].includes(report.key)), [catalog, reportCategory]);
 
   function previewStandardReport() {
     const params = new URLSearchParams({ reportKey });
@@ -84,6 +94,11 @@ export default function ReportCenterPage() {
         <article className="panel report-intro-card"><span><ShieldCheck size={18} /></span><div><strong>服务端权限过滤</strong><small>导出范围与当前账号项目访问权限一致</small></div></article>
         <article className="panel report-intro-card"><span><CheckCircle2 size={18} /></span><div><strong>只读数据快照</strong><small>XLSX 使用 PostgreSQL 后台任务生成；CSV 使用 UTF-8 BOM 与公式注入防护</small></div></article>
       </section>
+      <section className="report-center-hero panel">
+        <div className="report-center-hero-copy"><span className="report-center-hero-kicker">BUSINESS REPORTING</span><h2>从业务台账到经营报告</h2><p>先选择业务台账快速核对，或使用报表工作室把项目摘要、合同、收退款与成本组合成可复用的综合报表。</p></div>
+        <div className="report-center-hero-badge"><ChartNoAxesCombined size={25}/><span><strong>{catalog.length} 类标准报表</strong><small>项目级 · 公司级 · 单位档案级</small></span></div>
+      </section>
+      <section className="report-workspace-heading"><div><h2>综合报表工作室</h2><p>适合需要跨业务数据、自由排版和长期复用的经营报告。</p></div></section>
       <section className="report-studio-entry-grid" aria-label="综合报表设计入口">
         <button type="button" className="panel report-studio-entry-card" onClick={() => openStudio('PROJECT')}>
           <span className="report-studio-entry-icon"><FolderKanban size={20}/></span>
@@ -108,7 +123,13 @@ export default function ReportCenterPage() {
         {notice && <div className="success-notice"><CheckCircle2 size={16} />{notice}</div>}{error && <div className="form-alert">{error}</div>}
         <div className="report-form-footer"><span><FolderKanban size={14} />{projectId ? `当前项目：${projectsQuery.data?.find((p) => p.id === projectId)?.name ?? '所选项目'}` : '当前范围：全部有权限项目'}</span><div><Button variant="secondary" onClick={() => { setFrom(''); setTo(''); }} disabled={!from && !to}>清除日期</Button><Button variant="secondary" onClick={() => void downloadCsv()} disabled={busy || !catalog.some((item) => item.key === reportKey) || Boolean(from && to && from > to)}><ArrowDownToLine size={15} />{busy ? '正在生成…' : '导出 CSV'}</Button><Button onClick={previewStandardReport} disabled={busy || !catalog.some((item) => item.key === reportKey) || Boolean(from && to && from > to)}><Eye size={15} />预览并导出 XLSX</Button></div></div>
       </section>
-      <section className="report-catalog-grid">{catalog.map((report) => <button type="button" className={`panel report-catalog-card ${report.key === reportKey ? 'is-selected' : ''}`} key={report.key} onClick={() => setReportKey(report.key)} aria-pressed={report.key === reportKey}><span className="report-catalog-icon"><FileSpreadsheet size={18} /></span><span className="report-catalog-copy"><strong>{report.label}</strong><small>{report.description}</small></span><span className="report-catalog-action">{report.key === reportKey ? <CheckCircle2 size={17} /> : <ArrowDownToLine size={16} />}</span></button>)}</section>
+      <section className="report-library panel">
+        <div className="report-library-heading"><div><h2><FileSpreadsheet size={18} />标准报表目录</h2><p>按业务场景筛选台账；选择报表后，可在上方预览并导出，也可以跳转到对应模板设计入口。</p></div><span>{visibleCatalog.length} / {catalog.length} 类</span></div>
+        <div className="report-category-tabs" role="tablist" aria-label="报表类别">
+          {reportCategoryLabels.map((category) => <button type="button" role="tab" aria-selected={reportCategory === category.key} className={`report-category-tab ${reportCategory === category.key ? 'is-active' : ''}`} key={category.key} onClick={() => { setReportCategory(category.key); const keys = reportCategoryKeys[category.key]; if (keys.length && !keys.includes(reportKey)) setReportKey(keys[0]!); }}><strong>{category.label}</strong><small>{category.description}</small></button>)}
+        </div>
+        <div className="report-catalog-grid">{visibleCatalog.map((report) => <button type="button" className={`panel report-catalog-card ${report.key === reportKey ? 'is-selected' : ''}`} key={report.key} onClick={() => setReportKey(report.key)} aria-pressed={report.key === reportKey}><span className="report-catalog-icon"><FileSpreadsheet size={18} /></span><span className="report-catalog-copy"><strong>{report.label}</strong><small>{report.description}</small><em>日期字段：{report.dateField} · 上限 {report.rowLimit.toLocaleString('zh-CN')} 条</em></span><span className="report-catalog-action">{report.key === reportKey ? <CheckCircle2 size={17} /> : <ArrowDownToLine size={16} />}</span></button>)}</div>
+      </section>
       <div className="data-note"><span className="note-mark">i</span><span>所有报表均由服务端重新按项目权限查询并生成只读数据快照。XLSX 模板可以自定义版式，但不能绕过业务字段白名单；导出的工作簿不会回写系统数据。</span></div>
     </>}
   </div>;

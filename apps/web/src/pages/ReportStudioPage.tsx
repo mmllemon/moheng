@@ -34,32 +34,30 @@ function parseRange(range: string) {
   return { start, end };
 }
 function newId(prefix: string) { return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`; }
-function studioPath(domain: ReportStudioDomain, projectId: string, templateId?: string | null) {
-  const params = new URLSearchParams({ domain });
-  if (domain === 'PROJECT' && projectId) params.set('projectId', projectId);
-  if (templateId) params.set('templateId', templateId);
-  return `/reports/studio?${params.toString()}`;
-}
-
 export default function ReportStudioPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProjectId = useUiStore((state) => state.selectedProjectId);
   const currentUser = useAuthStore((state) => state.user);
-  const [domain, setDomain] = useState<ReportStudioDomain>(searchParams.get('domain') === 'COMPANY' ? 'COMPANY' : 'PROJECT');
+  const [domain, setDomain] = useState<ReportStudioDomain>(searchParams.get('domain') === 'COMPANY' ? 'COMPANY' : searchParams.get('domain') === 'PARTY' ? 'PARTY' : 'PROJECT');
   const [projectId, setProjectId] = useState(searchParams.get('projectId') || selectedProjectId || '');
+  const [businessPartyId, setBusinessPartyId] = useState(searchParams.get('partyId') || '');
   const [templateId, setTemplateId] = useState(searchParams.get('templateId') || '');
   const [templateVersion, setTemplateVersion] = useState(1);
   const [templateEditable, setTemplateEditable] = useState(true);
   const [templateScope, setTemplateScope] = useState<'PERSONAL' | 'PROJECT' | 'SYSTEM'>('PERSONAL');
-  const [name, setName] = useState(domain === 'PROJECT' ? '项目综合经营报告' : '公司经营汇总报告');
+  const [name, setName] = useState(domain === 'PROJECT' ? '项目综合经营报告' : domain === 'PARTY' ? '往来单位经营档案报告' : '公司经营汇总报告');
   const [description, setDescription] = useState('由墨衡报表工作室创建。数据按当前账号有权访问的项目读取。');
-  const [definition, setDefinition] = useState<ReportStudioDefinition>(() => createDefaultStudioDefinition(searchParams.get('domain') === 'COMPANY' ? 'COMPANY' : 'PROJECT'));
+  const [definition, setDefinition] = useState<ReportStudioDefinition>(() => createDefaultStudioDefinition(searchParams.get('domain') === 'COMPANY' ? 'COMPANY' : searchParams.get('domain') === 'PARTY' ? 'PARTY' : 'PROJECT'));
   const definitionRef = useRef(definition);
   definitionRef.current = definition;
   const hostRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<{ univer: UniverInstanceLike; api: UniverApiLike } | null>(null);
   const [ready, setReady] = useState(false);
+  const [editorInitialized, setEditorInitialized] = useState(false);
+  const autoPreviewRequested = searchParams.get('autoPreview') === '1';
+  const openSavedTemplateRequested = searchParams.get('openSavedTemplate') === '1';
+  const autoPreviewTriggered = useRef(false);
   const [editorGeneration, setEditorGeneration] = useState(0);
   const [editorError, setEditorError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -68,14 +66,14 @@ export default function ReportStudioPage() {
   const [selectedCell, setSelectedCell] = useState('B3');
   const [selectedRange, setSelectedRange] = useState('B3');
   const [selectedSheetId, setSelectedSheetId] = useState('sheet1');
-  const [sourceId, setSourceId] = useState(domain === 'PROJECT' ? 'project' : 'companyProjects');
+  const [sourceId, setSourceId] = useState(domain === 'PROJECT' ? 'project' : domain === 'PARTY' ? 'businessParty' : 'companyProjects');
   const [fieldId, setFieldId] = useState('name');
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Array<{ id: string; name: string; code: string }>>('/projects') });
   const catalogQuery = useQuery({ queryKey: ['report-studio-catalog', domain], queryFn: () => api.get<StudioCatalogResult>(`/reports/studio/catalog?domain=${domain}`) });
   const templatesQuery = useQuery({
-    queryKey: ['report-studio-templates', domain, projectId],
-    queryFn: () => api.get<ReportStudioTemplate[]>(`/reports/studio/templates?domain=${domain}${domain === 'PROJECT' && projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}`),
-    enabled: domain === 'COMPANY' || Boolean(projectId),
+    queryKey: ['report-studio-templates', domain, projectId, businessPartyId],
+    queryFn: () => api.get<ReportStudioTemplate[]>(`/reports/studio/templates?domain=${domain}${domain === 'PROJECT' && projectId ? `&projectId=${encodeURIComponent(projectId)}` : ''}${domain === 'PARTY' && businessPartyId ? `&businessPartyId=${encodeURIComponent(businessPartyId)}` : ''}`),
+    enabled: domain === 'COMPANY' || (domain === 'PROJECT' && Boolean(projectId)) || (domain === 'PARTY' && Boolean(businessPartyId)),
   });
   const sources = catalogQuery.data?.sources ?? [];
   const selectedSource = sources.find((source) => source.id === sourceId);
@@ -85,12 +83,15 @@ export default function ReportStudioPage() {
   useEffect(() => {
     let active = true;
     async function loadTemplate() {
-      setReady(false); setEditorError(''); setError(''); setNotice('');
+      setReady(false); setEditorInitialized(false); setEditorError(''); setError(''); setNotice('');
       if (!templateId) {
+        if ((autoPreviewRequested || openSavedTemplateRequested) && !templatesQuery.isFetched) return;
+        const existingPersonal = (autoPreviewRequested || openSavedTemplateRequested) ? templatesQuery.data?.find((item) => item.domain === domain && item.scope === 'PERSONAL' && item.editable !== false) : undefined;
+        if (existingPersonal) { setTemplateId(existingPersonal.id); return; }
         const next = createDefaultStudioDefinition(domain);
         if (active) {
           setDefinition(next); setEditorGeneration((value) => value + 1); setTemplateVersion(1); setTemplateScope('PERSONAL'); setTemplateEditable(true);
-          setName(domain === 'PROJECT' ? '项目综合经营报告' : '公司经营汇总报告');
+          setName(domain === 'PROJECT' ? '项目综合经营报告' : domain === 'PARTY' ? '往来单位经营档案报告' : '公司经营汇总报告');
           setDescription(next.description); setReady(true);
         }
         return;
@@ -111,7 +112,7 @@ export default function ReportStudioPage() {
     }
     void loadTemplate();
     return () => { active = false; };
-  }, [templateId, domain]);
+  }, [templateId, domain, autoPreviewRequested, openSavedTemplateRequested, templatesQuery.isFetched, templatesQuery.data]);
 
   useEffect(() => {
     if (!ready || !hostRef.current) return;
@@ -135,6 +136,7 @@ export default function ReportStudioPage() {
         localInstance = { univer: created.univer, api: created.univerAPI as unknown as UniverApiLike };
         instanceRef.current = localInstance;
         setEditorError('');
+        setEditorInitialized(true);
       } catch (cause) {
         if (!cancelled) setEditorError(`电子表格编辑器初始化失败：${cause instanceof Error ? cause.message : '未知错误'}。请检查固定版本的 Univer 依赖是否安装完整。`);
       }
@@ -153,9 +155,10 @@ export default function ReportStudioPage() {
     const params = new URLSearchParams(searchParams);
     params.set('domain', domain);
     if (domain === 'PROJECT' && projectId) params.set('projectId', projectId); else params.delete('projectId');
+    if (domain === 'PARTY' && businessPartyId) params.set('partyId', businessPartyId); else params.delete('partyId');
     if (templateId) params.set('templateId', templateId); else params.delete('templateId');
     if (params.toString() !== searchParams.toString()) setSearchParams(params, { replace: true });
-  }, [domain, projectId, templateId, searchParams, setSearchParams]);
+  }, [domain, projectId, businessPartyId, templateId, searchParams, setSearchParams]);
 
   const sourceOptions = useMemo(() => sources.map((source) => ({ id: source.id, label: `${source.label}${source.cardinality === 'MANY' ? ' · 明细集合' : ' · 单条数据'}` })), [sources]);
   const fieldOptions = selectedSource?.fields ?? [];
@@ -191,7 +194,9 @@ export default function ReportStudioPage() {
     try {
       const captured = snapshotDefinition();
       const checkedProjectId = domain === 'PROJECT' ? projectId : undefined;
+      const checkedPartyId = domain === 'PARTY' ? businessPartyId : undefined;
       if (domain === 'PROJECT' && !checkedProjectId) throw new Error('请先选择项目。');
+      if (domain === 'PARTY' && !checkedPartyId) throw new Error('请从往来单位经营档案进入报表工作室。');
       let saved: ReportStudioTemplate;
       if (templateId && templateEditable) {
         saved = await api.patch<ReportStudioTemplate>(`/reports/studio/templates/${templateId}`, { name, description, expectedVersion: templateVersion, definition: captured });
@@ -199,6 +204,7 @@ export default function ReportStudioPage() {
         saved = await api.post<ReportStudioTemplate>('/reports/studio/templates', {
           domain, name, description, scope: templateScope,
           projectId: templateScope === 'PROJECT' || domain === 'PROJECT' ? checkedProjectId ?? null : null,
+          businessPartyId: checkedPartyId ?? null,
           definition: captured,
         });
         setTemplateId(saved.id);
@@ -210,13 +216,14 @@ export default function ReportStudioPage() {
       setError(cause instanceof Error ? cause.message : '保存模板失败。');
       throw cause;
     } finally { setBusy(false); }
-  }, [snapshotDefinition, domain, projectId, templateId, templateEditable, name, description, templateVersion, templateScope, templatesQuery]);
+  }, [snapshotDefinition, domain, projectId, businessPartyId, templateId, templateEditable, name, description, templateVersion, templateScope, templatesQuery]);
 
   async function preview() {
     try {
       const saved = await saveTemplate();
       const params = new URLSearchParams({ studioTemplateId: saved.id, domain });
       if (domain === 'PROJECT' && projectId) params.set('projectId', projectId);
+      if (domain === 'PARTY' && businessPartyId) params.set('partyId', businessPartyId);
       navigate(`/reports/preview?${params.toString()}`);
     } catch { /* saveTemplate displays the actionable error */ }
   }
@@ -233,8 +240,25 @@ export default function ReportStudioPage() {
   function changeDomain(next: ReportStudioDomain) {
     if (next === domain) return;
     setDomain(next); setTemplateId(''); setDefinition(createDefaultStudioDefinition(next)); setEditorGeneration((value) => value + 1); setTemplateVersion(1); setTemplateScope('PERSONAL');
-    setSourceId(next === 'PROJECT' ? 'project' : 'companyProjects'); setName(next === 'PROJECT' ? '项目综合经营报告' : '公司经营汇总报告');
+    setSourceId(next === 'PROJECT' ? 'project' : next === 'PARTY' ? 'businessParty' : 'companyProjects'); setName(next === 'PROJECT' ? '项目综合经营报告' : next === 'PARTY' ? '往来单位经营档案报告' : '公司经营汇总报告');
   }
+
+  useEffect(() => {
+    if (!autoPreviewRequested || autoPreviewTriggered.current || !ready || !editorInitialized || editorError) return;
+    if (domain === 'PROJECT' && !projectId) { setError('请先选择项目。'); return; }
+    if (domain === 'PARTY' && !businessPartyId) { setError('请从往来单位经营档案页面进入报表工作室。'); return; }
+    autoPreviewTriggered.current = true;
+    // Workspace shortcuts should preview an existing saved template without silently incrementing its version.
+    if (templateId) {
+      const params = new URLSearchParams({ studioTemplateId: templateId, domain });
+      if (domain === 'PROJECT' && projectId) params.set('projectId', projectId);
+      if (domain === 'PARTY' && businessPartyId) params.set('partyId', businessPartyId);
+      navigate(`/reports/preview?${params.toString()}`);
+    } else {
+      // The built-in default has not been persisted yet; save it once before opening its preview.
+      void preview();
+    }
+  }, [autoPreviewRequested, ready, editorInitialized, editorError, domain, projectId, businessPartyId, templateId, navigate]);
 
   function addBinding() {
     try {
@@ -292,7 +316,8 @@ export default function ReportStudioPage() {
     <PageHeader eyebrow="REPORT STUDIO / WORKBOOK DESIGN" title="报表工作室" subtitle="使用电子表格方式设计项目级或公司级综合报表。绑定字段、设置明细自动延伸区域，然后预览实际业务数据并导出 XLSX。" actions={<><Button variant="secondary" onClick={() => navigate('/reports')}><ArrowLeft size={15}/>返回报表中心</Button><Button variant="secondary" onClick={() => void saveTemplate()} disabled={busy || !ready}><Save size={15}/>{busy ? '保存中…' : '保存模板'}</Button><Button variant="secondary" onClick={() => void publishTemplate()} disabled={busy || !ready}><Send size={15}/>发布</Button><Button onClick={() => void preview()} disabled={busy || !ready}><Eye size={15}/>预览并导出</Button></>} />
     {error && <div className="form-alert">{error}</div>}{notice && <div className="success-notice">{notice}</div>}{editorError && <ErrorBlock message={editorError} retry={() => { setReady(false); window.setTimeout(() => setReady(true), 0); }} />}
     <section className="panel report-studio-config">
-      <label><span>报表级别</span><SelectField value={domain} onChange={(event) => changeDomain(event.currentTarget.value as ReportStudioDomain)} aria-label="报表级别"><option value="PROJECT">项目级综合报表</option><option value="COMPANY">公司级经营报表</option></SelectField></label>
+      <label><span>报表级别</span><SelectField value={domain} onChange={(event) => changeDomain(event.currentTarget.value as ReportStudioDomain)} aria-label="报表级别"><option value="PROJECT">项目级综合报表</option><option value="COMPANY">公司级经营报表</option><option value="PARTY">往来单位经营档案报表</option></SelectField></label>
+      {domain === 'PARTY' && <div className="report-studio-context-note"><strong>往来单位范围已锁定</strong><small>来自单位经营档案页面；所有关联项目、合同和财务明细仍按当前账号权限过滤。</small></div>}
       {domain === 'PROJECT' && <label><span>项目范围</span><SelectField value={projectId} onChange={(event) => { setProjectId(event.currentTarget.value); setTemplateId(''); }} aria-label="报表项目">{(projectsQuery.data ?? []).map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></label>}
       <label><span>现有模板</span><SelectField value={templateId} onChange={(event) => setTemplateId(event.currentTarget.value)} aria-label="已有报表模板"><option value="">新建默认模板</option>{(templatesQuery.data ?? []).map((template) => <option key={template.id} value={template.id}>{template.name} · v{template.version} · {template.scope === 'PROJECT' ? '项目共享' : template.scope === 'SYSTEM' ? '系统' : '个人'}</option>)}</SelectField></label>
       <label><span>模板名称</span><input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} /></label>

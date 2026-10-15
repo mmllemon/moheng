@@ -21,7 +21,7 @@ export interface ReportStudioRenderedSheet {
 }
 export interface ReportStudioRenderResult {
   title: string;
-  domain: 'PROJECT' | 'COMPANY';
+  domain: 'PROJECT' | 'COMPANY' | 'PARTY';
   generatedAt: string;
   projectId: string | null;
   sheets: ReportStudioRenderedSheet[];
@@ -141,6 +141,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
           if (binding) {
             format = binding.format;
             const source = dataset.sources[binding.sourceId];
+            // Row identity invariant: every cell in a repeated row resolves from the same source record index. Cross-source bindings are rejected by the definition validator; never pair independent collections by visual row number.
             const record = region ? (region.sourceId === binding.sourceId ? (regionRecords?.[repeat] ?? null) : null) : source && typeof source === 'object' && !Array.isArray(source) ? source : null;
             value = record && typeof record === 'object' ? (record as Record<string, unknown>)[binding.fieldId] ?? null : null;
           }

@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Banknote, CheckCircle2, ClipboardCheck, FileCheck2, Plus, ReceiptText, RefreshCw, ShieldCheck, Wallet, X } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
+import { ProjectLedgerReportButton, ProjectSummaryReportButton } from '../components/ReportLaunchButton';
 import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import { currentDateInputValue, dateInputToIso } from '../components/Ui';
 
@@ -130,6 +131,9 @@ export default function OwnerFinancePage() {
       title="竣工结算与应收账款"
       subtitle={`${data.mainContract?.contractNo} · ${data.mainContract?.name} · ${data.mainContract?.project.ownerName}`}
       actions={<>
+        {activeTab === 'receivables' && <ProjectLedgerReportButton reportKey="owner-receivables" label="预览 / 导出应收台账" />}
+        {activeTab === 'cashflow' && <ProjectLedgerReportButton reportKey="owner-receipts" label="预览 / 导出收退款流水" />}
+        {(activeTab === 'settlements' || activeTab === 'retention') && <ProjectSummaryReportButton label="预览 / 导出项目综合报表" />}
         <Button variant="secondary" onClick={() => setAdvance(true)}><Wallet size={15} />登记预付款</Button>
         <Button variant="secondary" onClick={() => setRetention(true)} disabled={(summary?.retentionBalanceAmount ?? 0) <= 0}><ShieldCheck size={15} />释放质保金</Button>
         <Button onClick={() => setCreating(true)}><Plus size={15} />新建结算</Button>

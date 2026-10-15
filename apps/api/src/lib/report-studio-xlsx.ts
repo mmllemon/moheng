@@ -81,7 +81,7 @@ export async function buildReportStudioWorkbook(input: { definition: ReportStudi
   workbook.created = new Date(input.dataset.generatedAt);
   workbook.modified = new Date(input.dataset.generatedAt);
   workbook.title = input.definition.title;
-  workbook.subject = input.definition.domain === 'PROJECT' ? '项目级综合报表' : '公司级经营报表';
+  workbook.subject = input.definition.domain === 'PROJECT' ? '项目级综合报表' : input.definition.domain === 'PARTY' ? '往来单位经营档案报表' : '公司级经营报表';
   workbook.company = '墨衡';
   workbook.properties.date1904 = false;
   for (const sheet of rendered.sheets) {
@@ -97,7 +97,7 @@ export async function buildReportStudioWorkbook(input: { definition: ReportStudi
       margins: { left: 0.25, right: 0.25, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
     };
     worksheet.pageSetup.horizontalCentered = false;
-    worksheet.headerFooter.oddFooter = `${input.definition.page.footerText.replace(/&/g, '&&')}${input.definition.page.includeMetadata ? ` · ${input.definition.domain === 'PROJECT' ? '项目级' : '公司级'} · 模板 ${input.templateName} v${input.templateVersion}` : ''}　&P/&N`;
+    worksheet.headerFooter.oddFooter = `${input.definition.page.footerText.replace(/&/g, '&&')}${input.definition.page.includeMetadata ? ` · ${input.definition.domain === 'PROJECT' ? '项目级' : input.definition.domain === 'PARTY' ? '往来单位档案级' : '公司级'} · 模板 ${input.templateName} v${input.templateVersion}` : ''}　&P/&N`;
     for (const [columnKey, width] of Object.entries(sheet.columnWidths)) worksheet.getColumn(Number(columnKey) + 1).width = Math.min(80, Math.max(2, width / 7));
     for (let rowIndex = 0; rowIndex < sheet.rows.length; rowIndex += 1) {
       const rowData = sheet.rows[rowIndex]!;
@@ -132,9 +132,9 @@ export async function buildReportStudioWorkbook(input: { definition: ReportStudi
     const metadata = workbook.addWorksheet('报表说明');
     metadata.columns = [{ width: 24 }, { width: 70 }];
     metadata.addRows([
-      ['报表名称', input.definition.title], ['报表类型', input.definition.domain === 'PROJECT' ? '项目级综合报表' : '公司级经营报表'],
+      ['报表名称', input.definition.title], ['报表类型', input.definition.domain === 'PROJECT' ? '项目级综合报表' : input.definition.domain === 'PARTY' ? '往来单位经营档案报表' : '公司级经营报表'],
       ['模板名称', input.templateName], ['模板版本', input.templateVersion], ['生成时间', input.dataset.generatedAt],
-      ['项目范围', input.dataset.projectId ?? `当前账号可访问的 ${input.dataset.accessibleProjectCount} 个项目`],
+      ['数据范围', input.dataset.projectId ?? (input.dataset.businessPartyId ? `往来单位 ${input.dataset.businessPartyId}；仅统计当前账号可访问项目关联` : `当前账号可访问的 ${input.dataset.accessibleProjectCount} 个项目`)],
       ['注意事项', '本工作簿为只读快照，不会回写业务数据。公司级汇总仅包含当前用户有权访问的项目。超出 Excel 安全数值精度的金额将以文本保留完整十进制。'],
       ...(rendered.truncated ? [['截断提示', '部分集合明细或工作表行数达到上限，请调整报表范围后重新导出。']] : []),
       ...rendered.warnings.map((warning) => ['生成提示', warning]),

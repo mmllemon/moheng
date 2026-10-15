@@ -289,6 +289,7 @@ model BusinessParty {
   projectsAsOwner     Project[]           @relation("ProjectOwnerParty")
   downstreamContracts DownstreamContract[] @relation("DownstreamContractCounterparty")
   costEntries         CostEntry[]         @relation("CostEntryBusinessParty")
+  reportTemplates     ReportTemplate[]    @relation("ReportTemplateBusinessParty")
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -1120,6 +1121,7 @@ model ReportTemplate {
   scope              ReportTemplateScope   @default(PERSONAL)
   status             ReportTemplateStatus  @default(DRAFT)
   projectId          String?
+  businessPartyId    String?
   ownerUserId        String?
   version            Int                   @default(1)
   publishedVersion   Int?
@@ -1130,6 +1132,7 @@ model ReportTemplate {
   createdAt          DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt          DateTime              @updatedAt @db.Timestamptz(3)
   project            Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  businessParty      BusinessParty?        @relation("ReportTemplateBusinessParty", fields: [businessPartyId], references: [id], onDelete: Restrict)
   owner              User?                 @relation("ReportTemplateOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
   createdBy          User                  @relation("ReportTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
   updatedBy          User                  @relation("ReportTemplateUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
@@ -1138,6 +1141,7 @@ model ReportTemplate {
   @@index([reportKey, scope, status, updatedAt])
   @@index([ownerUserId, reportKey, status])
   @@index([projectId, reportKey, status])
+  @@index([businessPartyId, reportKey, status])
 }
 
 model ReportTemplateRevision {

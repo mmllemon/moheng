@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Banknote, CheckCircle2, ClipboardCheck, FileCheck2, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
+import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 
 type SettlementType = 'PROGRESS' | 'FINAL' | 'ADJUSTMENT';
@@ -164,7 +165,7 @@ export default function DownstreamFinancePage() {
   if (financeQuery.isLoading) return <LoadingBlock label="正在加载结算与应付账款…" />;
   if (financeQuery.isError) return <ErrorBlock message={financeQuery.error instanceof Error ? financeQuery.error.message : '结算与应付账款数据暂时不可用'} retry={() => void financeQuery.refetch()} />;
   return <div className="page-wrap downstream-finance-page">
-    <PageHeader title="结算与应付账款" eyebrow="分供合同财务台账" subtitle="管理双方结算确认、应付过账、付款核销、预付款扣回、质保金和发票核对。清单明细不是必要条件。" />
+    <PageHeader title="结算与应付账款" eyebrow="分供合同财务台账" subtitle="管理双方结算确认、应付过账、付款核销、预付款扣回、质保金和发票核对。清单明细不是必要条件。" actions={<ProjectLedgerReportButton reportKey="downstream-payables" label="预览 / 导出应付台账" />} />
     {notice && <div className="inline-notice"><CheckCircle2 size={16} /><span>{notice}</span><button className="icon-button" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></button></div>}
     <div className="change-summary-grid downstream-summary-grid finance-summary-grid">
       <div className="change-summary"><span className="change-summary-label">累计过账结算净增减</span><strong>{formatMoney(summary?.postedSettlementAmount ?? 0, 0)}</strong><small>阶段结算增量与最终结算差额累计</small></div>

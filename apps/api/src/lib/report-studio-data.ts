@@ -3,13 +3,14 @@ import { calculateEffectiveContractAmount, centsToMoney, moneyToCents } from './
 import { calculateDownstreamCurrentAmount } from './downstream-contract-math.js';
 import type { AuthUser } from './auth.js';
 
-export type ReportStudioDomain = 'PROJECT' | 'COMPANY';
+export type ReportStudioDomain = 'PROJECT' | 'COMPANY' | 'PARTY';
 export type ReportStudioFieldType = 'TEXT' | 'NUMBER' | 'MONEY' | 'DATE' | 'BOOLEAN';
 export interface ReportStudioField { id: string; label: string; type: ReportStudioFieldType; description?: string }
 export interface ReportStudioSource { id: string; label: string; cardinality: 'ONE' | 'MANY'; domains: ReportStudioDomain[]; description: string; fields: ReportStudioField[] }
 
 const projectDomains: ReportStudioDomain[] = ['PROJECT'];
 const bothDomains: ReportStudioDomain[] = ['PROJECT', 'COMPANY'];
+const partyDomain: ReportStudioDomain[] = ['PARTY'];
 const txt = (id: string, label: string, description?: string): ReportStudioField => ({ id, label, type: 'TEXT', ...(description ? { description } : {}) });
 const money = (id: string, label: string, description?: string): ReportStudioField => ({ id, label, type: 'MONEY', ...(description ? { description } : {}) });
 const num = (id: string, label: string): ReportStudioField => ({ id, label, type: 'NUMBER' });
@@ -75,12 +76,31 @@ export const reportStudioSources: Readonly<ReportStudioSource[]> = [
   { id: 'companyDownstreamPayables', label: '公司分供应付清单', cardinality: 'MANY', domains: ['COMPANY'], description: '跨可访问项目的已建立分供应付台账，不等同于已付款现金流。', fields: [
     txt('projectCode', '项目编号'), txt('projectName', '项目名称'), txt('payableNo', '应付编号'), txt('contractNo', '分供合同编号'), txt('contractName', '分供合同名称'), txt('counterpartyName', '往来单位'), txt('type', '应付类型'), money('netAmount', '净应付金额'), date('dueAt', '到期日'), date('postedAt', '过账日期'),
   ] },
+  { id: 'businessParty', label: '往来单位档案', cardinality: 'ONE', domains: partyDomain, description: '当前单位的公司级主数据；跨项目金额只计算当前用户有权访问的项目。', fields: [
+    txt('name', '单位名称'), txt('creditCode', '统一社会信用代码'), txt('roles', '业务角色'), txt('status', '档案状态'), txt('identityVerified', '主体核验状态'), txt('formerNames', '历史名称'), txt('legalRepresentative', '法定代表人'), txt('address', '地址'), txt('contactName', '联系人'), txt('phone', '联系电话'), txt('email', '电子邮箱'), txt('taxNo', '纳税人识别号'), txt('invoiceTitle', '发票抬头'), txt('notes', '备注'), date('updatedAt', '最近更新日期'),
+  ] },
+  { id: 'partySummary', label: '单位经营指标', cardinality: 'ONE', domains: partyDomain, description: '基于当前账号可访问项目的单位经营指标，沿用单位经营档案口径。', fields: [
+    num('projectCount', '关联项目数'), num('mainContractCount', '业主主合同数'), num('downstreamContractCount', '分供合同数'), money('ownerCurrentContractAmount', '主合同当前有效金额'), money('ownerApprovedBillAmount', '已核定进度款'), money('ownerReceivedAmount', '业主已回款'), money('downstreamCurrentContractAmount', '分供合同当前金额'), money('downstreamSettledAmount', '分供累计结算'), money('downstreamPaidAmount', '分供累计净付款'), money('downstreamOpenPayableAmount', '分供应付未付'), money('downstreamSupplierCreditAmount', '待返还/抵扣'), money('downstreamActualCostAmount', '合同关联实际成本'), money('downstreamInvoiceAmount', '供应商发票价税合计'), money('downstreamVerifiedInvoiceAmount', '已核验发票价税合计'), money('standaloneCostAmount', '独立关联实际成本'), num('standaloneCostCount', '独立成本记录数'), money('downstreamTotalCostAmount', '实际成本合计'),
+  ] },
+  { id: 'partyProjects', label: '单位关联项目', cardinality: 'MANY', domains: partyDomain, description: '一个可访问关联项目一行，按项目 ID 去重。', fields: [
+    txt('code', '项目编号'), txt('name', '项目名称'), txt('status', '项目状态'), txt('role', '关联角色'), money('incomeContractAmount', '主合同当前金额'), money('downstreamContractAmount', '分供合同当前金额'), money('incomePaidAmount', '业主已回款'), money('downstreamPaidAmount', '分供净付款'), money('downstreamActualCostAmount', '合同关联成本'), money('standaloneCostAmount', '独立成本'), num('downstreamContractCount', '分供合同数量'), num('incomeBillCount', '进度款期数'),
+  ] },
+  { id: 'partyMainContracts', label: '单位关联业主主合同', cardinality: 'MANY', domains: partyDomain, description: '单位作为建设单位关联的主合同及进度款摘要。', fields: [
+    txt('projectCode', '项目编号'), txt('projectName', '项目名称'), txt('contractNo', '主合同编号'), txt('name', '主合同名称'), txt('status', '项目状态'), money('originalAmount', '原始合同金额'), money('currentAmount', '当前有效合同额'), money('approvedAmount', '已核定进度款'), money('paidAmount', '已回款'), num('progressBillCount', '进度款期数'), num('changeCount', '变更数量'),
+  ] },
+  { id: 'partyDownstreamContracts', label: '单位关联分供合同', cardinality: 'MANY', domains: partyDomain, description: '单位作为分供相对方的合同、已过账结算、净付款、应付及成本/发票摘要。', fields: [
+    txt('projectCode', '项目编号'), txt('projectName', '项目名称'), txt('contractNo', '合同编号'), txt('name', '合同名称'), txt('type', '合同类别'), txt('status', '合同状态'), money('originalAmount', '原始金额'), money('currentAmount', '当前合同额'), money('settledAmount', '累计结算'), money('paidAmount', '累计净付款'), money('openPayableAmount', '应付未付'), money('supplierCreditAmount', '待返还/抵扣'), money('actualCostAmount', '关联实际成本'), money('invoiceAmount', '发票价税合计'), money('verifiedInvoiceAmount', '已核验发票金额'), num('invoiceCount', '发票数量'),
+  ] },
+  { id: 'partyStandaloneCosts', label: '单位独立成本记录', cardinality: 'MANY', domains: partyDomain, description: '未关联分供合同、但通过统一单位 ID 关联的成本明细；明细最多展示最近 200 条。', fields: [
+    txt('projectCode', '项目编号'), txt('projectName', '项目名称'), date('date', '成本日期'), txt('description', '费用说明'), txt('type', '成本类型'), money('amount', '成本金额'), txt('vendorName', '业务对象'),
+  ] },
 ];
 
 export interface ReportStudioDataset {
   domain: ReportStudioDomain;
   generatedAt: string;
   projectId: string | null;
+  businessPartyId?: string | null;
   accessibleProjectCount: number;
   sources: Record<string, unknown>;
   warnings: string[];
@@ -95,10 +115,106 @@ function plusMoney(...values: unknown[]): string { return sumMoney(values); }
 function subtractMoney(left: unknown, right: unknown): string { return centsToMoney(moneyToCents(left ?? '0') - moneyToCents(right ?? '0')); }
 const MAX_ROWS_PER_SOURCE = 10000;
 
-export async function loadReportStudioDataset(user: AuthUser, domain: ReportStudioDomain, projectId?: string): Promise<ReportStudioDataset> {
+
+function plainNumber(value: unknown): number { const result = Number(value ?? 0); return Number.isFinite(result) ? result : 0; }
+/** Money aggregation stays in integer cents; never sum PostgreSQL Decimal values through JS floating point. */
+function sumPartyMoney(values: unknown[]): string { return centsToMoney(values.reduce<bigint>((total, value) => total + moneyToCents(value ?? '0'), 0n)); }
+function plusPartyMoney(...values: unknown[]): string { return centsToMoney(values.reduce<bigint>((total, value) => total + moneyToCents(value ?? '0'), 0n)); }
+function subtractPartyMoney(left: unknown, right: unknown): string { return centsToMoney(moneyToCents(left ?? '0') - moneyToCents(right ?? '0')); }
+function sumNumbers(values: unknown[]): number { return values.reduce<number>((total, value) => total + plainNumber(value), 0); }
+
+/** Loads a party report from the same underlying relationships as the operating-profile page. */
+async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: string): Promise<ReportStudioDataset> {
+  if (!businessPartyId) throw Object.assign(new Error('往来单位经营档案报表必须指定单位'), { statusCode: 400, code: 'BUSINESS_PARTY_ID_REQUIRED' });
+  const party = await prisma.businessParty.findUnique({ where: { id: businessPartyId } });
+  if (!party) throw Object.assign(new Error('往来单位档案不存在'), { statusCode: 404, code: 'BUSINESS_PARTY_NOT_FOUND' });
+  const projectScope = { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) };
+  const visibleProjects = await prisma.project.findMany({ where: projectScope, select: { id: true, code: true, name: true, status: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] });
+  const visibleIds = visibleProjects.map((project) => project.id);
+  const projectFilter = { projectId: { in: visibleIds } };
+  const [ownedProjects, downstreamContractsFetched, standaloneCosts, standaloneCostTotals] = await Promise.all([
+    prisma.project.findMany({ where: { ...projectScope, ownerPartyId: businessPartyId }, include: { mainContract: true, progressBills: { where: { deletedAt: null }, include: { payments: true }, orderBy: [{ periodNo: 'asc' }, { id: 'asc' }] }, changes: { where: { deletedAt: null }, select: { externalConfirmationStatus: true, externalConfirmedAmount: true } } }, orderBy: [{ code: 'asc' }, { id: 'asc' }] }),
+    prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, ...projectFilter, deletedAt: null }, include: { project: { select: { id: true, name: true, code: true, status: true } }, adjustments: { select: { direction: true, amount: true } }, settlements: { where: { status: 'POSTED' }, include: { posting: { select: { deltaAmount: true, cumulativeAfter: true, postedAt: true } } } }, payments: { select: { type: true, amount: true, paidAt: true } }, payables: { include: { paymentAllocations: { select: { amount: true } } } }, costEntries: { where: { deletedAt: null }, select: { amount: true } }, supplierInvoices: { select: { amount: true, taxAmount: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.costEntry.findMany({ where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
+    prisma.costEntry.groupBy({ by: ['projectId'], where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, _sum: { amount: true }, _count: { _all: true } }),
+  ]);
+  const downstreamContractsTruncated = downstreamContractsFetched.length > MAX_ROWS_PER_SOURCE;
+  const downstreamContracts = downstreamContractsFetched.slice(0, MAX_ROWS_PER_SOURCE);
+  if (user.role !== 'ADMIN' && !ownedProjects.length && !downstreamContracts.length && !standaloneCostTotals.length) {
+    throw Object.assign(new Error('单位不存在，或当前账号无权查看其关联项目资料'), { statusCode: 404, code: 'BUSINESS_PARTY_NOT_FOUND' });
+  }
+  const projectMap = new Map<string, Record<string, unknown>>();
+  for (const project of ownedProjects) {
+    const paid = sumPartyMoney(project.progressBills.flatMap((bill) => bill.payments.map((payment) => payment.amount)));
+    projectMap.set(project.id, { id: project.id, code: project.code, name: project.name, status: project.status, role: 'OWNER', incomeContractAmount: moneyValue(project.contractAmount), downstreamContractAmount: '0.00', incomePaidAmount: paid, downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00', downstreamContractCount: 0, incomeBillCount: project.progressBills.length });
+  }
+  const downstreamRows = downstreamContracts.map((contract) => {
+    const currentAmount = centsToMoney(contract.adjustments.reduce<bigint>((total, adjustment) => total + (adjustment.direction === 'DECREASE' ? -1n : 1n) * moneyToCents(adjustment.amount), moneyToCents(contract.originalAmount)));
+    const settledAmount = sumPartyMoney(contract.settlements.map((settlement) => settlement.posting?.deltaAmount));
+    const paidAmount = subtractPartyMoney(sumPartyMoney(contract.payments.filter((payment) => payment.type !== 'REFUND').map((payment) => payment.amount)), sumPartyMoney(contract.payments.filter((payment) => payment.type === 'REFUND').map((payment) => payment.amount)));
+    const openPayableCents = contract.payables.reduce<bigint>((total, payable) => { const net = moneyToCents(payable.netAmount); if (net <= 0n) return total; const paid = payable.paymentAllocations.reduce<bigint>((sum, allocation) => sum + moneyToCents(allocation.amount), 0n); return total + (net > paid ? net - paid : 0n); }, 0n);
+    const openPayableAmount = centsToMoney(openPayableCents);
+    const supplierCreditAmount = centsToMoney(contract.payables.reduce<bigint>((total, payable) => { const net = moneyToCents(payable.netAmount); return total + (net < 0n ? -net : 0n); }, 0n));
+    const actualCostAmount = sumPartyMoney(contract.costEntries.map((cost) => cost.amount));
+    const invoiceAmount = sumPartyMoney(contract.supplierInvoices.map((invoice) => invoice.amount));
+    const verifiedInvoiceAmount = sumPartyMoney(contract.supplierInvoices.filter((invoice) => invoice.status === 'VERIFIED').map((invoice) => invoice.amount));
+    const existing = projectMap.get(contract.project.id) ?? { id: contract.project.id, code: contract.project.code, name: contract.project.name, status: contract.project.status, role: 'COUNTERPARTY', incomeContractAmount: '0.00', downstreamContractAmount: '0.00', incomePaidAmount: '0.00', downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00', downstreamContractCount: 0, incomeBillCount: 0 };
+    existing.downstreamContractCount = plainNumber(existing.downstreamContractCount) + 1;
+    if (contract.status !== 'TERMINATED') existing.downstreamContractAmount = plusPartyMoney(existing.downstreamContractAmount, currentAmount);
+    existing.downstreamPaidAmount = plusPartyMoney(existing.downstreamPaidAmount, paidAmount);
+    existing.downstreamActualCostAmount = plusPartyMoney(existing.downstreamActualCostAmount, actualCostAmount);
+    projectMap.set(contract.project.id, existing);
+    return { id: contract.id, projectId: contract.project.id, projectCode: contract.project.code, projectName: contract.project.name, contractNo: contract.contractNo, name: contract.name, type: contract.type, status: contract.status, originalAmount: moneyValue(contract.originalAmount), currentAmount, settledAmount, paidAmount, openPayableAmount, supplierCreditAmount, actualCostAmount, invoiceAmount, verifiedInvoiceAmount, invoiceCount: contract.supplierInvoices.length };
+  });
+  const projectIdsForCosts = standaloneCostTotals.map((row) => row.projectId);
+  const costProjects = projectIdsForCosts.length ? await prisma.project.findMany({ where: { ...projectScope, id: { in: projectIdsForCosts } }, select: { id: true, code: true, name: true, status: true } }) : [];
+  const costProjectById = new Map(costProjects.map((project) => [project.id, project] as const));
+  for (const aggregate of standaloneCostTotals) {
+    const project = costProjectById.get(aggregate.projectId);
+    if (!project) continue;
+    const existing = projectMap.get(project.id) ?? { id: project.id, code: project.code, name: project.name, status: project.status, role: 'COST_PARTY', incomeContractAmount: '0.00', downstreamContractAmount: '0.00', incomePaidAmount: '0.00', downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00', downstreamContractCount: 0, incomeBillCount: 0 };
+    existing.standaloneCostAmount = moneyValue(aggregate._sum.amount);
+    existing.standaloneCostCount = aggregate._count._all;
+    projectMap.set(project.id, existing);
+  }
+  const projectRows = [...projectMap.values()].sort((a, b) => String(a.name ?? '').localeCompare(String(b.name ?? ''), 'zh-CN') || String(a.code ?? '').localeCompare(String(b.code ?? ''), 'zh-CN') || String(a.id ?? '').localeCompare(String(b.id ?? '')));
+  if (downstreamContractsTruncated) {
+    // Rows can still show the first bounded slice, but all derived downstream totals must be null rather than look complete.
+    for (const project of projectRows) {
+      project.downstreamContractAmount = null;
+      project.downstreamPaidAmount = null;
+      project.downstreamActualCostAmount = null;
+      project.downstreamContractCount = null;
+    }
+  }
+  const mainContractRows = ownedProjects.filter((project) => project.mainContract).map((project) => ({ projectCode: project.code, projectName: project.name, contractNo: project.mainContract!.contractNo, name: project.mainContract!.name, status: project.status, originalAmount: moneyValue(project.originalContractAmount), currentAmount: moneyValue(project.contractAmount), approvedAmount: sumPartyMoney(project.progressBills.map((bill) => bill.approvedAmount)), paidAmount: sumPartyMoney(project.progressBills.flatMap((bill) => bill.payments.map((payment) => payment.amount))), progressBillCount: project.progressBills.length, changeCount: project.changes.length }));
+  const standaloneCostAmount = sumPartyMoney(standaloneCostTotals.map((row) => row._sum.amount));
+  const sum = (key: string, source = downstreamRows) => sumPartyMoney(source.map((row) => (row as Record<string, unknown>)[key]));
+  const summary = {
+    projectCount: projectRows.length, mainContractCount: mainContractRows.length, downstreamContractCount: downstreamContractsTruncated ? null : downstreamRows.length,
+    ownerCurrentContractAmount: sumPartyMoney(mainContractRows.map((row) => row.currentAmount)), ownerApprovedBillAmount: sumPartyMoney(mainContractRows.map((row) => row.approvedAmount)), ownerReceivedAmount: sumPartyMoney(mainContractRows.map((row) => row.paidAmount)),
+    downstreamCurrentContractAmount: downstreamContractsTruncated ? null : sumPartyMoney(downstreamRows.filter((row) => row.status !== 'TERMINATED').map((row) => row.currentAmount)), downstreamSettledAmount: downstreamContractsTruncated ? null : sum('settledAmount'), downstreamPaidAmount: downstreamContractsTruncated ? null : sum('paidAmount'), downstreamOpenPayableAmount: downstreamContractsTruncated ? null : sum('openPayableAmount'), downstreamSupplierCreditAmount: downstreamContractsTruncated ? null : sum('supplierCreditAmount'), downstreamActualCostAmount: downstreamContractsTruncated ? null : sum('actualCostAmount'), downstreamInvoiceAmount: downstreamContractsTruncated ? null : sum('invoiceAmount'), downstreamVerifiedInvoiceAmount: downstreamContractsTruncated ? null : sum('verifiedInvoiceAmount'), downstreamInvoiceCount: downstreamContractsTruncated ? null : sumNumbers(downstreamRows.map((row) => row.invoiceCount)), standaloneCostAmount, standaloneCostCount: standaloneCostTotals.reduce((total, row) => total + row._count._all, 0), downstreamTotalCostAmount: downstreamContractsTruncated ? null : plusPartyMoney(sum('actualCostAmount'), standaloneCostAmount),
+  };
+  const warnings: string[] = [];
+  if (!party.identityVerified) warnings.push('单位主体尚未核验；跨项目经营汇总仅供参考，不应直接作为最终对账依据。');
+  if (downstreamContractsTruncated) warnings.push(`该往来单位关联分供合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；依赖分供合同集合的合同、应付、成本和发票金额汇总已停用，避免将部分数据冒充完整总额。`);
+  if (standaloneCosts.length > 200) warnings.push('独立关联成本明细仅显示最近 200 条；汇总金额使用完整分组统计。');
+  const partyRows = {
+    businessParty: { id: party.id, name: party.name, creditCode: party.creditCode ?? '', roles: party.roles.join('、'), status: party.status, identityVerified: party.identityVerified ? '已核验' : '待核验', formerNames: party.formerNames.join('、'), legalRepresentative: party.legalRepresentative ?? '', address: party.address ?? '', contactName: party.contactName ?? '', phone: party.phone ?? '', email: party.email ?? '', taxNo: party.taxNo ?? '', invoiceTitle: party.invoiceTitle ?? '', notes: party.notes ?? '', updatedAt: dateText(party.updatedAt) },
+    partySummary: summary,
+    partyProjects: projectRows,
+    partyMainContracts: mainContractRows,
+    partyDownstreamContracts: downstreamRows,
+    partyStandaloneCosts: standaloneCosts.slice(0, 200).map((cost) => ({ projectCode: cost.project.code, projectName: cost.project.name, date: dateText(cost.date), description: cost.description, type: cost.type, amount: moneyValue(cost.amount), vendorName: cost.vendorName ?? '' })),
+  };
+  return { domain: 'PARTY', generatedAt: new Date().toISOString(), projectId: null, businessPartyId, accessibleProjectCount: visibleProjects.length, sources: partyRows, warnings, truncated: downstreamContractsTruncated || standaloneCosts.length > 200 };
+}
+
+export async function loadReportStudioDataset(user: AuthUser, domain: ReportStudioDomain, projectId?: string, businessPartyId?: string): Promise<ReportStudioDataset> {
+  if (domain === 'PARTY') return loadBusinessPartyReportDataset(user, businessPartyId);
   const accessibleProjects = await prisma.project.findMany({
     where: { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) },
-    include: { mainContract: true }, orderBy: [{ code: 'asc' }],
+    include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }],
   });
   const accessibleIds = accessibleProjects.map((project) => project.id);
   if (domain === 'PROJECT' && !projectId) throw Object.assign(new Error('项目级报表必须指定项目'), { statusCode: 400, code: 'PROJECT_ID_REQUIRED' });
@@ -111,14 +227,14 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   if (projectIds.length === 0) warnings.push('当前账号没有可访问项目，因此仅能生成空数据模板。');
 
   const [changes, downstreamContracts, ownerReceivables, ownerReceipts, actualCosts, progressBills, downstreamPayables, budgetItems] = await Promise.all([
-    prisma.change.findMany({ where: { ...projectFilter, deletedAt: null, externalConfirmationStatus: 'EFFECTIVE' }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ occurredAt: 'asc' }, { code: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.downstreamContract.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } }, adjustments: { orderBy: { effectiveAt: 'asc' } } }, orderBy: [{ project: { code: 'asc' } }, { contractNo: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.ownerReceivable.findMany({ where: { ...projectFilter, status: { not: 'VOID' } }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ project: { code: 'asc' } }, { postedAt: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.ownerReceipt.findMany({ where: projectFilter, include: { project: { select: { code: true, name: true } }, originalReceipt: { select: { receiptNo: true } } }, orderBy: [{ project: { code: 'asc' } }, { receivedAt: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.costEntry.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } }, budgetItem: { select: { code: true } }, downstreamContract: { select: { contractNo: true } } }, orderBy: [{ project: { code: 'asc' } }, { date: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.progressBill.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ project: { code: 'asc' } }, { periodNo: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.downstreamPayable.findMany({ where: { downstreamContract: { projectId: { in: projectIds }, deletedAt: null } }, include: { downstreamContract: { select: { projectId: true, contractNo: true, name: true, counterpartyName: true, project: { select: { code: true, name: true } } } } }, orderBy: [{ downstreamContract: { project: { code: 'asc' } } }, { postedAt: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.budgetItem.findMany({ where: { ...projectFilter, deletedAt: null }, select: { id: true, parentId: true, projectId: true, totalPrice: true }, take: MAX_ROWS_PER_SOURCE * 10 + 1 }),
+    prisma.change.findMany({ where: { ...projectFilter, deletedAt: null, externalConfirmationStatus: 'EFFECTIVE' }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ occurredAt: 'asc' }, { code: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.downstreamContract.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } }, adjustments: { orderBy: [{ effectiveAt: 'asc' }, { id: 'asc' }] } }, orderBy: [{ project: { code: 'asc' } }, { contractNo: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.ownerReceivable.findMany({ where: { ...projectFilter, status: { not: 'VOID' } }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ project: { code: 'asc' } }, { postedAt: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.ownerReceipt.findMany({ where: projectFilter, include: { project: { select: { code: true, name: true } }, originalReceipt: { select: { receiptNo: true } } }, orderBy: [{ project: { code: 'asc' } }, { receivedAt: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.costEntry.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } }, budgetItem: { select: { code: true } }, downstreamContract: { select: { contractNo: true } } }, orderBy: [{ project: { code: 'asc' } }, { date: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.progressBill.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ project: { code: 'asc' } }, { periodNo: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.downstreamPayable.findMany({ where: { downstreamContract: { projectId: { in: projectIds }, deletedAt: null } }, include: { downstreamContract: { select: { projectId: true, contractNo: true, name: true, counterpartyName: true, project: { select: { code: true, name: true } } } } }, orderBy: [{ downstreamContract: { project: { code: 'asc' } } }, { downstreamContract: { contractNo: 'asc' } }, { postedAt: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.budgetItem.findMany({ where: { ...projectFilter, deletedAt: null }, select: { id: true, parentId: true, projectId: true, totalPrice: true }, orderBy: [{ project: { code: 'asc' } }, { code: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE * 10 + 1 }),
   ]);
   const truncation = {
     changes: changes.length > MAX_ROWS_PER_SOURCE,

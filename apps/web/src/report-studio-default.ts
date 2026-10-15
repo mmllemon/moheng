@@ -99,7 +99,68 @@ function defaultCompanyData() {
   return { workbook, bindings, regions };
 }
 
+
+function defaultPartyData() {
+  const rows = [
+    ['往来单位经营档案报告'],
+    ['单位基础资料'],
+    ['单位名称', '', '统一社会信用代码', '', '业务角色', '', '档案状态', ''],
+    ['主体核验状态', '', '历史名称', '', '最近更新日期', '', '单位编号', ''],
+    ['联系人', '', '联系电话', '', '电子邮箱', '', '纳税人识别号', ''],
+    ['地址', '', '法定代表人', '', '发票抬头', '', '备注', ''],
+    ['经营指标概览'],
+    ['关联项目数', '', '业主主合同数', '', '分供合同数', '', '主合同当前有效金额', ''],
+    ['业主已回款', '', '分供合同当前金额', '', '分供累计结算', '', '分供累计净付款', ''],
+    ['分供应付未付', '', '待返还/抵扣', '', '合同关联实际成本', '', '独立关联实际成本', ''],
+    ['关联项目清单'],
+    ['项目编号', '项目名称', '项目状态', '关联角色', '主合同当前金额', '分供合同当前金额', '业主已回款', '分供净付款'],
+    [''],
+    ['关联业主主合同'],
+    ['项目编号', '项目名称', '合同编号', '合同名称', '项目状态', '原始合同金额', '当前有效合同额', '已回款'],
+    [''],
+    ['关联分供合同、结算与应付'],
+    ['项目编号', '项目名称', '合同编号', '合同名称', '类别', '状态', '当前合同额', '累计结算'],
+    [''],
+    ['单独关联成本记录（最近 200 条）'],
+    ['项目编号', '项目名称', '成本日期', '费用说明', '成本类型', '成本金额', '业务对象', ''],
+    [''],
+  ];
+  const cellData = rowsFrom(rows);
+  const put = (r: number, c: number, v: unknown, style?: Record<string, unknown>) => { (cellData[String(r)] ??= {})[String(c)] = cell(v, style); };
+  put(0, 0, rows[0]![0], titleStyle);
+  for (const r of [1, 6, 10, 13, 16, 19]) put(r, 0, rows[r]![0], sectionStyle);
+  for (const r of [2,3,4,5,7,8,9]) {
+    for (let c=0;c<8;c+=2) if (rows[r]![c]) put(r,c,rows[r]![c],labelStyle);
+    for (let c=1;c<8;c+=2) put(r,c,'',valueStyle);
+  }
+  for (const [r, columns] of [[11,8],[14,8],[17,8],[20,8]] as Array<[number,number]>) {
+    for (let c=0;c<columns;c+=1) put(r,c,rows[r]![c] ?? '',headerStyle);
+  }
+  for (const r of [12,15,18,21]) for (let c=0;c<8;c+=1) put(r,c,'',valueStyle);
+  const merges = [0,1,6,10,13,16,19].map((r) => ({ startRow:r,startColumn:0,endRow:r,endColumn:7 }));
+  const workbook = { id:'moheng-party-studio', name:'往来单位经营档案报告', appVersion:'1.0.4', locale:'zhCN', styles:{}, sheetOrder:['sheet1'], sheets:{ sheet1:{ id:'sheet1',name:'单位经营档案',rowCount:200,columnCount:8,defaultColumnWidth:120,defaultRowHeight:23,mergeData:merges,cellData,rowData:{'0':{h:36},'1':{h:28},'6':{h:28},'10':{h:28},'13':{h:28},'16':{h:28},'19':{h:28}},columnData:{'0':{w:115},'1':{w:145},'2':{w:125},'3':{w:145},'4':{w:125},'5':{w:145},'6':{w:125},'7':{w:145}},showGridlines:1,freeze:{startRow:-1,startColumn:-1,ySplit:2,xSplit:0} } } };
+  const bindings: ReportStudioBinding[] = [
+    ['B3','businessParty','name','TEXT'],['D3','businessParty','creditCode','TEXT'],['F3','businessParty','roles','TEXT'],['H3','businessParty','status','TEXT'],
+    ['B4','businessParty','identityVerified','TEXT'],['D4','businessParty','formerNames','TEXT'],['F4','businessParty','updatedAt','DATE'],['H4','businessParty','id','TEXT'],
+    ['B5','businessParty','contactName','TEXT'],['D5','businessParty','phone','TEXT'],['F5','businessParty','email','TEXT'],['H5','businessParty','taxNo','TEXT'],
+    ['B6','businessParty','address','TEXT'],['D6','businessParty','legalRepresentative','TEXT'],['F6','businessParty','invoiceTitle','TEXT'],['H6','businessParty','notes','TEXT'],
+    ['B8','partySummary','projectCount','NUMBER'],['D8','partySummary','mainContractCount','NUMBER'],['F8','partySummary','downstreamContractCount','NUMBER'],['H8','partySummary','ownerCurrentContractAmount','MONEY'],
+    ['B9','partySummary','ownerReceivedAmount','MONEY'],['D9','partySummary','downstreamCurrentContractAmount','MONEY'],['F9','partySummary','downstreamSettledAmount','MONEY'],['H9','partySummary','downstreamPaidAmount','MONEY'],
+    ['B10','partySummary','downstreamOpenPayableAmount','MONEY'],['D10','partySummary','downstreamSupplierCreditAmount','MONEY'],['F10','partySummary','downstreamActualCostAmount','MONEY'],['H10','partySummary','standaloneCostAmount','MONEY'],
+  ].map(([cellAddress,sourceId,fieldId,format],index)=>({id:`party-binding-${index+1}`,sheetId:'sheet1',cell:cellAddress!,sourceId:sourceId!,fieldId:fieldId!,format:format as ReportStudioBinding['format']}));
+  const regionSets: Array<[number,string,string[]]> = [
+    [12,'partyProjects',['code','name','status','role','incomeContractAmount','downstreamContractAmount','incomePaidAmount','downstreamPaidAmount']],
+    [15,'partyMainContracts',['projectCode','projectName','contractNo','name','status','originalAmount','currentAmount','paidAmount']],
+    [18,'partyDownstreamContracts',['projectCode','projectName','contractNo','name','type','status','currentAmount','settledAmount']],
+    [21,'partyStandaloneCosts',['projectCode','projectName','date','description','type','amount','vendorName']],
+  ];
+  const regions: ReportStudioRegion[] = regionSets.map(([templateRow,sourceId,fields],index)=>({id:`party-region-${index+1}`,sheetId:'sheet1',sourceId,templateRow,startColumn:0,endColumn:fields.length-1,maxRows:10000}));
+  for (const [row,sourceId,fields] of regionSets) fields.forEach((fieldId,c)=>bindings.push({id:`party-region-binding-${row}-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}${row+1}`,sourceId,fieldId,format:/Amount|amount|Paid|paid|Payable|settled|Cost/i.test(fieldId)?'MONEY':'AUTO'}));
+  addBindingPlaceholders(workbook,bindings);
+  return {workbook,bindings,regions};
+}
+
 export function createDefaultStudioDefinition(domain: ReportStudioDomain): ReportStudioDefinition {
-  const result = domain === 'PROJECT' ? defaultProjectData() : defaultCompanyData();
-  return { schemaVersion:2, domain, title: domain === 'PROJECT' ? '项目综合经营报告' : '公司经营汇总报告', description:'由墨衡报表工作室创建。数据按当前账号有权访问的项目读取。', workbook: result.workbook, bindings: result.bindings, regions: result.regions, page:{paper:'A4',orientation:'landscape',fitToWidth:true,includeMetadata:true,footerText:'墨衡工程经营管理系统'} };
+  const result = domain === 'PROJECT' ? defaultProjectData() : domain === 'PARTY' ? defaultPartyData() : defaultCompanyData();
+  return { schemaVersion:2, domain, title: domain === 'PROJECT' ? '项目综合经营报告' : domain === 'PARTY' ? '往来单位经营档案报告' : '公司经营汇总报告', description:'由墨衡报表工作室创建。数据按当前账号有权访问的项目和业务关系读取。', workbook: result.workbook, bindings: result.bindings, regions: result.regions, page:{paper:'A4',orientation:'landscape',fitToWidth:true,includeMetadata:true,footerText:'墨衡工程经营管理系统'} };
 }

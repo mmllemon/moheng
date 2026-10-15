@@ -1,0 +1,27 @@
+墨衡 v2.5.0-rc.1 验证结果
+日期：2026-10-15
+基线：v2.4.0-rc.1
+
+已执行：
+- `npm run validate:release-candidate`：成功退出（串联全套静态契约脚本）。
+- 原有业务保护契约：77/77。
+- XLSX/旧版报表工作室契约：18/18。
+- 新报表工作室契约：28/28。
+- WP2-WP8 契约：19/19。
+- 审计覆盖契约：12/12。
+- 架构契约：11/11。
+- PostgreSQL 后台任务契约：15/15。
+- TypeScript 缺陷根因契约：20/20。
+- TypeScript/TSX 语法转译：110 个文件，0 语法诊断（全局 TypeScript `transpileModule`；不是完整类型检查）。
+- 报表渲染器独立测试：5/5 通过（转译 renderer 与测试源到临时 ESM 目录后执行 `node --test`）。
+- 原有迁移字节哈希检查通过；`git diff --check` 通过。
+- 源码 ZIP `zip -T` 完整性检查通过，并验证包含 PARTY 模板迁移、模板绑定测试、工作台入口和 WP10 验收清单。
+- Git Bundle `verify` 报告完整历史，按 `main` 克隆后版本标签准确且工作区干净。
+
+未执行/阻塞：
+- 当前 Node.js 22.16.0，项目要求 Node.js >=24.0.0。
+- 仓库无完整依赖；`npm test` 失败于 `tsx: not found`，是依赖环境缺失，不是用例运行后失败。
+- API/Web 严格 tsc、lint、production build、Prisma validate/generate、真实 PostgreSQL migration/E2E、Univer 浏览器操作及 Excel/WPS 验收未完成。
+- 没有生成或伪造 package-lock.json；必须在网络可用的 Node.js 24+ 干净环境完成依赖安装和锁文件审查。
+
+结论：静态候选验证通过，不等于生产发布验收通过。本版本保持 v2.5.0-rc.1。
