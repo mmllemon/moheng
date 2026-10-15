@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { DownstreamContractStatus, DownstreamInvoiceStatus, DownstreamPayableType, DownstreamPaymentType, DownstreamRetentionMovementType, DownstreamSettlementStatus, DownstreamSettlementType, Prisma, ProjectRole } from '@prisma/client';
+import { DownstreamContractStatus, DownstreamInvoiceStatus, DownstreamPayableType, DownstreamPaymentType, DownstreamRetentionMovementType, DownstreamSettlementStatus, DownstreamSettlementType, Prisma, ProjectRole, UserRole } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';
@@ -90,7 +90,7 @@ function serializePayable(row: any) {
   };
 }
 
-async function hasProjectWriteAccess(userId: string, userRole: string, projectId: string, reply: any) {
+async function hasProjectWriteAccess(userId: string, userRole: UserRole, projectId: string, reply: any) {
   return denyIfNoProjectAccess(userId, userRole, projectId, reply, writeRoles);
 }
 async function lockContract(tx: Prisma.TransactionClient, projectId: string, contractId: string) {
@@ -139,8 +139,8 @@ export async function downstreamFinanceRoutes(app: FastifyInstance) {
       const advanceBalance = grossAdvance - refundsOfAdvance - advancedRecovered;
       const retained = moneyToCents(calculateRetentionBalance(contract.retentionMovements));
       const payables = contract.payables.map(serializePayable);
-      const openPayables = payables.reduce((sum, payable) => sum + Math.max(0, moneyToCents(payable.openAmount)), 0n);
-      const supplierCredit = payables.reduce((sum, payable) => sum + Math.max(0, -moneyToCents(payable.openAmount)), 0n);
+      const openPayables = payables.reduce((sum, payable) => { const open = moneyToCents(payable.openAmount); return sum + (open > 0n ? open : 0n); }, 0n);
+      const supplierCredit = payables.reduce((sum, payable) => { const open = moneyToCents(payable.openAmount); return sum + (open < 0n ? -open : 0n); }, 0n);
       const invoices = contract.supplierInvoices.map((invoice) => {
         const allocated = sumCents(invoice.allocations.map((allocation) => allocation.amount));
         return { ...invoice, amount: asAmount(invoice.amount), taxAmount: asAmount(invoice.taxAmount), allocatedAmount: amountFromCents(allocated), unallocatedAmount: amountFromCents(moneyToCents(invoice.amount) - allocated) };
@@ -418,7 +418,8 @@ export async function downstreamFinanceRoutes(app: FastifyInstance) {
         SETTLEMENT_DEDUCTIONS_EXCEED_AMOUNT: [409, 'SETTLEMENT_DEDUCTIONS_EXCEED_AMOUNT', '预付款扣回、质保金及其他扣款的合计不能超过本次正向结算金额'],
         ADVANCE_RECOVERY_EXCEEDS_BALANCE: [409, 'ADVANCE_RECOVERY_EXCEEDS_BALANCE', '预付款扣回金额超过当前可扣回预付款余额'],
       };
-      if (error instanceof Error && map[error.message]) { const [status, code, message] = map[error.message]; return failure(reply, status, code, message); }
+      const mappedError = error instanceof Error ? map[error.message] : undefined;
+      if (mappedError) { const [status, code, message] = mappedError; return failure(reply, status, code, message); }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return failure(reply, 409, 'PAYABLE_ALREADY_CREATED', '该结算单或应付来源已过账，请刷新检查是否已经成功');
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') return failure(reply, 409, 'SETTLEMENT_CONFLICT', '结算过账发生并发冲突，请刷新后重试');
       throw error;
@@ -547,7 +548,8 @@ export async function downstreamFinanceRoutes(app: FastifyInstance) {
         INVOICE_ALLOCATION_EXCEEDS_INVOICE: [409, 'INVOICE_ALLOCATION_EXCEEDS_INVOICE', '累计分配金额不能超过该发票价税合计金额'],
         INVOICE_ALLOCATION_EXCEEDS_PAYABLE: [409, 'INVOICE_ALLOCATION_EXCEEDS_PAYABLE', '累计分配金额不能超过该应付来源的正向结算金额'],
       };
-      if (error instanceof Error && map[error.message]) { const [status, code, message] = map[error.message]; return failure(reply, status, code, message); }
+      const mappedError = error instanceof Error ? map[error.message] : undefined;
+      if (mappedError) { const [status, code, message] = mappedError; return failure(reply, status, code, message); }
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') return failure(reply, 409, 'INVOICE_ALLOCATION_CONFLICT', '发票分配发生并发冲突，请刷新后重试');
       throw error;
     }

@@ -5,7 +5,8 @@ import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { canAccessProject, denyIfNoProjectAccess } from '../lib/project-access.js';
-import { fromCents, nonNegativeMoney, positiveMoney, toCents } from '../lib/validation.js';
+import { nonNegativeMoney, positiveMoney } from '../lib/validation.js';
+import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
 import { nextDocumentNumber } from '../lib/document-number.js';
 import { calculateContractNetOpenCents, calculateReceivableOpenCents, capReceiptCents } from '../lib/owner-settlement-math.js';
 
@@ -19,7 +20,7 @@ const billInput = z.object({
 const statusInput = z.object({ status: z.nativeEnum(ProgressBillStatus), approvedAmount: nonNegativeMoney.optional(), notes: z.string().max(2000).optional() });
 const paymentInput = z.object({ amount: positiveMoney, paidAt: z.string().datetime(), referenceNo: z.string().max(100).optional(), notes: z.string().max(1000).optional() });
 
-function sumAllocations(values: unknown[]): bigint { return values.reduce<bigint>((sum, value) => sum + toCents(Number(value)), 0n); }
+function sumAllocations(values: unknown[]): bigint { return values.reduce<bigint>((sum, value) => sum + moneyToCents(value), 0n); }
 
 function serialise(row: any) {
   return { ...row, amount: Number(row.amount), approvedAmount: row.approvedAmount == null ? null : Number(row.approvedAmount), paidAmount: Number(row.paidAmount), payments: row.payments?.map((p: any) => ({ ...p, amount: Number(p.amount) })), mainContract: row.mainContract ?? null };
@@ -132,31 +133,31 @@ export async function progressBillRoutes(app: FastifyInstance) {
         if (!main) throw new PaymentValidationError(409, 'MAIN_CONTRACT_REQUIRED', '关联的业主主合同不存在');
         const finalSettlement = await tx.ownerContractSettlement.findFirst({ where: { mainContractId: main.id, type: 'FINAL', status: 'POSTED' }, select: { id: true } });
         if (finalSettlement) throw new PaymentValidationError(409, 'OWNER_SETTLEMENT_COLLECTION_REQUIRED', '最终结算已过账，请进入“竣工结算与应收”按应收单登记到账，避免绕过最终结算净额校验');
-        const paidCents = toCents(Number(bill.paidAmount)) + toCents(parsed.data.amount);
-        const limitCents = toCents(Number(bill.approvedAmount ?? bill.amount));
+        const paidCents = moneyToCents(bill.paidAmount) + moneyToCents(parsed.data.amount);
+        const limitCents = moneyToCents(bill.approvedAmount ?? bill.amount);
         if (paidCents > limitCents) {
           throw new PaymentValidationError(400, 'PAYMENT_EXCEEDS_APPROVED', '累计到账金额不能超过核定金额');
         }
-        const paid = fromCents(paidCents);
+        const paid = centsToMoney(paidCents);
         let receivable = await tx.ownerReceivable.findUnique({ where: { sourceProgressBillId: billId }, include: { allocations: { select: { amount: true } } } });
         if (!receivable) {
           const receivableNo = await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'YS', date: new Date() });
-          receivable = await tx.ownerReceivable.create({ data: { projectId, mainContractId: main.id, receivableNo, type: 'PROGRESS_BILL', title: `进度款第${bill.periodNo}期应收`, sourceProgressBillId: billId, grossAmount: String(limitCents === 0n ? 0 : fromCents(limitCents)), advanceDeductionAmount: '0', retentionAmount: '0', otherDeductionAmount: '0', netAmount: String(fromCents(limitCents)), status: 'OPEN', notes: bill.notes, createdById: user.sub }, include: { allocations: { select: { amount: true } } } });
+          receivable = await tx.ownerReceivable.create({ data: { projectId, mainContractId: main.id, receivableNo, type: 'PROGRESS_BILL', title: `进度款第${bill.periodNo}期应收`, sourceProgressBillId: billId, grossAmount: centsToMoney(limitCents), advanceDeductionAmount: '0', retentionAmount: '0', otherDeductionAmount: '0', netAmount: centsToMoney(limitCents), status: 'OPEN', notes: bill.notes, createdById: user.sub }, include: { allocations: { select: { amount: true } } } });
         }
         const receivableAllocated = sumAllocations(receivable.allocations.map((allocation) => allocation.amount));
-        const receivableOpen = calculateReceivableOpenCents(toCents(Number(receivable.netAmount)), receivableAllocated);
+        const receivableOpen = calculateReceivableOpenCents(moneyToCents(receivable.netAmount), receivableAllocated);
         const contractReceivables = await tx.ownerReceivable.findMany({ where: { mainContractId: main.id }, select: { netAmount: true, allocations: { select: { amount: true } } } });
-        const contractNetOpen = calculateContractNetOpenCents(contractReceivables.map((row) => ({ netCents: toCents(Number(row.netAmount)), allocationCents: sumAllocations(row.allocations.map((allocation) => allocation.amount)) })));
-        const requestedCents = toCents(parsed.data.amount);
+        const contractNetOpen = calculateContractNetOpenCents(contractReceivables.map((row) => ({ netCents: moneyToCents(row.netAmount), allocationCents: sumAllocations(row.allocations.map((allocation) => allocation.amount)) })));
+        const requestedCents = moneyToCents(parsed.data.amount);
         if (requestedCents > capReceiptCents(requestedCents, receivableOpen, contractNetOpen)) throw new PaymentValidationError(400, 'RECEIPT_EXCEEDS_CONTRACT_OPEN', '本次到账超过该应收单或主合同扣除调整后的净应收余额');
         const receiptNo = await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'SK', date: new Date(parsed.data.paidAt) });
         const receipt = await tx.ownerReceipt.create({ data: { projectId, mainContractId: main.id, receiptNo, type: 'RECEIPT', amount: String(parsed.data.amount), receivedAt: new Date(parsed.data.paidAt), referenceNo: parsed.data.referenceNo ?? null, notes: parsed.data.notes ?? null, createdById: user.sub } });
         await tx.ownerReceiptAllocation.create({ data: { receiptId: receipt.id, receivableId: receivable.id, amount: String(parsed.data.amount), notes: '与原进度款到账台账同步' } });
         await tx.progressPayment.create({ data: { progressBillId: billId, amount: String(parsed.data.amount), paidAt: new Date(parsed.data.paidAt), referenceNo: parsed.data.referenceNo ?? null, notes: parsed.data.notes ?? null } });
-        const result = await tx.progressBill.update({ where: { id: billId }, data: { paidAmount: paid.toFixed(2), status: paidCents >= limitCents ? 'PAID' : 'APPROVED' }, include: { payments: { orderBy: { paidAt: 'desc' } } } });
-        await tx.ownerReceivable.update({ where: { id: receivable.id }, data: { status: paidCents >= limitCents ? 'RECEIVED' : (receivableAllocated + toCents(parsed.data.amount) > 0n ? 'PARTIALLY_RECEIVED' : 'OPEN') } });
-        await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'OwnerReceipt', entityId: receipt.id, action: 'OWNER_RECEIPT_REGISTERED', changes: { receiptNo, receivableNo: receivable.receivableNo, amount: parsed.data.amount.toFixed(2), paidAmount: paid.toFixed(2), source: 'ProgressBill' } } });
-        await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'ProgressBill', entityId: billId, action: 'PAYMENT_REGISTERED', changes: { amount: parsed.data.amount.toFixed(2), paidAmount: paid.toFixed(2) } } });
+        const result = await tx.progressBill.update({ where: { id: billId }, data: { paidAmount: paid, status: paidCents >= limitCents ? 'PAID' : 'APPROVED' }, include: { payments: { orderBy: { paidAt: 'desc' } } } });
+        await tx.ownerReceivable.update({ where: { id: receivable.id }, data: { status: paidCents >= limitCents ? 'RECEIVED' : (receivableAllocated + requestedCents > 0n ? 'PARTIALLY_RECEIVED' : 'OPEN') } });
+        await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'OwnerReceipt', entityId: receipt.id, action: 'OWNER_RECEIPT_REGISTERED', changes: { receiptNo, receivableNo: receivable.receivableNo, amount: centsToMoney(requestedCents), paidAmount: paid, source: 'ProgressBill' } } });
+        await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'ProgressBill', entityId: billId, action: 'PAYMENT_REGISTERED', changes: { amount: centsToMoney(requestedCents), paidAmount: paid } } });
         return result;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       return reply.code(201).send(success(serialise(updated)));

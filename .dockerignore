@@ -8,3 +8,5 @@
 npm-debug.log*
 yarn-debug.log*
 *.zip
+apps/api/data/evidence/
+apps/api/data/jobs/

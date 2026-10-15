@@ -84,8 +84,8 @@ test('serializes automatic create and writes a master-data audit record', async 
   await resolveBusinessParty(tx, { name: '新建后即关联合同的单位', role: 'OWNER', actorUserId: 'user-1', auditProjectId: 'project-1' });
   assert.equal(lockCalled, true);
   assert.equal(auditRows.length, 1);
-  assert.equal(auditRows[0].data.entity, 'BusinessParty');
-  assert.equal(auditRows[0].data.entityId, 'party-audited');
-  assert.equal(auditRows[0].data.action, 'AUTO_CREATE_FROM_BUSINESS_RECORD');
-  assert.equal(auditRows[0].data.projectId, 'project-1');
+  assert.equal(auditRows[0]!.data.entity, 'BusinessParty');
+  assert.equal(auditRows[0]!.data.entityId, 'party-audited');
+  assert.equal(auditRows[0]!.data.action, 'AUTO_CREATE_FROM_BUSINESS_RECORD');
+  assert.equal(auditRows[0]!.data.projectId, 'project-1');
 });

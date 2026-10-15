@@ -19,7 +19,7 @@ test('native XLSX contains typed data sheet, template rows, frozen header, and d
   definition.merges = [{ row: 0, col: 0, rowSpan: 1, colSpan: 2 }];
   const buffer = await buildReportWorkbook({ snapshot, definition, templateName: '测试模板', templateVersion: 3 });
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['数据', '导出说明']);
   const sheet = workbook.getWorksheet('数据')!;
   assert.equal(sheet.getCell('A1').value, definition.title);
@@ -42,7 +42,7 @@ test('native XLSX can omit description sheet and rejects no-visible-column defin
   const definition = createDefaultDefinition('target-cost');
   definition.page.includeDescription = false;
   const buffer = await buildReportWorkbook({ snapshot, definition, templateName: 'T', templateVersion: 1 });
-  const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(buffer);
+  const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['数据']);
   definition.columns.forEach((column) => { column.visible = false; });
   await assert.rejects(() => buildReportWorkbook({ snapshot, definition, templateName: 'T', templateVersion: 1 }), /REPORT_TEMPLATE_NO_VISIBLE_COLUMNS/);

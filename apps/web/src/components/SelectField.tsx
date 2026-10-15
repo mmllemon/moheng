@@ -41,7 +41,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
   const controlId = useId();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const proxyRef = useRef<HTMLSelectElement>(null);
+  const proxyRef = useRef<HTMLSelectElement | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const options = useMemo(() => collectOptions(children), [children]);
   const [internalValue, setInternalValue] = useState(String(value ?? defaultValue ?? options[0]?.value ?? ''));

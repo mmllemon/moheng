@@ -16,9 +16,9 @@ const registry = await read('apps/api/src/platform/module-registry.ts');
 const envExample = await read('apps/api/.env.example');
 const existingRouteFiles = (await readdir(join(root, 'apps/api/src/routes'))).filter((name) => name.endsWith('.ts'));
 
-check('workspace/API/UI version and runtime metadata agree on 2.2.0-rc.1',
-  rootPackage.version === '2.2.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  appInfo.includes("APP_VERSION = '2.2.0-rc.1'") && server.includes('version: APP_VERSION'));
+check('workspace/API/UI version and runtime metadata agree on 2.3.0-rc.1',
+  rootPackage.version === '2.3.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
+  appInfo.includes("APP_VERSION = '2.3.0-rc.1'") && server.includes('version: APP_VERSION'));
 check('module registry is the only server-side route registration entry point',
   server.includes('await registerApiModules(app)') && registry.includes('export async function registerApiModules') &&
   !/app\.register\(\w+Routes,\s*\{\s*prefix:/.test(server));

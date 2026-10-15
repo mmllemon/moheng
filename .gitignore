@@ -8,3 +8,4 @@ apps/api/src/generated/
 apps/api/logs/
 
 apps/api/data/evidence/
+apps/api/data/jobs/

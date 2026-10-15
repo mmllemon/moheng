@@ -30,7 +30,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   } = props;
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const proxyRef = useRef<HTMLInputElement>(null);
+  const proxyRef = useRef<HTMLInputElement | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const [internalValue, setInternalValue] = useState(String(value ?? defaultValue ?? ''));
   const selectedValue = value !== undefined ? String(value ?? '') : internalValue;

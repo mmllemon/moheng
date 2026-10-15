@@ -43,7 +43,7 @@ function projectScope(userId: string, globalRole: string) {
   };
 }
 function toNumber(v: unknown): number { return Number(v ?? 0); }
-function sum(values: unknown[]) { return values.reduce((total, v) => total + toNumber(v), 0); }
+function sum(values: unknown[]): number { return values.reduce<number>((total, v) => total + toNumber(v), 0); }
 function downstreamCurrentAmount(contract: any) {
   return toNumber(contract.originalAmount) + (contract.adjustments ?? []).reduce((total: number, a: any) => total + (a.direction === 'DECREASE' ? -1 : 1) * toNumber(a.amount), 0);
 }
@@ -108,7 +108,7 @@ export async function businessPartyRoutes(app: FastifyInstance) {
         await tx.auditLog.create({ data: { projectId: null, userId: user.sub, entity: 'BusinessParty', entityId: created.id, action: 'CREATE', changes: { name: created.name, creditCode: created.creditCode, roles: created.roles, identityVerified: created.identityVerified, identityVerificationNote: created.identityVerificationNote } } });
         return { row: created };
       });
-      if ('error' in outcome) return failure(reply, outcome.error.status, outcome.error.code, outcome.error.message, outcome.error.details);
+      if ('error' in outcome && outcome.error !== undefined) return failure(reply, outcome.error.status, outcome.error.code, outcome.error.message, outcome.error.details);
       return reply.code(201).send(success({ ...outcome.row, roleLabels: outcome.row.roles.map((r) => roleLabels[r]) }));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return failure(reply, 409, 'BUSINESS_PARTY_DUPLICATE', '单位名称或统一社会信用代码已被其他单位使用，请重新查询并选择已有档案');

@@ -32,9 +32,11 @@ function readUiPreferences(): UiPreferences {
   try {
     const raw = localStorage.getItem(UI_PREFERENCES_KEY);
     if (!raw) return defaultUiPreferences;
-    const value = JSON.parse(raw) as Partial<UiPreferences> & { theme?: UiTheme | 'dark' };
+    const value = JSON.parse(raw) as Partial<UiPreferences> & { theme?: UiTheme | 'light' | 'dark' };
+    const savedTheme: string | undefined = value.theme;
+    const theme: UiTheme = savedTheme === 'dark' ? 'obsidian' : savedTheme === 'champagne' || savedTheme === 'obsidian' || savedTheme === 'glacier' || savedTheme === 'system' ? savedTheme : 'ivory';
     return {
-      theme: value.theme === 'champagne' || value.theme === 'obsidian' || value.theme === 'glacier' || value.theme === 'system' ? value.theme : value.theme === 'dark' ? 'obsidian' : 'ivory',
+      theme,
       density: value.density === 'compact' ? 'compact' : 'comfortable',
       accent: value.accent === 'indigo' || value.accent === 'jade' || value.accent === 'cinnabar' ? value.accent : 'theme',
       reduceMotion: Boolean(value.reduceMotion),

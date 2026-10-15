@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowDownRight, ArrowUpRight, Plus, Search } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Plus, Search, type LucideIcon } from 'lucide-react';
 
 export function PageHeader({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: string; actions?: ReactNode; eyebrow?: string }) {
   return <div className="page-header">
@@ -8,14 +8,14 @@ export function PageHeader({ title, subtitle, actions, eyebrow }: { title: strin
   </div>;
 }
 
-export function Button({ children, onClick, variant = 'primary', type = 'button', disabled = false, className = '' }: {
-  children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; type?: 'button' | 'submit'; disabled?: boolean; className?: string;
+export function Button({ children, onClick, variant = 'primary', type = 'button', disabled = false, size = 'md', className = '' }: {
+  children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; type?: 'button' | 'submit'; disabled?: boolean; size?: 'sm' | 'md'; className?: string;
 }) {
-  return <button className={`button button-${variant} ${className}`} type={type} onClick={onClick} disabled={disabled}>{children}</button>;
+  return <button className={`button button-${variant} ${size === 'sm' ? 'button-small' : ''} ${className}`.trim()} type={type} onClick={onClick} disabled={disabled}>{children}</button>;
 }
 
 export function MetricCard({ label, value, detail, trend, icon: Icon, tone = 'blue' }: {
-  label: string; value: string; detail?: string; trend?: 'up' | 'down' | 'flat'; icon: React.ComponentType<{ size?: number; strokeWidth?: number }>; tone?: 'blue' | 'green' | 'orange' | 'purple';
+  label: string; value: string; detail?: string; trend?: 'up' | 'down' | 'flat'; icon: LucideIcon; tone?: 'blue' | 'green' | 'orange' | 'purple';
 }) {
   return <article className="metric-card">
     <div className="metric-top"><span>{label}</span><span className={`metric-icon tone-${tone}`}><Icon size={18} strokeWidth={1.8} /></span></div>

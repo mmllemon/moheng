@@ -10,6 +10,11 @@ import SelectField from '../components/SelectField';
 import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 
 type Report = { key: string; label: string; description: string; dateField: string; rowLimit: number };
+
+function createIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `moheng-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 const catalogFallback: Report[] = [
   { key: 'target-cost', label: '目标成本清单', description: '项目清单编号、父级、工程量、单价、目标合价与最近更新时间。', dateField: '更新时间', rowLimit: 10000 },
   { key: 'actual-cost', label: '实际成本台账', description: '成本发生日期、分类、金额、业务对象、合同及清单关联。', dateField: '成本日期', rowLimit: 10000 },
@@ -31,23 +36,79 @@ export default function ReportCenterPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [lastJobId, setLastJobId] = useState('');
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
   const catalogQuery = useQuery({ queryKey: ['reports-catalog'], queryFn: () => api.get<Report[]>('/reports/catalog') });
   const catalog = catalogQuery.data ?? catalogFallback;
   const selected = useMemo(() => catalog.find((item) => item.key === reportKey) ?? catalogFallback[0], [catalog, reportKey]);
 
-  async function downloadReport(format: 'csv' | 'xlsx') {
-    setBusy(true); setNotice(''); setError('');
+  async function checkBackgroundJob(jobId: string) {
+    setBusy(true); setError('');
     try {
-      const params = new URLSearchParams();
-      if (projectId) params.set('projectId', projectId);
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      const blob = await api.download(`/reports/${reportKey}.${format}?${params.toString()}`);
+      const job = await api.get<{ id: string; status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED'; downloadUrl: string | null; resultAvailable: boolean; result: { suggestedFileName?: string } | null; downloadExpiresAt: string | null }>(`/reports/jobs/${jobId}`);
+      if (job.status === 'FAILED' || job.status === 'CANCELLED') {
+        setError(`报表任务处理失败，任务编号：${jobId}`);
+        return;
+      }
+      if (job.status !== 'SUCCEEDED' || !job.resultAvailable || !job.downloadUrl) {
+        setNotice(`最近任务状态：${job.status}。任务编号：${jobId}${job.downloadExpiresAt ? `；文件保留至 ${new Date(job.downloadExpiresAt).toLocaleString('zh-CN')}` : ''}`);
+        return;
+      }
+      const blob = await api.download(`/reports/jobs/${jobId}/download`);
+      if (!blob) return;
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
+      anchor.download = job.result?.suggestedFileName || `墨衡-报表-${jobId}.xlsx`;
+      document.body.appendChild(anchor); anchor.click(); anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+      setNotice(`任务 ${jobId} 已完成，文件下载已开始。`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '查询后台任务失败。');
+    } finally { setBusy(false); }
+  }
+
+  async function downloadReport(format: 'csv' | 'xlsx') {
+    setBusy(true); setNotice(''); setError('');
+    try {
+      let blob: Blob | undefined;
       const projectLabel = projectId ? projectsQuery.data?.find((p) => p.id === projectId)?.code ?? '项目' : '全公司';
+      if (format === 'xlsx') {
+        const submitted = await api.post<{ id: string; status: string; statusUrl: string }>(
+          `/reports/${reportKey}.xlsx/jobs`,
+          { projectId: projectId || undefined, from: from || undefined, to: to || undefined },
+          { 'Idempotency-Key': createIdempotencyKey() },
+        );
+        setLastJobId(submitted.id);
+        setNotice(`报表任务已提交（${submitted.id}），正在后台生成文件…`);
+        const maxPolls = 600; // ten minutes, then leave the job running for a later status check
+        let finished = false;
+        for (let attempt = 0; attempt < maxPolls; attempt += 1) {
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
+          const job = await api.get<{ id: string; status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED'; downloadUrl: string | null; resultAvailable: boolean }>(`/reports/jobs/${submitted.id}`);
+          if (job.status === 'FAILED' || job.status === 'CANCELLED') throw new Error(`报表任务处理失败，任务编号：${submitted.id}`);
+          if (job.status === 'SUCCEEDED' && job.resultAvailable && job.downloadUrl) {
+            blob = await api.download(`/reports/jobs/${submitted.id}/download`);
+            finished = true;
+            break;
+          }
+          if (attempt % 5 === 0) setNotice(`报表任务 ${job.status === 'RUNNING' ? '正在生成' : '排队等待'}（${submitted.id}）…`);
+        }
+        if (!finished) {
+          setNotice(`报表仍在后台处理，任务编号：${submitted.id}。可以离开页面，稍后使用下方按钮查询或下载结果。`);
+          return;
+        }
+      } else {
+        const params = new URLSearchParams();
+        if (projectId) params.set('projectId', projectId);
+        if (from) params.set('from', from);
+        if (to) params.set('to', to);
+        blob = await api.download(`/reports/${reportKey}.${format}?${params.toString()}`);
+      }
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
       anchor.download = `墨衡-${projectLabel}-${selected.label}${from || to ? `-${from || '起始不限'}-${to || '结束不限'}` : ''}.${format}`;
       document.body.appendChild(anchor); anchor.click(); anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1200);
@@ -62,10 +123,10 @@ export default function ReportCenterPage() {
       <section className="report-intro-grid">
         <article className="panel report-intro-card"><span><FileSpreadsheet size={18} /></span><div><strong>{catalog.length} 类标准台账</strong><small>统一导出表头与日期/金额口径</small></div></article>
         <article className="panel report-intro-card"><span><ShieldCheck size={18} /></span><div><strong>服务端权限过滤</strong><small>导出范围与当前账号项目访问权限一致</small></div></article>
-        <article className="panel report-intro-card"><span><CheckCircle2 size={18} /></span><div><strong>只读数据快照</strong><small>CSV 使用 UTF-8 BOM 与公式注入防护</small></div></article>
+        <article className="panel report-intro-card"><span><CheckCircle2 size={18} /></span><div><strong>只读数据快照</strong><small>XLSX 使用 PostgreSQL 后台任务生成；CSV 使用 UTF-8 BOM 与公式注入防护</small></div></article>
       </section>
       <section className="panel report-export-panel">
-        <div className="report-section-heading"><div><h2><ArrowDownToLine size={18} />导出业务台账</h2><p>CSV 适合轻量数据交换；原生 XLSX 包含真实单元格类型、筛选、冻结窗格及导出说明。</p></div><div className="report-format-actions"><span className="report-format-pill">CSV + XLSX</span><Button variant="secondary" onClick={() => { const params = new URLSearchParams({ reportKey, projectId, from, to }); navigate(`/reports/designer?${params.toString()}`); }}><Settings2 size={14} />设计报表模板</Button></div></div>
+        <div className="report-section-heading"><div><h2><ArrowDownToLine size={18} />导出业务台账</h2><p>CSV 适合轻量数据交换；原生 XLSX 由 PostgreSQL 后台任务生成，支持真实单元格类型、筛选、冻结窗格及导出说明。</p></div><div className="report-format-actions"><span className="report-format-pill">CSV + XLSX</span><Button variant="secondary" onClick={() => { const params = new URLSearchParams({ reportKey, projectId, from, to }); navigate(`/reports/designer?${params.toString()}`); }}><Settings2 size={14} />设计报表模板</Button></div></div>
         <div className="report-export-form">
           <label className="report-field"><span>报表类型</span><SelectField value={reportKey} onChange={(event) => setReportKey(event.target.value)} aria-label="报表类型">{catalog.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</SelectField></label>
           <label className="report-field"><span>项目范围</span><SelectField value={projectId} onChange={(event) => setProjectId(event.target.value)} aria-label="导出项目范围"><option value="">全部可访问项目</option>{(projectsQuery.data ?? []).map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></label>
@@ -73,7 +134,7 @@ export default function ReportCenterPage() {
           <label className="report-field"><span>结束日期（可选）</span><DatePicker value={to} onChange={(event) => setTo(event.target.value)} aria-label="结束日期" placeholder="不限制结束日期" min={from || undefined} /></label>
         </div>
         <div className="report-description-box"><span className="report-description-icon"><Info size={17} /></span><div><strong>{selected.label}</strong><p>{selected.description}</p><small>日期筛选字段：{selected.dateField}。单次最多导出 {selected.rowLimit.toLocaleString('zh-CN')} 条记录；超出上限时只导出当前排序靠前的记录。</small></div></div>
-        {notice && <div className="success-notice"><CheckCircle2 size={16} />{notice}</div>}{error && <div className="form-alert">{error}</div>}
+        {notice && <div className="success-notice"><CheckCircle2 size={16} />{notice}</div>}{error && <div className="form-alert">{error}</div>}{lastJobId && <div className="report-form-footer"><span>最近的后台任务：<code>{lastJobId}</code></span><Button variant="secondary" size="sm" onClick={() => void checkBackgroundJob(lastJobId)} disabled={busy}>查询状态 / 下载结果</Button></div>}
         <div className="report-form-footer"><span><FolderKanban size={14} />{projectId ? `当前项目：${projectsQuery.data?.find((p) => p.id === projectId)?.name ?? '所选项目'}` : '当前范围：全部有权限项目'}</span><div><Button variant="secondary" onClick={() => { setFrom(''); setTo(''); }} disabled={!from && !to}>清除日期</Button><Button variant="secondary" onClick={() => void downloadReport('csv')} disabled={busy || !catalog.some((item) => item.key === reportKey) || Boolean(from && to && from > to)}><ArrowDownToLine size={15} />{busy ? '正在生成…' : '导出 CSV'}</Button><Button onClick={() => void downloadReport('xlsx')} disabled={busy || !catalog.some((item) => item.key === reportKey) || Boolean(from && to && from > to)}><FileSpreadsheet size={15} />{busy ? '正在生成…' : '导出 XLSX'}</Button></div></div>
       </section>
       <section className="report-catalog-grid">{catalog.map((report) => <button type="button" className={`panel report-catalog-card ${report.key === reportKey ? 'is-selected' : ''}`} key={report.key} onClick={() => setReportKey(report.key)} aria-pressed={report.key === reportKey}><span className="report-catalog-icon"><FileSpreadsheet size={18} /></span><span className="report-catalog-copy"><strong>{report.label}</strong><small>{report.description}</small></span><span className="report-catalog-action">{report.key === reportKey ? <CheckCircle2 size={17} /> : <ArrowDownToLine size={16} />}</span></button>)}</section>

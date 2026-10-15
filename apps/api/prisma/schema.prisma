@@ -24,6 +24,14 @@ enum ReportTemplateStatus {
   ARCHIVED
 }
 
+enum BackgroundJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
 enum BusinessPartyRole {
   OWNER
   MATERIAL_SUPPLIER
@@ -222,6 +230,7 @@ model User {
   memberships  ProjectMember[]
   refreshTokens RefreshToken[]
   auditLogs    AuditLog[]
+  backgroundJobs BackgroundJob[]
   costEntries  CostEntry[]
   createdChanges Change[] @relation("ChangeCreator")
   submittedChanges Change[] @relation("ChangeSubmitter")
@@ -320,6 +329,7 @@ model Project {
   auditLogs      AuditLog[]
   baselineMigrationReconciliations ContractBaselineMigrationReconciliation[]
   reportTemplates ReportTemplate[]
+  backgroundJobs BackgroundJob[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?
@@ -1143,4 +1153,40 @@ model ReportTemplateRevision {
 
   @@index([templateId, createdAt])
   @@index([createdById, createdAt])
+}
+
+
+/// PostgreSQL-backed asynchronous work item. The payload is versioned and contains identifiers/configuration, never authentication secrets.
+model BackgroundJob {
+  id                 String              @id @default(cuid())
+  type               String              @db.VarChar(100)
+  status             BackgroundJobStatus @default(QUEUED)
+  payloadVersion     Int                 @default(1)
+  payload            Json
+  resultMetadata     Json?
+  resultFileName     String?             @db.VarChar(255)
+  ownerUserId        String
+  projectId          String?
+  idempotencyKey     String?             @db.VarChar(200)
+  requestHash        String?             @db.VarChar(64)
+  attempts           Int                 @default(0)
+  maxAttempts        Int                 @default(3)
+  availableAt        DateTime            @default(now()) @db.Timestamptz(3)
+  lockedAt           DateTime?           @db.Timestamptz(3)
+  lockedBy           String?             @db.VarChar(160)
+  startedAt          DateTime?           @db.Timestamptz(3)
+  finishedAt         DateTime?           @db.Timestamptz(3)
+  resultExpiresAt    DateTime?           @db.Timestamptz(3)
+  lastError          String?             @db.VarChar(2000)
+  createdAt          DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime            @updatedAt @db.Timestamptz(3)
+  owner              User                @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  project            Project?            @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@unique([ownerUserId, idempotencyKey])
+  @@index([status, availableAt, createdAt])
+  @@index([status, lockedAt])
+  @@index([ownerUserId, createdAt])
+  @@index([projectId, status, createdAt])
+  @@index([resultExpiresAt])
 }

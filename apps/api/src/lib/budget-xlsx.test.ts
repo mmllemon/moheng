@@ -18,7 +18,7 @@ async function makeWorkbook(fill: (sheet: ExcelJS.Worksheet) => void): Promise<B
 test('budget template contains native workbook sheets, fixed headers and filling instructions', async () => {
   const buffer = await buildBudgetImportTemplate();
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['目标成本清单', '填报说明']);
   assert.equal(workbook.getWorksheet('目标成本清单')!.getCell('A1').value, '清单编号');
   assert.equal(workbook.getWorksheet('目标成本清单')!.getCell('A2').numFmt, '@');

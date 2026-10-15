@@ -1,5 +1,16 @@
 # 更新日志
 
+## v2.3.0-rc.1（2026-10-15）
+
+- 在 `v2.2.0-rc.1` 基础上增量演进，保留现有业务页面、API 主路径、XLSX 模板设计器与历史 Git 提交。
+- 新增 PostgreSQL `BackgroundJob` 任务表及追加迁移 `20261015020000_postgresql_background_jobs`；用 `FOR UPDATE SKIP LOCKED` 实现并发安全领取、租约恢复、最大尝试次数、退避重试和 7 天结果文件保留。
+- 新增 `report.xlsx.export` 任务 handler、版本化 payload、handler 注册表、幂等键/请求 hash、任务状态查询和安全下载端点；报表中心的 XLSX 导出改为后台生成，CSV 和原有同步 XLSX API 保留。
+- worker 默认随 API 进程运行；新增独立 worker 入口与可选 Docker Compose `worker` profile，允许未来按负载分离进程而不改任务生产 API。
+- 对用户提供的 TypeScript 构建缺陷进行根因修正：严格索引检查、正则/日期解构、遗漏导入、`number`/`bigint` 金额链、Prisma JSON/Decimal、ExcelJS PaperSize/Buffer 类型、React/Lucide/ref 和前端缺失类型等。
+- 更新框架演进方案、验收记录、README、Windows/Docker 配置和静态候选检查。静态候选契约全通过；97 个 TS/TSX 文件语法转译无语法诊断；独立纯逻辑/存储路径测试 41/41 通过。
+- 当前执行环境不能完成 Node.js 24+ 项目依赖安装，完整 `tsc`、build、Prisma Client 生成、真实 PostgreSQL 迁移和浏览器/Excel/WPS 实测仍是发布阻塞项。本版本保留 RC 标记，不等于生产验收通过。
+
+
 ## v2.2.0-rc.1（2026-10-15）
 
 - 新增 `apps/api/src/platform/module-registry.ts`，统一挂载 15 组现有 Fastify 路由插件，并向外提供受控模块元数据目录；仍为模块化单体，不引入动态执行第三方插件的运行时机制。

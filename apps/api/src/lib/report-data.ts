@@ -43,7 +43,12 @@ export type ReportSnapshotResult = { ok: true; snapshot: ReportSnapshot } | { ok
 
 function toUtcDay(value: string | undefined, nextDay = false): Date | undefined {
   if (!value) return undefined;
-  const [y, m, d] = value.split('-').map(Number);
+  const parts = value.split('-');
+  if (parts.length !== 3) return new Date(Number.NaN);
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  if (![y, m, d].every(Number.isFinite)) return new Date(Number.NaN);
   const date = new Date(Date.UTC(y, m - 1, d + (nextDay ? 1 : 0)));
   const check = new Date(Date.UTC(y, m - 1, d));
   if (check.getUTCFullYear() !== y || check.getUTCMonth() !== m - 1 || check.getUTCDate() !== d) return new Date(Number.NaN);

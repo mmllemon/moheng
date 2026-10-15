@@ -33,8 +33,12 @@ services:
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD in .env}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
       EVIDENCE_STORAGE_DIR: ${EVIDENCE_STORAGE_DIR:-/app/apps/api/data/evidence}
+      BACKGROUND_WORKER_ENABLED: ${BACKGROUND_WORKER_ENABLED:-true}
+      BACKGROUND_JOB_POLL_MS: ${BACKGROUND_JOB_POLL_MS:-1000}
+      BACKGROUND_JOB_STORAGE_DIR: ${BACKGROUND_JOB_STORAGE_DIR:-/app/apps/api/data/jobs}
     volumes:
       - evidence-data:/app/apps/api/data/evidence
+      - job-data:/app/apps/api/data/jobs
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,6 +47,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  background-worker:
+    profiles: ["worker"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    working_dir: /app/apps/api
+    command: ["node", "dist/src/worker.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cms_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cost_management}?schema=public
+      BACKGROUND_JOB_POLL_MS: ${BACKGROUND_JOB_POLL_MS:-1000}
+      BACKGROUND_JOB_STORAGE_DIR: ${BACKGROUND_JOB_STORAGE_DIR:-/app/apps/api/data/jobs}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - job-data:/app/apps/api/data/jobs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
 
   web:
     build:
@@ -58,3 +84,4 @@ services:
 volumes:
   postgres-data:
   evidence-data:
+  job-data:

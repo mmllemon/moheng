@@ -1,9 +1,13 @@
 import type { FastifyInstance } from 'fastify';
+import { readFile } from 'node:fs/promises';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { authRequired, authUser, type AuthUser } from '../lib/auth.js';
 import { buildCsv } from '../lib/csv-export.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
+import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
+import { backgroundJobArtifactPath } from '../lib/background-job-storage.js';
 import { canAccessProject } from '../lib/project-access.js';
 import { loadReportSnapshot, makeReportFields, reportCatalog, reportKeys, type ReportKey, type ReportFilters } from '../lib/report-data.js';
 import { buildReportWorkbook, reportKeyToFilename, reportRowToJson } from '../lib/report-xlsx.js';
@@ -368,6 +372,113 @@ export async function reportRoutes(app: FastifyInstance) {
       .header('x-report-row-count', String(snapshot.rowCount))
       .header('x-report-truncated', snapshot.truncated ? 'true' : 'false')
       .send(csv);
+  });
+
+  app.post('/:reportKey.xlsx/jobs', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { reportKey: rawKey } = request.params as { reportKey: string };
+    const key = reportKeySchema.safeParse(rawKey);
+    if (!key.success) return failure(reply, 404, 'REPORT_NOT_FOUND', '报表类型不存在');
+    const parsed = querySchema.extend({ templateId: z.string().trim().min(1).optional() }).safeParse(request.body ?? {});
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '异步报表参数不正确', parsed.error.flatten());
+    const filters = queryFilters(parsed.data);
+    const validDay = (value: string | undefined) => {
+      if (!value) return true;
+      const date = new Date(`${value}T00:00:00.000Z`);
+      return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+    };
+    if (!validDay(filters.from) || !validDay(filters.to)) return failure(reply, 400, 'INVALID_DATE', '日期无效，请检查筛选条件');
+    if (filters.from && filters.to && filters.from > filters.to) return failure(reply, 400, 'INVALID_DATE_RANGE', '开始日期不能晚于结束日期');
+    if (filters.projectId && !(await canAccessProject(user.sub, user.role, filters.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问所选项目报表的权限');
+
+    let definition = createDefaultDefinition(key.data);
+    let templateName = '系统默认模板';
+    let templateVersion = 1;
+    let templateId: string | null = null;
+    if (parsed.data.templateId) {
+      const stored = await prisma.reportTemplate.findUnique({ where: { id: parsed.data.templateId } });
+      if (!stored) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+      if (stored.reportKey !== key.data) return failure(reply, 400, 'REPORT_TEMPLATE_REPORT_MISMATCH', '模板不属于当前报表类型');
+      if (!(await canReadTemplate(stored, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有使用该报表模板的权限');
+      const canEdit = await canEditTemplate(stored, user);
+      const sourceDefinition = stored.status === 'PUBLISHED' && stored.publishedDefinition && !canEdit ? stored.publishedDefinition : stored.definition;
+      const validated = validateReportTemplateDefinition(sourceDefinition, key.data);
+      if (!validated.success) return failure(reply, 409, 'REPORT_TEMPLATE_INVALID', '模板定义无效，请在模板设计器中修复');
+      definition = validated.data;
+      templateName = stored.name;
+      templateVersion = stored.publishedVersion ?? stored.version;
+      templateId = stored.id;
+    }
+    if (!definition.columns.some((column) => column.visible)) return failure(reply, 400, 'REPORT_TEMPLATE_NO_VISIBLE_COLUMNS', '模板至少需要保留一列可见列');
+
+    const rawIdempotencyKey = request.headers['idempotency-key'];
+    if (Array.isArray(rawIdempotencyKey)) return failure(reply, 400, 'IDEMPOTENCY_KEY_INVALID', 'Idempotency-Key 请求头只能有一个值');
+    const idempotencyKey = rawIdempotencyKey?.trim() || null;
+    if (idempotencyKey && (idempotencyKey.length > 200 || /[\r\n]/.test(idempotencyKey))) return failure(reply, 400, 'IDEMPOTENCY_KEY_INVALID', 'Idempotency-Key 最多 200 个字符，且不能包含换行');
+
+    const payload = JSON.parse(JSON.stringify({ reportKey: key.data, filters, templateDefinition: definition, templateName, templateVersion, templateId })) as Prisma.InputJsonObject;
+    const requestHash = hashJobRequest(payload);
+    try {
+      const job = await prisma.$transaction(async (tx) => {
+        const created = await enqueueBackgroundJob(tx, {
+          type: 'report.xlsx.export', payloadVersion: 1, payload, ownerUserId: user.sub,
+          projectId: filters.projectId ?? null, idempotencyKey, requestHash, maxAttempts: 3,
+        });
+        await tx.auditLog.create({ data: {
+          projectId: filters.projectId ?? null, userId: user.sub, entity: 'BackgroundJob', entityId: created.id,
+          action: 'REPORT_XLSX_EXPORT_QUEUED', changes: { reportKey: key.data, projectId: filters.projectId ?? null, templateName, templateVersion, idempotencyKeyPresent: Boolean(idempotencyKey) },
+        } });
+        return created;
+      });
+      return reply.code(202).send(success({ id: job.id, type: job.type, status: job.status, createdAt: job.createdAt, statusUrl: `/api/reports/jobs/${job.id}`, downloadUrl: null }));
+    } catch (error) {
+      if (idempotencyKey && error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const existing = await prisma.backgroundJob.findFirst({ where: { ownerUserId: user.sub, idempotencyKey } });
+        if (existing) {
+          if (existing.requestHash !== requestHash) return failure(reply, 409, 'IDEMPOTENCY_KEY_REUSED', '相同 Idempotency-Key 已用于不同的请求，请更换请求键');
+          return reply.code(202).send(success({ id: existing.id, type: existing.type, status: existing.status, createdAt: existing.createdAt, statusUrl: `/api/reports/jobs/${existing.id}`, downloadUrl: existing.resultFileName ? `/api/reports/jobs/${existing.id}/download` : null, idempotentReplay: true }));
+        }
+      }
+      throw error;
+    }
+  });
+
+  app.get('/jobs/:jobId', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { jobId } = request.params as { jobId: string };
+    const job = await prisma.backgroundJob.findFirst({ where: { id: jobId, ...(user.role === 'ADMIN' ? {} : { ownerUserId: user.sub }) } });
+    if (!job) return failure(reply, 404, 'BACKGROUND_JOB_NOT_FOUND', '任务不存在或当前账号无权查看');
+    if (job.projectId && !(await canAccessProject(user.sub, user.role, job.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你已无权访问该任务关联的项目');
+    const fileAvailable = job.status === 'SUCCEEDED' && Boolean(job.resultFileName) && (!job.resultExpiresAt || job.resultExpiresAt.getTime() > Date.now());
+    return success({ id: job.id, type: job.type, status: job.status, attempts: job.attempts, maxAttempts: job.maxAttempts,
+      createdAt: job.createdAt, startedAt: job.startedAt, finishedAt: job.finishedAt, result: job.resultMetadata,
+      resultAvailable: fileAvailable, downloadExpiresAt: job.resultExpiresAt,
+      downloadUrl: fileAvailable ? `/api/reports/jobs/${job.id}/download` : null,
+      error: job.status === 'FAILED' ? '任务处理失败，请联系管理员并提供任务编号。' : null });
+  });
+
+  app.get('/jobs/:jobId/download', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { jobId } = request.params as { jobId: string };
+    const job = await prisma.backgroundJob.findFirst({ where: { id: jobId, ...(user.role === 'ADMIN' ? {} : { ownerUserId: user.sub }) } });
+    if (!job) return failure(reply, 404, 'BACKGROUND_JOB_NOT_FOUND', '任务不存在或当前账号无权下载');
+    if (job.projectId && !(await canAccessProject(user.sub, user.role, job.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你已无权访问该任务关联的项目');
+    if (job.status !== 'SUCCEEDED') return failure(reply, 409, 'BACKGROUND_JOB_RESULT_NOT_READY', '任务尚未完成，请等待后台处理');
+    if (job.resultExpiresAt && job.resultExpiresAt.getTime() <= Date.now()) return failure(reply, 410, 'BACKGROUND_JOB_RESULT_EXPIRED', '导出文件已过期，请重新提交导出任务');
+    if (!job.resultFileName) return failure(reply, 410, 'BACKGROUND_JOB_RESULT_MISSING', '导出文件已不存在，请重新提交导出任务');
+    if (job.resultFileName !== `${job.id}-${job.attempts}.xlsx`) return failure(reply, 409, 'BACKGROUND_JOB_RESULT_INVALID', '任务结果文件名不符合预期');
+    try {
+      const buffer = await readFile(backgroundJobArtifactPath(job.resultFileName));
+      const metadata = job.resultMetadata && typeof job.resultMetadata === 'object' && !Array.isArray(job.resultMetadata) ? job.resultMetadata as Record<string, Prisma.JsonValue> : {};
+      const candidateName = metadata.suggestedFileName;
+      const filename = typeof candidateName === 'string' ? candidateName.replace(/[\r\n"]/g, '') : `墨衡-${job.id}.xlsx`;
+      return reply.header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        .header('content-disposition', `attachment; filename="moheng-${job.id}.xlsx"; filename*=UTF-8''${encodeURIComponent(filename)}`)
+        .header('cache-control', 'no-store').send(buffer);
+    } catch (error) {
+      request.log.warn({ err: error, jobId: job.id }, 'Background job artifact is missing');
+      return failure(reply, 410, 'BACKGROUND_JOB_RESULT_MISSING', '导出文件已不存在，请重新提交导出任务');
+    }
   });
 
   app.get('/:reportKey.xlsx', { preHandler: authRequired }, async (request, reply) => {

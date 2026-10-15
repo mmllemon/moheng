@@ -50,7 +50,7 @@ class OwnerFinanceError extends Error {
   constructor(public readonly statusCode: number, public readonly code: string, message: string) { super(message); this.name = 'OwnerFinanceError'; }
 }
 const num = (value: unknown) => Number(value ?? 0);
-const amountString = (cents: bigint) => centsToMoney(cents).toFixed(2);
+const amountString = (cents: bigint) => centsToMoney(cents);
 function sumCents(values: unknown[]): bigint { return values.reduce<bigint>((acc, value) => acc + moneyToCents(value), 0n); }
 function statusForOpen(netAmount: unknown, allocated: bigint) {
   return calculateOwnerReceivableStatus(moneyToCents(netAmount), allocated);
@@ -65,8 +65,10 @@ async function getContractNetOpenCents(tx: Prisma.TransactionClient, mainContrac
     allocationCents: sumCents(row.allocations.map((allocation) => allocation.amount)),
   })));
 }
-async function audit(tx: Prisma.TransactionClient, projectId: string, userId: string, entity: string, entityId: string, action: string, changes: Record<string, unknown>) {
-  await tx.auditLog.create({ data: { projectId, userId, entity, entityId, action, changes } });
+async function audit(tx: Prisma.TransactionClient, projectId: string, userId: string, entity: string, entityId: string, action: string, changes: unknown) {
+  // Serialize at the persistence boundary so unknown values cannot violate Prisma's JSON input contract.
+  const safeChanges = JSON.parse(JSON.stringify(changes) ?? '{}') as Prisma.InputJsonObject;
+  await tx.auditLog.create({ data: { projectId, userId, entity, entityId, action, changes: safeChanges } });
 }
 async function refreshReceivableStatus(tx: Prisma.TransactionClient, receivableId: string) {
   const row = await tx.ownerReceivable.findUnique({ where: { id: receivableId }, include: { allocations: { select: { amount: true } } } });
@@ -413,7 +415,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
       const result = await prisma.$transaction(async (tx) => {
         const ar = await tx.ownerReceivable.findFirst({ where: { id: receivableId, projectId }, include: { allocations: true, schedules: true } });
         if (!ar) throw new OwnerFinanceError(404, 'RECEIVABLE_NOT_FOUND', '应收账款不存在');
-        if (ar.netAmount <= 0) throw new OwnerFinanceError(400, 'RECEIVABLE_NOT_POSITIVE', '负向调整不能设置正向分期');
+        if (moneyToCents(ar.netAmount) <= 0n) throw new OwnerFinanceError(400, 'RECEIVABLE_NOT_POSITIVE', '负向调整不能设置正向分期');
         if (ar.allocations.length > 0) throw new OwnerFinanceError(409, 'SCHEDULE_LOCKED_AFTER_RECEIPT', '已有到账或退款核销，不能重写分期历史');
         if (sum !== moneyToCents(ar.netAmount)) throw new OwnerFinanceError(400, 'SCHEDULE_TOTAL_MISMATCH', '各期金额之和必须严格等于应收净额');
         await tx.ownerReceivableSchedule.deleteMany({ where: { receivableId } });

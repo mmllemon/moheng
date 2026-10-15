@@ -20,7 +20,12 @@ const querySchema = z.object({
 
 function parseDay(value: string | undefined, endExclusive = false): Date | undefined {
   if (!value) return undefined;
-  const [year, month, day] = value.split('-').map(Number);
+  const parts = value.split('-');
+  if (parts.length !== 3) return new Date(Number.NaN);
+  const year = Number(parts[0]);
+  const month = Number(parts[1]);
+  const day = Number(parts[2]);
+  if (![year, month, day].every(Number.isFinite)) return new Date(Number.NaN);
   const date = new Date(Date.UTC(year, month - 1, day + (endExclusive ? 1 : 0)));
   if (!endExclusive && (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day)) return new Date(Number.NaN);
   if (endExclusive) {
@@ -80,7 +85,8 @@ export async function auditLogRoutes(app: FastifyInstance) {
         where,
         include: { user: { select: { id: true, name: true, email: true } }, project: { select: { id: true, name: true, code: true } } },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        ...(exportMode ? { take: 5000 } : { skip: (filter.page - 1) * filter.pageSize, take: filter.pageSize }),
+        take: exportMode ? 5000 : filter.pageSize,
+        ...(!exportMode ? { skip: (filter.page - 1) * filter.pageSize } : {}),
       }),
     ]);
 

@@ -10,7 +10,9 @@ export function moneyToCents(value: unknown): bigint {
   const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(raw);
   if (!match) throw new Error(`INVALID_MONEY_VALUE:${raw}`);
   const sign = match[1] === '-' ? -1n : 1n;
-  const whole = BigInt(match[2]);
+  const wholeText = match[2];
+  if (wholeText === undefined) throw new Error('INVALID_MONEY_VALUE');
+  const whole = BigInt(wholeText);
   const fraction = BigInt((match[3] ?? '').padEnd(2, '0'));
   return sign * (whole * 100n + fraction);
 }

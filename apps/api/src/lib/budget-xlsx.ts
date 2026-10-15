@@ -166,7 +166,7 @@ function cellText(cell: ExcelJS.Cell): string {
 
 export async function inspectBudgetImportWorkbook(buffer: Buffer): Promise<BudgetXlsxInspection> {
   const workbook = new ExcelJS.Workbook();
-  try { await workbook.xlsx.load(buffer); }
+  try { await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]); }
   catch { throw new BudgetXlsxError('XLSX_WORKBOOK_INVALID', '无法解析工作簿，请用 Excel 或 WPS 重新另存为 .xlsx 后重试'); }
   if (workbook.worksheets.length > MAX_WORKSHEETS) throw new BudgetXlsxError('XLSX_TOO_MANY_SHEETS', `工作簿最多允许 ${MAX_WORKSHEETS} 个工作表`);
   const worksheet = workbook.getWorksheet('目标成本清单') ?? workbook.worksheets.find((sheet) => sheet.name !== '填报说明');

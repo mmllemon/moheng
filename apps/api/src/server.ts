@@ -15,6 +15,7 @@ import { prisma } from './lib/prisma.js';
 import { APP_VERSION, API_MAJOR_VERSION } from './platform/app-info.js';
 import { getApiModuleCatalog, registerApiModules } from './platform/module-registry.js';
 import { failure, success } from './lib/http.js';
+import { startBackgroundWorker } from './lib/background-job-worker.js';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -24,6 +25,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET 至少 32 个字符'),
   CORS_ORIGIN: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
+  BACKGROUND_WORKER_ENABLED: z.enum(['true', 'false']).default('true'),
+  BACKGROUND_JOB_POLL_MS: z.coerce.number().int().min(250).max(60000).default(1000),
 });
 const envResult = envSchema.safeParse(process.env);
 if (!envResult.success) {
@@ -138,8 +141,11 @@ app.setErrorHandler((error, request, reply) => {
   return failure(reply, 500, 'INTERNAL_ERROR', env.NODE_ENV === 'production' ? '服务器暂时无法处理该请求' : error.message);
 });
 
+let stopBackgroundWorker: () => Promise<void> = async () => {};
+
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'Shutting down');
+  await stopBackgroundWorker();
   await app.close();
   await prisma.$disconnect();
   process.exit(0);
@@ -150,6 +156,9 @@ process.once('SIGTERM', () => void shutdown('SIGTERM'));
 try {
   await prisma.$connect();
   await app.listen({ port: env.PORT, host: env.HOST });
+  if (env.BACKGROUND_WORKER_ENABLED === 'true') {
+    stopBackgroundWorker = startBackgroundWorker(app.log, { pollIntervalMs: env.BACKGROUND_JOB_POLL_MS });
+  }
   app.log.info(`Cost Management API listening on ${env.HOST}:${env.PORT}`);
 } catch (error) {
   app.log.error(error);

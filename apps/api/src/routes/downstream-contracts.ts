@@ -5,7 +5,7 @@ import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { canAccessProject, denyIfNoProjectAccess } from '../lib/project-access.js';
-import { moneyToCents, centsToMoney } from '../lib/contract-amount-math.js';
+import { calculateEffectiveContractAmount, moneyToCents, centsToMoney } from '../lib/contract-amount-math.js';
 import { calculateContractCostGap, calculateDownstreamCurrentAmount, canRegisterPaymentForContractStatus } from '../lib/downstream-contract-math.js';
 import { assertPaymentWithinBounds, assertRefundTargetsPayment, grossPaymentCents, netPaymentCents, refundPaymentCents } from '../lib/downstream-payment-math.js';
 import { positiveMoney } from '../lib/validation.js';
@@ -449,7 +449,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
             amountToReverse -= reverseCents;
           }
         }
-        await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'DownstreamContractPayment', entityId: payment.id, action: parsed.data.type === 'REFUND' ? 'PAYMENT_REFUND_RECORDED' : 'PAYMENT_RECORDED', changes: { ...parsed.data, paymentPlanId: effectivePlanId, payableId: requestedAllocations.length === 1 ? requestedAllocations[0].payableId : null, allocationCount: requestedAllocations.length, refundOfPaymentId: parsed.data.type === 'REFUND' ? (parsed.data.refundOfPaymentId ?? null) : null, amount: String(parsed.data.amount), grossCumulativePaid: centsToMoney(grossPaymentCents(allPayments) + (parsed.data.type === 'REFUND' ? 0n : requestedCents)), cumulativeRefunds: centsToMoney(refundPaymentCents(allPayments) + (parsed.data.type === 'REFUND' ? requestedCents : 0n)), cumulativeNetPaid: centsToMoney(paidCents + (parsed.data.type === 'REFUND' ? -requestedCents : requestedCents)), currentContractAmount: centsToMoney(currentCents), payableAllocationCreated: requestedAllocations.length > 0, actualCostUnaffected: true } } });
+        await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'DownstreamContractPayment', entityId: payment.id, action: parsed.data.type === 'REFUND' ? 'PAYMENT_REFUND_RECORDED' : 'PAYMENT_RECORDED', changes: { ...parsed.data, paymentPlanId: effectivePlanId, payableId: requestedAllocations.length === 1 ? (requestedAllocations[0]?.payableId ?? null) : null, allocationCount: requestedAllocations.length, refundOfPaymentId: parsed.data.type === 'REFUND' ? (parsed.data.refundOfPaymentId ?? null) : null, amount: String(parsed.data.amount), grossCumulativePaid: centsToMoney(grossPaymentCents(allPayments) + (parsed.data.type === 'REFUND' ? 0n : requestedCents)), cumulativeRefunds: centsToMoney(refundPaymentCents(allPayments) + (parsed.data.type === 'REFUND' ? requestedCents : 0n)), cumulativeNetPaid: centsToMoney(paidCents + (parsed.data.type === 'REFUND' ? -requestedCents : requestedCents)), currentContractAmount: centsToMoney(currentCents), payableAllocationCreated: requestedAllocations.length > 0, actualCostUnaffected: true } } });
         return payment;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       return reply.code(201).send(success({ ...saved, amount: money(saved.amount) }));

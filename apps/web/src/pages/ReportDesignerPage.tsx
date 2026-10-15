@@ -519,7 +519,7 @@ export default function ReportDesignerPage() {
 
       <section className="report-designer-preview-panel panel">
         <div className="report-preview-heading"><div><span className="eyebrow">LIVE PREVIEW</span><h2><WandSparkles size={18} />{model.title || currentReport.label}</h2><p>预览使用真实权限范围数据；表格显示前 80 条记录，导出文件采用相同模板定义。</p></div><div className="report-preview-count"><strong>{preview ? `${preview.truncated ? '≥' : ''}${preview.rowCount.toLocaleString('zh-CN')}` : '—'}</strong><span>{preview?.truncated ? '条记录（已达展示/导出上限）' : '条已查询记录'}</span></div></div>
-        {previewQuery.isLoading ? <LoadingBlock label="正在生成报表预览…" /> : previewQuery.error ? <ErrorBlock message={String(previewQuery.error)} retry={() => void previewQuery.refetch()} /> : <>
+        {previewQuery.isLoading ? <LoadingBlock label="正在生成报表预览…" /> : previewQuery.error ? <ErrorBlock message={String(previewQuery.error)} retry={() => void previewQuery.refetch()} /> : !preview ? <ErrorBlock message="预览数据暂不可用，请重试" retry={() => void previewQuery.refetch()} /> : <>
           <div className={`report-preview-viewport ${model.page.orientation === 'portrait' ? 'is-portrait' : ''}`}>
             <article className={`report-preview-paper ${printRows === null ? 'report-preview-print-surface' : ''}`} data-paper={model.page.paper}>
               <table className={`report-preview-table ${model.page.repeatHeader ? 'repeat-header' : 'no-repeat-header'} ${model.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'}`}><thead>

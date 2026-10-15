@@ -79,7 +79,8 @@ export async function buildReportWorkbook(options: ReportWorkbookOptions): Promi
   const sheet = workbook.addWorksheet('数据', {
     views: [{ state: 'frozen', ySplit: 1 + (definition.subtitle ? 1 : 0) + definition.customRows.length + 1, xSplit: 0 }],
     pageSetup: {
-      paperSize: definition.page.paper === 'A3' ? 8 : definition.page.paper === 'Letter' ? 1 : 9,
+      // ExcelJS currently omits valid SpreadsheetML paper codes 1 (Letter) and 8 (A3) from its PaperSize union.
+      paperSize: (definition.page.paper === 'A3' ? 8 : definition.page.paper === 'Letter' ? 1 : 9) as unknown as ExcelJS.PaperSize,
       orientation: definition.page.orientation,
       fitToPage: definition.page.fitToWidth,
       fitToWidth: definition.page.fitToWidth ? 1 : 0,
