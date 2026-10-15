@@ -39,9 +39,9 @@ const acceptance = await read('docs/阶段验收记录-v2.0.0-rc.1.md');
 const windowsGate = await read('scripts/windows/verify-release-candidate.ps1');
 const e2eChecklist = await read('docs/WP8-Windows与浏览器端到端验收清单-v2.0.0-rc.1.md');
 
-check('package and API versions agree on v2.3.0-rc.1 while retaining Node.js 24+ gate',
-  rootPackage.version === '2.3.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && appInfo.includes("APP_VERSION = '2.3.0-rc.1'") && server.includes('version: APP_VERSION'));
+check('package and API versions agree on v2.4.0-rc.1 while retaining Node.js 24+ gate',
+  rootPackage.version === '2.4.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
+  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && appInfo.includes("APP_VERSION = '2.4.0-rc.1'") && server.includes('version: APP_VERSION'));
 check('release command combines original regression contracts, new WP checks and source audit coverage',
   rootPackage.scripts['validate:release-candidate'].includes('validate-release-candidate.mjs') &&
   rootPackage.scripts['validate:release-candidate'].includes('validate-v2-work-packages.mjs') &&

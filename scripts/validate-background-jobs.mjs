@@ -16,6 +16,7 @@ const handler = await read('apps/api/src/lib/report-export-job.ts');
 const registry = await read('apps/api/src/platform/background-job-registry.ts');
 const env = await read('apps/api/.env.example');
 const reportCenter = await read('apps/web/src/pages/ReportCenterPage.tsx');
+const reportPreview = await read('apps/web/src/pages/ReportPreviewPage.tsx');
 const apiClient = await read('apps/web/src/api.ts');
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const rootPackage = JSON.parse(await read('package.json'));
@@ -30,7 +31,7 @@ check('task idempotency key rejects conflicting payload reuse', routes.includes(
 check('queued reports preserve template identity and re-check access when the worker executes', routes.includes('templateId })) as Prisma.InputJsonObject') && handler.includes('ensureTemplateStillReadable(payload.templateId, authUser, payload.reportKey)'));
 check('worker has bounded retry/backoff and cleans expired output files', worker.includes('backoffSeconds') && worker.includes('maxAttempts') && worker.includes('rm(backgroundJobArtifactPath'));
 check('task output filename is server-derived and artifact path is kept out of public web root', handler.includes('`${job.id}-${job.attempts}.xlsx`') && handler.includes('backgroundJobArtifactPath(fileName)') && !routes.includes('sendFile(job.resultFileName)'));
-check('report-center XLSX flow submits idempotently, polls status and supports later re-check/download', reportCenter.includes('Idempotency-Key') && reportCenter.includes('checkBackgroundJob') && reportCenter.includes('/reports/jobs/') && apiClient.includes('headers?: HeadersInit'));
+check('report preview flow submits XLSX idempotently, polls status and supports later re-check/download', reportPreview.includes('Idempotency-Key') && reportPreview.includes('setInterval') === false && reportPreview.includes('/reports/jobs/') && reportPreview.includes('resultAvailable') && reportPreview.includes('api.download') && apiClient.includes('headers?: HeadersInit'));
 check('worker runs only after app listens and shuts down cleanly', server.includes('BACKGROUND_WORKER_ENABLED') && server.includes('startBackgroundWorker') && server.includes('await stopBackgroundWorker()'));
 check('environment template exposes opt-out, polling and restricted storage directory', env.includes('BACKGROUND_WORKER_ENABLED=true') && env.includes('BACKGROUND_JOB_POLL_MS=1000') && env.includes('BACKGROUND_JOB_STORAGE_DIR='));
 check('release validator is wired into candidate checks', rootPackage.scripts['validate:release-candidate'].includes('validate-background-jobs.mjs'));

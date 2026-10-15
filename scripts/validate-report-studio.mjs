@@ -31,8 +31,8 @@ const styles = await read('apps/web/src/styles.css');
 const app = await read('apps/web/src/App.tsx');
 const designDoc = await read('docs/原生XLSX与报表模板设计器-v2.1.0-rc.1.md');
 
-check('all application packages use v2.3.0-rc.1',
-  rootPackage.version === '2.3.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
+check('all application packages use v2.4.0-rc.1',
+  rootPackage.version === '2.4.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
 check('ExcelJS is pinned to a specific version and API test command includes XLSX tests',
   apiPackage.dependencies.exceljs === '4.4.0' && apiPackage.scripts.test.includes('report-template.test.ts') && apiPackage.scripts.test.includes('report-xlsx.test.ts') && apiPackage.scripts.test.includes('budget-xlsx.test.ts'));
 check('eight report types share a central server-side data registry',
@@ -55,8 +55,8 @@ check('template data and revisions are schema-backed and migration creates match
   schema.includes('model ReportTemplate {') && schema.includes('model ReportTemplateRevision {') && migration.includes('CREATE TABLE "ReportTemplate"') && migration.includes('CREATE TABLE "ReportTemplateRevision"') && migration.includes('ReportTemplate_projectId_fkey'));
 check('budget XLSX import creates a native template, bounds ZIP expansion, and rejects formulas and non-XLSX content',
   budgetXlsx.includes('MAX_ZIP_ENTRIES = 128') && budgetXlsx.includes('MAX_UNCOMPRESSED_BYTES = 40 * 1024 * 1024') && budgetXlsx.includes('XLSX_FORMULAS_NOT_ALLOWED') && budgetXlsxTests.includes('oversized uncompressed entry') && budgetXlsxTests.includes('rejects formula cells'));
-check('front-end designer is routed and report center offers XLSX plus template design',
-  app.includes('path="reports/designer"') && reportCenter.includes("downloadReport('xlsx')") && reportCenter.includes('设计报表模板'));
+check('legacy designer is routed and XLSX export now passes through formal preview',
+  app.includes('path="reports/designer"') && app.includes('path="reports/preview"') && reportCenter.includes('previewStandardReport') && reportCenter.includes('设计报表模板') && designer.includes('/reports/preview?'));
 check('template validation has unit tests for unknown fields, visibility, duplicates and merges',
   templateTests.includes('unknown field keys') && templateTests.includes('cannot hide every column') && templateTests.includes('duplicate field bindings') && templateTests.includes('cannot overlap'));
 check('XLSX tests check formulas-as-strings, leading zero IDs, merge, frozen view and metadata sheet',

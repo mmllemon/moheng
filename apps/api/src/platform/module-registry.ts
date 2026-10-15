@@ -14,6 +14,7 @@ import { ownerFinanceRoutes } from '../routes/owner-finance.js';
 import { progressBillRoutes } from '../routes/progress-bills.js';
 import { projectRoutes } from '../routes/projects.js';
 import { reportRoutes } from '../routes/reports.js';
+import { reportStudioRoutes } from '../routes/report-studio.js';
 
 /**
  * A registry for the modular monolith. Each module owns its route plugin and URL prefix;
@@ -41,7 +42,8 @@ export const apiModules = [
   { id: 'changes', name: '变更签证', description: '内部审批、外部确认与凭证管理', mountPrefix: '/api/projects', plugin: changeRoutes, integrationVisible: true },
   { id: 'analysis', name: '成本分析', description: '项目经营指标与成本分析查询', mountPrefix: '/api', plugin: analysisRoutes, integrationVisible: true },
   { id: 'audit-logs', name: '操作审计', description: '授权范围内的操作追溯和审计导出', mountPrefix: '/api/audit-logs', plugin: auditLogRoutes, integrationVisible: true },
-  { id: 'reports', name: '报表与模板', description: 'CSV/XLSX 报表、模板预览和版本管理', mountPrefix: '/api/reports', plugin: reportRoutes, integrationVisible: true },
+  { id: 'reports', name: '标准报表与模板', description: 'CSV/XLSX 台账、传统模板、预览和版本管理', mountPrefix: '/api/reports', plugin: reportRoutes, integrationVisible: true },
+  { id: 'report-studio', name: '综合报表工作室', description: '项目级与公司级多数据源报表、单元格绑定、重复区域和 XLSX 预览导出', mountPrefix: '/api/reports/studio', plugin: reportStudioRoutes, integrationVisible: true },
   { id: 'notifications', name: '待办与预警', description: '根据现有业务台账动态计算待办和预警', mountPrefix: '/api/notifications', plugin: notificationRoutes, integrationVisible: true },
   { id: 'business-parties', name: '往来单位', description: '往来单位主数据与项目经营档案', mountPrefix: '/api/parties', plugin: businessPartyRoutes, integrationVisible: true },
 ] satisfies readonly ApiModuleDefinition[];

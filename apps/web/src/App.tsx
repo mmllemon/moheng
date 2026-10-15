@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProjectWorkspaceLayout from './components/ProjectWorkspaceLayout';
@@ -7,6 +7,8 @@ import DashboardPage from './pages/DashboardPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import ReportCenterPage from './pages/ReportCenterPage';
 import ReportDesignerPage from './pages/ReportDesignerPage';
+const ReportStudioPage = lazy(() => import('./pages/ReportStudioPage'));
+const ReportPreviewPage = lazy(() => import('./pages/ReportPreviewPage'));
 import NotificationsPage from './pages/NotificationsPage';
 import ProjectMembersPage from './pages/ProjectMembersPage';
 import ProjectOverviewPage from './pages/ProjectOverviewPage';
@@ -66,6 +68,8 @@ export default function App() {
         <Route path="audit-logs" element={<AuditLogsPage />} />
         <Route path="reports" element={<ReportCenterPage />} />
         <Route path="reports/designer" element={<ReportDesignerPage />} />
+        <Route path="reports/studio" element={<Suspense fallback={<div className="page-wrap"><LoadingBlock label="正在加载报表工作室…" /></div>}><ReportStudioPage /></Suspense>} />
+        <Route path="reports/preview" element={<Suspense fallback={<div className="page-wrap"><LoadingBlock label="正在加载报表预览…" /></div>}><ReportPreviewPage /></Suspense>} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="parties" element={<BusinessPartiesPage />} />
         <Route path="parties/:id" element={<BusinessPartyDetailPage />} />

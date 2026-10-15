@@ -9,6 +9,8 @@ import {
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
 import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import SelectField from '../components/SelectField';
+import DatePicker from '../components/DatePicker';
 import type { Project } from '../types';
 import type {
   ReportCatalogEntry, ReportField, ReportPreview, ReportTemplateColumn, ReportTemplateDefinition,
@@ -318,20 +320,15 @@ export default function ReportDesignerPage() {
     try {
       let id = templateId;
       if (dirty) id = (await persistTemplate()).id;
-      setBusy(true); setError('');
-      const params = new URLSearchParams();
-      if (filterProjectId) params.set('projectId', filterProjectId);
+      const params = new URLSearchParams({ reportKey });
+      if (filterProjectId) params.set('projectId', filterProjectId); else params.set('allProjects', '1');
       if (from) params.set('from', from);
       if (to) params.set('to', to);
       if (id) params.set('templateId', id);
-      const blob = await api.download(`/reports/${reportKey}.xlsx?${params.toString()}`);
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a'); anchor.href = url;
-      anchor.download = `墨衡-${currentReport?.label ?? reportKey}-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-      setNotice('原生 XLSX 工作簿已开始下载；修改工作簿不会回写墨衡业务台账。');
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'XLSX 导出失败'); }
-    finally { setBusy(false); }
+      navigate(`/reports/preview?${params.toString()}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '无法打开报表预览。');
+    }
   }
 
   function updateColumn(index: number, patch: Partial<ReportTemplateColumn>) {
@@ -432,18 +429,18 @@ export default function ReportDesignerPage() {
   } : null;
 
   return <div className="page-wrap report-designer-page"><style>{`@media print { @page { size: ${model.page.paper} ${model.page.orientation}; margin: 10mm; } }`}</style>
-    <PageHeader eyebrow="REPORTS / TEMPLATE STUDIO" title="报表设计器" subtitle="设计可复用的报表版式；数据仍由墨衡按当前账号与项目权限生成，模板修改不会写入业务台账。" actions={<><Button variant="secondary" onClick={() => navigate('/reports')}><X size={15} />返回报表中心</Button><Button variant="secondary" onClick={() => void outputXlsx()} disabled={busy || Boolean(from && to && from > to)}><FileSpreadsheet size={15} />导出 XLSX</Button><Button onClick={() => void outputPrint()} disabled={!preview || busy || Boolean(from && to && from > to)}><Printer size={15} />完整报表 / 打印 PDF</Button></>} />
+    <PageHeader eyebrow="REPORTS / TEMPLATE STUDIO" title="报表设计器" subtitle="设计可复用的报表版式；数据仍由墨衡按当前账号与项目权限生成，模板修改不会写入业务台账。" actions={<><Button variant="secondary" onClick={() => navigate('/reports')}><X size={15} />返回报表中心</Button><Button variant="secondary" onClick={() => void outputXlsx()} disabled={busy || Boolean(from && to && from > to)}><FileSpreadsheet size={15} />预览并导出 XLSX</Button><Button onClick={() => void outputPrint()} disabled={!preview || busy || Boolean(from && to && from > to)}><Printer size={15} />完整报表 / 打印 PDF</Button></>} />
     <section className="report-designer-topbar panel">
-      <label className="report-designer-compact-field"><span>报表类型</span><select value={reportKey} onChange={(event) => setReportKey(event.target.value)}>{catalog.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
-      <label className="report-designer-compact-field"><span>选择模板</span><select value={templateId} onChange={(event) => void chooseTemplate(event.target.value)}><option value="">系统默认版式（只读基线）</option>{(templatesQuery.data ?? []).map((template) => <option key={template.id} value={template.id}>{template.scope === 'SYSTEM' ? '系统' : template.scope === 'PROJECT' ? '项目' : '个人'} · {template.name} · v{template.version}{template.status === 'DRAFT' || template.publishedVersion !== template.version ? '（含未发布修改）' : ''}</option>)}</select></label>
+      <label className="report-designer-compact-field"><span>报表类型</span><SelectField value={reportKey} onChange={(event) => setReportKey(event.currentTarget.value)} aria-label="报表类型">{catalog.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</SelectField></label>
+      <label className="report-designer-compact-field"><span>选择模板</span><SelectField value={templateId} onChange={(event) => void chooseTemplate(event.currentTarget.value)} aria-label="选择报表模板"><option value="">系统默认版式（只读基线）</option>{(templatesQuery.data ?? []).map((template) => <option key={template.id} value={template.id}>{template.scope === 'SYSTEM' ? '系统' : template.scope === 'PROJECT' ? '项目' : '个人'} · {template.name} · v{template.version}{template.status === 'DRAFT' || template.publishedVersion !== template.version ? '（含未发布修改）' : ''}</option>)}</SelectField></label>
       <label className="report-designer-compact-field"><span>模板名称</span><input value={templateName} maxLength={100} onChange={(event) => { setTemplateName(event.target.value); setDirty(true); }} /></label>
       <div className="report-designer-save-actions"><Button variant="secondary" onClick={() => void saveTemplate(true)} disabled={busy}><Copy size={14} />另存为个人模板</Button><Button onClick={() => void saveTemplate()} disabled={busy || !templateName.trim()}><Save size={14} />{busy ? '处理中…' : '保存草稿'}</Button><Button variant="secondary" onClick={() => void publishTemplate()} disabled={busy || !(templateId || createScope)}><Check size={14} />发布版本</Button>{templateId && templateEditable && <Button variant="ghost" onClick={() => void archiveTemplate()} disabled={busy || dirty}><Trash2 size={14} />归档模板</Button>}</div>
     </section>
     <div className="report-designer-filterbar panel">
       <div className="report-designer-filter-note"><ShieldCheck size={16} /><span>预览数据范围：{filterProjectId ? '所选项目' : '全部有权限项目'}；预览最多显示 80 行，导出按现有 10,000 行上限执行。</span></div>
-      <label><span>项目范围</span><select value={filterProjectId} onChange={(event) => setFilterProjectId(event.target.value)}><option value="">全部可访问项目</option>{(projectsQuery.data ?? []).map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</select></label>
-      <label><span>开始日期</span><input type="date" value={from} max={to || undefined} onChange={(event) => setFrom(event.target.value)} /></label>
-      <label><span>结束日期</span><input type="date" value={to} min={from || undefined} onChange={(event) => setTo(event.target.value)} /></label>
+      <label><span>项目范围</span><SelectField value={filterProjectId} onChange={(event) => setFilterProjectId(event.currentTarget.value)} aria-label="项目范围"><option value="">全部可访问项目</option>{(projectsQuery.data ?? []).map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></label>
+      <label><span>开始日期</span><DatePicker value={from} max={to || undefined} onChange={(event) => setFrom(event.target.value)} aria-label="开始日期" placeholder="不限制开始日期" /></label>
+      <label><span>结束日期</span><DatePicker value={to} min={from || undefined} onChange={(event) => setTo(event.target.value)} aria-label="结束日期" placeholder="不限制结束日期" /></label>
       <Button variant="secondary" onClick={() => { setFrom(''); setTo(''); }} disabled={!from && !to}>清除日期</Button>
       <Button variant="ghost" onClick={() => void previewQuery.refetch()} disabled={previewQuery.isFetching}><RotateCcw size={14} />刷新预览</Button>
     </div>
@@ -469,10 +466,10 @@ export default function ReportDesignerPage() {
               return <div className={`report-column-editor ${selectedColumn === index ? 'is-selected' : ''}`} key={column.id} onClick={() => setSelectedColumn(index)}>
                 <div className="report-column-editor-top"><label className="report-visibility-toggle"><input type="checkbox" checked={column.visible} onChange={(event) => updateColumn(index, { visible: event.target.checked })} /><span>{index + 1}</span></label><input aria-label="列标题" value={column.label} maxLength={80} onChange={(event) => updateColumn(index, { label: event.target.value })} /><div className="report-column-order"><button type="button" title="上移" disabled={index === 0} onClick={(event) => { event.stopPropagation(); moveColumn(index, -1); }}><ArrowUp size={13} /></button><button type="button" title="下移" disabled={index === model.columns.length - 1} onClick={(event) => { event.stopPropagation(); moveColumn(index, 1); }}><ArrowDown size={13} /></button></div></div>
                 <div className="report-column-editor-fields">
-                  <label><span>绑定字段</span><select value={column.fieldKey ?? ''} onChange={(event) => { const field = fields.find((item) => item.key === event.target.value); updateColumn(index, { fieldKey: field?.key ?? null, label: field ? field.label : column.label, format: field?.type === 'money' ? 'money' : field?.type === 'number' ? 'number' : field?.type === 'date' ? 'date' : field ? 'auto' : 'text', align: field?.type === 'money' || field?.type === 'number' ? 'right' : field?.type === 'date' ? 'center' : 'left' }); }}><option value="">自定义静态列</option>{fields.filter((field) => field.key === column.fieldKey || !usedFieldKeys.has(field.key)).map((field) => <option key={field.key} value={field.key}>{field.label}</option>)}</select></label>
+                  <label><span>绑定字段</span><SelectField value={column.fieldKey ?? ''} onChange={(event) => { const field = fields.find((item) => item.key === event.currentTarget.value); updateColumn(index, { fieldKey: field?.key ?? null, label: field ? field.label : column.label, format: field?.type === 'money' ? 'money' : field?.type === 'number' ? 'number' : field?.type === 'date' ? 'date' : field ? 'auto' : 'text', align: field?.type === 'money' || field?.type === 'number' ? 'right' : field?.type === 'date' ? 'center' : 'left' }); }} aria-label="绑定字段"><option value="">自定义静态列</option>{fields.filter((field) => field.key === column.fieldKey || !usedFieldKeys.has(field.key)).map((field) => <option key={field.key} value={field.key}>{field.label}</option>)}</SelectField></label>
                   <label className="report-width-field"><span>列宽</span><input type="number" min={8} max={60} value={column.width} onChange={(event) => updateColumn(index, { width: Math.max(8, Math.min(60, Number(event.target.value) || 8)) })} /></label>
-                  <label><span>对齐</span><select value={column.align} onChange={(event) => updateColumn(index, { align: event.target.value as ReportTemplateColumn['align'] })}><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></label>
-                  <label><span>数据格式</span><select value={column.format} onChange={(event) => updateColumn(index, { format: event.target.value as ReportTemplateColumn['format'] })}><option value="auto">按字段自动</option><option value="text">文本</option><option value="number">数值</option><option value="money">金额</option><option value="date">日期</option></select></label>
+                  <label><span>对齐</span><SelectField value={column.align} onChange={(event) => updateColumn(index, { align: event.currentTarget.value as ReportTemplateColumn['align'] })} aria-label="单元格对齐"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></SelectField></label>
+                  <label><span>数据格式</span><SelectField value={column.format} onChange={(event) => updateColumn(index, { format: event.currentTarget.value as ReportTemplateColumn['format'] })} aria-label="数据格式"><option value="auto">按字段自动</option><option value="text">文本</option><option value="number">数值</option><option value="money">金额</option><option value="date">日期</option></SelectField></label>
                   {!source && <label className="report-static-value"><span>静态列值（每行重复）</span><input value={column.staticValue} maxLength={160} onChange={(event) => updateColumn(index, { staticValue: event.target.value })} /></label>}
                   <button type="button" className="report-column-delete" onClick={(event) => { event.stopPropagation(); removeColumn(index); }}><Trash2 size={13} />删除该列</button>
                 </div>
@@ -480,7 +477,7 @@ export default function ReportDesignerPage() {
             })}
           </div>
           <div className="report-add-column-actions">
-            <div><select value={addFieldKey} onChange={(event) => setAddFieldKey(event.target.value)}><option value="">选择要增加的字段…</option>{availableFields.map((field) => <option key={field.key} value={field.key}>{field.label}</option>)}</select><Button variant="secondary" onClick={addBoundColumn} disabled={!addFieldKey}><Plus size={13} />添加数据列</Button></div>
+            <div><SelectField value={addFieldKey} onChange={(event) => setAddFieldKey(event.currentTarget.value)} aria-label="添加数据字段"><option value="">选择要增加的字段…</option>{availableFields.map((field) => <option key={field.key} value={field.key}>{field.label}</option>)}</SelectField><Button variant="secondary" onClick={addBoundColumn} disabled={!addFieldKey}><Plus size={13} />添加数据列</Button></div>
             <Button variant="secondary" onClick={addStaticColumn}><Plus size={13} />添加自定义列</Button>
           </div>
         </div>}
@@ -504,15 +501,15 @@ export default function ReportDesignerPage() {
         </div>}
 
         {tab === 'page' && <div className="report-designer-props">
-          <label className="report-designer-prop"><span>纸张</span><select value={model.page.paper} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, paper: event.target.value as ReportTemplateDefinition['page']['paper'] } }))}><option value="A4">A4</option><option value="A3">A3</option><option value="Letter">Letter</option></select></label>
-          <label className="report-designer-prop"><span>方向</span><select value={model.page.orientation} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, orientation: event.target.value as ReportTemplateDefinition['page']['orientation'] } }))}><option value="landscape">横向</option><option value="portrait">纵向</option></select></label>
+          <label className="report-designer-prop"><span>纸张</span><SelectField value={model.page.paper} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, paper: event.currentTarget.value as ReportTemplateDefinition['page']['paper'] } }))} aria-label="纸张"><option value="A4">A4</option><option value="A3">A3</option><option value="Letter">Letter</option></SelectField></label>
+          <label className="report-designer-prop"><span>方向</span><SelectField value={model.page.orientation} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, orientation: event.currentTarget.value as ReportTemplateDefinition['page']['orientation'] } }))} aria-label="页面方向"><option value="landscape">横向</option><option value="portrait">纵向</option></SelectField></label>
           <label className="report-page-check"><input type="checkbox" checked={model.page.fitToWidth} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, fitToWidth: event.target.checked } }))} /><span>打印时适配到一页宽度</span></label>
           <label className="report-page-check"><input type="checkbox" checked={model.page.repeatHeader} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, repeatHeader: event.target.checked } }))} /><span>分页时重复数据表头（XLSX）；浏览器打印重复标题区</span></label>
           <label className="report-page-check"><input type="checkbox" checked={model.page.includeDescription} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, includeDescription: event.target.checked } }))} /><span>导出“导出说明”工作表</span></label>
           <label className="report-page-check"><input type="checkbox" checked={model.page.showPageNumber} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, showPageNumber: event.target.checked } }))} /><span>XLSX 页脚显示页码</span></label>
           <label className="report-designer-prop"><span>页脚文本</span><input value={model.page.footerText} maxLength={120} onChange={(event) => updateDefinition((current) => ({ ...current, page: { ...current.page, footerText: event.target.value } }))} /></label>
           <div className="report-page-layout-summary"><TableProperties size={17} /><div><strong>{model.page.paper} · {model.page.orientation === 'landscape' ? '横向' : '纵向'}</strong><span>{outputColumns.length} 个可见列 · {model.customRows.length} 个自定义版式行 · {model.page.fitToWidth ? '一页宽度适配' : '按列宽分页'}</span></div></div>
-          <div className="report-scope-editor"><label><span>模板共享范围</span><select value={createScope} onChange={(event) => { setCreateScope(event.target.value as ReportTemplateScope); setDirty(true); }}><option value="PERSONAL">个人模板</option>{filterProjectId && <option value="PROJECT">当前项目共享模板</option>}{canCreateSystem && <option value="SYSTEM">系统模板（管理员）</option>}</select></label><small>发布系统模板只允许管理员；发布项目模板要求项目负责人或项目经理。</small></div>
+          <div className="report-scope-editor"><label><span>模板共享范围</span><SelectField value={createScope} onChange={(event) => { setCreateScope(event.currentTarget.value as ReportTemplateScope); setDirty(true); }} aria-label="模板共享范围"><option value="PERSONAL">个人模板</option>{filterProjectId && <option value="PROJECT">当前项目共享模板</option>}{canCreateSystem && <option value="SYSTEM">系统模板（管理员）</option>}</SelectField></label><small>发布系统模板只允许管理员；发布项目模板要求项目负责人或项目经理。</small></div>
         </div>}
         {templateId && <details className="report-template-history"><summary><History size={15} />版本历史与恢复</summary><div className="report-template-history-list">{revisionsQuery.isLoading ? <small>正在读取历史版本…</small> : !(revisionsQuery.data ?? []).length ? <small>暂无历史记录。</small> : (revisionsQuery.data ?? []).map((revision) => <div key={revision.id}><span><strong>v{revision.version}</strong><small>{revision.action} · {new Date(revision.createdAt).toLocaleString('zh-CN')}</small></span><button type="button" disabled={busy || !templateEditable} onClick={() => void restoreRevision(revision.id)}>恢复为草稿</button></div>)}</div></details>}
       </aside>
