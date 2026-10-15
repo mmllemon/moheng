@@ -21,7 +21,7 @@ export function ProjectLedgerReportButton({ reportKey, label = '预览 / 导出�
   return <Button variant="secondary" size="sm" disabled={!projectId} onClick={() => {
     if (!projectId) return;
     const returnTo = `${location.pathname}${location.search}${location.hash}`;
-    const params = new URLSearchParams({ reportKey, projectId, source: 'workspace', returnTo });
+    const params = new URLSearchParams({ reportKey, projectId, source: 'cost-workspace', returnTo });
     navigate(`/reports/preview?${params.toString()}`, { state: { safeReportPreviewBack: true, returnTo } });
   }}><Eye size={14} />{label}</Button>;
 }

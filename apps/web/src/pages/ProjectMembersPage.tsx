@@ -49,13 +49,13 @@ export default function ProjectMembersPage() {
   });
   function addMember(event: FormEvent) { event.preventDefault(); setError(''); setNotice(''); assign.mutate({ email: email.trim(), role: newRole }); }
 
-  if (!projectId) return <div className="page-wrap"><PageHeader eyebrow="PROJECT / ACCESS CONTROL" title="项目成员与权限" subtitle="项目角色决定该项目内的业务访问与操作权限。" /><EmptyState title="尚未选择项目" description="请先从顶栏选择具体项目，再维护成员角色。" /></div>;
+  if (!projectId) return <div className="page-wrap"><PageHeader eyebrow="SYSTEM / PROJECT ACCESS" title="项目成员与权限" subtitle="项目角色决定该项目内的业务访问与操作权限。" /><EmptyState title="尚未选择项目" description="请先从顶栏选择具体项目，再维护成员角色。" /></div>;
   if (projectQuery.isLoading || memberQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在加载项目成员与权限…" /></div>;
   if (projectQuery.error || memberQuery.error) return <div className="page-wrap"><ErrorBlock message={String(projectQuery.error ?? memberQuery.error ?? '加载失败')} retry={() => { void projectQuery.refetch(); void memberQuery.refetch(); }} /></div>;
   const project = (projectQuery.data ?? []).find((item) => item.id === projectId);
 
   return <div className="page-wrap project-members-page">
-    <PageHeader eyebrow="PROJECT / MEMBERS & ROLES" title="项目成员与权限" subtitle="按项目分配角色。全局账号身份与项目角色相互独立；服务端仍会执行授权校验。" />
+    <PageHeader eyebrow="SYSTEM / PROJECT MEMBERS & ROLES" title="项目成员与权限" subtitle="按项目分配角色。全局账号身份与项目角色相互独立；服务端仍会执行授权校验。" />
     <section className="panel members-project-banner"><span className="members-project-icon"><Users size={19} /></span><div><small>当前项目</small><strong>{project?.name ?? projectId}</strong><code>{project?.code ?? ''}</code></div><StatusBadge status={project?.status ?? 'CONSTRUCTION'} /></section>
     {notice && <div className="success-notice"><ShieldCheck size={16} />{notice}<button className="icon-button" aria-label="关闭提示" onClick={() => setNotice('')}><X size={14} /></button></div>}
     {error && <div className="form-alert">{error}<button className="icon-button" aria-label="关闭错误" onClick={() => setError('')}><X size={14} /></button></div>}

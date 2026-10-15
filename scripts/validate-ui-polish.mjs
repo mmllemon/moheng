@@ -14,7 +14,7 @@ function check(label, condition) {
 const center = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const styles = await read('apps/web/src/styles.css');
 const layout = await read('apps/web/src/components/Layout.tsx');
-const workspace = await read('apps/web/src/components/ProjectWorkspaceLayout.tsx');
+const workspace = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
@@ -22,8 +22,8 @@ const appInfo = await read('apps/api/src/platform/app-info.ts');
 const design = await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md');
 const acceptance = await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md');
 
-check('release package/API/Web/runtime metadata consistently use v2.7.0-rc.1',
-  rootPackage.version === '2.7.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.7.0-rc.1'"));
+check('release package/API/Web/runtime metadata consistently use v2.8.0-rc.1',
+  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.8.0-rc.1'"));
 check('report center removes redundant intro cards and repeated hero banner',
   !center.includes('report-intro-grid') && !center.includes('report-center-hero') && !center.includes('report-library'));
 check('report center has a single compact ledger catalog rather than duplicated report-type selector and large cards',
@@ -36,10 +36,10 @@ check('report center responsive layout stacks under constrained widths and provi
   styles.includes('.report-standard-layout { display: grid; grid-template-columns: minmax(250px, .88fr) minmax(0, 1.45fr);') && styles.includes('@media (max-width: 1120px)') && styles.includes('.report-studio-entry-card:focus-visible') && styles.includes('.report-report-option:focus-visible'));
 check('report workspace honors reduced-motion preferences',
   styles.includes('@media (prefers-reduced-motion: reduce), :root[data-motion="reduced"]') && styles.includes('.report-studio-entry-card, .report-report-option, .sidebar-note { transition: none !important; }'));
-check('project members navigation no longer lives inside cost/downstream business tabs',
-  !workspace.split('const costTabs = [')[1]?.split('];')[0]?.includes("'/workspace/members'") && workspace.includes('const projectAdminTabs') && workspace.includes("to: '/workspace/members', label: '项目成员与权限'") && workspace.includes('aria-label="项目管理"'));
+check('project members navigation is absent from cost workspace tabs and the tabs identify the cost workbench',
+  !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && workspace.includes('aria-label="成本工作台业务导航"') && layout.includes("to: '/system/members', label: '项目成员与权限'") && layout.includes("to: '/system', label: '系统管理工作台'"));
 check('sidebar health indicator without data semantics is removed and replaced by a functioning dashboard link',
-  !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/workspace')}")));
+  !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
 check('documentation discusses the health indicator as non-metric and records navigation/report layout changes',
   design.includes('经营健康度') && design.includes('没有真实数据') && design.includes('项目成员与权限') && acceptance.includes('报表中心') && acceptance.includes('经营健康度'));
 

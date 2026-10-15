@@ -16,7 +16,10 @@ const launch = await read('apps/web/src/components/ReportLaunchButton.tsx');
 const center = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const designer = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const overview = await read('apps/web/src/pages/ProjectOverviewPage.tsx');
-const workspace = await read('apps/web/src/components/ProjectWorkspaceLayout.tsx');
+const workspace = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
+const app = await read('apps/web/src/App.tsx');
+const layout = await read('apps/web/src/components/Layout.tsx');
+const systemManagement = await read('apps/web/src/pages/SystemManagementPage.tsx');
 const styles = await read('apps/web/src/styles.css');
 const xlsx = await read('apps/api/src/lib/report-studio-xlsx.ts');
 const rootPackage = JSON.parse(await read('package.json'));
@@ -24,8 +27,8 @@ const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
 
-check('all package and runtime versions are v2.7.0-rc.1',
-  rootPackage.version === '2.7.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.7.0-rc.1'"));
+check('all package and runtime versions are v2.8.0-rc.1',
+  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.8.0-rc.1'"));
 check('preview back uses known router history only when explicitly marked and a safe internal fallback otherwise',
   preview.includes('routeState?.safeReportPreviewBack === true') && preview.includes('navigate(safeReturnTo, { replace: true })') && preview.includes("?? '/reports'") && preview.includes("!candidate.startsWith('//')"));
 check('project summary auto-preview carries source route and replaces one-shot studio entry',
@@ -38,10 +41,14 @@ check('no other route uses a raw history-back operation outside the centralized 
   (preview.match(/navigate\(-1\)/g) ?? []).length === 1 && !(launch + center + designer + studio).includes('navigate(-1)'));
 check('project overview chart reserves Y-axis labels and uses ECharts containLabel',
   overview.includes('grid: { left: 68, right: 18, top: 22, bottom: 34, containLabel: true }') && overview.includes("axisLabel: { color: '#8792a4', margin: 10, hideOverlap: true") && styles.includes('.project-cost-trend-panel, .project-attention-panel'));
-check('project workspace visually groups navigation without visible group-title captions',
-  workspace.includes('workspace-nav-group workspace-nav-admin') && !workspace.includes('workspace-nav-admin-label') && !styles.includes('.workspace-nav-admin-label {'));
+check('cost workbench owns the cost layout and no longer contains member-management navigation',
+  workspace.includes('export default function CostWorkspaceLayout()') && workspace.includes('aria-label="成本工作台业务导航"') && !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && styles.includes('.cost-workspace-tabs') && !styles.includes('.project-workspace-tabs'));
 check('ExcelJS font builder correctly models incremental font-property assignment',
   xlsx.includes('const font: Partial<ExcelJS.Font> = {};'));
+check('system management has independent landing/member routes and legacy workspace URLs redirect safely',
+  layout.includes("to: '/system', label: '系统管理工作台'") && layout.includes("to: '/system/members', label: '项目成员与权限'") && layout.includes("to: '/system/accounts', label: '系统账号管理'") && systemManagement.includes('系统管理工作台') && systemManagement.includes('公司级账号身份') && app.includes('path="system/members"') && app.includes('path="system/accounts"') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') && app.includes("pathname: '/system/accounts'") && app.includes('path="workspace" element={<LegacyWorkspaceRedirect />}') && app.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') && app.includes("suffix === '/members' ? '/system/members'"));
+check('canonical cost workbench route and source identifiers use cost terminology',
+  app.includes('path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}') && layout.includes("to: '/cost', label: '成本工作台'") && workspace.includes('cost-workspace-tab') && launch.includes("source: 'cost-workspace'") && !layout.includes("label: '项目工作台'"));
 check('regression design and acceptance docs record safe return navigation, chart labels and font typing',
   (await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md')).includes('autoPreview=1') && (await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md')).includes('Y 轴标签完整可读'));
 

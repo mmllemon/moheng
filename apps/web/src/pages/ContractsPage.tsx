@@ -85,9 +85,9 @@ export default function ContractsPage() {
       </div></section>
 
       <section className="section-block owner-contract-shortcuts"><div className="section-heading"><div><h2>关联业务</h2><p>按业主合同链路进入计量、价款变更与项目成本控制。</p></div></div><div className="owner-contract-shortcut-grid">
-        <button onClick={() => navigate('/workspace/progress-bills')}><span className="owner-shortcut-icon"><CalendarDays size={17} /></span><span><strong>进度款管理</strong><small>申报、审批与实际回款</small></span><ArrowRight size={15} /></button>
-        <button onClick={() => navigate('/workspace/changes')}><span className="owner-shortcut-icon"><ShieldCheck size={17} /></span><span><strong>变更签证</strong><small>外部确认和有效合同额调整</small></span><ArrowRight size={15} /></button>
-        <button onClick={() => navigate('/workspace/budget')}><span className="owner-shortcut-icon"><Save size={17} /></span><span><strong>预算与目标成本</strong><small>查看项目成本基准</small></span><ArrowRight size={15} /></button>
+        <button onClick={() => navigate('/cost/progress-bills')}><span className="owner-shortcut-icon"><CalendarDays size={17} /></span><span><strong>进度款管理</strong><small>申报、审批与实际回款</small></span><ArrowRight size={15} /></button>
+        <button onClick={() => navigate('/cost/changes')}><span className="owner-shortcut-icon"><ShieldCheck size={17} /></span><span><strong>变更签证</strong><small>外部确认和有效合同额调整</small></span><ArrowRight size={15} /></button>
+        <button onClick={() => navigate('/cost/budget')}><span className="owner-shortcut-icon"><Save size={17} /></span><span><strong>预算与目标成本</strong><small>查看项目成本基准</small></span><ArrowRight size={15} /></button>
       </div></section>
     </>}
 

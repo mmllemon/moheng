@@ -43,7 +43,7 @@ const userTypes = await read('apps/web/src/types.ts');
 const dashboardPage = await read('apps/web/src/pages/DashboardPage.tsx');
 const auditPlan = await read('docs/下一阶段开发计划与实施记录-v1.9.0-rc.1.md');
 const projectOverviewPage = await read('apps/web/src/pages/ProjectOverviewPage.tsx');
-const workspaceLayout = await read('apps/web/src/components/ProjectWorkspaceLayout.tsx');
+const workspaceLayout = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const contractsPage = await read('apps/web/src/pages/ContractsPage.tsx');
 const partyRoute = await read('apps/api/src/routes/business-parties.ts');
 const partyHelper = await read('apps/api/src/lib/business-party.ts');
@@ -76,8 +76,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 2.7.0-rc.1',
-  rootPackage.version === '2.7.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.7.0-rc.1'") && server.includes('version: APP_VERSION'));
+check('package, API and Web versions agree on 2.8.0-rc.1',
+  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.8.0-rc.1'") && server.includes('version: APP_VERSION'));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
 check('previously shipped migration remains byte-for-byte unchanged',
@@ -284,16 +284,18 @@ check('main-contract screen defaults to a compact summary and edits through a di
   !contractsPage.includes('className="contract-layout"'));
 
 check('project workspace groups business pages behind a shared tab navigation while preserving individual routes',
-  appRoutes.includes('path="workspace" element={<NeedProject><ProjectWorkspaceLayout /></NeedProject>}') &&
+  appRoutes.includes('path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}') &&
+  appRoutes.includes('path="system/members" element={<NeedProject><ProjectMembersPage /></NeedProject>}') &&
+  appRoutes.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') &&
   appRoutes.includes('path="contracts" element={<ContractsPage />') &&
   appRoutes.includes('path="budget" element={<BudgetPage />') &&
   appRoutes.includes('path="progress-bills" element={<ProgressBillsPage />') &&
   appRoutes.includes('path="changes" element={<ChangesPage />') &&
-  workspaceLayout.includes('项目驾驶舱') && workspaceLayout.includes('workspace-nav-income') &&
-  workspaceLayout.includes('workspace-nav-cost') && workspaceLayout.includes('业主主合同') &&
+  workspaceLayout.includes('项目驾驶舱') && workspaceLayout.includes('cost-workspace-nav-income') &&
+  workspaceLayout.includes('cost-workspace-nav-cost') && workspaceLayout.includes('业主主合同') &&
   workspaceLayout.includes('预算与目标成本') && workspaceLayout.includes('进度款') &&
   workspaceLayout.includes('变更签证') && workspaceLayout.includes('分供合同与结算') &&
-  workspaceLayout.includes('workspace-nav-separator'));
+  workspaceLayout.includes('cost-workspace-nav-separator'));
 
 check('global dashboard is independent from selected project and uses cross-project metrics',
   !dashboardPage.includes("useUiStore((state) => state.selectedProjectId)") &&
@@ -306,7 +308,7 @@ check('single-project cockpit is separate from portfolio dashboard and cost anal
   appRoutes.includes('ProjectOverviewPage') &&
   projectOverviewPage.includes("/analysis/three-way") &&
   projectOverviewPage.includes('项目驾驶舱') &&
-  projectOverviewPage.includes("/workspace/analysis"));
+  projectOverviewPage.includes("/cost/analysis"));
 
 check('cost variance is not presented as an overrun when no target-cost baseline exists',
   (await read('apps/api/src/routes/analysis.ts')).includes('costVarianceAmount: projectTargetCost > 0 ? actualCost - projectTargetCost : null') &&
@@ -371,12 +373,12 @@ check('historical documentation preserves the unit master, owner finance, combin
 check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
   indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
-  layout.includes('<strong>墨衡</strong>') && layout.includes('v2.7.0-rc.1') &&
+  layout.includes('<strong>墨衡</strong>') && layout.includes('v2.8.0-rc.1') &&
   loginPage.includes('<strong>墨衡</strong>') && !(await read('apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
 check('navigation group captions are removed while visual divider and group regions remain',
-  workspaceLayout.includes('workspace-nav-separator') && workspaceLayout.includes('workspace-nav-income') &&
-  workspaceLayout.includes('workspace-nav-cost') && !workspaceLayout.includes('workspace-nav-group-label') &&
+  workspaceLayout.includes('cost-workspace-nav-separator') && workspaceLayout.includes('cost-workspace-nav-income') &&
+  workspaceLayout.includes('cost-workspace-nav-cost') && !workspaceLayout.includes('cost-workspace-nav-group-label') &&
   !(workspaceLayout.includes('业主侧 · 收入')) && !(workspaceLayout.includes('成本支出侧')));
 
 check('UI preferences support four Pro-Tier themes, system mode, density, accents, wide content and reduced motion',

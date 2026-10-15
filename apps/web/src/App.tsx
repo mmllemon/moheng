@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
-import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import ProjectWorkspaceLayout from './components/ProjectWorkspaceLayout';
+import CostWorkspaceLayout from './components/CostWorkspaceLayout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AuditLogsPage from './pages/AuditLogsPage';
@@ -24,6 +24,7 @@ import ProgressBillsPage from './pages/ProgressBillsPage';
 import ChangesPage from './pages/ChangesPage';
 import AnalysisPage from './pages/AnalysisPage';
 import UserManagementPage from './pages/UserManagementPage';
+import SystemManagementPage from './pages/SystemManagementPage';
 import BusinessPartiesPage from './pages/BusinessPartiesPage';
 import BusinessPartyDetailPage from './pages/BusinessPartyDetailPage';
 import { useAuthStore, useUiStore } from './auth-store';
@@ -58,6 +59,18 @@ function NeedProject({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+function LegacyWorkspaceRedirect() {
+  const location = useLocation();
+  const suffix = location.pathname.replace(/^\/workspace(?=\/|$)/, '');
+  const targetPath = suffix === '/members' ? '/system/members' : `/cost${suffix}`;
+  return <Navigate to={{ pathname: targetPath, search: location.search, hash: location.hash }} state={location.state} replace />;
+}
+
+function LegacySettingsUsersRedirect() {
+  const location = useLocation();
+  return <Navigate to={{ pathname: '/system/accounts', search: location.search, hash: location.hash }} state={location.state} replace />;
+}
+
 export default function App() {
   return <Routes>
     <Route path="/login" element={<LoginPage />} />
@@ -73,30 +86,35 @@ export default function App() {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="parties" element={<BusinessPartiesPage />} />
         <Route path="parties/:id" element={<BusinessPartyDetailPage />} />
-        <Route path="workspace" element={<NeedProject><ProjectWorkspaceLayout /></NeedProject>}>
+        <Route path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}>
           <Route index element={<ProjectOverviewPage />} />
-          <Route path="members" element={<ProjectMembersPage />} />
+          <Route path="members" element={<Navigate to="/system/members" replace />} />
           <Route path="contracts" element={<ContractsPage />} />
           <Route path="budget" element={<BudgetPage />} />
           <Route path="progress-bills" element={<ProgressBillsPage />} />
           <Route path="changes" element={<ChangesPage />} />
           <Route path="downstream" element={<DownstreamWorkspacePage />} />
-          <Route path="downstream-contracts" element={<Navigate to="/workspace/downstream" replace />} />
-          <Route path="downstream-finance" element={<Navigate to="/workspace/downstream?view=finance" replace />} />
+          <Route path="downstream-contracts" element={<Navigate to="/cost/downstream" replace />} />
+          <Route path="downstream-finance" element={<Navigate to="/cost/downstream?view=finance" replace />} />
           <Route path="owner-finance" element={<OwnerFinancePage />} />
           <Route path="costs" element={<CostsPage />} />
           <Route path="analysis" element={<AnalysisPage />} />
         </Route>
-        {/* Compatibility redirects preserve links/bookmarks from v1.2.x. */}
-        <Route path="contracts" element={<Navigate to="/workspace/contracts" replace />} />
-        <Route path="downstream-contracts" element={<Navigate to="/workspace/downstream" replace />} />
-        <Route path="downstream-finance" element={<Navigate to="/workspace/downstream?view=finance" replace />} />
-        <Route path="budget" element={<Navigate to="/workspace/budget" replace />} />
-        <Route path="costs" element={<Navigate to="/workspace/costs" replace />} />
-        <Route path="progress-bills" element={<Navigate to="/workspace/progress-bills" replace />} />
-        <Route path="changes" element={<Navigate to="/workspace/changes" replace />} />
-        <Route path="analysis" element={<Navigate to="/workspace/analysis" replace />} />
-        <Route path="settings/users" element={<UserManagementPage />} />
+        <Route path="system" element={<SystemManagementPage />} />
+        <Route path="system/members" element={<NeedProject><ProjectMembersPage /></NeedProject>} />
+        <Route path="system/accounts" element={<UserManagementPage />} />
+        <Route path="workspace" element={<LegacyWorkspaceRedirect />} />
+        <Route path="workspace/*" element={<LegacyWorkspaceRedirect />} />
+        {/* Compatibility redirects preserve links/bookmarks from earlier releases. */}
+        <Route path="contracts" element={<Navigate to="/cost/contracts" replace />} />
+        <Route path="downstream-contracts" element={<Navigate to="/cost/downstream" replace />} />
+        <Route path="downstream-finance" element={<Navigate to="/cost/downstream?view=finance" replace />} />
+        <Route path="budget" element={<Navigate to="/cost/budget" replace />} />
+        <Route path="costs" element={<Navigate to="/cost/costs" replace />} />
+        <Route path="progress-bills" element={<Navigate to="/cost/progress-bills" replace />} />
+        <Route path="changes" element={<Navigate to="/cost/changes" replace />} />
+        <Route path="analysis" element={<Navigate to="/cost/analysis" replace />} />
+        <Route path="settings/users" element={<LegacySettingsUsersRedirect />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Route>

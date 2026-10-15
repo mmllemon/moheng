@@ -665,17 +665,17 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
   .downstream-summary-grid, .downstream-analysis-grid { grid-template-columns: 1fr; }
 }
 
-/* v1.2.4 information architecture: global portfolio, project cockpit and grouped project workspace */
+/* v1.2.4 information architecture: global portfolio, project cockpit and grouped cost workspace */
 .global-context-bar .context-left { gap: 9px; }
 .global-context-bar .context-left > strong { color: #3a4964; font-size: 11px; font-weight: 700; }
 .global-context-divider { width: 1px; height: 15px; background: #dfe5ef; margin: 0 3px; }
-.project-workspace { min-width: 0; }
-.project-workspace-tabs { display: flex; align-items: center; gap: 4px; margin: -3px 0 18px; padding: 6px; overflow-x: auto; border: 1px solid #e6eaf2; border-radius: 10px; background: #fff; scrollbar-width: thin; }
-.workspace-tab { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 12px; color: #748096; border: 1px solid transparent; border-radius: 7px; font-size: 11px; font-weight: 600; white-space: nowrap; transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease; }
-.workspace-tab:hover { background: #f6f8fc; color: #4e5e7b; }
-.workspace-tab.active { color: #4058be; background: #f0f3ff; border-color: #e1e7ff; }
-.workspace-tab:active { transform: translateY(1px); }
-.workspace-content { min-width: 0; }
+.cost-workspace { min-width: 0; }
+.cost-workspace-tabs { display: flex; align-items: center; gap: 4px; margin: -3px 0 18px; padding: 6px; overflow-x: auto; border: 1px solid #e6eaf2; border-radius: 10px; background: #fff; scrollbar-width: thin; }
+.cost-workspace-tab { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 12px; color: #748096; border: 1px solid transparent; border-radius: 7px; font-size: 11px; font-weight: 600; white-space: nowrap; transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease; }
+.cost-workspace-tab:hover { background: #f6f8fc; color: #4e5e7b; }
+.cost-workspace-tab.active { color: #4058be; background: #f0f3ff; border-color: #e1e7ff; }
+.cost-workspace-tab:active { transform: translateY(1px); }
+.cost-workspace-content { min-width: 0; }
 .portfolio-kpi-grid { margin-bottom: 18px; }
 .portfolio-panel { overflow: hidden; }
 .portfolio-result-count { color: #8a95a7; font-size: 10px; font-variant-numeric: tabular-nums; }
@@ -795,7 +795,7 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
   .project-downstream-facts { grid-template-columns: 1fr; }
   .project-chart-bottom { align-items: flex-start; flex-wrap: wrap; }
   .project-chart-bottom small { flex-basis: 100%; margin-left: 0; }
-  .workspace-tab { padding: 8px 10px; }
+  .cost-workspace-tab { padding: 8px 10px; }
 }
 
 
@@ -964,16 +964,16 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 
 
 /* v1.5: grouped income/cost navigation and compact finance module switch */
-.project-workspace-tabs { align-items: stretch; gap: 8px; padding: 8px; }
-.workspace-nav-overview { display: flex; align-items: center; flex: 0 0 auto; }
-.workspace-nav-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 2px 5px; border-radius: 8px; }
-.workspace-nav-income { background: #f7f9ff; }
-.workspace-nav-cost { background: #f8faf9; }
-.workspace-nav-group-label { display: none; }
-.workspace-nav-group-tabs { display: flex; align-items: center; gap: 3px; }
-.workspace-nav-separator { flex: 0 0 1px; display: flex; align-items: center; margin: 5px 0; background: #e1e6ef; }
-.workspace-nav-separator span { display: none; }
-.workspace-nav-group .workspace-tab { padding: 8px 10px; }
+.cost-workspace-tabs { align-items: stretch; gap: 8px; padding: 8px; }
+.cost-workspace-nav-overview { display: flex; align-items: center; flex: 0 0 auto; }
+.cost-workspace-nav-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 2px 5px; border-radius: 8px; }
+.cost-workspace-nav-income { background: #f7f9ff; }
+.cost-workspace-nav-cost { background: #f8faf9; }
+.cost-workspace-nav-group-label { display: none; }
+.cost-workspace-nav-group-tabs { display: flex; align-items: center; gap: 3px; }
+.cost-workspace-nav-separator { flex: 0 0 1px; display: flex; align-items: center; margin: 5px 0; background: #e1e6ef; }
+.cost-workspace-nav-separator span { display: none; }
+.cost-workspace-nav-group .cost-workspace-tab { padding: 8px 10px; }
 .downstream-workspace-page { min-width: 0; }
 .downstream-module-switch { display: flex; align-items: center; gap: 7px; margin: -2px 0 12px; padding: 5px; width: fit-content; max-width: 100%; border: 1px solid #e5eaf2; border-radius: 9px; background: #fff; }
 .downstream-module-switch button { display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent; border-radius: 6px; background: transparent; padding: 9px 13px; color: #738096; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; }
@@ -991,7 +991,7 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 .login-remember-row > span { display: grid; gap: 4px; }
 .login-remember-row strong { color: #5f6c80; font-size: 11px; font-weight: 650; }
 .login-remember-row small { color: #9aa4b4; font-size: 9px; line-height: 1.5; font-weight: 400; }
-@media (max-width: 1200px) { .project-workspace-tabs { flex-wrap: wrap; } .workspace-nav-group { flex: 1 1 auto; } .workspace-nav-group-tabs { flex-wrap: wrap; } .workspace-nav-separator { display: none; } }
+@media (max-width: 1200px) { .cost-workspace-tabs { flex-wrap: wrap; } .cost-workspace-nav-group { flex: 1 1 auto; } .cost-workspace-nav-group-tabs { flex-wrap: wrap; } .cost-workspace-nav-separator { display: none; } }
 @media (max-width: 640px) { .party-edit-dialog { width: calc(100vw - 20px); max-height: 94vh; } .party-edit-content { padding: 14px 14px 4px; } .party-edit-content > .form-grid { grid-template-columns: 1fr; } .party-edit-content .field.span-2 { grid-column: auto; } .party-edit-dialog > .dialog-footer { padding: 12px 14px; } .downstream-module-switch { width: 100%; } .downstream-module-switch button { flex: 1 1 0; justify-content: center; padding: 8px 7px; } }
 
 /* After final owner-side settlement, collection is handled in the receivables ledger. */
@@ -1005,15 +1005,15 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 .login-brand .brand-mark svg, .login-mobile-brand .brand-mark svg { width: 25px; height: 25px; }
 
 /* Navigation groups are distinguished by grouping, whitespace and a fine rule—not captions. */
-.project-workspace-tabs { align-items: center; gap: 8px; padding: 7px; }
-.workspace-nav-overview { padding-right: 7px; border-right: 1px solid #e4e8ef; }
-.workspace-nav-group { padding: 3px 4px; }
-.workspace-nav-income { background: #f6f8ff; }
-.workspace-nav-cost { background: #f7faf8; }
-.workspace-nav-group-tabs { gap: 2px; }
-.workspace-nav-separator { margin: 4px 2px; width: 1px; background: #d9e0eb; }
-.workspace-nav-group .workspace-tab { padding: 8px 10px; }
-.workspace-nav-group .workspace-tab.active { box-shadow: inset 0 -2px var(--accent-500); }
+.cost-workspace-tabs { align-items: center; gap: 8px; padding: 7px; }
+.cost-workspace-nav-overview { padding-right: 7px; border-right: 1px solid #e4e8ef; }
+.cost-workspace-nav-group { padding: 3px 4px; }
+.cost-workspace-nav-income { background: #f6f8ff; }
+.cost-workspace-nav-cost { background: #f7faf8; }
+.cost-workspace-nav-group-tabs { gap: 2px; }
+.cost-workspace-nav-separator { margin: 4px 2px; width: 1px; background: #d9e0eb; }
+.cost-workspace-nav-group .cost-workspace-tab { padding: 8px 10px; }
+.cost-workspace-nav-group .cost-workspace-tab.active { box-shadow: inset 0 -2px var(--accent-500); }
 
 /* Preferences strip sits directly below the primary navigation and persists locally. */
 .ui-preferences-bar { position: relative; z-index: 16; display: flex; align-items: center; gap: 11px; min-height: 43px; padding: 5px 30px; border-bottom: 1px solid #e9edf4; background: #fbfcfe; color: #718096; }
@@ -1118,17 +1118,17 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 :root[data-theme="dark"] .main-shell, :root[data-theme="dark"] .content-area { background: #0d1420; }
 :root[data-theme="dark"] .topbar, :root[data-theme="dark"] .ui-preferences-bar, :root[data-theme="dark"] .project-context-bar, :root[data-theme="dark"] .app-footer { border-color: #283347; background: rgba(18,27,41,.96); color: #9eacc1; }
 :root[data-theme="dark"] .breadcrumb strong, :root[data-theme="dark"] .page-header h1, :root[data-theme="dark"] .panel-heading h3, :root[data-theme="dark"] .owner-metric > strong, :root[data-theme="dark"] .owner-metric-dual > div > strong { color: #e1e8f3; }
-:root[data-theme="dark"] .quick-search-wrap, :root[data-theme="dark"] .quick-search-wrap:focus-within, :root[data-theme="dark"] .quick-search-wrap kbd, :root[data-theme="dark"] .ui-segmented, :root[data-theme="dark"] .ui-segmented button.active, :root[data-theme="dark"] .downstream-module-switch, :root[data-theme="dark"] .project-workspace-tabs, :root[data-theme="dark"] .owner-finance-tabs { border-color: #2b364a; color: #b4c0d4; background: #151e2c; }
+:root[data-theme="dark"] .quick-search-wrap, :root[data-theme="dark"] .quick-search-wrap:focus-within, :root[data-theme="dark"] .quick-search-wrap kbd, :root[data-theme="dark"] .ui-segmented, :root[data-theme="dark"] .ui-segmented button.active, :root[data-theme="dark"] .downstream-module-switch, :root[data-theme="dark"] .cost-workspace-tabs, :root[data-theme="dark"] .owner-finance-tabs { border-color: #2b364a; color: #b4c0d4; background: #151e2c; }
 :root[data-theme="dark"] .quick-search-wrap input, :root[data-theme="dark"] .owner-finance-search input, :root[data-theme="dark"] .project-switcher select { color: #dbe4f2; }
 :root[data-theme="dark"] .quick-search-results, :root[data-theme="dark"] .quick-action-panel, :root[data-theme="dark"] .panel, :root[data-theme="dark"] .owner-metric, :root[data-theme="dark"] .owner-special-balances article, :root[data-theme="dark"] .owner-finance-search, :root[data-theme="dark"] .owner-finance-filters select, :root[data-theme="dark"] .dialog, :root[data-theme="dark"] .dialog-footer, :root[data-theme="dark"] .party-edit-dialog > .dialog-footer { border-color: #2b3649; color: #cbd5e4; background: #151e2c; }
 :root[data-theme="dark"] .quick-action-panel button, :root[data-theme="dark"] .ui-segmented button, :root[data-theme="dark"] .button-secondary, :root[data-theme="dark"] .icon-button:hover { border-color: #2d3b51; color: #c4cede; background: #1b2636; }
 :root[data-theme="dark"] .quick-action-panel button strong, :root[data-theme="dark"] .table-primary-text, :root[data-theme="dark"] .owner-special-balances article > strong { color: #dce5f3; }
 :root[data-theme="dark"] .quick-action-panel button:hover, :root[data-theme="dark"] .data-table tbody tr:hover td { background: #1b2738; }
-:root[data-theme="dark"] .workspace-nav-overview { border-color: #2b3649; background: transparent; }
-:root[data-theme="dark"] .workspace-nav-separator { background: #2b3649; }
-:root[data-theme="dark"] .workspace-nav-income, :root[data-theme="dark"] .workspace-nav-cost { background: #182233; }
-:root[data-theme="dark"] .workspace-tab { color: #a4b0c4; }
-:root[data-theme="dark"] .workspace-tab.active, :root[data-theme="dark"] .downstream-module-switch button.active, :root[data-theme="dark"] .owner-finance-tabs > button.active, :root[data-theme="dark"] .ui-pref-toggle.active { border-color: #35476b; color: #d0d9ff; background: #253251; }
+:root[data-theme="dark"] .cost-workspace-nav-overview { border-color: #2b3649; background: transparent; }
+:root[data-theme="dark"] .cost-workspace-nav-separator { background: #2b3649; }
+:root[data-theme="dark"] .cost-workspace-nav-income, :root[data-theme="dark"] .cost-workspace-nav-cost { background: #182233; }
+:root[data-theme="dark"] .cost-workspace-tab { color: #a4b0c4; }
+:root[data-theme="dark"] .cost-workspace-tab.active, :root[data-theme="dark"] .downstream-module-switch button.active, :root[data-theme="dark"] .owner-finance-tabs > button.active, :root[data-theme="dark"] .ui-pref-toggle.active { border-color: #35476b; color: #d0d9ff; background: #253251; }
 :root[data-theme="dark"] .panel, :root[data-theme="dark"] .data-table-panel, :root[data-theme="dark"] .owner-finance-tab-panel { box-shadow: var(--shadow-card); }
 :root[data-theme="dark"] .panel-heading, :root[data-theme="dark"] .owner-finance-tab-panel > .panel-heading, :root[data-theme="dark"] .owner-finance-toolbar, :root[data-theme="dark"] .owner-special-balances { border-color: #2b3649; background: #141d2b; }
 :root[data-theme="dark"] .data-table thead th { border-color: #2b3649; color: #9caac0; background: #1b2636; }
@@ -1144,8 +1144,8 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 :root[data-theme="dark"] .ui-segmented button.active { background: #24314b; color: #e0e6ff; }
 :root[data-density="compact"] .content-area { padding-top: 18px; padding-bottom: 24px; }
 :root[data-density="compact"] .page-header { margin-bottom: 16px; }
-:root[data-density="compact"] .project-workspace-tabs { margin-bottom: 12px; padding: 4px; }
-:root[data-density="compact"] .workspace-tab { min-height: 30px; padding-top: 6px; padding-bottom: 6px; }
+:root[data-density="compact"] .cost-workspace-tabs { margin-bottom: 12px; padding: 4px; }
+:root[data-density="compact"] .cost-workspace-tab { min-height: 30px; padding-top: 6px; padding-bottom: 6px; }
 :root[data-density="compact"] .panel-heading { padding-top: 11px; padding-bottom: 10px; }
 :root[data-density="compact"] .data-table thead th { padding-top: 8px; padding-bottom: 8px; }
 :root[data-density="compact"] .data-table tbody td { padding-top: 7px; padding-bottom: 7px; }
@@ -1325,7 +1325,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .metric-value, .project-card-name, .project-list-card h3, .project-list-details strong, .downstream-analysis-grid strong { color: var(--neutral-800); font-variant-numeric: tabular-nums; }
 .project-card-metric, .project-list-details, .project-list-meta, .activity-row, .pending-item, .chart-footnote { border-color: var(--card-border); }
 .project-card-metric span, .project-card-foot, .project-card-code, .project-list-details span, .project-list-code, .project-list-owner, .project-list-meta, .activity-row time, .activity-text small { color: var(--text-muted); }
-.button, .icon-button, .notification-button, .nav-link, .workspace-tab, .workspace-tab::before, .project-overview-card, .project-list-card, .metric-card, .cost-type-card, .table-action, .ui-theme-choice, .ui-pref-toggle, .ui-pref-reset { transition-timing-function: var(--ease-spring); }
+.button, .icon-button, .notification-button, .nav-link, .cost-workspace-tab, .cost-workspace-tab::before, .project-overview-card, .project-list-card, .metric-card, .cost-type-card, .table-action, .ui-theme-choice, .ui-pref-toggle, .ui-pref-reset { transition-timing-function: var(--ease-spring); }
 .button:active:not(:disabled), .icon-button:active:not(:disabled), .notification-button:active:not(:disabled), .ui-theme-choice:active, .ui-pref-toggle:active { transform: scale(.96); }
 .button-secondary { color: var(--text-secondary); border-color: var(--card-border); background: var(--card-bg); }
 .button-secondary:hover:not(:disabled) { color: var(--neutral-800); border-color: color-mix(in srgb, var(--accent-500) 30%, var(--card-border)); background: var(--accent-50); }
@@ -1352,13 +1352,13 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .status-orange { color: #a66b1b; background: rgba(245,158,11,.13); }
 .status-red { color: #bf4058; background: rgba(244,63,94,.12); }
 .status-gray { color: var(--text-secondary); background: color-mix(in srgb, var(--neutral-200) 52%, transparent); }
-.project-workspace-tabs, .owner-finance-tabs { border-color: var(--card-border); background: var(--card-bg); box-shadow: 0 4px 12px -10px rgba(15,23,42,.2); }
-.workspace-nav-overview { border-color: var(--card-border); }
-.workspace-nav-income, .workspace-nav-cost { background: color-mix(in srgb, var(--accent-50) 28%, var(--card-bg)); }
-.workspace-nav-separator { background: var(--card-border); }
-.workspace-tab { color: var(--text-secondary); }
-.workspace-tab:hover { color: var(--accent-700); background: var(--accent-50); }
-.workspace-tab.active { color: var(--accent-700); border-color: color-mix(in srgb, var(--accent-500) 18%, var(--card-border)); background: var(--accent-50); }
+.cost-workspace-tabs, .owner-finance-tabs { border-color: var(--card-border); background: var(--card-bg); box-shadow: 0 4px 12px -10px rgba(15,23,42,.2); }
+.cost-workspace-nav-overview { border-color: var(--card-border); }
+.cost-workspace-nav-income, .cost-workspace-nav-cost { background: color-mix(in srgb, var(--accent-50) 28%, var(--card-bg)); }
+.cost-workspace-nav-separator { background: var(--card-border); }
+.cost-workspace-tab { color: var(--text-secondary); }
+.cost-workspace-tab:hover { color: var(--accent-700); background: var(--accent-50); }
+.cost-workspace-tab.active { color: var(--accent-700); border-color: color-mix(in srgb, var(--accent-500) 18%, var(--card-border)); background: var(--accent-50); }
 .owner-metric { padding: var(--card-padding); border-radius: 12px; }
 .owner-metric > span, .owner-metric > small { color: var(--text-muted); }
 .owner-metric > strong { color: var(--neutral-800); }
@@ -1453,8 +1453,8 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 :root[data-theme-name="obsidian"] .breadcrumb strong, :root[data-theme-name="obsidian"] .page-header h1, :root[data-theme-name="obsidian"] .panel-heading h3, :root[data-theme-name="obsidian"] .section-heading h2, :root[data-theme-name="obsidian"] .metric-value, :root[data-theme-name="obsidian"] .project-card-name, :root[data-theme-name="obsidian"] .project-list-card h3, :root[data-theme-name="obsidian"] .project-list-details strong, :root[data-theme-name="obsidian"] .table-primary-text, :root[data-theme-name="obsidian"] .dialog-header h2 { color: #fafafa; }
 :root[data-theme-name="obsidian"] .breadcrumb, :root[data-theme-name="obsidian"] .page-header p, :root[data-theme-name="obsidian"] .panel-heading p, :root[data-theme-name="obsidian"] .metric-top, :root[data-theme-name="obsidian"] .metric-bottom, :root[data-theme-name="obsidian"] .project-card-metric span, :root[data-theme-name="obsidian"] .project-card-code, :root[data-theme-name="obsidian"] .project-list-details span, :root[data-theme-name="obsidian"] .project-list-meta, :root[data-theme-name="obsidian"] .owner-metric > span, :root[data-theme-name="obsidian"] .owner-metric > small { color: #a1a1aa; }
 :root[data-theme-name="obsidian"] .owner-metric, :root[data-theme-name="obsidian"] .project-overview-card, :root[data-theme-name="obsidian"] .project-list-card, :root[data-theme-name="obsidian"] .metric-card, :root[data-theme-name="obsidian"] .panel, :root[data-theme-name="obsidian"] .owner-finance-tab-panel { background: var(--card-bg); border-color: var(--card-border); }
-:root[data-theme-name="obsidian"] .project-workspace-tabs, :root[data-theme-name="obsidian"] .owner-finance-tabs, :root[data-theme-name="obsidian"] .ui-theme-dial, :root[data-theme-name="obsidian"] .ui-segmented { background: #18181d; border-color: var(--card-border); }
-:root[data-theme-name="obsidian"] .workspace-nav-income, :root[data-theme-name="obsidian"] .workspace-nav-cost { background: #17171d; }
+:root[data-theme-name="obsidian"] .cost-workspace-tabs, :root[data-theme-name="obsidian"] .owner-finance-tabs, :root[data-theme-name="obsidian"] .ui-theme-dial, :root[data-theme-name="obsidian"] .ui-segmented { background: #18181d; border-color: var(--card-border); }
+:root[data-theme-name="obsidian"] .cost-workspace-nav-income, :root[data-theme-name="obsidian"] .cost-workspace-nav-cost { background: #17171d; }
 :root[data-theme-name="obsidian"] .data-table thead th, :root[data-theme-name="obsidian"] .owner-finance-table thead th { color: #a1a1aa; background: var(--table-head-bg); border-color: var(--card-border); }
 :root[data-theme-name="obsidian"] .data-table tbody td, :root[data-theme-name="obsidian"] .owner-finance-table tbody td { color: #c4c4cd; background: var(--card-bg); }
 :root[data-theme-name="obsidian"] .data-table tbody tr:hover td, :root[data-theme-name="obsidian"] .owner-finance-table tbody tr:hover td { background: var(--row-hover); }
@@ -2392,9 +2392,9 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .sidebar-note:focus-visible { outline: 2px solid var(--accent-500); outline-offset: 2px; }
 .sidebar-note-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; line-height: 1.35; }
 .sidebar-note-copy > span { margin-top: 3px; color: var(--sidebar-muted); font-size: 9px; }
-.workspace-nav-admin { flex-direction: row; align-items: center; gap: 4px; border: 1px solid var(--card-border); background: var(--card-bg); }
-.workspace-nav-admin .workspace-tab { white-space: nowrap; }
-.workspace-nav-admin .workspace-tab.active { background: color-mix(in srgb, var(--accent-50) 55%, var(--card-bg)); }
+.cost-workspace-nav-admin { flex-direction: row; align-items: center; gap: 4px; border: 1px solid var(--card-border); background: var(--card-bg); }
+.cost-workspace-nav-admin .cost-workspace-tab { white-space: nowrap; }
+.cost-workspace-nav-admin .cost-workspace-tab.active { background: color-mix(in srgb, var(--accent-50) 55%, var(--card-bg)); }
 @media (max-width: 1120px) {
   .report-standard-layout { grid-template-columns: minmax(0, 1fr); }
   .report-picker-panel { padding-right: 0; }
@@ -2413,3 +2413,32 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
   .report-studio-entry-card, .report-report-option, .sidebar-note { transition: none !important; }
   .report-studio-entry-card:hover { transform: none; }
 }
+
+/* System management workbench: shared administration entry points, not a separate app. */
+.system-management-boundary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 25px; }
+.system-management-boundary-item { display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 16px 17px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow-card); }
+.system-management-boundary-icon { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; border-radius: 9px; color: var(--accent-600); background: var(--accent-50); }
+.system-management-boundary-item > div { min-width: 0; }
+.system-management-boundary-item strong { display: block; margin: 1px 0 5px; color: var(--text-primary); font-size: 12px; font-weight: 650; }
+.system-management-boundary-item p { margin: 0; color: var(--text-muted); font-size: 11px; line-height: 1.7; }
+.system-management-entry-section { margin-bottom: 24px; }
+.system-management-count { flex: 0 0 auto; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--text-muted); background: var(--surface); font-size: 10px; }
+.system-management-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.system-management-card { display: flex; align-items: flex-start; gap: 12px; min-width: 0; min-height: 164px; padding: 17px 15px; border: 1px solid var(--line); border-radius: 10px; color: inherit; background: var(--surface); text-align: left; box-shadow: var(--shadow-card); transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease; }
+.system-management-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent-500) 45%, var(--line)); box-shadow: 0 8px 23px rgba(35, 50, 88, .07); }
+.system-management-card:focus-visible { outline: 2px solid var(--accent-500); outline-offset: 3px; }
+.system-management-card-icon { display: grid; place-items: center; flex: 0 0 37px; width: 37px; height: 37px; border-radius: 9px; color: var(--accent-600); background: var(--accent-50); }
+.system-management-card-copy { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 7px; min-width: 0; }
+.system-management-card-eyebrow { color: var(--text-muted); font-size: 8px; font-weight: 650; letter-spacing: .1em; }
+.system-management-card-copy > strong { color: var(--text-primary); font-size: 13px; font-weight: 680; }
+.system-management-card-description { color: var(--text-secondary); font-size: 10px; line-height: 1.7; }
+.system-management-card-copy > small { margin-top: auto; padding-top: 7px; color: var(--text-muted); font-size: 9px; line-height: 1.5; }
+.system-management-card-arrow { flex: 0 0 auto; margin-top: 2px; color: var(--text-muted); }
+.system-management-roadmap { margin-top: 24px; }
+.system-management-roadmap-items { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 18px; }
+.system-management-roadmap-items span { padding: 6px 9px; border: 1px dashed var(--line); border-radius: 6px; color: var(--text-muted); background: var(--surface-muted); font-size: 10px; }
+:root[data-theme="dark"] .system-management-boundary-item, :root[data-theme="dark"] .system-management-card { border-color: var(--line); background: var(--surface); }
+:root[data-theme="dark"] .system-management-boundary-icon, :root[data-theme="dark"] .system-management-card-icon { color: #b2beff; background: #252f4b; }
+:root[data-theme="dark"] .system-management-card:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+@media (max-width: 1000px) { .system-management-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .system-management-boundary, .system-management-grid { grid-template-columns: 1fr; } .system-management-card { min-height: 0; } .system-management-page .page-header { align-items: flex-start; flex-direction: column; } }

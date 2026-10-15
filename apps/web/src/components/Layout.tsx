@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Building2, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, ClipboardList, FileText, FolderKanban,
   HandCoins, LayoutDashboard, LogOut, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
-  ArrowUpRight, Command, CornerDownLeft, Keyboard, X, History, BellRing, FileSpreadsheet,
+  ArrowUpRight, Command, CornerDownLeft, Keyboard, X, History, BellRing, FileSpreadsheet, Users,
 } from 'lucide-react';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
@@ -17,25 +17,26 @@ import { useAnimatedPresence } from './useAnimatedPresence';
 
 const navigation = [
   { to: '/', label: '经营总览', icon: LayoutDashboard, group: '工作台', end: true },
-  { to: '/projects', label: '项目管理', icon: FolderKanban, group: '工作台', end: true },
   { to: '/audit-logs', label: '操作追溯', icon: History, group: '工作台', end: true },
   { to: '/reports', label: '报表中心', icon: FileSpreadsheet, group: '工作台', end: true },
   { to: '/notifications', label: '待办与预警', icon: BellRing, group: '工作台', end: true },
   { to: '/parties', label: '往来单位库', icon: Building2, group: '工作台', end: false },
-  { to: '/workspace', label: '项目工作台', icon: ClipboardList, group: '项目业务', end: false },
-  { to: '/settings/users', label: '账号与项目权限', icon: UserCog, group: '系统设置', end: true },
+  { to: '/cost', label: '成本工作台', icon: ClipboardList, group: '成本业务', end: false },
+  { to: '/system', label: '系统管理工作台', icon: SlidersHorizontal, group: '系统管理', end: true },
+  { to: '/projects', label: '项目管理', icon: FolderKanban, group: '系统管理', end: true },
+  { to: '/system/members', label: '项目成员与权限', icon: Users, group: '系统管理', end: true },
+  { to: '/system/accounts', label: '系统账号管理', icon: UserCog, group: '系统管理', end: true },
 ];
-const workspacePages = [
-  { to: '/workspace', label: '项目驾驶舱' },
-  { to: '/workspace/contracts', label: '业主主合同' },
-  { to: '/workspace/budget', label: '预算与目标成本' },
-  { to: '/workspace/progress-bills', label: '进度款管理' },
-  { to: '/workspace/changes', label: '变更签证' },
-  { to: '/workspace/owner-finance', label: '竣工结算与应收' },
-  { to: '/workspace/downstream', label: '分供合同与结算' },
-  { to: '/workspace/costs', label: '实际成本录入' },
-  { to: '/workspace/analysis', label: '成本分析' },
-  { to: '/workspace/members', label: '项目成员与权限' },
+const costWorkspacePages = [
+  { to: '/cost', label: '项目驾驶舱' },
+  { to: '/cost/contracts', label: '业主主合同' },
+  { to: '/cost/budget', label: '预算与目标成本' },
+  { to: '/cost/progress-bills', label: '进度款管理' },
+  { to: '/cost/changes', label: '变更签证' },
+  { to: '/cost/owner-finance', label: '竣工结算与应收' },
+  { to: '/cost/downstream', label: '分供合同与结算' },
+  { to: '/cost/costs', label: '实际成本录入' },
+  { to: '/cost/analysis', label: '成本分析' },
 ];
 type QuickItem = { kind: 'page' | 'project'; id: string; title: string; sub: string; to: string };
 
@@ -66,13 +67,13 @@ export default function Layout() {
   const activeProject = projects.find((project) => project.id === selectedProjectId);
   const quickItems = useMemo<QuickItem[]>(() => {
     const text = quickSearch.trim().toLocaleLowerCase();
-    const pages = [...navigation, ...workspacePages.filter((page) => page.to !== '/workspace')]
-      .filter((item) => (item.to !== '/settings/users' || user?.role === 'ADMIN') && (!text || item.label.toLocaleLowerCase().includes(text)))
+    const pages = [...navigation, ...costWorkspacePages.filter((page) => page.to !== '/cost')]
+      .filter((item) => (item.to !== '/system/accounts' || user?.role === 'ADMIN') && (!text || item.label.toLocaleLowerCase().includes(text)))
       .map((item) => ({ kind: 'page' as const, id: item.to, title: item.label, sub: '页面直达', to: item.to }));
     const projectItems = projects
       .filter((project) => !text || `${project.name} ${project.code}`.toLocaleLowerCase().includes(text))
       .slice(0, 5)
-      .map((project) => ({ kind: 'project' as const, id: project.id, title: project.name, sub: project.code, to: '/workspace' }));
+      .map((project) => ({ kind: 'project' as const, id: project.id, title: project.name, sub: project.code, to: '/cost' }));
     if (!text) return [...pages.slice(0, 5), ...projectItems.slice(0, 3)];
     return [...pages, ...projectItems].slice(0, 10);
   }, [projects, quickSearch, user?.role]);
@@ -140,10 +141,10 @@ export default function Layout() {
   }, [commandPaletteOpen, quickItems, activeCommandIndex]);
 
   const isGlobalOverview = location.pathname === '/';
-  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/audit-logs', '/notifications'].includes(location.pathname);
+  const isGlobalContext = isGlobalOverview || location.pathname === '/system' || location.pathname === '/system/accounts' || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/audit-logs', '/notifications'].includes(location.pathname);
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
-  const workspacePageLabel = location.pathname === '/workspace/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : workspacePages.find((item) => item.to === location.pathname)?.label;
-  const currentPageLabel = workspacePageLabel ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : '工作台');
+  const costPageLabel = location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
+  const currentPageLabel = costPageLabel ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : '工作台');
 
   async function logout() {
     try { await api.logout(); } catch { /* The local session is cleared even if the network is unavailable. */ }
@@ -156,9 +157,9 @@ export default function Layout() {
     <aside className="sidebar" aria-label="主导航">
       <div className="brand"><BrandMark />{!collapsed && <div className="brand-word"><strong>墨衡</strong><span>ENGINEERING BUSINESS DESK</span></div>}</div>
       <div className="side-label">{!collapsed && '工作空间'}</div>
-      {['工作台', '项目业务', ...(user?.role === 'ADMIN' ? ['系统设置'] : [])].map((group) => <div className="nav-group" key={group}>
+      {['工作台', '成本业务', '系统管理'].map((group) => <div className="nav-group" key={group}>
         {!collapsed && <div className="nav-group-title">{group}</div>}
-        {navigation.filter((item) => item.group === group && (item.to !== '/settings/users' || user?.role === 'ADMIN')).map((item) => {
+        {navigation.filter((item) => item.group === group && (item.to !== '/system/accounts' || user?.role === 'ADMIN')).map((item) => {
           const Icon = item.icon;
           return <NavLink key={item.to} to={item.to} end={item.end ?? false} title={collapsed ? item.label : undefined} aria-label={item.label} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <Icon size={18} strokeWidth={1.8} /><span>{item.label}</span>
@@ -166,7 +167,7 @@ export default function Layout() {
         })}
       </div>)}
       <div className="sidebar-grow" />
-      {!collapsed && <button type="button" className="sidebar-note" onClick={() => navigate('/workspace')} title="查看当前项目驾驶舱" aria-label="打开项目驾驶舱，查看当前项目经营摘要"><span className="sidebar-note-icon"><LayoutDashboard size={16} /></span><span className="sidebar-note-copy"><strong>项目驾驶舱</strong><span>查看当前项目经营摘要</span></span><ChevronRight size={15} /></button>}
+      {!collapsed && <button type="button" className="sidebar-note" onClick={() => navigate('/cost')} title="查看当前项目驾驶舱" aria-label="打开项目驾驶舱，查看当前项目经营摘要"><span className="sidebar-note-icon"><LayoutDashboard size={16} /></span><span className="sidebar-note-copy"><strong>项目驾驶舱</strong><span>查看当前项目经营摘要</span></span><ChevronRight size={15} /></button>}
       <button type="button" className="collapse-button" onClick={toggleSidebar} title={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <ChevronsRight size={17} /> : <><ChevronsLeft size={17} /><span>收起导航</span></>}</button>
       <div className="user-panel"><div className="avatar">{user?.name?.slice(0, 1) ?? '管'}</div>{!collapsed && <><div className="user-meta"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div><button title="退出登录" aria-label="退出登录" className="icon-button logout-button" onClick={logout}><LogOut size={16} /></button></>}</div>
     </aside>
@@ -185,12 +186,12 @@ export default function Layout() {
             {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
             {quickActionsPresence.mounted && <div className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="menu" aria-label="快捷操作菜单" aria-hidden={!quickActionsOpen}>
                 <div className="quick-action-heading"><strong>快捷操作</strong><span>跳转到常用业务模块</span></div>
-                <button type="button" role="menuitem" onClick={() => { navigate('/workspace/costs'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Wallet size={16} /></span><span><strong>新增成本记录</strong><small>登记人工、材料、机械及其他费用</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/workspace/progress-bills'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><HandCoins size={16} /></span><span><strong>进度款管理</strong><small>业主申报、审批与回款登记</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/workspace/owner-finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={16} /></span><span><strong>竣工结算与应收</strong><small>最终结算、应收余额与到账核销</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/workspace/downstream'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><FileText size={16} /></span><span><strong>分供合同与付款</strong><small>分包/采购/租赁合同与支付台账</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/workspace/downstream?view=finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={16} /></span><span><strong>结算与应付账款</strong><small>确认结算、应付核销、质保金与发票核对</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/workspace/changes'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Workflow size={16} /></span><span><strong>变更签证</strong><small>查看送审与核定状态</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/costs'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Wallet size={16} /></span><span><strong>新增成本记录</strong><small>登记人工、材料、机械及其他费用</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/progress-bills'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><HandCoins size={16} /></span><span><strong>进度款管理</strong><small>业主申报、审批与回款登记</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/owner-finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={16} /></span><span><strong>竣工结算与应收</strong><small>最终结算、应收余额与到账核销</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><FileText size={16} /></span><span><strong>分供合同与付款</strong><small>分包/采购/租赁合同与支付台账</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream?view=finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={16} /></span><span><strong>结算与应付账款</strong><small>确认结算、应付核销、质保金与发票核对</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/changes'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Workflow size={16} /></span><span><strong>变更签证</strong><small>查看送审与核定状态</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
             </div>}
           </div>
           <UiPreferencesBar />
@@ -199,15 +200,15 @@ export default function Layout() {
       </header>
       {location.pathname !== '/projects' && <div className={`project-context-bar ${isGlobalContext ? 'global-context-bar' : ''}`}>
         {isGlobalContext ? <>
-          <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : location.pathname === '/audit-logs' ? '全局操作追溯' : location.pathname.startsWith('/reports') ? '全局报表中心' : location.pathname === '/notifications' ? '跨项目待办与预警' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : location.pathname === '/audit-logs' ? '按项目权限控制记录可见范围' : location.pathname.startsWith('/reports') ? '按项目权限筛选、设计版式与导出台账' : location.pathname === '/notifications' ? '服务端汇总当前有权访问的事项' : '全部可访问项目'}</div>
-          <div className="context-right">{location.pathname === '/audit-logs' ? '可筛选、查看变更快照并导出' : location.pathname.startsWith('/reports') ? 'XLSX / CSV 只读快照 · 不回写业务数据' : location.pathname === '/notifications' ? '动态待办 · 完成业务后自动更新' : `统计范围：${user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}`}</div>
+          <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : location.pathname === '/audit-logs' ? '全局操作追溯' : location.pathname.startsWith('/reports') ? '全局报表中心' : location.pathname === '/notifications' ? '跨项目待办与预警' : location.pathname === '/system' ? '系统管理入口' : location.pathname === '/system/accounts' ? '系统账号管理' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : location.pathname === '/audit-logs' ? '按项目权限控制记录可见范围' : location.pathname.startsWith('/reports') ? '按项目权限筛选、设计版式与导出台账' : location.pathname === '/notifications' ? '服务端汇总当前有权访问的事项' : location.pathname === '/system' ? '项目档案、成员授权与公司级账号管理' : location.pathname === '/system/accounts' ? '公司级登录身份，不代表项目访问授权' : '全部可访问项目'}</div>
+          <div className="context-right">{location.pathname === '/audit-logs' ? '可筛选、查看变更快照并导出' : location.pathname.startsWith('/reports') ? 'XLSX / CSV 只读快照 · 不回写业务数据' : location.pathname === '/notifications' ? '动态待办 · 完成业务后自动更新' : location.pathname === '/system' ? '现有功能按既有 API 权限控制' : location.pathname === '/system/accounts' ? '仅系统管理员可创建和查看账号' : `统计范围：${user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}`}</div>
         </> : <>
           <div className="context-left"><span className="context-pulse" /><span>当前项目</span>{projectsQuery.isLoading ? <LoadingBlock label="加载项目" /> : <div className="project-switcher"><SelectField className="project-context-select" aria-label="切换当前项目" value={activeProject?.id ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)}><option value="">请选择项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></div>}{activeProject && <StatusBadge status={activeProject.status} />}</div>
           <div className="context-right">数据范围：{activeProject ? activeProject.code : '请选择项目'} <span className="context-separator">·</span> 项目级视图</div>
         </>}
       </div>}
       <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
-      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v2.7.0-rc.1</span></footer>
+      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>成本管理工作台 <i /> v2.8.0-rc.1</span></footer>
     </div>
 
     {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>

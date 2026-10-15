@@ -12,12 +12,12 @@ type ProjectDetail = Project & { mainContract?: { id: string; contractNo: string
 type DownstreamResponse = { items: { id: string; status: string; currentAmount: number }[]; summary: { contractCount: number; activeContractCount: number; activeAndPendingSettlementContractAmount: number; paidAmount: number; linkedActualCost: number } };
 
 const shortcuts = [
-  { to: '/workspace/contracts', title: '业主主合同', description: '原始合同基准、付款条款与有效合同额', icon: FileSignature },
-  { to: '/workspace/budget', title: '预算与目标成本', description: '维护项目成本控制基准与清单', icon: ClipboardList },
-  { to: '/workspace/progress-bills', title: '进度款管理', description: '申报、审批与业主回款', icon: HandCoins },
-  { to: '/workspace/changes', title: '变更签证', description: '内部审批、外部确认与生效金额', icon: Activity },
-  { to: '/workspace/downstream-contracts', title: '分供合同与付款', description: '分包、采购、租赁合同与现金流', icon: Banknote },
-  { to: '/workspace/costs', title: '实际成本', description: '录入成本并关联合同来源', icon: ReceiptText },
+  { to: '/cost/contracts', title: '业主主合同', description: '原始合同基准、付款条款与有效合同额', icon: FileSignature },
+  { to: '/cost/budget', title: '预算与目标成本', description: '维护项目成本控制基准与清单', icon: ClipboardList },
+  { to: '/cost/progress-bills', title: '进度款管理', description: '申报、审批与业主回款', icon: HandCoins },
+  { to: '/cost/changes', title: '变更签证', description: '内部审批、外部确认与生效金额', icon: Activity },
+  { to: '/cost/downstream-contracts', title: '分供合同与付款', description: '分包、采购、租赁合同与现金流', icon: Banknote },
+  { to: '/cost/costs', title: '实际成本', description: '录入成本并关联合同来源', icon: ReceiptText },
 ];
 
 export default function ProjectOverviewPage() {
@@ -52,7 +52,7 @@ export default function ProjectOverviewPage() {
   };
 
   return <div className="page-wrap project-overview-page">
-    <PageHeader eyebrow="PROJECT WORKSPACE / PROJECT BRIEF" title="项目驾驶舱" subtitle="围绕当前项目查看收入合同、目标成本、已发生成本、回款与分供合同概况。" actions={<><ProjectSummaryReportButton /><Button variant="secondary" onClick={() => navigate('/workspace/analysis')}><Activity size={15} />查看成本分析</Button></>} />
+    <PageHeader eyebrow="PROJECT WORKSPACE / PROJECT BRIEF" title="项目驾驶舱" subtitle="围绕当前项目查看收入合同、目标成本、已发生成本、回款与分供合同概况。" actions={<><ProjectSummaryReportButton /><Button variant="secondary" onClick={() => navigate('/cost/analysis')}><Activity size={15} />查看成本分析</Button></>} />
     <section className="project-identity-panel panel">
       <div className="project-identity-main"><div className="project-identity-mark">{project.name.slice(0, 1)}</div><div><div className="project-identity-meta"><span>{project.code}</span><StatusBadge status={project.status} /></div><h2>{project.name}</h2><p>{project.ownerPartyId ? <Link to={`/parties/${project.ownerPartyId}`}>{project.ownerName} ↗</Link> : project.ownerName} · 项目经理：{project.managerName || '未填写'}</p></div></div>
       <div className="project-identity-facts"><div><span>开工日期</span><strong>{formatDate(project.startDate)}</strong></div><div><span>计划竣工</span><strong>{formatDate(project.plannedEndDate)}</strong></div><div><span>地址</span><strong>{project.address || '未填写'}</strong></div></div>
@@ -68,15 +68,15 @@ export default function ProjectOverviewPage() {
     <section className="project-brief-grid">
       <article className="panel project-cost-trend-panel"><div className="panel-heading"><div><h3>月度实际成本</h3><p>最近六个月 · 仅统计已录入且未归档的成本</p></div><span className="chart-mini-label">金额：元</span></div><ReactECharts option={monthlyOption} style={{ height: 270 }} notMerge lazyUpdate /><div className="project-chart-bottom"><span>基准预计利润率</span><strong className={(analysis.forecastProfitMargin ?? 0) >= 0 ? 'text-success' : 'text-danger'}>{percentage(analysis.forecastProfitMargin)}</strong><small>当前按目标成本简化估算，非完整 EAC 预测</small></div></article>
       <article className="panel project-attention-panel"><div className="panel-heading"><div><h3>待跟进业务</h3><p>本项目尚需推进的业务记录</p></div><CircleAlert size={18} className="heading-muted-icon" /></div>
-        <button className="project-attention-row" onClick={() => navigate('/workspace/progress-bills')}><span className="attention-icon"><CalendarClock size={16} /></span><span><strong>进度款待跟进</strong><small>未到账或仍处于流转中的申报</small></span><b>{pendingBills.length}</b><ArrowRight size={14} /></button>
-        <button className="project-attention-row" onClick={() => navigate('/workspace/changes')}><span className="attention-icon"><AlertTriangle size={16} /></span><span><strong>变更签证待跟进</strong><small>已提交或审核中的变更</small></span><b>{pendingChanges.length}</b><ArrowRight size={14} /></button>
-        <button className="project-attention-row" onClick={() => navigate('/workspace/downstream-contracts')}><span className="attention-icon"><Banknote size={16} /></span><span><strong>分供合同台账</strong><small>合同 {downstream?.summary.contractCount ?? 0} 份 · 执行中 {downstream?.summary.activeContractCount ?? 0} 份</small></span><ArrowRight size={14} /></button>
+        <button className="project-attention-row" onClick={() => navigate('/cost/progress-bills')}><span className="attention-icon"><CalendarClock size={16} /></span><span><strong>进度款待跟进</strong><small>未到账或仍处于流转中的申报</small></span><b>{pendingBills.length}</b><ArrowRight size={14} /></button>
+        <button className="project-attention-row" onClick={() => navigate('/cost/changes')}><span className="attention-icon"><AlertTriangle size={16} /></span><span><strong>变更签证待跟进</strong><small>已提交或审核中的变更</small></span><b>{pendingChanges.length}</b><ArrowRight size={14} /></button>
+        <button className="project-attention-row" onClick={() => navigate('/cost/downstream-contracts')}><span className="attention-icon"><Banknote size={16} /></span><span><strong>分供合同台账</strong><small>合同 {downstream?.summary.contractCount ?? 0} 份 · 执行中 {downstream?.summary.activeContractCount ?? 0} 份</small></span><ArrowRight size={14} /></button>
         <div className="project-attention-note"><CheckCircle2 size={15} /><span>本页为单项目视图，不与全局经营总览的跨项目指标混用。</span></div>
       </article>
     </section>
 
-    <section className="section-block project-shortcut-section"><div className="section-heading"><div><h2>项目业务入口</h2><p>各模块保留独立页面与专属操作，在项目工作台内统一切换。</p></div></div><div className="project-shortcut-grid">{shortcuts.map((item) => { const Icon = item.icon; return <button key={item.to} className="project-shortcut-card" onClick={() => navigate(item.to)}><span className="project-shortcut-icon"><Icon size={18} /></span><span className="project-shortcut-copy"><strong>{item.title}</strong><small>{item.description}</small></span><ArrowRight size={15} className="project-shortcut-arrow" /></button>; })}</div></section>
+    <section className="section-block project-shortcut-section"><div className="section-heading"><div><h2>项目业务入口</h2><p>各模块保留独立页面与专属操作，在成本工作台内统一切换。</p></div></div><div className="project-shortcut-grid">{shortcuts.map((item) => { const Icon = item.icon; return <button key={item.to} className="project-shortcut-card" onClick={() => navigate(item.to)}><span className="project-shortcut-icon"><Icon size={18} /></span><span className="project-shortcut-copy"><strong>{item.title}</strong><small>{item.description}</small></span><ArrowRight size={15} className="project-shortcut-arrow" /></button>; })}</div></section>
 
-    {downstream?.summary && <section className="panel project-downstream-summary"><div className="panel-heading"><div><h3>分供合同与付款概览</h3><p>合同额、实际成本和现金支付采用独立口径。</p></div><Button variant="secondary" onClick={() => navigate('/workspace/downstream-contracts')}>查看台账 <ArrowRight size={14} /></Button></div><div className="project-downstream-facts"><div><span>执行中合同额</span><strong>{formatMoney(downstream.summary.activeAndPendingSettlementContractAmount, 0)}</strong></div><div><span>关联实际成本</span><strong>{formatMoney(downstream.summary.linkedActualCost, 0)}</strong></div><div><span>累计净付款</span><strong>{formatMoney(downstream.summary.paidAmount, 0)}</strong></div></div></section>}
+    {downstream?.summary && <section className="panel project-downstream-summary"><div className="panel-heading"><div><h3>分供合同与付款概览</h3><p>合同额、实际成本和现金支付采用独立口径。</p></div><Button variant="secondary" onClick={() => navigate('/cost/downstream-contracts')}>查看台账 <ArrowRight size={14} /></Button></div><div className="project-downstream-facts"><div><span>执行中合同额</span><strong>{formatMoney(downstream.summary.activeAndPendingSettlementContractAmount, 0)}</strong></div><div><span>关联实际成本</span><strong>{formatMoney(downstream.summary.linkedActualCost, 0)}</strong></div><div><span>累计净付款</span><strong>{formatMoney(downstream.summary.paidAmount, 0)}</strong></div></div></section>}
   </div>;
 }

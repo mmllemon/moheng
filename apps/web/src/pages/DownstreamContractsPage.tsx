@@ -188,7 +188,7 @@ export default function DownstreamContractsPage() {
                         </>}
                         {['ACTIVE', 'COMPLETED', 'SETTLED'].includes(row.status) && <button className="table-action" onClick={() => setPaying(row)}><Banknote size={13} />登记支付/退款</button>}
                         {row.status === 'ACTIVE' && <button className="table-action" disabled={changeStatus.isPending} onClick={() => { if (window.confirm(`确认将“${row.contractNo}”标记为完工待结算？`)) changeStatus.mutate({ contract: row, status: 'COMPLETED' }); }}><BadgeCheck size={13} />标记完工</button>}
-                        {row.status === 'COMPLETED' && <Link className="table-action" to="/workspace/downstream?view=finance"><BadgeCheck size={13} />办理最终结算</Link>}
+                        {row.status === 'COMPLETED' && <Link className="table-action" to="/cost/downstream?view=finance"><BadgeCheck size={13} />办理最终结算</Link>}
                         {['DRAFT', 'ACTIVE', 'COMPLETED'].includes(row.status) && <button className="table-action table-action-danger" disabled={changeStatus.isPending} onClick={() => { if (window.confirm(`确定终止“${row.contractNo}”？请先核对未付款、履约及补偿责任。`)) changeStatus.mutate({ contract: row, status: 'TERMINATED' }); }}><X size={13} />终止</button>}
                       </div>
                     </td>

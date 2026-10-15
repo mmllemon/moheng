@@ -68,7 +68,7 @@ function ProjectDialog({ project, onClose }: { project?: Project; onClose: () =>
       await queryClient.invalidateQueries({ queryKey: ['business-party-detail'] });
       if (!project) setSelectedProjectId(saved.id);
       onClose();
-      if (!project) navigate('/workspace/contracts');
+      if (!project) navigate('/cost/contracts');
     } catch (error) { setServerError(error instanceof ApiError ? error.message : '保存失败，请稍后重试'); }
   });
 
@@ -152,7 +152,7 @@ export default function ProjectsPage() {
       const changeAmount = originalAmount != null ? project.contractAmount - originalAmount : null;
       return <article className="project-list-card" key={project.id} style={{ '--card-index': index } as CSSProperties}>
         <div className="project-list-card-head"><span className={`project-monogram monogram-${index % 4}`}>{project.name.slice(0, 1)}</span><StatusBadge status={project.status} /><span className="project-card-spacer" />{pendingChanges != null && pendingChanges > 0 && <span className="project-risk-indicator"><i />{pendingChanges} 项待跟进</span>}<button className="icon-button card-edit-button" title="编辑项目档案" aria-label={`编辑${project.name}`} onClick={() => setDialog({ open: true, project })}><Edit3 size={16} /></button></div>
-        <div className="project-card-title-row"><div><h3>{project.name}</h3><div className="project-list-code">{project.code}</div></div><button type="button" className="project-open-icon" aria-label={`进入${project.name}工作台`} title="进入项目工作台" onClick={() => { setSelectedProjectId(project.id); navigate('/workspace'); }}><FolderPlus size={16} /></button></div>
+        <div className="project-card-title-row"><div><h3>{project.name}</h3><div className="project-list-code">{project.code}</div></div><button type="button" className="project-open-icon" aria-label={`进入${project.name}的成本工作台`} title="进入成本工作台" onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }}><FolderPlus size={16} /></button></div>
         <div className="project-list-owner"><Users2 size={14} />{project.ownerPartyId ? <Link to={`/parties/${project.ownerPartyId}`}>{project.ownerName} ↗</Link> : <span>{project.ownerName}</span>}</div>
         <section className="project-card-contract-hero"><div><span>当前有效合同额</span><strong>{formatWan(project.contractAmount)}</strong></div>{changeAmount != null && Math.abs(changeAmount) > 0.009 && <span className={`project-change-chip ${changeAmount > 0 ? 'is-up' : 'is-down'}`}>{changeAmount > 0 ? '+' : '−'}{formatWan(Math.abs(changeAmount))}</span>}<small>{originalAmount != null ? `原始合同额 ${formatWan(originalAmount)}` : '按当前有效合同台账口径统计'}</small></section>
         <div className="project-card-metrics-grid">
@@ -169,7 +169,7 @@ export default function ProjectsPage() {
         <div className="project-list-meta"><span><CalendarDays size={13} />开工 {formatDate(project.startDate)}</span><span><MapPin size={13} />{project.address || '未填写地址'}</span></div>
         <div className="project-card-manager-row"><span>项目经理</span><strong>{project.managerName || '待指定'}</strong>{project.plannedEndDate && <><span className="project-manager-separator" /><span>计划竣工</span><strong>{formatDate(project.plannedEndDate)}</strong></>}</div>
         <div className="project-card-health-foot"><span>{pendingChanges != null ? <><i className={pendingChanges > 0 ? 'has-pending' : ''} />{pendingChanges > 0 ? `${pendingChanges} 项变更待跟进` : '无待跟进变更'}</> : <><i />经营摘要加载中</>}</span><span>{project.budgetItemCount != null ? `预算清单 ${project.budgetItemCount} 项` : '目标成本台账'}{project.costEntryCount != null ? ` · 成本记录 ${project.costEntryCount} 条` : ''}</span></div>
-        <div className="project-card-actions"><Button variant="secondary" onClick={() => { setSelectedProjectId(project.id); navigate('/workspace'); }}>查看驾驶舱</Button><Button onClick={() => { setSelectedProjectId(project.id); navigate('/workspace'); }}>进入项目工作台 <FolderPlus size={14} /></Button></div>
+        <div className="project-card-actions"><Button variant="secondary" onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }}>查看驾驶舱</Button><Button onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }}>进入成本工作台 <FolderPlus size={14} /></Button></div>
       </article>;
     })}</div>}
     {dialog.open && <ProjectDialog project={dialog.project} onClose={() => { setDialog({ open: false }); void queryClient.invalidateQueries({ queryKey: ['projects'] }); void queryClient.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
