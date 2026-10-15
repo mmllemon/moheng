@@ -31,8 +31,8 @@ const styles = await read('apps/web/src/styles.css');
 const app = await read('apps/web/src/App.tsx');
 const designDoc = await read('docs/原生XLSX与报表模板设计器-v2.1.0-rc.1.md');
 
-check('all application packages and API metadata use v2.1.0-rc.1',
-  rootPackage.version === '2.1.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
+check('all application packages use v2.2.0-rc.1',
+  rootPackage.version === '2.2.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
 check('ExcelJS is pinned to a specific version and API test command includes XLSX tests',
   apiPackage.dependencies.exceljs === '4.4.0' && apiPackage.scripts.test.includes('report-template.test.ts') && apiPackage.scripts.test.includes('report-xlsx.test.ts') && apiPackage.scripts.test.includes('budget-xlsx.test.ts'));
 check('eight report types share a central server-side data registry',

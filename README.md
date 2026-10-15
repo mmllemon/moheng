@@ -1,10 +1,10 @@
 # 墨衡｜施工单位成本管理系统
 
-版本：MVP 2.1.0-rc.1 验证候选（Windows 原生部署优先）
+版本：MVP 2.2.0-rc.1 验证候选（Windows 原生部署优先）
 
 本项目参考《施工单位成本管理系统完整设计方案 v1.0》。全局经营总览跨项目汇总；单项目业务统一通过项目工作台访问，工作台内保留业主主合同、目标成本、进度款、变更签证、竣工结算与应收、分供合同与结算、实际成本和成本分析等独立业务页面。
 
-> **v2.0.0-rc.1 更新**：继续推进 WP2–WP8。新增八类权限过滤的 CSV 台账报表、目标成本 CSV 列映射/服务端预检/确认前复检、本机未提交草稿、项目成员与角色管理页面，以及基于当前台账动态生成的待办与预警。新增静态候选检查和审计覆盖源码契约检查。没有改动既有财务状态机、结算/应收应付金额口径或 Prisma Schema/migrations。WP8 的严格类型检查、生产构建、PostgreSQL 与浏览器 E2E、Windows 实机部署仍需在 Node.js 24+ 环境完成，详见 `docs/阶段验收记录-v2.0.0-rc.1.md` 与 `docs/WP2-WP8实施计划与状态-v2.0.0-rc.1.md`。
+> **v2.0.0-rc.1 历史更新**：继续推进 WP2–WP8。新增八类权限过滤的 CSV 台账报表、目标成本 CSV 列映射/服务端预检/确认前复检、本机未提交草稿、项目成员与角色管理页面，以及基于当前台账动态生成的待办与预警。新增静态候选检查和审计覆盖源码契约检查。没有改动既有财务状态机、结算/应收应付金额口径或 Prisma Schema/migrations。WP8 的严格类型检查、生产构建、PostgreSQL 与浏览器 E2E、Windows 实机部署仍需在 Node.js 24+ 环境完成，详见 `docs/阶段验收记录-v2.0.0-rc.1.md` 与 `docs/WP2-WP8实施计划与状态-v2.0.0-rc.1.md`。
 
 > **v1.9.0-rc.1 更新**：依据《施工单位成本管理系统完整设计方案 v1.0》做差距驱动的增量开发：新增“操作追溯”只读页面与权限受限查询 API，支持按项目、业务对象、关键字、日期范围检索，展开变更快照并导出防公式注入的 CSV；经营总览增加“查看全部操作”入口。未修改 Prisma Schema/数据库迁移及合同、结算、应收应付金额规则。下一阶段计划与未实现能力边界见 `docs/下一阶段开发计划与实施记录-v1.9.0-rc.1.md`，验收记录见 `docs/阶段验收记录-v1.9.0-rc.1.md`。
 
@@ -63,7 +63,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 ```powershell
 .\scripts\windows\start-windows.ps1
-Invoke-RestMethod http://localhost:3001/health
+Invoke-RestMethod http://localhost:3001/health/ready
 ```
 
 默认地址：`http://localhost:3001`。API 文档：`http://localhost:3001/docs/`。日志输出在 `apps/api/logs/`。停止进程：
@@ -120,6 +120,19 @@ docker compose logs -f api
 
 登录页和应用导航使用内嵌 SVG 品牌标识“墨衡”。右上角“界面设置”入口打开独立的浮层卡片，提供象牙雅白、香槟曜金、黑曜极光、冰川天青及跟随系统主题；支持跟随主题/靛青/青玉/朱砂强调色、舒朗/紧凑密度、宽屏和减少动效。顶部命令面板支持 Ctrl/Cmd+K、方向键、Enter 与 Esc；表格行支持 J/K 和方向键巡检。经营总览采用非对称 Bento 布局，图表只展示实际台账中的项目快照，不伪造时间趋势。设置保存在当前浏览器，不写入业务数据库。
 
+## v2.2 框架演进：模块化单体 + 开放 API
+
+本轮保留 React + TypeScript、Fastify、Prisma、PostgreSQL 和当前 Windows 原生部署模式，不迁移框架、不拆微服务，也不增加 Redis、消息队列或 Kubernetes 等必需服务。
+
+- 新增统一 API 模块注册表，现有 15 组路由插件由 `apps/api/src/platform/module-registry.ts` 统一挂载。
+- 新增 `GET /api/meta`，用于发现应用版本、API 主版本和模块目录；具体接口契约仍以 `/docs/` 的 OpenAPI 文档为准。
+- 新增 `/health/live` 存活探针、`/health/ready` 数据库就绪探针，并保留旧 `/health` 路径供部署脚本兼容。
+- 响应提供 `x-request-id`；服务端日志对常见令牌/密码字段脱敏；生产 CORS 默认不再开放 Vite 开发来源。
+- 不修改财务领域规则、Prisma Schema 或现有迁移。外部服务优先通过 REST/OpenAPI 与可选适配器接入，事件队列和独立服务以真实需求为触发条件。
+- 版本仍为 RC。完整 Node.js 24+ 安装、依赖锁定、严格检查、PostgreSQL 迁移、财务联测、Windows 与浏览器 E2E 尚未全部通过。
+
+详细设计与发布 Gate：[`docs/框架演进方案-v2.2.0-rc.1.md`](docs/框架演进方案-v2.2.0-rc.1.md)、[`docs/阶段验收记录-v2.2.0-rc.1.md`](docs/阶段验收记录-v2.2.0-rc.1.md)。
+
 ## v2.1 原生 XLSX 与报表模板设计器
 
 - **八类台账双格式导出**：在原 CSV 基础上新增原生 XLSX，包含真实单元格类型、列格式、冻结窗格、筛选、打印布局和可选导出说明页。单次最多 10,000 条，超限会说明截断。
@@ -127,7 +140,7 @@ docker compose logs -f api
 - **模板生命周期**：个人、项目共享、系统模板；草稿、发布、归档、版本历史与恢复。模板内容使用 JSON 保存并由服务端校验，未发布修改不覆盖发布快照。
 - **目标成本原生 XLSX 导入**：提供下载模板、静态值解析、表头映射、服务端预检、确认前复检和单事务提交。CSV 入口继续保留。导入不接受公式、宏/外部链接、嵌入对象等内容；文件大小 8 MB、行数 5,000 限制。
 - **安全边界**：模板不能执行 SQL/脚本，也不能访问任意字段或改变业务数据；财务台账不开放通用批量导入。数据仍按服务端项目权限查询并记录模板/导入审计。
-- **发布状态**：当前为 `v2.1.0-rc.1` 候选。完整依赖安装、Node.js 24+ 严格类型检查、ExcelJS 实际往返测试、Prisma/PostgreSQL 迁移、Excel/WPS 和浏览器端到端测试还必须在目标环境执行。见 `docs/阶段验收记录-v2.1.0-rc.1.md`、`docs/原生XLSX与报表模板设计器-v2.1.0-rc.1.md` 和 `docs/WP8-XLSX报表设计器端到端验收清单-v2.1.0-rc.1.md`。
+- **发布状态**：当前为 `v2.2.0-rc.1` 候选。本版本新增模块注册表、API 元信息发现、存活/就绪探针、请求追踪 ID 与更严格的 CORS 默认值；尚未完成依赖锁定、Node.js 24+ 严格类型检查、ExcelJS 实际往返测试、Prisma/PostgreSQL 迁移、Excel/WPS 和浏览器端到端测试。见 `docs/阶段验收记录-v2.2.0-rc.1.md`、`docs/框架演进方案-v2.2.0-rc.1.md`、`docs/原生XLSX与报表模板设计器-v2.1.0-rc.1.md` 和 `docs/WP8-XLSX报表设计器端到端验收清单-v2.1.0-rc.1.md`。
 
 ## v2.0 工作包功能
 
@@ -142,7 +155,7 @@ docker compose logs -f api
 本项目已初始化 Git，默认分支为 `main`。解压普通源码 ZIP 后可查看提交说明；若需获得完整 Git 提交历史，请下载交付的 `.bundle` 文件并执行：
 
 ```powershell
-git clone .\moheng-v2.0.0-rc.1.bundle moheng
+git clone .\moheng-v2.2.0-rc.1.bundle moheng
 cd moheng
 git log --oneline --decorate -5
 ```

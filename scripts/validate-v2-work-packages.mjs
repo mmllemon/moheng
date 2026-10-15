@@ -15,6 +15,8 @@ const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const server = await read('apps/api/src/server.ts');
+const moduleRegistry = await read('apps/api/src/platform/module-registry.ts');
+const appInfo = await read('apps/api/src/platform/app-info.ts');
 const reportRoute = await read('apps/api/src/routes/reports.ts');
 const reportData = await read('apps/api/src/lib/report-data.ts');
 const notifyRoute = await read('apps/api/src/routes/notifications.ts');
@@ -37,16 +39,16 @@ const acceptance = await read('docs/阶段验收记录-v2.0.0-rc.1.md');
 const windowsGate = await read('scripts/windows/verify-release-candidate.ps1');
 const e2eChecklist = await read('docs/WP8-Windows与浏览器端到端验收清单-v2.0.0-rc.1.md');
 
-check('package and API versions agree on v2.1.0-rc.1 while retaining Node.js 24+ gate',
-  rootPackage.version === '2.1.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && server.includes("version: '2.1.0-rc.1'"));
+check('package and API versions agree on v2.2.0-rc.1 while retaining Node.js 24+ gate',
+  rootPackage.version === '2.2.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
+  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && appInfo.includes("APP_VERSION = '2.2.0-rc.1'") && server.includes('version: APP_VERSION'));
 check('release command combines original regression contracts, new WP checks and source audit coverage',
   rootPackage.scripts['validate:release-candidate'].includes('validate-release-candidate.mjs') &&
   rootPackage.scripts['validate:release-candidate'].includes('validate-v2-work-packages.mjs') &&
   rootPackage.scripts['validate:release-candidate'].includes('check-audit-coverage.mjs'));
 check('eight standard CSV report types are declared and routed behind authenticated API',
   ['target-cost','actual-cost','progress-bills','changes','owner-receivables','owner-receipts','downstream-contracts','downstream-payables'].every((key) => reportData.includes(`'${key}'`)) &&
-  reportRoute.includes('preHandler: authRequired') && server.includes("prefix: '/api/reports'"));
+  reportRoute.includes('preHandler: authRequired') && moduleRegistry.includes("mountPrefix: '/api/reports'"));
 check('report export filters project IDs on the server and rejects inaccessible explicit project scope',
   reportData.includes("members: { some: { userId: user.sub } }") && reportData.includes('availableIds.includes(filters.projectId)') && reportData.includes('PROJECT_ACCESS_DENIED'));
 check('CSV export applies BOM, quoting, formula neutralization and unit test coverage',
@@ -79,7 +81,7 @@ check('budget drafts are browser-local only and do not save until explicit form 
   budgetPage.includes('点击“保存条目”后才会写入正式台账') && budgetPage.includes('await api.post(`/projects/${projectId}/budget/items`'));
 check('source schemas and database migrations remain intentionally unchanged by this work package',
   plan.includes('本轮不修改 Prisma Schema / migration') && acceptance.includes('未修改 Prisma Schema、数据库迁移') &&
-  !server.includes('reportJobRoutes') && !server.includes('offlineSyncRoutes'));
+  !moduleRegistry.includes('reportJobRoutes') && !moduleRegistry.includes('offlineSyncRoutes'));
 check('reduced-motion and responsive rules cover new report, notification, and member views',
   styles.includes('.report-center-page') && styles.includes('.notifications-page') && styles.includes('.project-members-page') &&
   styles.includes(':root[data-motion="reduced"]') && styles.includes('@media (max-width: 760px)'));

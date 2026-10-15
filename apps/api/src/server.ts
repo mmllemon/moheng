@@ -12,22 +12,9 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { z } from 'zod';
 import { prisma } from './lib/prisma.js';
+import { APP_VERSION, API_MAJOR_VERSION } from './platform/app-info.js';
+import { getApiModuleCatalog, registerApiModules } from './platform/module-registry.js';
 import { failure, success } from './lib/http.js';
-import { authRoutes } from './routes/auth.js';
-import { projectRoutes } from './routes/projects.js';
-import { reportRoutes } from './routes/reports.js';
-import { notificationRoutes } from './routes/notifications.js';
-import { contractRoutes } from './routes/contracts.js';
-import { downstreamContractRoutes } from './routes/downstream-contracts.js';
-import { downstreamFinanceRoutes } from './routes/downstream-finance.js';
-import { budgetRoutes } from './routes/budget.js';
-import { costRoutes } from './routes/costs.js';
-import { progressBillRoutes } from './routes/progress-bills.js';
-import { changeRoutes } from './routes/changes.js';
-import { auditLogRoutes } from './routes/audit-logs.js';
-import { analysisRoutes } from './routes/analysis.js';
-import { businessPartyRoutes } from './routes/business-parties.js';
-import { ownerFinanceRoutes } from './routes/owner-finance.js';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -35,7 +22,7 @@ const envSchema = z.object({
   HOST: z.string().default('127.0.0.1'),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET 至少 32 个字符'),
-  CORS_ORIGIN: z.string().default('http://localhost:5173,http://localhost:8080'),
+  CORS_ORIGIN: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
 });
 const envResult = envSchema.safeParse(process.env);
@@ -45,11 +32,27 @@ if (!envResult.success) {
 }
 const env = envResult.data;
 
-const app = Fastify({ logger: { level: env.NODE_ENV === 'development' ? 'info' : 'warn' }, bodyLimit: 12 * 1024 * 1024 });
+const corsOriginSetting = env.CORS_ORIGIN?.trim() || (env.NODE_ENV === 'development' ? 'http://localhost:5173' : '');
+const corsOrigins = corsOriginSetting.split(',').map((origin) => origin.trim()).filter(Boolean);
+
+const app = Fastify({
+  logger: {
+    level: env.NODE_ENV === 'development' ? 'info' : 'warn',
+    redact: {
+      paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["set-cookie"]', 'req.body.password', 'req.body.refreshToken', 'req.body.apiSecret'],
+      censor: '[REDACTED]',
+    },
+  },
+  bodyLimit: 12 * 1024 * 1024,
+});
+app.addHook('onSend', async (request, reply, payload) => {
+  reply.header('x-request-id', request.id);
+  return payload;
+});
 
 await app.register(helmet, { contentSecurityPolicy: false });
 await app.register(cors, {
-  origin: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean),
+  origin: corsOrigins,
   credentials: true,
 });
 await app.register(cookie);
@@ -57,7 +60,7 @@ await app.register(jwt, { secret: env.JWT_SECRET });
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 await app.register(swagger, {
   openapi: {
-    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: '2.1.0-rc.1' },
+    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: APP_VERSION },
     servers: [{ url: '/' }],
     tags: [
       { name: 'auth', description: '登录与会话' }, { name: 'projects', description: '项目管理' }, { name: 'contracts', description: '主合同与下游合同' },
@@ -95,30 +98,32 @@ if (webDistAvailable) {
   });
 }
 
-app.get('/health', async (_request, reply) => {
+app.get('/health/live', async () => success({ status: 'ok', service: 'api', time: new Date().toISOString() }));
+
+const readinessHandler = async (_request: import('fastify').FastifyRequest, reply: import('fastify').FastifyReply) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return success({ status: 'ok', database: 'ok', time: new Date().toISOString() });
+    return success({ status: 'ok', api: 'ok', database: 'ok', time: new Date().toISOString() });
   } catch {
     return failure(reply, 503, 'DATABASE_UNAVAILABLE', '数据库暂不可用');
   }
-});
+};
+app.get('/health/ready', readinessHandler);
+// Backward-compatible readiness alias for existing Windows scripts and monitoring.
+app.get('/health', readinessHandler);
 
-await app.register(authRoutes, { prefix: '/api/auth' });
-await app.register(projectRoutes, { prefix: '/api/projects' });
-await app.register(contractRoutes, { prefix: '/api/projects' });
-await app.register(downstreamContractRoutes, { prefix: '/api/projects' });
-await app.register(downstreamFinanceRoutes, { prefix: '/api/projects' });
-await app.register(ownerFinanceRoutes, { prefix: '/api/projects' });
-await app.register(budgetRoutes, { prefix: '/api/projects' });
-await app.register(costRoutes, { prefix: '/api/projects' });
-await app.register(progressBillRoutes, { prefix: '/api/projects' });
-await app.register(changeRoutes, { prefix: '/api/projects' });
-await app.register(analysisRoutes, { prefix: '/api' });
-await app.register(auditLogRoutes, { prefix: '/api/audit-logs' });
-await app.register(reportRoutes, { prefix: '/api/reports' });
-await app.register(notificationRoutes, { prefix: '/api/notifications' });
-await app.register(businessPartyRoutes, { prefix: '/api/parties' });
+app.get('/api/meta', async () => success({
+  product: '墨衡工程经营管理',
+  version: APP_VERSION,
+  apiMajorVersion: API_MAJOR_VERSION,
+  apiBasePath: '/api',
+  compatibilityPolicy: '现有 /api 路径在 v1 兼容周期内保持稳定；破坏性变更需引入新的主版本路径。',
+  modules: getApiModuleCatalog(),
+}));
+
+// In production, serve the compiled React SPA from the same origin as the API.
+// During Vite development the dist directory may not exist, so Vite serves the UI instead.
+await registerApiModules(app);
 
 app.setNotFoundHandler((request, reply) => {
   // SPA history fallback: only GET page routes, never unknown API or documentation paths.
@@ -128,7 +133,7 @@ app.setNotFoundHandler((request, reply) => {
   return failure(reply, 404, 'ROUTE_NOT_FOUND', `接口不存在：${request.method} ${request.url}`);
 });
 app.setErrorHandler((error, request, reply) => {
-  request.log.error({ err: error }, 'Unhandled request error');
+  request.log.error({ err: error, requestId: request.id }, 'Unhandled request error');
   if (reply.sent) return;
   return failure(reply, 500, 'INTERNAL_ERROR', env.NODE_ENV === 'production' ? '服务器暂时无法处理该请求' : error.message);
 });

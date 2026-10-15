@@ -14,6 +14,8 @@ const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const server = await read('apps/api/src/server.ts');
+const moduleRegistry = await read('apps/api/src/platform/module-registry.ts');
+const appInfo = await read('apps/api/src/platform/app-info.ts');
 const auditRoute = await read('apps/api/src/routes/audit-logs.ts');
 const auditCsv = await read('apps/api/src/lib/audit-log-csv.ts');
 const auditCsvTests = await read('apps/api/src/lib/audit-log-csv.test.ts');
@@ -74,8 +76,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 2.1.0-rc.1',
-  rootPackage.version === '2.1.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && server.includes("version: '2.1.0-rc.1'"));
+check('package, API and Web versions agree on 2.2.0-rc.1',
+  rootPackage.version === '2.2.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.2.0-rc.1'") && server.includes('version: APP_VERSION'));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
 check('previously shipped migration remains byte-for-byte unchanged',
@@ -221,12 +223,12 @@ check('analysis and UI show commitments, linked cost, net payments and refunds s
   appRoutes.includes('DownstreamContractsPage'));
 
 check('server mounts downstream contract routes under project API',
-  server.includes("import { downstreamContractRoutes } from './routes/downstream-contracts.js'") &&
-  server.includes('downstreamContractRoutes'));
+  moduleRegistry.includes("import { downstreamContractRoutes } from '../routes/downstream-contracts.js'") &&
+  moduleRegistry.includes('downstreamContractRoutes'));
 
 check('downstream contract/payment and settlement/payable views share a combined workspace entry',
-  server.includes("import { downstreamFinanceRoutes } from './routes/downstream-finance.js'") &&
-  server.includes('downstreamFinanceRoutes') && appRoutes.includes('DownstreamWorkspacePage') &&
+  moduleRegistry.includes("import { downstreamFinanceRoutes } from '../routes/downstream-finance.js'") &&
+  moduleRegistry.includes('downstreamFinanceRoutes') && appRoutes.includes('DownstreamWorkspacePage') &&
   appRoutes.includes('path="downstream"') && downstreamWorkspace.includes('合同台账与付款') &&
   downstreamWorkspace.includes('结算与应付账款') && downstreamWorkspace.includes('setSearchParams') && downstreamWorkspace.includes("view: 'finance'"));
 
@@ -369,7 +371,7 @@ check('historical documentation preserves the unit master, owner finance, combin
 check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
   indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
-  layout.includes('<strong>墨衡</strong>') && layout.includes('v2.1.0-rc.1') &&
+  layout.includes('<strong>墨衡</strong>') && layout.includes('v2.2.0-rc.1') &&
   loginPage.includes('<strong>墨衡</strong>') && !(await read('apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
 check('navigation group captions are removed while visual divider and group regions remain',
@@ -495,7 +497,7 @@ check('unit edit dialog has a constrained scroll region and a persistent footer 
   (await read('apps/web/src/styles.css')).includes('overflow-y: auto'));
 
 check('audit log endpoint constrains regular users to project memberships and supports read-only filters/pagination',
-  server.includes('auditLogRoutes') && server.includes("prefix: '/api/audit-logs'") &&
+  moduleRegistry.includes('auditLogRoutes') && moduleRegistry.includes("mountPrefix: '/api/audit-logs'") &&
   auditRoute.includes("members: { some: { userId: user.sub } }") && auditRoute.includes("projectId: { in: projectIds }") &&
   auditRoute.includes('pageSize') && auditRoute.includes('from') && auditRoute.includes('to') &&
   auditRoute.includes("format === 'csv'") && !auditRoute.includes('auditLog.update') && !auditRoute.includes('auditLog.delete'));
