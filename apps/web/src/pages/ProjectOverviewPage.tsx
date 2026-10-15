@@ -44,9 +44,10 @@ export default function ProjectOverviewPage() {
   const costVariance = analysis.actualCost - analysis.targetCost;
   const monthlyOption = {
     tooltip: { trigger: 'axis', valueFormatter: (value: number) => formatMoney(value) },
-    grid: { left: 44, right: 18, top: 22, bottom: 34 },
+    // Reserve room for long currency tick labels; containLabel prevents clipping at the panel edge.
+    grid: { left: 68, right: 18, top: 22, bottom: 34, containLabel: true },
     xAxis: { type: 'category', data: analysis.monthlyActualCost.map((row) => row.month), axisLine: { lineStyle: { color: '#e7ebf2' } }, axisTick: { show: false }, axisLabel: { color: '#8792a4', fontSize: 11 } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf0f5', type: 'dashed' } }, axisLabel: { color: '#8792a4', formatter: (v: number) => v >= 10000 ? `${(v / 10000).toFixed(0)}万` : `${v}` } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf0f5', type: 'dashed' } }, axisLabel: { color: '#8792a4', margin: 10, hideOverlap: true, formatter: (v: number) => v >= 100000000 ? `${(v / 100000000).toFixed(1)}亿` : v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}万` : v.toLocaleString('zh-CN') } },
     series: [{ name: '实际发生成本', type: 'bar', data: analysis.monthlyActualCost.map((row) => row.amount), barMaxWidth: 26, itemStyle: { color: '#536bd5', borderRadius: [4, 4, 0, 0] } }],
   };
 

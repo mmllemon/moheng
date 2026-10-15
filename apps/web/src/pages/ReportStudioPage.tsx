@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Eye, FileSpreadsheet, Grid2X2Plus, Link2, LoaderCircle, Save, Send, Trash2 } from 'lucide-react';
 import { api } from '../api';
@@ -36,6 +36,7 @@ function parseRange(range: string) {
 function newId(prefix: string) { return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`; }
 export default function ReportStudioPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedProjectId = useUiStore((state) => state.selectedProjectId);
   const currentUser = useAuthStore((state) => state.user);
@@ -218,13 +219,40 @@ export default function ReportStudioPage() {
     } finally { setBusy(false); }
   }, [snapshotDefinition, domain, projectId, businessPartyId, templateId, templateEditable, name, description, templateVersion, templateScope, templatesQuery]);
 
-  async function preview() {
+  function cleanStudioPath(savedTemplateId?: string) {
+    const params = new URLSearchParams(searchParams);
+    params.delete('autoPreview');
+    params.delete('openSavedTemplate');
+    params.delete('returnTo');
+    params.set('domain', domain);
+    if (domain === 'PROJECT' && projectId) params.set('projectId', projectId); else params.delete('projectId');
+    if (domain === 'PARTY' && businessPartyId) params.set('partyId', businessPartyId); else params.delete('partyId');
+    if (savedTemplateId) params.set('templateId', savedTemplateId);
+    else if (templateId) params.set('templateId', templateId);
+    else params.delete('templateId');
+    const query = params.toString();
+    return `${location.pathname}${query ? `?${query}` : ''}`;
+  }
+
+  function validInternalPath(candidate: string | null): candidate is string {
+    return Boolean(candidate && candidate.startsWith('/') && !candidate.startsWith('//') && !candidate.includes('\\') && !/[\u0000-\u001f]/.test(candidate));
+  }
+
+  async function preview(automatic = false) {
     try {
       const saved = await saveTemplate();
       const params = new URLSearchParams({ studioTemplateId: saved.id, domain });
       if (domain === 'PROJECT' && projectId) params.set('projectId', projectId);
       if (domain === 'PARTY' && businessPartyId) params.set('partyId', businessPartyId);
-      navigate(`/reports/preview?${params.toString()}`);
+      const cleanReturnPath = cleanStudioPath(saved.id);
+      const sourcePath = searchParams.get('returnTo');
+      const returnTo = automatic && validInternalPath(sourcePath) ? sourcePath : cleanReturnPath;
+      params.set('returnTo', returnTo);
+      const canGoBackInHistory = automatic ? validInternalPath(sourcePath) : true;
+      navigate(`/reports/preview?${params.toString()}`, {
+        replace: automatic,
+        state: { safeReportPreviewBack: canGoBackInHistory, returnTo },
+      });
     } catch { /* saveTemplate displays the actionable error */ }
   }
 
@@ -249,16 +277,20 @@ export default function ReportStudioPage() {
     if (domain === 'PARTY' && !businessPartyId) { setError('请从往来单位经营档案页面进入报表工作室。'); return; }
     autoPreviewTriggered.current = true;
     // Workspace shortcuts should preview an existing saved template without silently incrementing its version.
+    const cleanReturnPath = cleanStudioPath(templateId);
+    const sourcePath = searchParams.get('returnTo');
+    const canGoBackInHistory = validInternalPath(sourcePath);
+    const returnTo = canGoBackInHistory ? sourcePath : cleanReturnPath;
     if (templateId) {
-      const params = new URLSearchParams({ studioTemplateId: templateId, domain });
+      const params = new URLSearchParams({ studioTemplateId: templateId, domain, returnTo });
       if (domain === 'PROJECT' && projectId) params.set('projectId', projectId);
       if (domain === 'PARTY' && businessPartyId) params.set('partyId', businessPartyId);
-      navigate(`/reports/preview?${params.toString()}`);
+      navigate(`/reports/preview?${params.toString()}`, { replace: true, state: { safeReportPreviewBack: canGoBackInHistory, returnTo } });
     } else {
-      // The built-in default has not been persisted yet; save it once before opening its preview.
-      void preview();
+      // Replace the one-shot auto-preview route. Returning must not revisit autoPreview=1 and open the same preview again.
+      void preview(true);
     }
-  }, [autoPreviewRequested, ready, editorInitialized, editorError, domain, projectId, businessPartyId, templateId, navigate]);
+  }, [autoPreviewRequested, ready, editorInitialized, editorError, domain, projectId, businessPartyId, templateId, navigate, location.pathname, searchParams]);
 
   function addBinding() {
     try {

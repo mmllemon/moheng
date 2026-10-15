@@ -2393,7 +2393,6 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .sidebar-note-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; line-height: 1.35; }
 .sidebar-note-copy > span { margin-top: 3px; color: var(--sidebar-muted); font-size: 9px; }
 .workspace-nav-admin { flex-direction: row; align-items: center; gap: 4px; border: 1px solid var(--card-border); background: var(--card-bg); }
-.workspace-nav-admin-label { padding: 0 4px; color: var(--text-tertiary); font-size: 9px; font-weight: 750; white-space: nowrap; }
 .workspace-nav-admin .workspace-tab { white-space: nowrap; }
 .workspace-nav-admin .workspace-tab.active { background: color-mix(in srgb, var(--accent-50) 55%, var(--card-bg)); }
 @media (max-width: 1120px) {

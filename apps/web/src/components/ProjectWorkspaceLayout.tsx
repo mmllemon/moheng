@@ -31,7 +31,7 @@ export default function ProjectWorkspaceLayout() {
       <span className="workspace-nav-separator" aria-hidden="true"><span /></span>
       <div className="workspace-nav-group workspace-nav-cost" role="group" aria-label="成本与支出业务"><div className="workspace-nav-group-tabs">{costTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
       <span className="workspace-nav-separator workspace-nav-admin-separator" aria-hidden="true"><span /></span>
-      <div className="workspace-nav-group workspace-nav-admin" role="group" aria-label="项目管理"><span className="workspace-nav-admin-label">项目管理</span><div className="workspace-nav-group-tabs">{projectAdminTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
+      <div className="workspace-nav-group workspace-nav-admin" role="group" aria-label="项目管理"><div className="workspace-nav-group-tabs">{projectAdminTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
     </nav>
     <div className="workspace-content"><Outlet /></div>
   </div>;

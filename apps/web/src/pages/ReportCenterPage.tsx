@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowDownToLine, ArrowRight, Building2, Check, CheckCircle2, Eye, FileSpreadsheet, FolderKanban, Info, RefreshCw, Settings2 } from 'lucide-react';
 import { api } from '../api';
@@ -31,6 +31,7 @@ const catalogFallback: Report[] = [
 
 export default function ReportCenterPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const selectedProjectId = useUiStore((state) => state.selectedProjectId);
   const [projectId, setProjectId] = useState(selectedProjectId ?? '');
   const [reportKey, setReportKey] = useState('target-cost');
@@ -51,7 +52,9 @@ export default function ReportCenterPage() {
     if (projectId) params.set('projectId', projectId); else params.set('allProjects', '1');
     if (from) params.set('from', from);
     if (to) params.set('to', to);
-    navigate(`/reports/preview?${params.toString()}`);
+    const returnTo = `${location.pathname}${location.search}${location.hash}`;
+    params.set('returnTo', returnTo);
+    navigate(`/reports/preview?${params.toString()}`, { state: { safeReportPreviewBack: true, returnTo } });
   }
 
   function openStudio(domain: 'PROJECT' | 'COMPANY') {

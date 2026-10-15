@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowDown, ArrowUp, ArrowDownToLine, Check, ChevronDown, Columns3, Copy, FileSpreadsheet, History,
   Merge, Plus, Printer, RotateCcw, Rows3, Save, Scissors, Settings2, ShieldCheck,
@@ -325,7 +325,9 @@ export default function ReportDesignerPage() {
       if (from) params.set('from', from);
       if (to) params.set('to', to);
       if (id) params.set('templateId', id);
-      navigate(`/reports/preview?${params.toString()}`);
+      const returnTo = `${location.pathname}${location.search}${location.hash}`;
+      params.set('returnTo', returnTo);
+      navigate(`/reports/preview?${params.toString()}`, { state: { safeReportPreviewBack: true, returnTo } });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法打开报表预览。');
     }

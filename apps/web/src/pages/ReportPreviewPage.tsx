@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, Printer, RefreshCw } from 'lucide-react';
 import type { CSSProperties } from 'react';
@@ -122,6 +122,7 @@ function displayValue(value: unknown, format?: string | null, rawStyle?: Record<
 
 export default function ReportPreviewPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const selectedProjectId = useUiStore((state) => state.selectedProjectId);
   const studioTemplateId = searchParams.get('studioTemplateId') || '';
@@ -133,11 +134,21 @@ export default function ReportPreviewPage() {
   const templateId = searchParams.get('templateId') || '';
   const from = searchParams.get('from') || '';
   const to = searchParams.get('to') || '';
+  const queryReturnTo = searchParams.get('returnTo');
+  const routeState = location.state && typeof location.state === 'object' ? location.state as { safeReportPreviewBack?: unknown; returnTo?: unknown } : null;
+  const routeStateReturnTo = typeof routeState?.returnTo === 'string' ? routeState.returnTo : null;
+  const safeReturnTo = [queryReturnTo, routeStateReturnTo].find((candidate): candidate is string => Boolean(candidate && candidate.startsWith('/') && !candidate.startsWith('//') && !candidate.includes('\\') && !/[\u0000-\u001f]/.test(candidate))) ?? '/reports';
   const [exportBusy, setExportBusy] = useState(false);
   const [jobId, setJobId] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const isStudio = Boolean(studioTemplateId);
+  function goBack() {
+    // In-app entry points mark that their previous history entry is the correct source.
+    // Auto-preview replaces the intermediate autoPreview=1 studio entry, preventing a back-loop.
+    if (routeState?.safeReportPreviewBack === true) navigate(-1);
+    else navigate(safeReturnTo, { replace: true });
+  }
 
   const studioTemplateQuery = useQuery({
     queryKey: ['report-studio-template-preview', studioTemplateId],
@@ -210,7 +221,7 @@ export default function ReportPreviewPage() {
 
   if (!isStudio && !reportKey) return <div className="page-wrap"><ErrorBlock message="缺少报表类型或综合报表模板编号。请从报表中心重新进入预览。" retry={() => navigate('/reports')} /></div>;
   return <div className="page-wrap report-export-preview-page">
-    <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={() => navigate(-1)}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => window.print()}><Printer size={15}/>打印 / PDF</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />
+    <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={goBack}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => window.print()}><Printer size={15}/>打印 / PDF</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />
     {loading && <LoadingBlock label="正在按当前权限范围读取报表预览…" />}
     {missingProjectScope && <ErrorBlock message="项目级报表需要明确选择项目。请返回报表工作室选择项目后重新预览。" retry={() => navigate('/reports/studio?domain=PROJECT')} />}
     {missingPartyScope && <ErrorBlock message="单位档案级报表需要指定往来单位。请从具体的单位经营档案页面进入。" retry={() => navigate('/parties')} />}

@@ -19,11 +19,11 @@ const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
-const design = await read('docs/报表中心与报表工作室设计方案-v2.6.0-rc.1.md');
-const acceptance = await read('docs/WP11-报表中心瘦身与导航校正验收清单-v2.6.0-rc.1.md');
+const design = await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md');
+const acceptance = await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md');
 
-check('release package/API/Web/runtime metadata consistently use v2.6.0-rc.1',
-  rootPackage.version === '2.6.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.6.0-rc.1'"));
+check('release package/API/Web/runtime metadata consistently use v2.7.0-rc.1',
+  rootPackage.version === '2.7.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.7.0-rc.1'"));
 check('report center removes redundant intro cards and repeated hero banner',
   !center.includes('report-intro-grid') && !center.includes('report-center-hero') && !center.includes('report-library'));
 check('report center has a single compact ledger catalog rather than duplicated report-type selector and large cards',

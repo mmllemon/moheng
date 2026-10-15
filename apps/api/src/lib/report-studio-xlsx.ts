@@ -24,7 +24,7 @@ function borderStyle(value: unknown): ExcelJS.BorderStyle | undefined {
 function styleToExcel(style?: Record<string, unknown>): Partial<ExcelJS.Style> | undefined {
   if (!style) return undefined;
   const result: Partial<ExcelJS.Style> = {};
-  const font: ExcelJS.Font = {};
+  const font: Partial<ExcelJS.Font> = {};
   if (typeof style.ff === 'string') font.name = style.ff.slice(0, 80);
   if (typeof style.fs === 'number') font.size = Math.min(96, Math.max(6, style.fs));
   if (typeof style.bl === 'boolean' || typeof style.bl === 'number') font.bold = style.bl === true || style.bl === 1;
