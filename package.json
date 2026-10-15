@@ -1,7 +1,7 @@
 {
   "name": "moheng-construction-cost-management",
   "private": true,
-  "version": "2.0.0-rc.1",
+  "version": "2.1.0-rc.1",
   "workspaces": [
     "apps/api",
     "apps/web"
@@ -15,7 +15,7 @@
     "db:deploy": "npm run prisma:deploy -w @cms/api",
     "db:seed": "npm run seed -w @cms/api",
     "test": "npm run test -w @cms/api",
-    "validate:release-candidate": "node scripts/validate-release-candidate.mjs && node scripts/validate-v2-work-packages.mjs && node scripts/check-audit-coverage.mjs",
+    "validate:release-candidate": "node scripts/validate-release-candidate.mjs && node scripts/validate-report-studio.mjs && node scripts/validate-v2-work-packages.mjs && node scripts/check-audit-coverage.mjs",
     "validate:audit-coverage": "node scripts/check-audit-coverage.mjs",
     "validate:v2-work-packages": "node scripts/validate-v2-work-packages.mjs"
   },

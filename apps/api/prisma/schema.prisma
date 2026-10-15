@@ -12,6 +12,18 @@ enum UserRole {
   USER
 }
 
+enum ReportTemplateScope {
+  SYSTEM
+  PROJECT
+  PERSONAL
+}
+
+enum ReportTemplateStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 enum BusinessPartyRole {
   OWNER
   MATERIAL_SUPPLIER
@@ -217,6 +229,10 @@ model User {
   recordedExternalConfirmations Change[] @relation("ChangeExternalRecorder")
   verifiedExternalConfirmations Change[] @relation("ChangeExternalVerifier")
   completedAmountReviews Change[] @relation("ChangeInternalAmountReviewCompleter")
+  reportTemplatesCreated ReportTemplate[] @relation("ReportTemplateCreator")
+  reportTemplatesUpdated ReportTemplate[] @relation("ReportTemplateUpdater")
+  reportTemplatesOwned ReportTemplate[] @relation("ReportTemplateOwner")
+  reportTemplateRevisions ReportTemplateRevision[] @relation("ReportTemplateRevisionCreator")
   createdDownstreamContracts DownstreamContract[] @relation("DownstreamContractCreator")
   createdDownstreamAdjustments DownstreamContractAdjustment[] @relation("DownstreamAdjustmentCreator")
   createdDownstreamPayments DownstreamContractPayment[] @relation("DownstreamPaymentCreator")
@@ -303,6 +319,7 @@ model Project {
   ownerSettlementPostings OwnerSettlementPosting[]
   auditLogs      AuditLog[]
   baselineMigrationReconciliations ContractBaselineMigrationReconciliation[]
+  reportTemplates ReportTemplate[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?
@@ -1082,4 +1099,48 @@ model AuditLog {
 
   @@index([projectId, createdAt])
   @@index([entity, entityId])
+}
+
+
+model ReportTemplate {
+  id                 String                @id @default(cuid())
+  reportKey          String
+  name               String
+  description        String?
+  scope              ReportTemplateScope   @default(PERSONAL)
+  status             ReportTemplateStatus  @default(DRAFT)
+  projectId          String?
+  ownerUserId        String?
+  version            Int                   @default(1)
+  publishedVersion   Int?
+  definition         Json
+  publishedDefinition Json?
+  createdById        String
+  updatedById        String
+  createdAt          DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime              @updatedAt @db.Timestamptz(3)
+  project            Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  owner              User?                 @relation("ReportTemplateOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  createdBy          User                  @relation("ReportTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy          User                  @relation("ReportTemplateUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  revisions          ReportTemplateRevision[]
+
+  @@index([reportKey, scope, status, updatedAt])
+  @@index([ownerUserId, reportKey, status])
+  @@index([projectId, reportKey, status])
+}
+
+model ReportTemplateRevision {
+  id          String         @id @default(cuid())
+  templateId  String
+  version     Int
+  action      String
+  definition  Json
+  createdById String
+  createdAt   DateTime       @default(now()) @db.Timestamptz(3)
+  template    ReportTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  createdBy   User           @relation("ReportTemplateRevisionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([templateId, createdAt])
+  @@index([createdById, createdAt])
 }

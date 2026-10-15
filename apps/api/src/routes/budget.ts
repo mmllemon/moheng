@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ProjectRole } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
@@ -6,6 +6,7 @@ import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { canAccessProject, denyIfNoProjectAccess } from '../lib/project-access.js';
 import { nonNegativeMoney, roundMoney } from '../lib/validation.js';
+import { BUDGET_XLSX_MAX_BYTES, BudgetXlsxError, buildBudgetImportTemplate, decodeBudgetXlsx, inspectBudgetImportWorkbook } from '../lib/budget-xlsx.js';
 
 const budgetInput = z.object({
   parentId: z.string().optional().nullable(),
@@ -17,12 +18,41 @@ const budgetInput = z.object({
   totalPrice: nonNegativeMoney.optional(),
   sortOrder: z.number().int().default(0),
 });
+const importRowSchema = budgetInput.omit({ sortOrder: true }).extend({ sortOrder: z.number().int().optional() });
+const importRowsSchema = z.object({ rows: z.array(importRowSchema).min(1).max(5000), sourceFormat: z.enum(['CSV', 'XLSX']).default('CSV') });
 
 function serialise(item: any) {
   return { ...item, quantity: item.quantity == null ? null : Number(item.quantity), unitPrice: item.unitPrice == null ? null : Number(item.unitPrice), totalPrice: Number(item.totalPrice) };
 }
 
 export async function budgetRoutes(app: FastifyInstance) {
+  app.get('/:projectId/budget/import-template.xlsx', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    const buffer = await buildBudgetImportTemplate();
+    return reply.header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('content-disposition', `attachment; filename="moheng-budget-import-template.xlsx"; filename*=UTF-8''${encodeURIComponent('墨衡-目标成本导入模板.xlsx')}`)
+      .header('cache-control', 'no-store').send(buffer);
+  });
+
+  app.post('/:projectId/budget/import-xlsx/inspect', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    const parsedBody = z.object({ filename: z.string().trim().min(1).max(255), workbookBase64: z.string().min(1).max(Math.ceil(BUDGET_XLSX_MAX_BYTES * 4 / 3) + 8) }).safeParse(request.body);
+    if (!parsedBody.success) return failure(reply, 400, 'VALIDATION_ERROR', 'XLSX 上传数据不正确；文件不能超过 8 MB', parsedBody.error.flatten());
+    try {
+      const bytes = decodeBudgetXlsx(parsedBody.data.filename, parsedBody.data.workbookBase64);
+      const result = await inspectBudgetImportWorkbook(bytes);
+      return success({ ...result, rowCount: result.rows.length, columnCount: result.headers.length, maxRows: 5000 });
+    } catch (error) {
+      if (error instanceof BudgetXlsxError) return failure(reply, 400, error.code, error.message);
+      if (error instanceof Error && (error.message.includes('zip') || error.message.includes('Invalid'))) return failure(reply, 400, 'XLSX_WORKBOOK_INVALID', '工作簿无法读取，请使用 Excel 或 WPS 重新另存为 .xlsx');
+      throw error;
+    }
+  });
+
   app.get('/:projectId/budget', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
@@ -90,7 +120,7 @@ export async function budgetRoutes(app: FastifyInstance) {
     }
   });
 
-  app.post('/:projectId/budget/import-csv/preview', { preHandler: authRequired }, async (request, reply) => {
+  const budgetImportPreviewHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
     if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
@@ -119,14 +149,15 @@ export async function budgetRoutes(app: FastifyInstance) {
     }
     const normalized = rowIssues.map((row) => ({ rowNumber: row.rowNumber, code: row.code, valid: row.errors.length === 0, errors: row.errors }));
     return success({ rows: normalized, total: normalized.length, validCount: normalized.filter((row) => row.valid).length, invalidCount: normalized.filter((row) => !row.valid).length, canImport: normalized.length > 0 && normalized.every((row) => row.valid) });
-  });
+  };
+  app.post('/:projectId/budget/import/preview', { preHandler: authRequired }, budgetImportPreviewHandler);
+  app.post('/:projectId/budget/import-csv/preview', { preHandler: authRequired }, budgetImportPreviewHandler);
 
-  app.post('/:projectId/budget/import-csv', { preHandler: authRequired }, async (request, reply) => {
+  const budgetImportCommitHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
     if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
-    const schema = z.object({ rows: z.array(budgetInput.omit({ sortOrder: true }).extend({ sortOrder: z.number().int().optional() })).min(1).max(5000) });
-    const parsed = schema.safeParse(request.body);
+    const parsed = importRowsSchema.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '导入数据格式不正确，请检查预览中的错误行', parsed.error.flatten());
     const codes = parsed.data.rows.map((r) => r.code);
     if (new Set(codes).size !== codes.length) return failure(reply, 400, 'DUPLICATE_CODES', '导入文件中存在重复清单编号');
@@ -157,13 +188,15 @@ export async function budgetRoutes(app: FastifyInstance) {
         codeToId.set(row.code, saved.id);
         out.push(saved);
       }
-      await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'BudgetItem', entityId: projectId, action: 'IMPORT_CSV', changes: { count: out.length } } });
+      await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'BudgetItem', entityId: projectId, action: parsed.data.sourceFormat === 'XLSX' ? 'IMPORT_XLSX' : 'IMPORT_CSV', changes: { count: out.length, sourceFormat: parsed.data.sourceFormat } } });
       return out;
     }).catch((error: unknown) => {
       if (error instanceof Error && error.message.startsWith('IMPORT_PARENT_MISSING:')) return null;
       throw error;
     });
     if (!created) return failure(reply, 400, 'IMPORT_PARENT_MISSING', '上级编号无法匹配，请确认父级清单在文件中且位于子级之前');
-    return reply.code(201).send(success({ imported: created.length }));
-  });
+    return reply.code(201).send(success({ imported: created.length, sourceFormat: parsed.data.sourceFormat }));
+  };
+  app.post('/:projectId/budget/import', { preHandler: authRequired }, budgetImportCommitHandler);
+  app.post('/:projectId/budget/import-csv', { preHandler: authRequired }, budgetImportCommitHandler);
 }

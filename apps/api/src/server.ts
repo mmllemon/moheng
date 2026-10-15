@@ -57,13 +57,13 @@ await app.register(jwt, { secret: env.JWT_SECRET });
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
 await app.register(swagger, {
   openapi: {
-    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: '2.0.0-rc.1' },
+    info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: '2.1.0-rc.1' },
     servers: [{ url: '/' }],
     tags: [
       { name: 'auth', description: '登录与会话' }, { name: 'projects', description: '项目管理' }, { name: 'contracts', description: '主合同与下游合同' },
       { name: 'budget', description: '目标成本清单' }, { name: 'costs', description: '实际成本' },
       { name: 'progress-bills', description: '进度款' }, { name: 'owner-finance', description: '业主竣工结算与应收账款' }, { name: 'changes', description: '变更签证' },
-      { name: 'analysis', description: '成本分析' }, { name: 'audit-logs', description: '操作追溯与审计记录' }, { name: 'reports', description: '台账 CSV 报表导出' }, { name: 'notifications', description: '基于当前台账的动态待办与预警' }, { name: 'business-parties', description: '往来单位主数据与单位经营档案' },
+      { name: 'analysis', description: '成本分析' }, { name: 'audit-logs', description: '操作追溯与审计记录' }, { name: 'reports', description: '台账 CSV/XLSX 报表、模板设计与版本管理' }, { name: 'notifications', description: '基于当前台账的动态待办与预警' }, { name: 'business-parties', description: '往来单位主数据与单位经营档案' },
     ],
   },
 });

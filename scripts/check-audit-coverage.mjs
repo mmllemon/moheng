@@ -16,11 +16,12 @@ const routes = {
   ownerFinance: await read('apps/api/src/routes/owner-finance.ts'),
   parties: await read('apps/api/src/routes/business-parties.ts'),
   auth: await read('apps/api/src/routes/auth.ts'),
+  reports: await read('apps/api/src/routes/reports.ts'),
 };
 const rules = [
   ['项目创建/基本资料更新/成员角色变更', routes.projects.includes("entity: 'Project'") && routes.projects.includes("entity: 'ProjectMember'") && (routes.projects.match(/auditLog\.create/g) ?? []).length >= 3],
   ['业主主合同登记/更新', (routes.contracts.match(/auditLog\.create/g) ?? []).length >= 2],
-  ['目标成本新增/修改/批量导入', (routes.budget.match(/auditLog\.create/g) ?? []).length >= 3 && routes.budget.includes("action: 'IMPORT_CSV'")],
+  ['目标成本新增/修改/批量导入', (routes.budget.match(/auditLog\.create/g) ?? []).length >= 3 && routes.budget.includes('IMPORT_CSV') && routes.budget.includes('IMPORT_XLSX')],
   ['实际成本新增/合同关联修正/归档', (routes.costs.match(/auditLog\.create/g) ?? []).length >= 3],
   ['进度款新增/状态流转/到账', (routes.progress.match(/auditLog\.create/g) ?? []).length >= 5],
   ['变更签证创建/内部审批/外部确认/凭证核验/金额差异复核', (routes.changes.match(/auditLog\.create/g) ?? []).length >= 5 && routes.changes.includes('INTERNAL_AMOUNT_DISCREPANCY_REVIEW_COMPLETED')],
@@ -29,6 +30,7 @@ const rules = [
   ['业主结算/过账/应收/到账退款/预付款/质保金/分期', routes.ownerFinance.includes('async function audit') && (routes.ownerFinance.match(/audit\(tx/g) ?? []).length >= 10],
   ['往来单位主数据新增/更新', (routes.parties.match(/auditLog\.create/g) ?? []).length >= 2],
   ['管理员创建账号', routes.auth.includes("entity: 'User'") && routes.auth.includes("action: 'USER_CREATED'")],
+  ['报表模板创建/修改/发布/归档/历史恢复', routes.reports.includes('REPORT_TEMPLATE_CREATED') && routes.reports.includes('REPORT_TEMPLATE_UPDATED') && routes.reports.includes('REPORT_TEMPLATE_PUBLISHED') && routes.reports.includes('REPORT_TEMPLATE_ARCHIVED') && routes.reports.includes('REPORT_TEMPLATE_REVISION_RESTORED')],
 ];
 let failed = 0;
 for (const [label, ok] of rules) {

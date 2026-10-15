@@ -140,7 +140,7 @@ export default function Layout() {
   }, [commandPaletteOpen, quickItems, activeCommandIndex]);
 
   const isGlobalOverview = location.pathname === '/';
-  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/parties') || ['/audit-logs', '/reports', '/notifications'].includes(location.pathname);
+  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/audit-logs', '/notifications'].includes(location.pathname);
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const workspacePageLabel = location.pathname === '/workspace/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : workspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = workspacePageLabel ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : '工作台');
@@ -199,15 +199,15 @@ export default function Layout() {
       </header>
       {location.pathname !== '/projects' && <div className={`project-context-bar ${isGlobalContext ? 'global-context-bar' : ''}`}>
         {isGlobalContext ? <>
-          <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : location.pathname === '/audit-logs' ? '全局操作追溯' : location.pathname === '/reports' ? '全局报表中心' : location.pathname === '/notifications' ? '跨项目待办与预警' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : location.pathname === '/audit-logs' ? '按项目权限控制记录可见范围' : location.pathname === '/reports' ? '按项目权限筛选并导出台账' : location.pathname === '/notifications' ? '服务端汇总当前有权访问的事项' : '全部可访问项目'}</div>
-          <div className="context-right">{location.pathname === '/audit-logs' ? '可筛选、查看变更快照并导出' : location.pathname === '/reports' ? 'CSV 只读快照 · 不回写业务数据' : location.pathname === '/notifications' ? '动态待办 · 完成业务后自动更新' : `统计范围：${user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}`}</div>
+          <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : location.pathname === '/audit-logs' ? '全局操作追溯' : location.pathname.startsWith('/reports') ? '全局报表中心' : location.pathname === '/notifications' ? '跨项目待办与预警' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : location.pathname === '/audit-logs' ? '按项目权限控制记录可见范围' : location.pathname.startsWith('/reports') ? '按项目权限筛选、设计版式与导出台账' : location.pathname === '/notifications' ? '服务端汇总当前有权访问的事项' : '全部可访问项目'}</div>
+          <div className="context-right">{location.pathname === '/audit-logs' ? '可筛选、查看变更快照并导出' : location.pathname.startsWith('/reports') ? 'XLSX / CSV 只读快照 · 不回写业务数据' : location.pathname === '/notifications' ? '动态待办 · 完成业务后自动更新' : `统计范围：${user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}`}</div>
         </> : <>
           <div className="context-left"><span className="context-pulse" /><span>当前项目</span>{projectsQuery.isLoading ? <LoadingBlock label="加载项目" /> : <div className="project-switcher"><SelectField className="project-context-select" aria-label="切换当前项目" value={activeProject?.id ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)}><option value="">请选择项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></div>}{activeProject && <StatusBadge status={activeProject.status} />}</div>
           <div className="context-right">数据范围：{activeProject ? activeProject.code : '请选择项目'} <span className="context-separator">·</span> 项目级视图</div>
         </>}
       </div>}
       <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
-      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v2.0.0-rc.1</span></footer>
+      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v2.1.0-rc.1</span></footer>
     </div>
 
     {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>

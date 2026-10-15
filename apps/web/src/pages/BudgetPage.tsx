@@ -128,7 +128,7 @@ function BudgetDialog({ projectId, items, editing, onClose }: { projectId: strin
 type PreviewRow = { code: string; name: string; parentId?: string | null; unit?: string | null; quantity?: number | null; unitPrice?: number | null; totalPrice?: number; sortOrder?: number; error?: string };
 type ImportField = 'code' | 'name' | 'parentId' | 'unit' | 'quantity' | 'unitPrice' | 'totalPrice' | 'sortOrder';
 type ImportMapping = Record<ImportField, string>;
-type RawBudgetImport = { headers: string[]; rows: string[][] };
+type RawBudgetImport = { format: 'csv' | 'xlsx'; headers: string[]; rows: string[][]; cellTypes?: string[][] };
 const importFields: Array<{ key: ImportField; label: string; required?: boolean }> = [
   { key: 'code', label: '清单编号', required: true }, { key: 'name', label: '清单名称', required: true },
   { key: 'parentId', label: '上级编号 / ID' }, { key: 'unit', label: '单位' }, { key: 'quantity', label: '工程量' },
@@ -152,7 +152,7 @@ function suggestImportMapping(headers: string[]): ImportMapping {
 
 export default function BudgetPage() {
   const projectId = useUiStore((state) => state.selectedProjectId)!;
-  const queryClient = useQueryClient(); const fileRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient(); const fileRef = useRef<HTMLInputElement>(null); const xlsxFileRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState<BudgetItem | undefined>(); const [dialogOpen, setDialogOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewRow[] | null>(null); const [rawImport, setRawImport] = useState<RawBudgetImport | null>(null); const [columnMap, setColumnMap] = useState<ImportMapping>({ code: '', name: '', parentId: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: '' }); const [mappingDirty, setMappingDirty] = useState(false); const [notice, setNotice] = useState(''); const [serverError, setServerError] = useState('');
   const budgetQuery = useQuery({ queryKey: ['budget', projectId], queryFn: () => api.get<BudgetItem[]>(`/projects/${projectId}/budget`) });
@@ -176,6 +176,12 @@ export default function BudgetPage() {
       let error = !code ? '缺少编号' : !name ? '缺少名称' : '';
       const quantity = numeric('quantity'); const unitPrice = numeric('unitPrice'); const totalPrice = numeric('totalPrice'); const sortValue = numeric('sortOrder');
       if ([quantity, unitPrice, totalPrice, sortValue].some((n) => Number.isNaN(n))) error = [error, '数值列必须为非负数字'].filter(Boolean).join('；');
+      if (raw.format === 'xlsx' && raw.cellTypes) {
+        const codeIndex = raw.headers.indexOf(mapping.code);
+        const parentIndex = mapping.parentId ? raw.headers.indexOf(mapping.parentId) : -1;
+        if (code && codeIndex >= 0 && raw.cellTypes[index]?.[codeIndex] === 'number') error = [error, '编号单元格是数值类型，可能已丢失前导零；请在 Excel/WPS 中改为文本格式后重新上传'].filter(Boolean).join('；');
+        if (parentId && parentIndex >= 0 && raw.cellTypes[index]?.[parentIndex] === 'number') error = [error, '上级编号单元格是数值类型，可能已丢失前导零；请改为文本格式后重新上传'].filter(Boolean).join('；');
+      }
       return { code, name, parentId, unit: get('unit') || null, quantity, unitPrice, totalPrice: totalPrice ?? undefined, sortOrder: sortValue ?? index, error: error || undefined };
     });
   }
@@ -190,7 +196,7 @@ export default function BudgetPage() {
         if (row.code) seen.add(row.code);
       }
       if (!parsed.length) throw new Error('没有有效数据行');
-      const previewResult = await api.post<{ rows: Array<{ rowNumber: number; valid: boolean; errors: string[] }>; canImport: boolean; invalidCount: number }>(`/projects/${projectId}/budget/import-csv/preview`, {
+      const previewResult = await api.post<{ rows: Array<{ rowNumber: number; valid: boolean; errors: string[] }>; canImport: boolean; invalidCount: number }>(`/projects/${projectId}/budget/import/preview`, {
         rows: parsed.map(({ error: _localError, ...row }) => row),
       });
       const merged = parsed.map((row, index) => {
@@ -200,67 +206,104 @@ export default function BudgetPage() {
       });
       setPreview(merged); setMappingDirty(false);
       if (previewResult.invalidCount) setServerError(`服务端预检发现 ${previewResult.invalidCount} 行有问题。修正错误或调整列映射后重新校验；未导入任何记录。`);
-    } catch (error) { setServerError(error instanceof Error ? error.message : '无法校验 CSV 文件'); setPreview(null); }
+    } catch (error) { setServerError(error instanceof Error ? error.message : `无法校验 ${raw.format.toUpperCase()} 文件`); setPreview(null); }
+  }
+
+  function arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
+    return window.btoa(binary);
   }
 
   async function readImport(file: File) {
-    setNotice(''); setServerError(''); setPreview(null);
+    setNotice(''); setServerError(''); setPreview(null); setRawImport(null);
     try {
-      const content = parseCsv(await file.text());
-      if (content.length < 2) throw new Error('文件没有数据行');
-      const headers = content[0].map((v) => v.trim());
-      if (headers.some((header) => !header)) throw new Error('CSV 存在空表头，请修正后重试。');
-      const normalizedHeaders = headers.map((header) => header.replace(/[\s_（）()]/g, '').toLocaleLowerCase());
-      if (new Set(normalizedHeaders).size !== normalizedHeaders.length) throw new Error('CSV 存在重复表头，请先为每一列设置唯一名称。');
-      const raw = { headers, rows: content.slice(1) };
-      const mapping = suggestImportMapping(headers);
-      if (!mapping.code || !mapping.name) {
-        setRawImport(raw); setColumnMap(mapping); setMappingDirty(true); setPreview([]);
-        if (fileRef.current) fileRef.current.value = '';
-        setServerError('无法自动识别清单编号或清单名称，请在预览中手工设置列映射。');
-        return;
+      if (file.name.toLocaleLowerCase().endsWith('.xlsx')) {
+        if (file.size > 8 * 1024 * 1024) throw new Error('XLSX 文件不能超过 8 MB。');
+        const workbookBase64 = arrayBufferToBase64(await file.arrayBuffer());
+        const inspected = await api.post<{ sheetName: string; headers: string[]; rows: string[][]; cellTypes: string[][]; rowCount: number; maxRows: number }>(`/projects/${projectId}/budget/import-xlsx/inspect`, { filename: file.name, workbookBase64 });
+        const headers = inspected.headers.map((header) => header.trim());
+        if (headers.some((header) => !header)) throw new Error('XLSX 存在空表头，请修正后重试。');
+        const normalizedHeaders = headers.map((header) => header.replace(/[\s_（）()]/g, '').toLocaleLowerCase());
+        if (new Set(normalizedHeaders).size !== normalizedHeaders.length) throw new Error('XLSX 存在重复表头，请为每一列设置唯一名称。');
+        const raw: RawBudgetImport = { format: 'xlsx', headers, rows: inspected.rows, cellTypes: inspected.cellTypes };
+        const mapping = suggestImportMapping(headers);
+        setRawImport(raw); setColumnMap(mapping);
+        if (!mapping.code || !mapping.name) {
+          setMappingDirty(true); setPreview([]); setServerError(`已读取工作表“${inspected.sheetName}”，但无法自动识别编号或名称，请手工设置映射。`); return;
+        }
+        setMappingDirty(false);
+        await buildImportPreview(raw, mapping);
+      } else {
+        if (!file.name.toLocaleLowerCase().endsWith('.csv')) throw new Error('仅支持 .csv 或 .xlsx 文件。');
+        const content = parseCsv(await file.text());
+        if (content.length < 2) throw new Error('文件没有数据行');
+        const headers = content[0].map((v) => v.trim());
+        if (headers.some((header) => !header)) throw new Error('CSV 存在空表头，请修正后重试。');
+        const normalizedHeaders = headers.map((header) => header.replace(/[\s_（）()]/g, '').toLocaleLowerCase());
+        if (new Set(normalizedHeaders).size !== normalizedHeaders.length) throw new Error('CSV 存在重复表头，请先为每一列设置唯一名称。');
+        const raw: RawBudgetImport = { format: 'csv', headers, rows: content.slice(1) };
+        const mapping = suggestImportMapping(headers);
+        if (!mapping.code || !mapping.name) {
+          setRawImport(raw); setColumnMap(mapping); setMappingDirty(true); setPreview([]);
+          setServerError('无法自动识别清单编号或清单名称，请在预览中手工设置列映射。');
+          return;
+        }
+        setRawImport(raw); setColumnMap(mapping); setMappingDirty(false);
+        await buildImportPreview(raw, mapping);
       }
-      setRawImport(raw); setColumnMap(mapping); setMappingDirty(false);
-      await buildImportPreview(raw, mapping);
-    } catch (error) { setServerError(error instanceof Error ? error.message : '无法读取文件'); }
-    if (fileRef.current) fileRef.current.value = '';
+    } catch (error) { setServerError(error instanceof ApiError ? error.message : error instanceof Error ? error.message : '无法读取文件'); }
+    finally { if (fileRef.current) fileRef.current.value = ''; if (xlsxFileRef.current) xlsxFileRef.current.value = ''; }
   }
 
   async function confirmImport() {
     if (!preview || !rawImport) return;
     if (mappingDirty) { setServerError('列映射已更改，请先点击“重新校验映射”。'); return; }
     const invalid = preview.filter((row) => row.error);
-    if (invalid.length) { setServerError(`还有 ${invalid.length} 行存在错误，请修正 CSV 后重新上传。`); return; }
+    if (invalid.length) { setServerError(`还有 ${invalid.length} 行存在错误，请修正 ${rawImport.format.toUpperCase()} 后重新上传。`); return; }
     setServerError(''); setNotice('');
     try {
       const cleanRows = preview.map(({ error: _error, ...row }) => row);
-      const preflight = await api.post<{ canImport: boolean; invalidCount: number; rows: Array<{ rowNumber: number; valid: boolean; errors: string[] }> }>(`/projects/${projectId}/budget/import-csv/preview`, { rows: cleanRows });
+      const preflight = await api.post<{ canImport: boolean; invalidCount: number; rows: Array<{ rowNumber: number; valid: boolean; errors: string[] }> }>(`/projects/${projectId}/budget/import/preview`, { rows: cleanRows });
       if (!preflight.canImport) {
         setPreview(preview.map((row, index) => ({ ...row, error: preflight.rows[index]?.errors.join('；') || row.error || undefined })));
         setServerError('预检后发现数据或编号状态已变化，未导入任何记录。请检查错误行后重试。');
         return;
       }
-      const result = await api.post<{ imported: number }>(`/projects/${projectId}/budget/import-csv`, { rows: cleanRows });
+      const result = await api.post<{ imported: number; sourceFormat: 'CSV' | 'XLSX' }>(`/projects/${projectId}/budget/import`, { rows: cleanRows, sourceFormat: rawImport.format.toUpperCase() });
       await queryClient.invalidateQueries({ queryKey: ['budget', projectId] }); await queryClient.invalidateQueries({ queryKey: ['analysis', projectId] }); await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      setNotice(`已成功导入 ${result.imported} 条清单记录。`); setPreview(null);
+      setNotice(`已成功导入 ${result.imported} 条 ${result.sourceFormat} 清单记录。`); setPreview(null); setRawImport(null);
     } catch (error) { setServerError(error instanceof ApiError ? error.message : '导入失败'); }
+  }
+
+  async function downloadXlsxTemplate() {
+    setServerError(''); setNotice('');
+    try {
+      const blob = await api.download(`/projects/${projectId}/budget/import-template.xlsx`);
+      const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = '墨衡-目标成本导入模板.xlsx'; document.body.appendChild(anchor); anchor.click(); anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+      setNotice('已下载原生 XLSX 目标成本模板，请按“填报说明”填写后导入。');
+    } catch (error) { setServerError(error instanceof ApiError ? error.message : '下载 XLSX 模板失败'); }
   }
 
   if (budgetQuery.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
   if (budgetQuery.error) return <div className="page-wrap"><ErrorBlock message={(budgetQuery.error as Error).message} retry={() => void budgetQuery.refetch()} /></div>;
   return <div className="page-wrap">
-    <PageHeader eyebrow="PROJECT COST / TARGET BUDGET" title="预算与目标成本" subtitle="维护清单层级、计划工程量和目标成本，为实际成本偏差提供对比基准。" actions={<><Button variant="secondary" onClick={() => exportCsv([], `目标成本导入模板.csv`)}><Download size={15} />下载模板</Button><Button variant="secondary" onClick={() => exportCsv(rows, `目标成本清单-${projectId}.csv`)}><Download size={15} />导出 CSV</Button><Button variant="secondary" onClick={() => fileRef.current?.click()}><Upload size={15} />导入 CSV</Button><Button onClick={() => { setEditing(undefined); setDialogOpen(true); }}><Plus size={16} />新增条目</Button></>} />
-    <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} />
+    <PageHeader eyebrow="PROJECT COST / TARGET BUDGET" title="预算与目标成本" subtitle="维护清单层级、计划工程量和目标成本，为实际成本偏差提供对比基准。" actions={<><Button variant="secondary" onClick={() => exportCsv([], `目标成本导入模板.csv`)}><Download size={15} />CSV 模板</Button><Button variant="secondary" onClick={() => void downloadXlsxTemplate()}><FileSpreadsheet size={15} />XLSX 模板</Button><Button variant="secondary" onClick={() => exportCsv(rows, `目标成本清单-${projectId}.csv`)}><Download size={15} />导出 CSV</Button><Button variant="secondary" onClick={() => fileRef.current?.click()}><Upload size={15} />导入 CSV</Button><Button variant="secondary" onClick={() => xlsxFileRef.current?.click()}><FileSpreadsheet size={15} />导入 XLSX</Button><Button onClick={() => { setEditing(undefined); setDialogOpen(true); }}><Plus size={16} />新增条目</Button></>} />
+    <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} /><input ref={xlsxFileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} />
     {notice && <div className="success-notice"><FileSpreadsheet size={16} />{notice}</div>}{serverError && <div className="form-alert">{serverError}</div>}
     <div className="budget-summary-grid"><article className="budget-summary-item"><span>目标成本总额</span><strong>{formatMoney(rootAndLeafStats.targetCost)}</strong><small>仅汇总末级清单项，避免父子层级重复计算</small></article><article className="budget-summary-item"><span>清单条目</span><strong>{rows.length.toLocaleString('zh-CN')} <em>条</em></strong><small>末级清单 {rootAndLeafStats.leafCount} 条</small></article><article className="budget-summary-item"><span>实际已录成本</span><strong>{formatMoney(analysisQuery.data?.actualCost)}</strong><small>来自成本录入模块</small></article><article className="budget-summary-item"><span>目标成本偏差</span><strong className={(analysisQuery.data?.actualCost ?? 0) > rootAndLeafStats.targetCost ? 'text-danger' : 'text-success'}>{rootAndLeafStats.targetCost ? percentage(((analysisQuery.data?.actualCost ?? 0) - rootAndLeafStats.targetCost) / rootAndLeafStats.targetCost) : '—'}</strong><small>实际成本 ÷ 目标成本 − 1</small></article></div>
     <section className="panel data-table-panel"><div className="panel-heading"><div><h3>目标成本清单</h3><p><FolderTree size={13} /> 树形层级 · 选择条目可编辑 · 金额单位：人民币元</p></div><div className="table-heading-actions"><button className="button button-ghost button-small" onClick={() => exportCsv(rows, `目标成本清单-${projectId}.csv`)}><Download size={14} />导出</button></div></div>
-      {!rows.length ? <EmptyState title="还没有目标成本清单" description="可逐条新增，也可以通过 CSV 导入已有清单数据。" action={() => { setEditing(undefined); setDialogOpen(true); }} /> : <div className="table-scroll"><table className="data-table budget-table"><thead><tr><th>清单编号</th><th>清单名称</th><th>单位</th><th className="align-right">工程量</th><th className="align-right">综合单价</th><th className="align-right">目标合价</th><th className="align-right">已录成本</th><th>操作</th></tr></thead><tbody>{treeRows.map(({ node, depth }) => {
+      {!rows.length ? <EmptyState title="还没有目标成本清单" description="可逐条新增，也可以通过 CSV 或 XLSX 导入已有清单数据。" action={() => { setEditing(undefined); setDialogOpen(true); }} /> : <div className="table-scroll"><table className="data-table budget-table"><thead><tr><th>清单编号</th><th>清单名称</th><th>单位</th><th className="align-right">工程量</th><th className="align-right">综合单价</th><th className="align-right">目标合价</th><th className="align-right">已录成本</th><th>操作</th></tr></thead><tbody>{treeRows.map(({ node, depth }) => {
         const actual = rows.length ? (analysisQuery.data?.byBudget.find((b) => b.id === node.id)?.actualCost ?? 0) : 0;
         const isParent = node.children.length > 0;
         return <tr key={node.id} className={isParent ? 'budget-parent-row' : ''}><td><span className="budget-code">{node.code}</span></td><td><span className="tree-name" style={{ paddingLeft: `${depth * 18}px` }}>{isParent ? <span className="tree-branch">−</span> : <span className="tree-leaf-dot" />}{node.name}</span></td><td>{node.unit || '—'}</td><td className="align-right numeric">{node.quantity == null ? '—' : node.quantity.toLocaleString('zh-CN', { maximumFractionDigits: 3 })}</td><td className="align-right numeric">{node.unitPrice == null ? '—' : formatMoney(node.unitPrice)}</td><td className="align-right numeric">{formatMoney(node.totalPrice)}</td><td className={`align-right numeric ${actual > node.totalPrice ? 'text-danger' : ''}`}>{formatMoney(actual)}</td><td><button className="table-action" onClick={() => { setEditing(node); setDialogOpen(true); }}><Pencil size={14} />编辑</button></td></tr>;
       })}</tbody><tfoot><tr><td colSpan={5}>合计（仅末级清单汇总）</td><td className="align-right numeric">{formatMoney(rootAndLeafStats.targetCost)}</td><td className="align-right numeric">{formatMoney(analysisQuery.data?.actualCost)}</td><td /></tr></tfoot></table></div>}
     </section>
-    <div className="data-note"><span className="note-mark">i</span><span>本版 CSV 导入要求父级清单在子级之前；导入前会校验必填列、编号重复和数值格式。原生 .xlsx 模板映射尚未实现，可在 Excel 中另存为 CSV UTF-8 后导入。</span></div>
+    <div className="data-note"><span className="note-mark">i</span><span>支持 CSV 与原生 XLSX 导入。XLSX 读取“目标成本清单”工作表的静态值，最多 5,000 行、8 MB；编号/上级编号须为文本，公式不接受。所有格式都执行服务端重复编号、父级关系、数值及确认前复检；任一错误都会阻止整批导入。</span></div>
 
     {dialogOpen && <BudgetDialog projectId={projectId} items={rows} editing={editing} onClose={() => setDialogOpen(false)} />}
     {preview && <div className="modal-backdrop"><div className="dialog import-dialog"><div className="dialog-header"><div><span className="eyebrow">IMPORT PREVIEW</span><h2>导入预览</h2><p>共 {preview.length} 行，错误行不会提交。</p></div><button className="icon-button" onClick={() => { setPreview(null); setRawImport(null); setMappingDirty(false); }} aria-label="关闭导入预览"><X size={18} /></button></div><div className="import-mapping-panel"><div className="import-mapping-heading"><div><strong>字段映射</strong><small>系统先按常见中英文表头自动匹配，请核对后重新校验。</small></div><Button type="button" variant="secondary" onClick={() => rawImport && void buildImportPreview(rawImport, columnMap)} disabled={!rawImport || !columnMap.code || !columnMap.name || !mappingDirty}>重新校验映射</Button></div><div className="import-mapping-grid">{importFields.map((field) => <label className="import-mapping-field" key={field.key}><span>{field.label}{field.required ? ' *' : ''}</span><SelectField aria-label={`${field.label}来源列`} value={columnMap[field.key]} onChange={(event) => { setColumnMap((current) => ({ ...current, [field.key]: event.target.value })); setMappingDirty(true); }}><option value="">不映射</option>{rawImport?.headers.map((header, index) => <option key={`${header}-${index}`} value={header}>{header}</option>)}</SelectField></label>)}</div>{mappingDirty && <small className="import-mapping-warning">当前映射尚未重新校验，不能确认导入。</small>}</div><div className="import-preview-wrap"><table className="data-table"><thead><tr><th>行</th><th>编号</th><th>名称</th><th>上级编号/ID</th><th className="align-right">数量</th><th className="align-right">单价</th><th>校验</th></tr></thead><tbody>{preview.slice(0, 100).map((row, i) => <tr className={row.error ? 'import-row-error' : ''} key={`${row.code}-${i}`}><td>{i + 2}</td><td>{row.code}</td><td>{row.name}</td><td>{row.parentId || '—'}</td><td className="align-right">{row.quantity ?? '—'}</td><td className="align-right">{row.unitPrice ?? '—'}</td><td>{row.error ? <span className="text-danger">{row.error}</span> : <span className="text-success">通过</span>}</td></tr>)}</tbody></table>{preview.length > 100 && <div className="preview-more">仅展示前 100 行，提交时将校验全部 {preview.length} 行。</div>}</div>{serverError && <div className="form-alert">{serverError}</div>}<div className="dialog-footer"><Button variant="secondary" onClick={() => { setPreview(null); setRawImport(null); setMappingDirty(false); }}>取消</Button><Button onClick={() => void confirmImport()} disabled={!rawImport || mappingDirty || preview.some((row) => row.error) || !columnMap.code || !columnMap.name}><Import size={15} />确认导入 {preview.length} 行</Button></div></div></div>}

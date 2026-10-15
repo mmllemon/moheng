@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import ReportCenterPage from './pages/ReportCenterPage';
+import ReportDesignerPage from './pages/ReportDesignerPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProjectMembersPage from './pages/ProjectMembersPage';
 import ProjectOverviewPage from './pages/ProjectOverviewPage';
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
         <Route path="reports" element={<ReportCenterPage />} />
+        <Route path="reports/designer" element={<ReportDesignerPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="parties" element={<BusinessPartiesPage />} />
         <Route path="parties/:id" element={<BusinessPartyDetailPage />} />

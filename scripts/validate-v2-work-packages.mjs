@@ -16,6 +16,7 @@ const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const server = await read('apps/api/src/server.ts');
 const reportRoute = await read('apps/api/src/routes/reports.ts');
+const reportData = await read('apps/api/src/lib/report-data.ts');
 const notifyRoute = await read('apps/api/src/routes/notifications.ts');
 const budgetRoute = await read('apps/api/src/routes/budget.ts');
 const projectRoute = await read('apps/api/src/routes/projects.ts');
@@ -36,24 +37,24 @@ const acceptance = await read('docs/阶段验收记录-v2.0.0-rc.1.md');
 const windowsGate = await read('scripts/windows/verify-release-candidate.ps1');
 const e2eChecklist = await read('docs/WP8-Windows与浏览器端到端验收清单-v2.0.0-rc.1.md');
 
-check('all package and API documentation versions use v2.0.0-rc.1',
-  rootPackage.version === '2.0.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && server.includes("version: '2.0.0-rc.1'"));
+check('package and API versions agree on v2.1.0-rc.1 while retaining Node.js 24+ gate',
+  rootPackage.version === '2.1.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
+  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && server.includes("version: '2.1.0-rc.1'"));
 check('release command combines original regression contracts, new WP checks and source audit coverage',
   rootPackage.scripts['validate:release-candidate'].includes('validate-release-candidate.mjs') &&
   rootPackage.scripts['validate:release-candidate'].includes('validate-v2-work-packages.mjs') &&
   rootPackage.scripts['validate:release-candidate'].includes('check-audit-coverage.mjs'));
 check('eight standard CSV report types are declared and routed behind authenticated API',
-  ['target-cost','actual-cost','progress-bills','changes','owner-receivables','owner-receipts','downstream-contracts','downstream-payables'].every((key) => reportRoute.includes(`'${key}'`)) &&
+  ['target-cost','actual-cost','progress-bills','changes','owner-receivables','owner-receipts','downstream-contracts','downstream-payables'].every((key) => reportData.includes(`'${key}'`)) &&
   reportRoute.includes('preHandler: authRequired') && server.includes("prefix: '/api/reports'"));
 check('report export filters project IDs on the server and rejects inaccessible explicit project scope',
-  reportRoute.includes("members: { some: { userId: user.sub } }") && reportRoute.includes('availableIds.includes(parsed.data.projectId)') && reportRoute.includes('PROJECT_ACCESS_DENIED'));
+  reportData.includes("members: { some: { userId: user.sub } }") && reportData.includes('availableIds.includes(filters.projectId)') && reportData.includes('PROJECT_ACCESS_DENIED'));
 check('CSV export applies BOM, quoting, formula neutralization and unit test coverage',
   csv.includes('\\uFEFF') && csv.includes('replace(/"/g,') && csv.includes("text = `'${text}`") &&
   csvTests.includes('formula cells') && csvTests.includes('quotes'));
 check('target-cost import shows column mapping, row-level errors and second server preflight before commit',
   budgetPage.includes('suggestImportMapping') && budgetPage.includes('字段映射') && budgetPage.includes('重新校验映射') &&
-  budgetPage.includes('/budget/import-csv/preview') && budgetPage.includes('if (!preflight.canImport)') && budgetPage.includes('/budget/import-csv'));
+  budgetPage.includes('/budget/import/preview') && budgetPage.includes('if (!preflight.canImport)') && budgetPage.includes('/budget/import') && budgetRoute.includes('import-csv/preview'));
 check('target-cost import preview checks existing codes, duplicate rows and parent-before-child references',
   budgetRoute.includes('在导入文件中重复') && budgetRoute.includes('已存在于当前项目') && budgetRoute.includes('位于子级之后') && budgetRoute.includes('IMPORT_PARENT_MISSING'));
 check('project member management has a route, workspace tab and server-side role assignment checks',
@@ -72,7 +73,7 @@ check('notification UI labels the list as dynamic tasks, not persistent read/unr
 check('report and notification centers are routable, searchable in command palette, and globally scoped in header',
   app.includes('path="reports" element={<ReportCenterPage />') && app.includes('path="notifications" element={<NotificationsPage />') &&
   layout.includes("to: '/reports'") && layout.includes("to: '/notifications'") &&
-  layout.includes("location.pathname === '/reports' ? '全局报表中心'") && layout.includes("location.pathname === '/notifications' ? '跨项目待办与预警'"));
+  layout.includes("location.pathname.startsWith('/reports') ? '全局报表中心'") && layout.includes("location.pathname === '/notifications' ? '跨项目待办与预警'") && app.includes('path="reports/designer"'));
 check('budget drafts are browser-local only and do not save until explicit form submission',
   budgetPage.includes('moheng:budget-draft:') && budgetPage.includes('localStorage.setItem(draftKey') &&
   budgetPage.includes('点击“保存条目”后才会写入正式台账') && budgetPage.includes('await api.post(`/projects/${projectId}/budget/items`'));

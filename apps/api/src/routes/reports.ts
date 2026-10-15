@@ -1,116 +1,412 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { authRequired, authUser } from '../lib/auth.js';
+import { authRequired, authUser, type AuthUser } from '../lib/auth.js';
 import { buildCsv } from '../lib/csv-export.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
-import { calculateDownstreamCurrentAmount } from '../lib/downstream-contract-math.js';
+import { canAccessProject } from '../lib/project-access.js';
+import { loadReportSnapshot, makeReportFields, reportCatalog, reportKeys, type ReportKey, type ReportFilters } from '../lib/report-data.js';
+import { buildReportWorkbook, reportKeyToFilename, reportRowToJson } from '../lib/report-xlsx.js';
+import { createDefaultDefinition, validateReportTemplateDefinition, type ReportTemplateDefinition, type ReportTemplateScope } from '../lib/report-template.js';
 
-const reportCatalog = [
-  { key: 'target-cost', label: '目标成本清单', description: '项目清单编号、父级、工程量、单价、目标合价与最近更新时间。', dateField: '更新时间', rowLimit: 10000 },
-  { key: 'actual-cost', label: '实际成本台账', description: '成本发生日期、分类、金额、业务对象、合同及清单关联。', dateField: '成本日期', rowLimit: 10000 },
-  { key: 'progress-bills', label: '业主进度款申报', description: '申报、核定、到账汇总与主合同关联。', dateField: '申报日期', rowLimit: 10000 },
-  { key: 'changes', label: '变更签证台账', description: '送审金额、内部审批、外部确认状态与实际生效金额。', dateField: '发生日期', rowLimit: 10000 },
-  { key: 'owner-receivables', label: '业主应收台账', description: '毛额、扣款、净应收、到期日与当前状态；不重算收款分配余额。', dateField: '入账日期', rowLimit: 10000 },
-  { key: 'owner-receipts', label: '业主到账与退款流水', description: '到账和退款独立记录，保留类型与原始流水关联。', dateField: '到账日期', rowLimit: 10000 },
-  { key: 'downstream-contracts', label: '分供合同台账', description: '原始合同额、有效调整汇总、状态与往来单位。', dateField: '创建日期', rowLimit: 10000 },
-  { key: 'downstream-payables', label: '分供应付台账', description: '已过账应付、扣款、净应付、到期日与关联合同。', dateField: '入账日期', rowLimit: 10000 },
-] as const;
-
-type ReportKey = typeof reportCatalog[number]['key'];
 const querySchema = z.object({
   projectId: z.string().trim().optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
-function toUtcDay(value: string | undefined, nextDay = false): Date | undefined {
-  if (!value) return undefined;
-  const [y, m, d] = value.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d + (nextDay ? 1 : 0)));
-  const check = new Date(Date.UTC(y, m - 1, d));
-  if (check.getUTCFullYear() !== y || check.getUTCMonth() !== m - 1 || check.getUTCDate() !== d) return new Date(Number.NaN);
-  return date;
+const exportQuerySchema = querySchema.extend({ templateId: z.string().trim().min(1).optional(), printAll: z.enum(['true']).optional() });
+const reportKeySchema = z.enum(reportKeys);
+const templateCreateSchema = z.object({
+  reportKey: reportKeySchema,
+  name: z.string().trim().min(1).max(100),
+  description: z.string().trim().max(240).optional().default(''),
+  scope: z.enum(['PERSONAL', 'PROJECT', 'SYSTEM']).default('PERSONAL'),
+  projectId: z.string().trim().min(1).optional().nullable(),
+  definition: z.unknown(),
+});
+const templateUpdateSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  description: z.string().trim().max(240).optional().default(''),
+  expectedVersion: z.number().int().positive(),
+  definition: z.unknown(),
+});
+
+function queryFilters(value: z.infer<typeof querySchema>): ReportFilters {
+  return { projectId: value.projectId || undefined, from: value.from, to: value.to };
+}
+
+async function accessibleProjectIds(user: AuthUser): Promise<string[]> {
+  const projects = await prisma.project.findMany({
+    where: { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) },
+    select: { id: true },
+  });
+  return projects.map((project) => project.id);
+}
+
+async function canReadTemplate(template: { scope: string; status: string; ownerUserId: string | null; projectId: string | null }, user: AuthUser): Promise<boolean> {
+  if (template.scope === 'SYSTEM') return template.status === 'PUBLISHED' || user.role === 'ADMIN';
+  if (template.scope === 'PERSONAL') return template.ownerUserId === user.sub;
+  if (template.scope === 'PROJECT' && template.projectId) {
+    if (!(await canAccessProject(user.sub, user.role, template.projectId))) return false;
+    if (template.status === 'PUBLISHED') return true;
+    return template.ownerUserId === user.sub || user.role === 'ADMIN' || canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER']);
+  }
+  return false;
+}
+
+async function canEditTemplate(template: { scope: string; ownerUserId: string | null; projectId: string | null }, user: AuthUser): Promise<boolean> {
+  if (template.scope === 'SYSTEM') return user.role === 'ADMIN';
+  if (template.scope === 'PERSONAL') return template.ownerUserId === user.sub;
+  if (template.scope === 'PROJECT' && template.projectId) return canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER']);
+  return false;
+}
+
+function templateResponse(template: {
+  id: string; reportKey: string; name: string; description: string | null; scope: string; projectId: string | null;
+  ownerUserId: string | null; version: number; publishedVersion: number | null; status: string; definition: unknown;
+  publishedDefinition: unknown; createdById: string; updatedById: string; createdAt: Date; updatedAt: Date;
+}) {
+  return {
+    id: template.id, reportKey: template.reportKey, name: template.name, description: template.description ?? '',
+    scope: template.scope, projectId: template.projectId, ownerUserId: template.ownerUserId,
+    version: template.version, publishedVersion: template.publishedVersion, status: template.status,
+    definition: template.definition, publishedDefinition: template.publishedDefinition,
+    createdById: template.createdById, updatedById: template.updatedById,
+    createdAt: template.createdAt, updatedAt: template.updatedAt,
+  };
 }
 
 export async function reportRoutes(app: FastifyInstance) {
-  app.get('/catalog', { preHandler: authRequired }, async () => success(reportCatalog));
+  app.get('/catalog', { preHandler: authRequired }, async () => success(reportCatalog.map((report) => ({ ...report, fields: makeReportFields(report.key) }))));
+
+  app.get('/templates', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const parsed = z.object({ reportKey: reportKeySchema.optional(), projectId: z.string().optional() }).safeParse(request.query);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '模板筛选条件不正确', parsed.error.flatten());
+    const projectIds = await accessibleProjectIds(user);
+    if (parsed.data.projectId && !projectIds.includes(parsed.data.projectId)) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目报表模板的权限');
+    const candidateTemplates = await prisma.reportTemplate.findMany({
+      where: {
+        ...(parsed.data.reportKey ? { reportKey: parsed.data.reportKey } : {}),
+        status: { not: 'ARCHIVED' },
+        OR: [
+          { scope: 'SYSTEM', status: 'PUBLISHED' },
+          ...(user.role === 'ADMIN' ? [{ scope: 'SYSTEM' as const, status: 'DRAFT' as const }] : []),
+          { scope: 'PERSONAL', ownerUserId: user.sub },
+          { scope: 'PROJECT', projectId: { in: parsed.data.projectId ? [parsed.data.projectId] : projectIds }, status: 'PUBLISHED' },
+          { scope: 'PROJECT', projectId: { in: parsed.data.projectId ? [parsed.data.projectId] : projectIds }, status: 'DRAFT' },
+        ],
+      },
+      orderBy: [{ scope: 'asc' }, { updatedAt: 'desc' }],
+    });
+    const templates = await Promise.all(candidateTemplates
+      .filter((template) => template.scope !== 'PROJECT' || template.projectId === null || projectIds.includes(template.projectId))
+      .map(async (template) => ({ template, readable: await canReadTemplate(template, user) })));
+    return success(await Promise.all(templates.filter((item) => item.readable).map(async ({ template }) => ({
+      id: template.id, reportKey: template.reportKey, name: template.name, description: template.description ?? '', scope: template.scope,
+      projectId: template.projectId, version: template.version, publishedVersion: template.publishedVersion, status: template.status,
+      updatedAt: template.updatedAt, createdById: template.createdById, ownerUserId: template.ownerUserId, editable: await canEditTemplate(template, user),
+    }))));
+  });
+
+  app.post('/templates', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const parsed = templateCreateSchema.safeParse(request.body);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '模板信息不完整或格式不正确', parsed.error.flatten());
+    const input = parsed.data;
+    if (input.scope === 'SYSTEM' && user.role !== 'ADMIN') return failure(reply, 403, 'REPORT_TEMPLATE_ADMIN_REQUIRED', '只有系统管理员可以创建系统模板');
+    if (input.scope === 'PROJECT') {
+      if (!input.projectId) return failure(reply, 400, 'PROJECT_ID_REQUIRED', '项目模板必须指定项目');
+      if (!(await canAccessProject(user.sub, user.role, input.projectId, ['OWNER', 'MANAGER']))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '只有项目负责人或项目经理可以创建项目共享模板');
+      const project = await prisma.project.findFirst({ where: { id: input.projectId, deletedAt: null }, select: { id: true } });
+      if (!project) return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
+    }
+    const validated = validateReportTemplateDefinition(input.definition, input.reportKey);
+    if (!validated.success) return failure(reply, 400, 'REPORT_TEMPLATE_INVALID', validated.message, validated.details);
+    if (!validated.data.columns.some((column) => column.visible)) return failure(reply, 400, 'REPORT_TEMPLATE_NO_VISIBLE_COLUMNS', '至少需要保留一列可见字段');
+    const scope = input.scope as ReportTemplateScope;
+    const created = await prisma.$transaction(async (tx) => {
+      const template = await tx.reportTemplate.create({
+        data: {
+          reportKey: input.reportKey, name: input.name, description: input.description, scope,
+          projectId: scope === 'PROJECT' ? input.projectId! : null,
+          ownerUserId: scope === 'PERSONAL' ? user.sub : scope === 'PROJECT' ? user.sub : null,
+          version: 1, status: 'DRAFT', definition: validated.data, createdById: user.sub, updatedById: user.sub,
+        },
+      });
+      await tx.reportTemplateRevision.create({ data: { templateId: template.id, version: 1, action: 'CREATED', definition: validated.data, createdById: user.sub } });
+      await tx.auditLog.create({ data: { projectId: scope === 'PROJECT' ? input.projectId! : null, userId: user.sub, entity: 'ReportTemplate', entityId: template.id, action: 'REPORT_TEMPLATE_CREATED', changes: { reportKey: input.reportKey, name: input.name, scope, version: 1 } } });
+      return template;
+    });
+    return reply.code(201).send(success(templateResponse(created)));
+  });
+
+  app.get('/templates/:id', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { id } = request.params as { id: string };
+    const template = await prisma.reportTemplate.findUnique({ where: { id } });
+    if (!template) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+    if (!(await canReadTemplate(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有访问该报表模板的权限');
+    const editable = await canEditTemplate(template, user);
+    const definition = template.status === 'PUBLISHED' && template.publishedDefinition && !editable ? template.publishedDefinition : template.definition;
+    return success({ ...templateResponse(template), definition, editable });
+  });
+
+  app.patch('/templates/:id', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { id } = request.params as { id: string };
+    const parsed = templateUpdateSchema.safeParse(request.body);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '模板信息不完整或格式不正确', parsed.error.flatten());
+    const current = await prisma.reportTemplate.findUnique({ where: { id } });
+    if (!current) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+    if (!(await canEditTemplate(current, user))) return failure(reply, 403, 'REPORT_TEMPLATE_EDIT_DENIED', '你没有编辑该模板的权限');
+    if (current.version !== parsed.data.expectedVersion) return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后重新编辑');
+    if (current.status === 'ARCHIVED') return failure(reply, 409, 'REPORT_TEMPLATE_ARCHIVED', '归档模板不能继续修改');
+    const validated = validateReportTemplateDefinition(parsed.data.definition, current.reportKey as ReportKey);
+    if (!validated.success) return failure(reply, 400, 'REPORT_TEMPLATE_INVALID', validated.message, validated.details);
+    if (!validated.data.columns.some((column) => column.visible)) return failure(reply, 400, 'REPORT_TEMPLATE_NO_VISIBLE_COLUMNS', '至少需要保留一列可见字段');
+    try {
+      const updated = await prisma.$transaction(async (tx) => {
+        const changed = await tx.reportTemplate.updateMany({
+          where: { id, version: parsed.data.expectedVersion, status: { not: 'ARCHIVED' } },
+          data: {
+            name: parsed.data.name, description: parsed.data.description, definition: validated.data,
+            version: { increment: 1 }, status: current.publishedDefinition ? 'PUBLISHED' : 'DRAFT', updatedById: user.sub,
+          },
+        });
+        if (changed.count !== 1) throw new Error('REPORT_TEMPLATE_VERSION_CONFLICT');
+        const next = await tx.reportTemplate.findUniqueOrThrow({ where: { id } });
+        await tx.reportTemplateRevision.create({ data: { templateId: id, version: next.version, action: 'UPDATED', definition: validated.data, createdById: user.sub } });
+        await tx.auditLog.create({ data: { projectId: current.projectId, userId: user.sub, entity: 'ReportTemplate', entityId: id, action: 'REPORT_TEMPLATE_UPDATED', changes: { name: next.name, version: next.version, status: next.status } } });
+        return next;
+      });
+      return success(templateResponse(updated));
+    } catch (error) {
+      if (error instanceof Error && error.message === 'REPORT_TEMPLATE_VERSION_CONFLICT') return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后重新编辑');
+      throw error;
+    }
+  });
+
+  app.post('/templates/:id/publish', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { id } = request.params as { id: string };
+    const template = await prisma.reportTemplate.findUnique({ where: { id } });
+    if (!template) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+    if (!(await canEditTemplate(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_PUBLISH_DENIED', '你没有发布该模板的权限');
+    if (template.status === 'ARCHIVED') return failure(reply, 409, 'REPORT_TEMPLATE_ARCHIVED', '归档模板不能发布');
+    const definition = validateReportTemplateDefinition(template.definition, template.reportKey as ReportKey);
+    if (!definition.success) return failure(reply, 400, 'REPORT_TEMPLATE_INVALID', definition.message, definition.details);
+    let updated: NonNullable<typeof template>;
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        const changed = await tx.reportTemplate.updateMany({
+          where: { id, version: template.version, status: { not: 'ARCHIVED' } },
+          data: { publishedDefinition: definition.data, publishedVersion: template.version, status: 'PUBLISHED', updatedById: user.sub },
+        });
+        if (changed.count !== 1) throw new Error('REPORT_TEMPLATE_VERSION_CONFLICT');
+        const result = await tx.reportTemplate.findUniqueOrThrow({ where: { id } });
+        await tx.reportTemplateRevision.create({ data: { templateId: id, version: result.version, action: 'PUBLISHED', definition: definition.data, createdById: user.sub } });
+        await tx.auditLog.create({ data: { projectId: template.projectId, userId: user.sub, entity: 'ReportTemplate', entityId: id, action: 'REPORT_TEMPLATE_PUBLISHED', changes: { reportKey: result.reportKey, name: result.name, version: result.version, scope: result.scope } } });
+        return result;
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'REPORT_TEMPLATE_VERSION_CONFLICT') return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后重新发布');
+      throw error;
+    }
+    return success(templateResponse(updated));
+  });
+
+  app.post('/templates/:id/duplicate', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { id } = request.params as { id: string };
+    const source = await prisma.reportTemplate.findUnique({ where: { id } });
+    if (!source) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+    if (!(await canReadTemplate(source, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有访问该报表模板的权限');
+    const inputName = z.object({ name: z.string().trim().min(1).max(100).optional() }).safeParse(request.body ?? {});
+    if (!inputName.success) return failure(reply, 400, 'VALIDATION_ERROR', '模板名称不正确');
+    const definition = source.status === 'PUBLISHED' && source.publishedDefinition ? source.publishedDefinition : source.definition;
+    const created = await prisma.$transaction(async (tx) => {
+      const template = await tx.reportTemplate.create({ data: {
+        reportKey: source.reportKey, name: inputName.data.name ?? `${source.name} - 副本`, description: source.description,
+        scope: 'PERSONAL', projectId: null, ownerUserId: user.sub, version: 1, status: 'DRAFT',
+        definition: definition as object, createdById: user.sub, updatedById: user.sub,
+      } });
+      await tx.reportTemplateRevision.create({ data: { templateId: template.id, version: 1, action: 'DUPLICATED', definition: definition as object, createdById: user.sub } });
+      await tx.auditLog.create({ data: { userId: user.sub, entity: 'ReportTemplate', entityId: template.id, action: 'REPORT_TEMPLATE_DUPLICATED', changes: { sourceTemplateId: source.id, sourceName: source.name } } });
+      return template;
+    });
+    return reply.code(201).send(success(templateResponse(created)));
+  });
+
+  app.post('/templates/:id/archive', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { id } = request.params as { id: string };
+    const parsed = z.object({ expectedVersion: z.number().int().positive() }).safeParse(request.body);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '归档请求缺少有效的模板版本号');
+    const template = await prisma.reportTemplate.findUnique({ where: { id } });
+    if (!template) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+    if (!(await canEditTemplate(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_EDIT_DENIED', '你没有归档该模板的权限');
+    if (template.version !== parsed.data.expectedVersion) return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后再归档');
+    if (template.status === 'ARCHIVED') return failure(reply, 409, 'REPORT_TEMPLATE_ARCHIVED', '模板已经归档');
+    try {
+      const updated = await prisma.$transaction(async (tx) => {
+        const changed = await tx.reportTemplate.updateMany({
+          where: { id, version: parsed.data.expectedVersion, status: { not: 'ARCHIVED' } },
+          data: { status: 'ARCHIVED', updatedById: user.sub },
+        });
+        if (changed.count !== 1) throw new Error('REPORT_TEMPLATE_VERSION_CONFLICT');
+        const result = await tx.reportTemplate.findUniqueOrThrow({ where: { id } });
+        await tx.reportTemplateRevision.create({ data: { templateId: id, version: result.version, action: 'ARCHIVED', definition: template.definition as object, createdById: user.sub } });
+        await tx.auditLog.create({ data: { projectId: template.projectId, userId: user.sub, entity: 'ReportTemplate', entityId: id, action: 'REPORT_TEMPLATE_ARCHIVED', changes: { name: template.name, version: template.version } } });
+        return result;
+      });
+      return success(templateResponse(updated));
+    } catch (error) {
+      if (error instanceof Error && error.message === 'REPORT_TEMPLATE_VERSION_CONFLICT') return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后再归档');
+      throw error;
+    }
+  });
+
+  app.get('/templates/:id/revisions', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { id } = request.params as { id: string };
+    const template = await prisma.reportTemplate.findUnique({ where: { id } });
+    if (!template) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+    if (!(await canReadTemplate(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有访问该模板历史版本的权限');
+    const revisions = await prisma.reportTemplateRevision.findMany({
+      where: { templateId: id }, orderBy: { createdAt: 'desc' }, take: 100,
+      select: { id: true, version: true, action: true, createdById: true, createdAt: true },
+    });
+    return success(revisions);
+  });
+
+  app.post('/templates/:id/revisions/:revisionId/restore', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { id, revisionId } = request.params as { id: string; revisionId: string };
+    const template = await prisma.reportTemplate.findUnique({ where: { id } });
+    if (!template) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+    if (!(await canEditTemplate(template, user))) return failure(reply, 403, 'REPORT_TEMPLATE_EDIT_DENIED', '你没有恢复该模板历史版本的权限');
+    if (template.status === 'ARCHIVED') return failure(reply, 409, 'REPORT_TEMPLATE_ARCHIVED', '归档模板不能恢复历史版本');
+    const parsed = z.object({ expectedVersion: z.number().int().positive() }).safeParse(request.body);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '恢复请求缺少有效的模板版本号');
+    if (template.version !== parsed.data.expectedVersion) return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后再恢复历史版本');
+    const revision = await prisma.reportTemplateRevision.findFirst({ where: { id: revisionId, templateId: id } });
+    if (!revision) return failure(reply, 404, 'REPORT_TEMPLATE_REVISION_NOT_FOUND', '历史版本不存在');
+    const validated = validateReportTemplateDefinition(revision.definition, template.reportKey as ReportKey);
+    if (!validated.success) return failure(reply, 409, 'REPORT_TEMPLATE_REVISION_INVALID', '该历史版本不符合当前模板结构，无法恢复');
+    try {
+      const restored = await prisma.$transaction(async (tx) => {
+        const changed = await tx.reportTemplate.updateMany({
+          where: { id, version: parsed.data.expectedVersion, status: { not: 'ARCHIVED' } },
+          data: { definition: validated.data, version: { increment: 1 }, status: template.publishedDefinition ? 'PUBLISHED' : 'DRAFT', updatedById: user.sub },
+        });
+        if (changed.count !== 1) throw new Error('REPORT_TEMPLATE_VERSION_CONFLICT');
+        const result = await tx.reportTemplate.findUniqueOrThrow({ where: { id } });
+        await tx.reportTemplateRevision.create({ data: { templateId: id, version: result.version, action: `RESTORED_FROM_${revision.version}`, definition: validated.data, createdById: user.sub } });
+        await tx.auditLog.create({ data: { projectId: template.projectId, userId: user.sub, entity: 'ReportTemplate', entityId: id, action: 'REPORT_TEMPLATE_REVISION_RESTORED', changes: { restoredFromVersion: revision.version, version: result.version } } });
+        return result;
+      });
+      return success(templateResponse(restored));
+    } catch (error) {
+      if (error instanceof Error && error.message === 'REPORT_TEMPLATE_VERSION_CONFLICT') return failure(reply, 409, 'REPORT_TEMPLATE_VERSION_CONFLICT', '模板已被其他操作修改，请刷新后再恢复历史版本');
+      throw error;
+    }
+  });
+
+  app.get('/:reportKey/preview', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { reportKey: rawKey } = request.params as { reportKey: string };
+    const reportKeyParsed = reportKeySchema.safeParse(rawKey);
+    if (!reportKeyParsed.success) return failure(reply, 404, 'REPORT_NOT_FOUND', '报表类型不存在');
+    const parsed = exportQuerySchema.safeParse(request.query);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '报表筛选参数不正确', parsed.error.flatten());
+    const loaded = await loadReportSnapshot(reportKeyParsed.data, user, queryFilters(parsed.data));
+    if (!loaded.ok) return failure(reply, loaded.status, loaded.code, loaded.message);
+    const snapshot = loaded.snapshot;
+    let template: { id: string | null; name: string; version: number; scope: string; status: string; definition: ReportTemplateDefinition } = {
+      id: null, name: '系统默认模板', version: 1, scope: 'SYSTEM', status: 'PUBLISHED', definition: createDefaultDefinition(snapshot.report.key),
+    };
+    if (parsed.data.templateId) {
+      const stored = await prisma.reportTemplate.findUnique({ where: { id: parsed.data.templateId } });
+      if (!stored) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+      if (stored.reportKey !== reportKeyParsed.data) return failure(reply, 400, 'REPORT_TEMPLATE_REPORT_MISMATCH', '模板不属于当前报表类型');
+      if (!(await canReadTemplate(stored, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有访问该模板的权限');
+      const canEdit = await canEditTemplate(stored, user);
+      const sourceDefinition = stored.status === 'PUBLISHED' && stored.publishedDefinition && !canEdit ? stored.publishedDefinition : stored.definition;
+      const validated = validateReportTemplateDefinition(sourceDefinition, reportKeyParsed.data);
+      if (!validated.success) return failure(reply, 409, 'REPORT_TEMPLATE_INVALID', '模板定义无效，请在模板设计器中修复');
+      template = { id: stored.id, name: stored.name, version: stored.publishedVersion ?? stored.version, scope: stored.scope, status: stored.status, definition: validated.data };
+    }
+    return success({
+      report: snapshot.report,
+      fields: snapshot.fields,
+      rows: (parsed.data.printAll === 'true' ? snapshot.rows : snapshot.rows.slice(0, 80)).map(reportRowToJson),
+      rowCount: snapshot.rowCount,
+      previewRowCount: parsed.data.printAll === 'true' ? snapshot.rows.length : Math.min(80, snapshot.rowCount),
+      truncated: snapshot.truncated,
+      generatedAt: snapshot.generatedAt.toISOString(),
+      projectScope: snapshot.projectScope,
+      filters: snapshot.filters,
+      template,
+    });
+  });
 
   app.get('/:reportKey.csv', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
-    const { reportKey } = request.params as { reportKey: string };
-    const report = reportCatalog.find((item) => item.key === reportKey) as (typeof reportCatalog)[number] | undefined;
-    if (!report) return failure(reply, 404, 'REPORT_NOT_FOUND', '报表类型不存在');
+    const { reportKey: rawKey } = request.params as { reportKey: string };
+    const key = reportKeySchema.safeParse(rawKey);
+    if (!key.success) return failure(reply, 404, 'REPORT_NOT_FOUND', '报表类型不存在');
     const parsed = querySchema.safeParse(request.query);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '报表筛选参数不正确', parsed.error.flatten());
-    const from = toUtcDay(parsed.data.from);
-    const toExclusive = toUtcDay(parsed.data.to, true);
-    if ((from && Number.isNaN(from.getTime())) || (toExclusive && Number.isNaN(toExclusive.getTime()))) return failure(reply, 400, 'INVALID_DATE', '日期无效');
-    if (from && toExclusive && from >= toExclusive) return failure(reply, 400, 'INVALID_DATE_RANGE', '开始日期不能晚于结束日期');
-
-    const accessibleProjects = await prisma.project.findMany({
-      where: { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) },
-      select: { id: true, name: true, code: true }, orderBy: { code: 'asc' },
-    });
-    const availableIds = accessibleProjects.map((p) => p.id);
-    if (parsed.data.projectId && !availableIds.includes(parsed.data.projectId)) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有导出所选项目数据的权限');
-    const projectIds = parsed.data.projectId ? [parsed.data.projectId] : availableIds;
-    const projectFilter = { projectId: { in: projectIds } };
-    const dateRange = (field: 'date' | 'applyDate' | 'occurredAt' | 'postedAt' | 'receivedAt' | 'createdAt' | 'updatedAt' | 'dueAt') => from || toExclusive ? { [field]: { ...(from ? { gte: from } : {}), ...(toExclusive ? { lt: toExclusive } : {}) } } : {};
-    let headers: string[] = [];
-    let rows: unknown[][] = [];
-    let truncated = false;
-
-    if (report.key === 'target-cost') {
-      const data = await prisma.budgetItem.findMany({ where: { ...projectFilter, deletedAt: null, ...dateRange('updatedAt') }, include: { project: { select: { name: true, code: true } }, parent: { select: { code: true, name: true } } }, orderBy: [{ project: { code: 'asc' } }, { sortOrder: 'asc' }, { code: 'asc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '清单编号', '清单名称', '上级编号', '上级名称', '单位', '工程量', '综合单价(元)', '目标合价(元)', '层级', '排序值', '更新时间'];
-      rows = data.slice(0, 10000).map(r => [r.project.name, r.project.code, r.code, r.name, r.parent?.code, r.parent?.name, r.unit, r.quantity, r.unitPrice, r.totalPrice, r.level, r.sortOrder, r.updatedAt]);
-    } else if (report.key === 'actual-cost') {
-      const data = await prisma.costEntry.findMany({ where: { ...projectFilter, deletedAt: null, ...dateRange('date') }, include: { project: { select: { name: true, code: true } }, budgetItem: { select: { code: true, name: true } }, downstreamContract: { select: { contractNo: true, name: true, counterpartyName: true } }, businessParty: { select: { name: true } }, createdBy: { select: { name: true } } }, orderBy: [{ date: 'desc' }, { createdAt: 'desc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '成本日期', '成本类型', '描述', '金额(元)', '税额(元)', '数量', '单位', '单价(元)', '清单编号', '清单名称', '分供合同编号', '分供合同名称', '供应商/往来单位', '发票号', '班组', '录入人', '备注'];
-      rows = data.slice(0, 10000).map(r => [r.project.name, r.project.code, r.date, r.type, r.description, r.amount, r.taxAmount, r.quantity, r.unit, r.unitPrice, r.budgetItem?.code, r.budgetItem?.name, r.downstreamContract?.contractNo, r.downstreamContract?.name, r.businessParty?.name ?? r.downstreamContract?.counterpartyName ?? r.vendorName, r.invoiceNo, r.teamName, r.createdBy.name, r.notes]);
-    } else if (report.key === 'progress-bills') {
-      const data = await prisma.progressBill.findMany({ where: { ...projectFilter, deletedAt: null, ...dateRange('applyDate') }, include: { project: { select: { name: true, code: true } }, mainContract: { select: { contractNo: true, name: true } } }, orderBy: [{ applyDate: 'desc' }, { periodNo: 'desc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '主合同编号', '主合同名称', '期次', '申报日期', '计量截止日期', '申报金额(元)', '核定金额(元)', '累计到账(元)', '状态', '备注'];
-      rows = data.slice(0, 10000).map(r => [r.project.name, r.project.code, r.mainContract?.contractNo, r.mainContract?.name, r.periodNo, r.applyDate, r.measureDate, r.amount, r.approvedAmount, r.paidAmount, r.status, r.notes]);
-    } else if (report.key === 'changes') {
-      const data = await prisma.change.findMany({ where: { ...projectFilter, deletedAt: null, ...dateRange('occurredAt') }, include: { project: { select: { name: true, code: true } }, mainContract: { select: { contractNo: true, name: true } } }, orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '主合同编号', '变更编号', '名称', '类型', '方向', '发生日期', '送审金额(元)', '内部核定金额(元)', '外部确认金额(元)', '内部状态', '外部确认状态', '凭证类别', '外部确认人', '确认日期', '生效日期', '差异复核状态', '备注/说明'];
-      rows = data.slice(0, 10000).map(r => [r.project.name, r.project.code, r.mainContract?.contractNo, r.code, r.name, r.type, r.direction, r.occurredAt, r.submittedAmount, r.approvedAmount, r.externalConfirmedAmount, r.status, r.externalConfirmationStatus, r.evidenceClass, r.externalConfirmerName, r.externalConfirmedAt, r.effectiveAt, r.internalAmountReviewStatus, r.description]);
-    } else if (report.key === 'owner-receivables') {
-      const data = await prisma.ownerReceivable.findMany({ where: { ...projectFilter, ...dateRange('postedAt') }, include: { project: { select: { name: true, code: true } }, mainContract: { select: { contractNo: true } } }, orderBy: [{ postedAt: 'desc' }, { receivableNo: 'asc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '主合同编号', '应收编号', '类型', '标题', '毛额(元)', '预付款扣回(元)', '质保金(元)', '其他扣款(元)', '净应收(元)', '到期日', '状态', '入账时间', '备注'];
-      rows = data.slice(0, 10000).map(r => [r.project.name, r.project.code, r.mainContract.contractNo, r.receivableNo, r.type, r.title, r.grossAmount, r.advanceDeductionAmount, r.retentionAmount, r.otherDeductionAmount, r.netAmount, r.dueAt, r.status, r.postedAt, r.notes]);
-    } else if (report.key === 'owner-receipts') {
-      const data = await prisma.ownerReceipt.findMany({ where: { ...projectFilter, ...dateRange('receivedAt') }, include: { project: { select: { name: true, code: true } }, mainContract: { select: { contractNo: true } }, originalReceipt: { select: { receiptNo: true } } }, orderBy: [{ receivedAt: 'desc' }, { receiptNo: 'asc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '主合同编号', '流水编号', '类型', '金额(元)', '到账日期', '原始流水编号', '参考号', '备注'];
-      rows = data.slice(0, 10000).map(r => [r.project.name, r.project.code, r.mainContract.contractNo, r.receiptNo, r.type, r.amount, r.receivedAt, r.originalReceipt?.receiptNo, r.referenceNo, r.notes]);
-    } else if (report.key === 'downstream-contracts') {
-      const data = await prisma.downstreamContract.findMany({ where: { ...projectFilter, deletedAt: null, ...dateRange('createdAt') }, include: { project: { select: { name: true, code: true } }, adjustments: { select: { direction: true, amount: true, effectiveAt: true } } }, orderBy: [{ createdAt: 'desc' }, { contractNo: 'asc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '合同编号', '合同名称', '类型', '相对方', '范围', '原始合同额(元)', '有效调整净额(元)', '当前合同额(元)', '状态', '签订日期', '开始日期', '计划结束日期', '付款条款', '备注'];
-      rows = data.slice(0, 10000).map(r => {
-        const currentAmount = calculateDownstreamCurrentAmount(r.originalAmount, r.adjustments);
-        const netAdjustCents = Math.round((Number(currentAmount) - Number(r.originalAmount)) * 100);
-        return [r.project.name, r.project.code, r.contractNo, r.name, r.type, r.counterpartyName, r.scope, r.originalAmount, (netAdjustCents / 100).toFixed(2), currentAmount, r.status, r.signedAt, r.startDate, r.plannedEndDate, r.paymentTerms, r.notes];
-      });
-    } else {
-      const data = await prisma.downstreamPayable.findMany({ where: { downstreamContract: { projectId: { in: projectIds }, deletedAt: null }, ...dateRange('postedAt') }, include: { downstreamContract: { include: { project: { select: { name: true, code: true } }, counterpartyParty: { select: { name: true } } } }, settlement: { select: { settlementNo: true, type: true, status: true } }, schedules: { select: { dueAt: true, amount: true } } }, orderBy: [{ postedAt: 'desc' }, { payableNo: 'asc' }], take: 10001 });
-      truncated = data.length > 10000;
-      headers = ['项目名称', '项目编号', '分供合同编号', '分供合同名称', '相对方', '应付编号', '类型', '结算编号', '结算类型', '结算状态', '毛额(元)', '预付款扣回(元)', '质保金(元)', '其他扣款(元)', '净应付(元)', '到期日', '分期数量', '备注'];
-      rows = data.slice(0, 10000).map(r => [r.downstreamContract.project.name, r.downstreamContract.project.code, r.downstreamContract.contractNo, r.downstreamContract.name, r.downstreamContract.counterpartyParty?.name ?? r.downstreamContract.counterpartyName, r.payableNo, r.type, r.settlement?.settlementNo, r.settlement?.type, r.settlement?.status, r.grossAmount, r.advanceRecoveryAmount, r.retentionAmount, r.otherDeductionAmount, r.netAmount, r.dueAt, r.schedules.length, r.notes]);
-    }
-    const csv = buildCsv(headers, rows);
+    const loaded = await loadReportSnapshot(key.data, user, parsed.data);
+    if (!loaded.ok) return failure(reply, loaded.status, loaded.code, loaded.message);
+    const snapshot = loaded.snapshot;
+    const csv = buildCsv(snapshot.fields.map((field) => field.label), snapshot.rows);
     return reply.header('content-type', 'text/csv; charset=utf-8')
-      .header('content-disposition', `attachment; filename="moheng-${report.key}.csv"`)
+      .header('content-disposition', `attachment; filename="moheng-${key.data}.csv"`)
       .header('cache-control', 'no-store')
-      .header('x-report-row-count', String(rows.length))
-      .header('x-report-truncated', truncated ? 'true' : 'false')
+      .header('x-report-row-count', String(snapshot.rowCount))
+      .header('x-report-truncated', snapshot.truncated ? 'true' : 'false')
       .send(csv);
+  });
+
+  app.get('/:reportKey.xlsx', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { reportKey: rawKey } = request.params as { reportKey: string };
+    const key = reportKeySchema.safeParse(rawKey);
+    if (!key.success) return failure(reply, 404, 'REPORT_NOT_FOUND', '报表类型不存在');
+    const parsed = exportQuerySchema.safeParse(request.query);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '报表筛选参数不正确', parsed.error.flatten());
+    const loaded = await loadReportSnapshot(key.data, user, queryFilters(parsed.data));
+    if (!loaded.ok) return failure(reply, loaded.status, loaded.code, loaded.message);
+    let definition = createDefaultDefinition(key.data);
+    let templateName = '系统默认模板';
+    let templateVersion = 1;
+    if (parsed.data.templateId) {
+      const stored = await prisma.reportTemplate.findUnique({ where: { id: parsed.data.templateId } });
+      if (!stored) return failure(reply, 404, 'REPORT_TEMPLATE_NOT_FOUND', '报表模板不存在');
+      if (stored.reportKey !== key.data) return failure(reply, 400, 'REPORT_TEMPLATE_REPORT_MISMATCH', '模板不属于当前报表类型');
+      if (!(await canReadTemplate(stored, user))) return failure(reply, 403, 'REPORT_TEMPLATE_ACCESS_DENIED', '你没有使用该报表模板的权限');
+      const canEdit = await canEditTemplate(stored, user);
+      const sourceDefinition = stored.status === 'PUBLISHED' && stored.publishedDefinition && !canEdit ? stored.publishedDefinition : stored.definition;
+      const validated = validateReportTemplateDefinition(sourceDefinition, key.data);
+      if (!validated.success) return failure(reply, 409, 'REPORT_TEMPLATE_INVALID', '模板定义无效，请在模板设计器中修复');
+      definition = validated.data;
+      templateName = stored.name;
+      templateVersion = stored.publishedVersion ?? stored.version;
+    }
+    try {
+      const buffer = await buildReportWorkbook({ snapshot: loaded.snapshot, definition, templateName, templateVersion });
+      const filename = `墨衡-${reportKeyToFilename(key.data)}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      return reply.header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        .header('content-disposition', `attachment; filename="moheng-${reportKeyToFilename(key.data)}.xlsx"; filename*=UTF-8''${encodeURIComponent(filename)}`)
+        .header('cache-control', 'no-store')
+        .header('x-report-row-count', String(loaded.snapshot.rowCount))
+        .header('x-report-truncated', loaded.snapshot.truncated ? 'true' : 'false')
+        .send(buffer);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'REPORT_TEMPLATE_NO_VISIBLE_COLUMNS') return failure(reply, 400, 'REPORT_TEMPLATE_NO_VISIBLE_COLUMNS', '模板至少需要保留一列可见列');
+      throw error;
+    }
   });
 }
