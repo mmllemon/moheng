@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Building2, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, ClipboardList, FileText, FolderKanban,
-  Gauge, HandCoins, LayoutDashboard, LogOut, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
+  HandCoins, LayoutDashboard, LogOut, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
   ArrowUpRight, Command, CornerDownLeft, Keyboard, X, History, BellRing, FileSpreadsheet,
 } from 'lucide-react';
 import { api } from '../api';
@@ -166,7 +166,7 @@ export default function Layout() {
         })}
       </div>)}
       <div className="sidebar-grow" />
-      {!collapsed && <div className="sidebar-note"><div className="sidebar-note-icon"><Gauge size={16} /></div><div><strong>经营健康度</strong><span>收入与支出持续跟踪</span></div><ChevronDown size={15} /></div>}
+      {!collapsed && <button type="button" className="sidebar-note" onClick={() => navigate('/workspace')} title="查看当前项目驾驶舱" aria-label="打开项目驾驶舱，查看当前项目经营摘要"><span className="sidebar-note-icon"><LayoutDashboard size={16} /></span><span className="sidebar-note-copy"><strong>项目驾驶舱</strong><span>查看当前项目经营摘要</span></span><ChevronRight size={15} /></button>}
       <button type="button" className="collapse-button" onClick={toggleSidebar} title={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <ChevronsRight size={17} /> : <><ChevronsLeft size={17} /><span>收起导航</span></>}</button>
       <div className="user-panel"><div className="avatar">{user?.name?.slice(0, 1) ?? '管'}</div>{!collapsed && <><div className="user-meta"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div><button title="退出登录" aria-label="退出登录" className="icon-button logout-button" onClick={logout}><LogOut size={16} /></button></>}</div>
     </aside>
@@ -207,7 +207,7 @@ export default function Layout() {
         </>}
       </div>}
       <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
-      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v2.5.0-rc.1</span></footer>
+      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>项目经营管理工作台 <i /> v2.6.0-rc.1</span></footer>
     </div>
 
     {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>

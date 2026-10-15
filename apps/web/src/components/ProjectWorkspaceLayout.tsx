@@ -15,7 +15,9 @@ const costTabs = [
   { to: '/workspace/downstream', label: '分供合同与结算', icon: Banknote },
   { to: '/workspace/costs', label: '实际成本', icon: ReceiptText },
   { to: '/workspace/analysis', label: '成本分析', icon: Activity },
-  { to: '/workspace/members', label: '项目成员', icon: Users },
+];
+const projectAdminTabs = [
+  { to: '/workspace/members', label: '项目成员与权限', icon: Users },
 ];
 function TabLink({ tab }: { tab: { to: string; label: string; icon: LucideIcon } }) {
   const Icon = tab.icon;
@@ -28,6 +30,8 @@ export default function ProjectWorkspaceLayout() {
       <div className="workspace-nav-group workspace-nav-income" role="group" aria-label="业主侧业务"><div className="workspace-nav-group-tabs">{incomeTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
       <span className="workspace-nav-separator" aria-hidden="true"><span /></span>
       <div className="workspace-nav-group workspace-nav-cost" role="group" aria-label="成本与支出业务"><div className="workspace-nav-group-tabs">{costTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
+      <span className="workspace-nav-separator workspace-nav-admin-separator" aria-hidden="true"><span /></span>
+      <div className="workspace-nav-group workspace-nav-admin" role="group" aria-label="项目管理"><span className="workspace-nav-admin-label">项目管理</span><div className="workspace-nav-group-tabs">{projectAdminTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
     </nav>
     <div className="workspace-content"><Outlet /></div>
   </div>;

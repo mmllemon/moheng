@@ -1,0 +1,89 @@
+PASS package, API and Web versions agree on 2.6.0-rc.1
+PASS previously shipped migration remains byte-for-byte unchanged (059b76e6da8be469a6e514554d9c26e89705ef4e8aaf17433cb489fbb2c5120b)
+PASS baseline migration records old/new values and uses main-contract ledger as baseline
+PASS internal amount review migration stores immutable comparison snapshots
+PASS schema models reconciliation records and snapshot fields
+PASS Prisma models contain no duplicate field declarations
+PASS project and main-contract APIs enforce original amount immutability
+PASS external-confirmation and C-verification paths preserve mismatch snapshots
+PASS amount review completion audits that effective amount is unchanged
+PASS Windows startup identifies the project by absolute server entry point
+PASS Windows startup requires a healthy API and database before reporting success
+PASS Windows stop script verifies Node process, entry point and process start time before kill
+PASS downstream contract schema and migration include contracts, amendments, plans, payments and cost link
+PASS payment migration supports separately linked refunds and reference-number idempotency
+PASS settlement-confirmed contracts may still record payments/refunds, but cannot add new payment plans
+PASS downstream business API supports registry, draft update, status, amendments, plans and payments
+PASS downstream payment API tests and applies net payment / refund limits
+PASS downstream contract current amount and commitment estimate are calculated separately
+PASS owner-side progress bills and changes must link to the main contract
+PASS existing revenue-side records are backfilled to the main contract when the contract is created or saved
+PASS actual cost can be linked and retro-linked to a same-project downstream contract without changing cost amount
+PASS analysis and UI show commitments, linked cost, net payments and refunds separately
+PASS server mounts downstream contract routes under project API
+PASS downstream contract/payment and settlement/payable views share a combined workspace entry
+PASS settlement detail lines are optional and do not require a contract or budget item reference
+PASS settlement, payable, payment allocation, advance, retention and invoice models have a dedicated additive migration
+PASS final settlement is cumulative and posts only the delta; signed adjustment credits are supported
+PASS settlement workflow has self-approval protection, documented rejection and draft recovery
+PASS ordinary payments are allocated against payable balances and refunds reverse original allocations
+PASS prepayments, retainage, and invoice verification are recorded separately from actual cost
+PASS settlement posting ledger preserves immutable cumulative-before/delta/after snapshots
+PASS payable schedules are optional, total exactly to the payable, and support schedule-level payment/refund reversal
+PASS main-contract screen defaults to a compact summary and edits through a dialog
+PASS project workspace groups business pages behind a shared tab navigation while preserving individual routes
+PASS global dashboard is independent from selected project and uses cross-project metrics
+PASS single-project cockpit is separate from portfolio dashboard and cost analysis
+PASS cost variance is not presented as an overrun when no target-cost baseline exists
+PASS business-party master supports multi-role parties, non-unique display names and audited identity verification
+PASS business-party migration is additive, preserves text snapshots and backfills legacy links for review
+PASS unit master can search by name/code, create/reuse parties, handle confirmed same-name entities, and audit changes
+PASS projects, owner contracts, downstream contracts and actual costs use common party identities
+PASS unit profile provides project/contract/settlement/payable/payment/cost/invoice aggregates with permission-scoped projects
+PASS party pages support master maintenance, cross-project profile, contract picker, verification warnings and clickable links
+PASS selecting a unit previews reusable contact, address and invoicing data; clear action removes both ID and name
+PASS historical documentation preserves the unit master, owner finance, combined navigation and numbering design
+PASS v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version
+PASS navigation group captions are removed while visual divider and group regions remain
+PASS UI preferences support four Pro-Tier themes, system mode, density, accents, wide content and reduced motion
+PASS UI preferences are a standalone top-right popover with presence-aware close animation
+PASS native dropdowns are replaced by keyboard-accessible custom listboxes and preserve form refs
+PASS native date popups are replaced by a custom bounded calendar with keyboard navigation and clear/today actions
+PASS project portfolio hides redundant project switcher, presents sourced operating summaries, and animates modal exit
+PASS presence helper and overlay animation states support smooth entry/exit transitions
+PASS global command palette supports Ctrl/Cmd+K, arrow selection, Enter navigation, Escape, and list keyboard inspection
+PASS Pro-Tier surface styling includes tabular numerics, floating table rows and reduced-motion fallback
+PASS owner finance UI is restructured into metrics and four interactive content tabs with responsive sticky tables
+PASS legacy ambiguous names require explicit unit selection and same-name duplicate creation is admin-controlled
+PASS migration directory present: 20261013000000_init
+PASS migration directory present: 20261013010000_add_refresh_tokens
+PASS migration directory present: 20261013020000_contract_change_external_confirmation
+PASS migration directory present: 20261013030000_reconcile_original_contract_amount
+PASS migration directory present: 20261013040000_internal_amount_review
+PASS migration directory present: 20261013050000_downstream_contract_management
+PASS migration directory present: 20261014010000_settlement_payables_invoice_retention
+PASS migration directory present: 20261014020000_business_party_master
+PASS migration directory present: 20261014030000_owner_settlement_receivables_document_sequence
+PASS owner-side final settlement, receivable, receipt/refund, advance and retention tables are registered with an additive migration
+PASS owner-side settlement has internal approval, external confirmation, immutable posting and cumulative final delta
+PASS owner receivable collection is capped by selected receivable and signed contract-level net open balance
+PASS owner receipt refunds reverse allocations and mirror negative rows in historical progress-bill ledger
+PASS automatic business numbers use transaction-backed project/type/year sequences and leave manual fields optional
+PASS login remembers account only in local storage and delegates password retention to browser password manager
+PASS unit edit dialog has a constrained scroll region and a persistent footer outside the scroll region
+PASS audit log endpoint constrains regular users to project memberships and supports read-only filters/pagination
+PASS audit CSV has BOM/escaping, formula-injection protection and sensitive-key redaction tests
+PASS audit UI is routed and accessible from primary navigation and dashboard recent-activity panel
+PASS next-step plan records current partial alignment, explicit conflicts and deferred higher-risk scope
+
+77/77 static release-candidate checks passed.
+
+=== 附加验证 ===
+Node.js runtime: v22.16.0 (project requires >=24.0.0)
+TypeScript syntax transpilation: 112/112 .ts/.tsx files passed using global TypeScript transpileModule; this does not constitute strict type checking.
+`npm run lint`: FAILED (exit 2), backend TypeScript reports TS2688 because Node type definitions are unavailable in the uninstalled workspace dependencies.
+`npm test`: NOT STARTED (exit 127), executable `tsx` was not found.
+`npm run build`: FAILED (exit 2), backend TypeScript reports TS2688 because Node type definitions are unavailable in the uninstalled workspace dependencies.
+`git diff --check`: PASSED.
+
+Release note: this is a Release Candidate. Complete dependency installation, strict TypeScript checks, API unit/integration tests, production builds and browser responsive/keyboard/theme checks remain required in a clean Node.js 24+ environment. These environment failures must not be interpreted as code verification passing.

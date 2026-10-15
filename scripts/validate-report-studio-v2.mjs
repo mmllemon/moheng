@@ -48,11 +48,11 @@ const sharedSelect = await read('apps/web/src/components/SelectField.tsx');
 const sharedDate = await read('apps/web/src/components/DatePicker.tsx');
 const docs = await read('docs/报表中心与报表工作室设计方案-v2.4.0-rc.1.md');
 const acceptance = await read('docs/WP9-报表工作室端到端验收清单-v2.4.0-rc.1.md');
-const currentDocs = await read('docs/报表中心与报表工作室设计方案-v2.5.0-rc.1.md');
-const currentAcceptance = await read('docs/WP10-报表中心修正与入口增强验收清单-v2.5.0-rc.1.md');
+const currentDocs = await read('docs/报表中心与报表工作室设计方案-v2.6.0-rc.1.md');
+const currentAcceptance = await read('docs/WP11-报表中心瘦身与导航校正验收清单-v2.6.0-rc.1.md');
 
-check('all packages and app metadata use v2.5.0-rc.1',
-  rootPackage.version === '2.5.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
+check('all packages and app metadata use v2.6.0-rc.1',
+  rootPackage.version === '2.6.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
 check('Univer editor direct dependencies are exactly pinned and no Pro package is required',
   webPackage.dependencies?.['@univerjs/presets'] === '1.0.4' && webPackage.dependencies?.['@univerjs/preset-sheets-core'] === '1.0.4' &&
   !Object.keys(webPackage.dependencies ?? {}).some((name) => name.startsWith('@univerjs-pro/')) &&
@@ -121,8 +121,8 @@ check('party template context is isolated by businessPartyId through an append-o
 check('standard and studio preview grids use fixed natural-width columns to avoid stretching the last column',
   previewPage.includes("width: 'max-content'") && previewPage.includes('<colgroup>') && previewPage.includes('Math.min(72, column.width)') &&
   (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid { width:max-content; min-width:0; table-layout:fixed;'));
-check('report center uses a scenario-led hierarchy and filterable catalog categories',
-  centerPage.includes('report-center-hero') && centerPage.includes('report-category-tabs') && centerPage.includes('visibleCatalog') && centerPage.includes('全部台账') && centerPage.includes('分供合同与付款'));
+check('report center uses a compact scenario-led hierarchy with a filtered ledger picker and no duplicated hero',
+  !centerPage.includes('report-center-hero') && !centerPage.includes('report-intro-grid') && centerPage.includes('report-category-tabs') && centerPage.includes('visibleCatalog') && centerPage.includes('报告') && centerPage.includes('DOWNSTREAM'));
 check('workspace and ledger pages expose common preview/export buttons and unit templates have an edit entry',
   launchButtons.includes('ProjectLedgerReportButton') && launchButtons.includes('ProjectSummaryReportButton') && launchButtons.includes('BusinessPartyReportButton') && launchButtons.includes('BusinessPartyTemplateButton') &&
   (await Promise.all(['BudgetPage.tsx','CostsPage.tsx','ProgressBillsPage.tsx','ChangesPage.tsx','DownstreamContractsPage.tsx','DownstreamFinancePage.tsx','OwnerFinancePage.tsx','ProjectOverviewPage.tsx','BusinessPartyDetailPage.tsx'].map((name) => read(`apps/web/src/pages/${name}`)))).every((pageSource) => pageSource.includes('ReportLaunchButton')) && (await read('apps/web/src/pages/BusinessPartyDetailPage.tsx')).includes('BusinessPartyTemplateButton') && (await read('apps/web/src/pages/ReportStudioPage.tsx')).includes('openSavedTemplateRequested'));
