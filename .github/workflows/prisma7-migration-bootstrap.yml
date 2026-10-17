@@ -66,6 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR"
+          npm run db:generate
           NODE_ENV=test SEED_DEMO_DATA=true SEED_ADMIN_EMAIL=gate.admin@moheng.invalid SEED_ADMIN_PASSWORD=CI-only-BackupRestore-123! SEED_ADMIN_NAME="CI Backup Restore Gate" npm run seed -w @cms/api
           bash scripts/verify-postgres-backup-restore.sh
       - name: Build
