@@ -53,7 +53,7 @@ check(css.includes('.assistant-markdown table') && css.includes('.assistant-comp
 check(!webPackage.dependencies['@assistant-ui/react-langgraph'], 'custom persisted SSE transport must not be coupled to LangGraph SDK wire format');
 check(designDoc.includes('运行时必须保持可替换') && designDoc.includes('PostgresSaver') && designDoc.includes('不证明 Pi Durable 自带 PostgreSQL adapter'), 'UI decision must preserve swappable runtime and original storage boundaries');
 check(designDoc.includes('open-claude-ui') && designDoc.includes('不复制 Claude 商标/品牌文案'), 'UI inspiration must document license/source and clean-room boundaries');
-check(changelog.startsWith('## v2.19.0-rc.1') && readme.includes('v2.19.0-rc.1'), 'version and changelog/readme must describe this candidate');
+check(changelog.startsWith('## v' + rootPackage.version) && readme.includes(rootPackage.version), 'version and changelog/readme must describe this candidate');
 check(apiClient.includes('parseAssistantSseBlock') && apiClient.includes('assistant-sse-parser.mjs'), 'SSE parser must be an isolated pure module');
 check(rootPackage.scripts['validate:release-candidate'].includes('assistant-sse-parser.test.mjs'), 'pure SSE parser unit tests must run in the release validation chain');
 check(rootPackage.scripts['validate:release-candidate'].includes('validate-assistant-ui.mjs'), 'assistant UI Gate must run during release candidate validation');
