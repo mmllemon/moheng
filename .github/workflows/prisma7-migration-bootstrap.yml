@@ -55,6 +55,19 @@ jobs:
         run: |
           npm run db:validate
           npm run db:deploy
+      - name: Seed disposable fixtures and rehearse PostgreSQL backup/restore
+        shell: bash
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          BACKUP_RESTORE_REPORT_PATH: .assistant-gate-artifacts/postgres-backup-restore.txt
+        run: |
+          set -euo pipefail
+          mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR"
+          NODE_ENV=test SEED_DEMO_DATA=true SEED_ADMIN_EMAIL=gate.admin@moheng.invalid SEED_ADMIN_PASSWORD=CI-only-BackupRestore-123! SEED_ADMIN_NAME="CI Backup Restore Gate" npm run seed -w @cms/api
+          bash scripts/verify-postgres-backup-restore.sh
       - name: Build
         run: npm run build
       - name: API unit tests
@@ -95,3 +108,4 @@ jobs:
             lockfile-sha256.txt
             npm-audit.json
             .assistant-gate-artifacts/
+            .assistant-gate-artifacts/postgres-backup-restore.txt
