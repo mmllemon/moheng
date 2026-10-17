@@ -51,8 +51,8 @@ const acceptance = await read('docs/WP9-报表工作室端到端验收清单-v2.
 const currentDocs = await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md');
 const currentAcceptance = await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md');
 
-check('all packages and app metadata use v2.8.0-rc.1',
-  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
+check('all packages and app metadata use v2.19.0-rc.1',
+  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
 check('Univer editor direct dependencies are exactly pinned and no Pro package is required',
   webPackage.dependencies?.['@univerjs/presets'] === '1.0.4' && webPackage.dependencies?.['@univerjs/preset-sheets-core'] === '1.0.4' &&
   !Object.keys(webPackage.dependencies ?? {}).some((name) => name.startsWith('@univerjs-pro/')) &&
@@ -104,10 +104,12 @@ check('all regular native dropdown/date UI use shared controls',
 const webSources = await filesBelow('apps/web/src', ['.tsx', '.ts']);
 const rawSelectFiles = [];
 const rawDateFiles = [];
+const isSharedControlPath = (file, name) => new RegExp(`components[\\\\/]${name}\\.tsx$`).test(file);
+check('shared control path matcher accepts POSIX and Windows separators', isSharedControlPath('apps/web/src/components/SelectField.tsx', 'SelectField') && isSharedControlPath('apps\\web\\src\\components\\SelectField.tsx', 'SelectField') && isSharedControlPath('apps/web/src/components/DatePicker.tsx', 'DatePicker') && isSharedControlPath('apps\\web\\src\\components\\DatePicker.tsx', 'DatePicker'));
 for (const file of webSources) {
   const source = await read(file);
-  if (/<select(?:\s|>)/.test(source) && !file.endsWith('components/SelectField.tsx')) rawSelectFiles.push(file);
-  if (/type=["']date["']/.test(source) && !file.endsWith('components/DatePicker.tsx')) rawDateFiles.push(file);
+  if (/<select(?:\s|>)/.test(source) && !isSharedControlPath(file, 'SelectField')) rawSelectFiles.push(file);
+  if (/type=["']date["']/.test(source) && !isSharedControlPath(file, 'DatePicker')) rawDateFiles.push(file);
 }
 check('repository scan finds no business-page native select or type=date outside shared primitives', rawSelectFiles.length === 0 && rawDateFiles.length === 0, [...rawSelectFiles, ...rawDateFiles].join(', '));
 check('historical v2.4 docs still describe the previous release gates',

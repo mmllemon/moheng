@@ -27,8 +27,8 @@ const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
 
-check('all package and runtime versions are v2.8.0-rc.1',
-  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.8.0-rc.1'"));
+check('all package and runtime versions are v2.19.0-rc.1',
+  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.1'"));
 check('preview back uses known router history only when explicitly marked and a safe internal fallback otherwise',
   preview.includes('routeState?.safeReportPreviewBack === true') && preview.includes('navigate(safeReturnTo, { replace: true })') && preview.includes("?? '/reports'") && preview.includes("!candidate.startsWith('//')"));
 check('project summary auto-preview carries source route and replaces one-shot studio entry',
@@ -46,7 +46,7 @@ check('cost workbench owns the cost layout and no longer contains member-managem
 check('ExcelJS font builder correctly models incremental font-property assignment',
   xlsx.includes('const font: Partial<ExcelJS.Font> = {};'));
 check('system management has independent landing/member routes and legacy workspace URLs redirect safely',
-  layout.includes("to: '/system', label: '系统管理工作台'") && layout.includes("to: '/system/members', label: '项目成员与权限'") && layout.includes("to: '/system/accounts', label: '系统账号管理'") && systemManagement.includes('系统管理工作台') && systemManagement.includes('公司级账号身份') && app.includes('path="system/members"') && app.includes('path="system/accounts"') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') && app.includes("pathname: '/system/accounts'") && app.includes('path="workspace" element={<LegacyWorkspaceRedirect />}') && app.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') && app.includes("suffix === '/members' ? '/system/members'"));
+  layout.includes("to: '/system', label: '系统管理'") && layout.includes("to: '/system', label: '概览'") && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system/accounts', label: '账号管理'") && layout.includes("to: '/system/security', label: '登录安全'") && layout.includes("to: '/audit-logs', label: '操作追溯'") && layout.includes("'经营中心', '工作台', '项目管理', '系统管理'") && systemManagement.includes('系统管理概览') && systemManagement.includes('系统管理扩展入口') && app.includes('path="projects/members"') && app.includes('path="system/members" element={<Navigate to="/projects/members" replace />}') && app.includes('path="system/accounts"') && app.includes('path="system/security"') && app.includes('path="account/security"') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') && app.includes("pathname: '/system/accounts'") && app.includes('path="workspace" element={<LegacyWorkspaceRedirect />}') && app.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') && app.includes("suffix === '/members' ? '/projects/members'") && layout.includes('/account/security'));
 check('canonical cost workbench route and source identifiers use cost terminology',
   app.includes('path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}') && layout.includes("to: '/cost', label: '成本工作台'") && workspace.includes('cost-workspace-tab') && launch.includes("source: 'cost-workspace'") && !layout.includes("label: '项目工作台'"));
 check('regression design and acceptance docs record safe return navigation, chart labels and font typing',

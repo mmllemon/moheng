@@ -15,21 +15,24 @@ const appInfo = await read('apps/api/src/platform/app-info.ts');
 const registry = await read('apps/api/src/platform/module-registry.ts');
 const envExample = await read('apps/api/.env.example');
 const existingRouteFiles = (await readdir(join(root, 'apps/api/src/routes'))).filter((name) => name.endsWith('.ts'));
+const systemManagementRoutesSource = await read('apps/api/src/routes/system-management.ts');
+const assistantPocRoutesSource = await read('apps/api/src/routes/assistant-poc.ts');
+const integratedRouteFiles = new Set(['assistant-conversations.ts']);
 
-check('workspace/API/UI version and runtime metadata agree on 2.8.0-rc.1',
-  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  appInfo.includes("APP_VERSION = '2.8.0-rc.1'") && server.includes('version: APP_VERSION'));
+check('workspace/API/UI version and runtime metadata agree on 2.19.0-rc.1',
+  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
+  appInfo.includes("APP_VERSION = '2.19.0-rc.1'") && server.includes('version: APP_VERSION'));
 check('module registry is the only server-side route registration entry point',
   server.includes('await registerApiModules(app)') && registry.includes('export async function registerApiModules') &&
   !/app\.register\(\w+Routes,\s*\{\s*prefix:/.test(server));
 check('all API route plugins are represented in the registry',
-  existingRouteFiles.every((file) => registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`)),
-  existingRouteFiles.filter((file) => !registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`)).join(', '));
+  existingRouteFiles.every((file) => registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) || (file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) || (integratedRouteFiles.has(file) && assistantPocRoutesSource.includes('assistantConversationRoutes(app)'))),
+  existingRouteFiles.filter((file) => !registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) && !(file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) && !(integratedRouteFiles.has(file) && assistantPocRoutesSource.includes('assistantConversationRoutes(app)'))).join(', '));
 const moduleIds = [...registry.matchAll(/\{ id: '([^']+)'/g)].map((match) => match[1]);
-check('module catalog has unique stable IDs and the expected 16 registered modules',
-  moduleIds.length === 16 && new Set(moduleIds).size === moduleIds.length, `module IDs found: ${moduleIds.length}`);
-check('module registrations declare an API mount prefix and integration visibility',
-  (registry.match(/mountPrefix: '\/api/g) ?? []).length === 16 && (registry.match(/integrationVisible: true/g) ?? []).length === 16);
+check('module catalog has unique stable IDs and the expected 19 registered modules',
+  moduleIds.length === 19 && new Set(moduleIds).size === moduleIds.length, `module IDs found: ${moduleIds.length}`);
+check('all module registrations declare mount prefix and integration visibility, while admin-only system management stays off integration catalog',
+  (registry.match(/mountPrefix: '\/api/g) ?? []).length === 19 && (registry.match(/integrationVisible: true/g) ?? []).length === 16 && /id: 'system-management'[\s\S]*?integrationVisible: false/.test(registry));
 check('module catalog exposes descriptive metadata without requiring extra services',
   registry.includes('export function getApiModuleCatalog') && registry.includes('integrationVisible') &&
   server.includes("app.get('/api/meta'") && server.includes('apiMajorVersion: API_MAJOR_VERSION'));

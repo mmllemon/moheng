@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { lockBusinessPartyName, normalizeBusinessPartyName } from '../lib/business-party.js';
+import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 
 const rolesInput = z.array(z.nativeEnum(BusinessPartyRole)).min(1).default(['OTHER']);
 const createInput = z.object({
@@ -36,11 +37,9 @@ async function canCreateMasterData(userId: string, role: string) {
   const membership = await prisma.projectMember.findFirst({ where: { userId, role: { in: ['OWNER', 'MANAGER', 'ESTIMATOR'] } }, select: { id: true } });
   return Boolean(membership);
 }
-function projectScope(userId: string, globalRole: string) {
-  return {
-    deletedAt: null,
-    ...(globalRole === 'ADMIN' ? {} : { members: { some: { userId } } }),
-  };
+async function projectScope(userId: string, globalRole: string) {
+  const allReadable = globalRole === 'ADMIN' || await hasCrossProjectReadScope(userId, globalRole, 'PROJECT_READ');
+  return { deletedAt: null, ...(allReadable ? {} : { members: { some: { userId } } }) };
 }
 function toNumber(v: unknown): number { return Number(v ?? 0); }
 function sum(values: unknown[]): number { return values.reduce<number>((total, v) => total + toNumber(v), 0); }
@@ -159,7 +158,7 @@ export async function businessPartyRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const party = await prisma.businessParty.findUnique({ where: { id } });
     if (!party) return failure(reply, 404, 'BUSINESS_PARTY_NOT_FOUND', '往来单位档案不存在');
-    const scope = projectScope(user.sub, user.role);
+    const scope = await projectScope(user.sub, user.role);
     const standaloneCostWhere = { businessPartyId: id, downstreamContractId: null, deletedAt: null, project: scope };
     const [ownedProjects, downstreamContracts, standaloneCosts, standaloneCostTotals] = await Promise.all([
       prisma.project.findMany({

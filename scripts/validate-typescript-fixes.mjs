@@ -5,7 +5,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (file) => readFile(join(root, file), 'utf8');
 const [amountMath, downstreamContracts, downstreamFinance, ownerFinance, progressBills, partyTest, parties,
   auditLogs, reportData, reportXlsx, budgetXlsx, reportXlsxTest, budgetXlsxTest, ui, selectField,
-  datePicker, projectsPage, ownerFinancePage, authStore, designer] = await Promise.all([
+  datePicker, projectsPage, ownerFinancePage, authStore, designer, authLib, systemManagement, assistantEvents] = await Promise.all([
   'apps/api/src/lib/contract-amount-math.ts','apps/api/src/routes/downstream-contracts.ts',
   'apps/api/src/routes/downstream-finance.ts','apps/api/src/routes/owner-finance.ts',
   'apps/api/src/routes/progress-bills.ts','apps/api/src/lib/business-party.test.ts',
@@ -15,6 +15,7 @@ const [amountMath, downstreamContracts, downstreamFinance, ownerFinance, progres
   'apps/web/src/components/SelectField.tsx','apps/web/src/components/DatePicker.tsx',
   'apps/web/src/pages/ProjectsPage.tsx','apps/web/src/pages/OwnerFinancePage.tsx',
   'apps/web/src/auth-store.ts','apps/web/src/pages/ReportDesignerPage.tsx',
+  'apps/api/src/lib/auth.ts','apps/api/src/routes/system-management.ts','apps/api/src/lib/assistant-run-events.ts',
 ].map(read));
 const checks = [];
 const check = (name, condition) => checks.push({ name, passed: Boolean(condition) });
@@ -38,6 +39,9 @@ check('Lucide icon prop uses library icon type and Button exposes small size', u
 check('React 19 refs that write current use explicit nullable generic', selectField.includes('useRef<HTMLSelectElement | null>(null)') && datePicker.includes('useRef<HTMLInputElement | null>(null)'));
 check('required React hooks are imported and owner advance type includes notes', projectsPage.includes('useEffect, useMemo, useRef') && ownerFinancePage.includes('advanceMovements: {') && ownerFinancePage.includes('notes?: string | null'));
 check('legacy theme mapping and missing preview path are type-narrowed', authStore.includes("theme?: UiTheme | 'light' | 'dark'") && designer.includes('!preview ? <ErrorBlock'));
+check('MFA decrypt hex inputs are narrowed before Buffer.from under noUncheckedIndexedAccess', authLib.includes('const ivHex = parts[1]') && authLib.includes("typeof ivHex !== 'string'") && authLib.includes("Buffer.from(ivHex, 'hex')") && authLib.includes("Buffer.from(authTagHex, 'hex')") && authLib.includes("Buffer.from(ciphertextHex, 'hex')"));
+check('system-management registers authentication hook instead of invoking it as a normal function', systemManagement.includes("app.addHook('preHandler', authRequired)") && !systemManagement.includes('await authRequired(request, reply)'));
+check('readonly as-const event payload arrays are accepted by AssistantEventJsonValue', assistantEvents.includes('readonly AssistantEventJsonValue[]') && assistantEvents.includes('readonly [key: string]: AssistantEventJsonValue'));
 for (const item of checks) console.log(`${item.passed ? 'PASS' : 'FAIL'} ${item.name}`);
 const failed = checks.filter((item) => !item.passed);
 console.log(`\n${checks.length - failed.length}/${checks.length} TypeScript-defect source contracts passed`);

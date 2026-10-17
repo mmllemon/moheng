@@ -3,12 +3,16 @@ import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react
 import Layout from './components/Layout';
 import CostWorkspaceLayout from './components/CostWorkspaceLayout';
 import LoginPage from './pages/LoginPage';
+import AccountSecurityStepPage from './pages/AccountSecurityStepPage';
+import SystemSecurityPage from './pages/SystemSecurityPage';
+import AccountSecurityPage from './pages/AccountSecurityPage';
 import DashboardPage from './pages/DashboardPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import ReportCenterPage from './pages/ReportCenterPage';
 import ReportDesignerPage from './pages/ReportDesignerPage';
 const ReportStudioPage = lazy(() => import('./pages/ReportStudioPage'));
 const ReportPreviewPage = lazy(() => import('./pages/ReportPreviewPage'));
+const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'));
 import NotificationsPage from './pages/NotificationsPage';
 import ProjectMembersPage from './pages/ProjectMembersPage';
 import ProjectOverviewPage from './pages/ProjectOverviewPage';
@@ -25,6 +29,12 @@ import ChangesPage from './pages/ChangesPage';
 import AnalysisPage from './pages/AnalysisPage';
 import UserManagementPage from './pages/UserManagementPage';
 import SystemManagementPage from './pages/SystemManagementPage';
+import SystemGovernancePage from './pages/SystemGovernancePage';
+import SystemOperationsPage from './pages/SystemOperationsPage';
+import SystemDictionariesPage from './pages/SystemDictionariesPage';
+import SystemParametersPage from './pages/SystemParametersPage';
+import SystemAuthorizationPage from './pages/SystemAuthorizationPage';
+import SystemPoliciesPage from './pages/SystemPoliciesPage';
 import BusinessPartiesPage from './pages/BusinessPartiesPage';
 import BusinessPartyDetailPage from './pages/BusinessPartyDetailPage';
 import { useAuthStore, useUiStore } from './auth-store';
@@ -34,6 +44,7 @@ import { EmptyState, LoadingBlock } from './components/Ui';
 function ProtectedRoute() {
   const token = useAuthStore((state) => state.accessToken);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const restrictedFlow = useAuthStore((state) => state.restrictedFlow);
   const [ready, setReady] = useState(Boolean(token));
   const navigate = useNavigate();
   useEffect(() => {
@@ -46,9 +57,16 @@ function ProtectedRoute() {
     }).catch(() => { if (active) { clearSession(); setReady(true); navigate('/login', { replace: true }); } });
     return () => { active = false; };
   }, [token, clearSession, navigate]);
+  if (restrictedFlow) return <Navigate to="/account/security-step" replace />;
   if (!ready) return <div className="full-screen-loading"><LoadingBlock label="正在验证登录状态…" /></div>;
   if (!useAuthStore.getState().accessToken) return <Navigate to="/login" replace />;
   return <Outlet />;
+}
+
+function AdminOnly({ children }: { children: ReactNode }) {
+  const user = useAuthStore((state) => state.user);
+  if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
+  return <>{children}</>;
 }
 
 function NeedProject({ children }: { children: ReactNode }) {
@@ -62,7 +80,7 @@ function NeedProject({ children }: { children: ReactNode }) {
 function LegacyWorkspaceRedirect() {
   const location = useLocation();
   const suffix = location.pathname.replace(/^\/workspace(?=\/|$)/, '');
-  const targetPath = suffix === '/members' ? '/system/members' : `/cost${suffix}`;
+  const targetPath = suffix === '/members' ? '/projects/members' : `/cost${suffix}`;
   return <Navigate to={{ pathname: targetPath, search: location.search, hash: location.hash }} state={location.state} replace />;
 }
 
@@ -74,11 +92,12 @@ function LegacySettingsUsersRedirect() {
 export default function App() {
   return <Routes>
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/account/security-step" element={<AccountSecurityStepPage />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<Layout />}>
         <Route index element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
-        <Route path="audit-logs" element={<AuditLogsPage />} />
+        <Route path="audit-logs" element={<AdminOnly><AuditLogsPage /></AdminOnly>} />
         <Route path="reports" element={<ReportCenterPage />} />
         <Route path="reports/designer" element={<ReportDesignerPage />} />
         <Route path="reports/studio" element={<Suspense fallback={<div className="page-wrap"><LoadingBlock label="正在加载报表工作室…" /></div>}><ReportStudioPage /></Suspense>} />
@@ -88,7 +107,7 @@ export default function App() {
         <Route path="parties/:id" element={<BusinessPartyDetailPage />} />
         <Route path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}>
           <Route index element={<ProjectOverviewPage />} />
-          <Route path="members" element={<Navigate to="/system/members" replace />} />
+          <Route path="members" element={<Navigate to="/projects/members" replace />} />
           <Route path="contracts" element={<ContractsPage />} />
           <Route path="budget" element={<BudgetPage />} />
           <Route path="progress-bills" element={<ProgressBillsPage />} />
@@ -99,10 +118,20 @@ export default function App() {
           <Route path="owner-finance" element={<OwnerFinancePage />} />
           <Route path="costs" element={<CostsPage />} />
           <Route path="analysis" element={<AnalysisPage />} />
+          <Route path="assistant" element={<Suspense fallback={<div className="page-wrap"><LoadingBlock label="正在加载成本助手…" /></div>}><CostAssistantPage /></Suspense>} />
         </Route>
-        <Route path="system" element={<SystemManagementPage />} />
-        <Route path="system/members" element={<NeedProject><ProjectMembersPage /></NeedProject>} />
-        <Route path="system/accounts" element={<UserManagementPage />} />
+        <Route path="system" element={<AdminOnly><SystemManagementPage /></AdminOnly>} />
+        <Route path="system/security" element={<AdminOnly><SystemSecurityPage /></AdminOnly>} />
+        <Route path="system/authorization" element={<AdminOnly><SystemAuthorizationPage /></AdminOnly>} />
+        <Route path="system/policies" element={<AdminOnly><SystemPoliciesPage /></AdminOnly>} />
+        <Route path="system/governance" element={<AdminOnly><SystemGovernancePage /></AdminOnly>} />
+        <Route path="system/operations" element={<AdminOnly><SystemOperationsPage /></AdminOnly>} />
+        <Route path="system/dictionaries" element={<AdminOnly><SystemDictionariesPage /></AdminOnly>} />
+        <Route path="system/parameters" element={<AdminOnly><SystemParametersPage /></AdminOnly>} />
+        <Route path="system/accounts" element={<AdminOnly><UserManagementPage /></AdminOnly>} />
+        <Route path="projects/members" element={<NeedProject><ProjectMembersPage /></NeedProject>} />
+        <Route path="account/security" element={<AccountSecurityPage />} />
+        <Route path="system/members" element={<Navigate to="/projects/members" replace />} />
         <Route path="workspace" element={<LegacyWorkspaceRedirect />} />
         <Route path="workspace/*" element={<LegacyWorkspaceRedirect />} />
         {/* Compatibility redirects preserve links/bookmarks from earlier releases. */}

@@ -1,8 +1,34 @@
 # 墨衡｜施工单位成本管理系统
+版本：MVP 2.19.0-rc.1 验证候选（Windows 原生部署优先）
 
-版本：MVP 2.8.0-rc.1 验证候选（Windows 原生部署优先）
 
-本项目参考《施工单位成本管理系统完整设计方案 v1.0》。全局经营总览跨项目汇总；单项目成本与合同业务统一通过“成本工作台”（`/cost`）访问。项目档案、项目成员与权限、公司级系统账号管理统一进入“系统管理工作台”（`/system`）及其管理页面；成本与管理界面共享同一套业务对象、数据库和服务端权限边界。历史 `/workspace/...` 和 `/settings/users` 路径保留重定向兼容。
+## 只读 AI 助手后端缺陷收敛（2026-10-17）
+
+v2.19.0-rc.1 吸收上一轮助手运行态 Gate 的源码修复：将 `@langchain/core` 与 `langchain@1.5.18` 的 peer 范围对齐至 `1.2.18`；`OPENAI_BASE_URL` 可透传给 LangChain OpenAI-compatible endpoint；修正 `Project` 上 5 个不成立的治理/备份/集成反向关系声明；现有 PostgreSQL worker 另外定期将超过 60 秒且没有有效匹配队列任务的孤立助手 run 收敛为 `FAILED` 或尊重已有取消请求收敛为 `CANCELLED`，追加终态事件和必要审计；SSE 断开后界面回读已持久化终态，不再让已失败运行继续显示为连接错误。助手生产开关仍默认关闭。
+
+**本包验证边界：**上一轮“五项 Gate 四项完整通过、一项部分通过”的真实环境运行态结果来自项目测试方，本轮未重跑真实模型/隔离 PG/浏览器链路。v2.19 新增 fake provider 成功路径、事件 payload 白名单、日志与事件泄漏扫描器及隔离 PostgreSQL 六场景+陈旧孤立 run 集成测试；本轮验证状态与后续 Gate 见 `docs/assistant-runtime-ci-gates-v1.0.md`。当前执行容器为 Node.js 22，且未包含用户本地生成的 workspace lock 文件/已安装依赖；因此不能用当前导出包替代 Node.js 24+ 的重复安装、全量构建、Prisma 生成与真实 PG/浏览器验收。**仍不批准生产启用。**
+
+## v2.15.0-rc.1 助手后端阶段记录（历史状态）
+
+v2.15.0-rc.1 新增会话/消息/运行事件持久化 API、后台任务入队、SSE 事件重放与心跳、取消请求、requestId 幂等与归档。LangGraph.js + PostgreSQL `PostgresSaver` 已封装在 `apps/api/src/assistant/runtime/`，checkpoint schema 需在受控部署终端先设置 `ASSISTANT_CHECKPOINT_SETUP_ALLOW=true`，再执行 `npm run assistant:checkpoint:setup -w @cms/api` 显式初始化。该实现仍是默认关闭的只读 PoC 后端增量：前端助手 UI、TypeScript/build、Prisma Client 生成、真实 PostgreSQL 迁移/并发、浏览器 SSE 重连及 fake/真实模型 E2E 尚未验收。当前环境为 Node.js 22.16.0（仓库要求 Node.js 24+）且未安装工作区依赖，本轮只运行静态验证。详情见 `docs/assistant-runtime-decision-v1.0.md`、`docs/assistant-next-stage-acceptance-v1.0.md`、`docs/assistant-session-backend-verification-v1.0.md`。**生产仍禁止启用 `ASSISTANT_POC_ENABLED`。**
+
+
+> **v2.14.0-rc.1 系统管理关键缺口闭环**：在 v2.13 工作台与授权复核基础上，新增显式账号级“全部项目只读”数据范围（默认仍为仅已分配项目），并在报表、经营总览、项目列表和单位经营档案等读取路径执行；不会授权修改、审批、付款或成员管理。已发布项目权限矩阵只收紧既有角色能力，不能放宽代码中的权限上限；内部流程当前仅接入变更签证审批状态流转，继续保留提交人自审批禁止和外部金额确认规则。两个业务可读数值参数已接入待办预警（合同到期窗口、目标成本超支严重级别），支持全局默认和项目覆盖。数据库备份与 PostgreSQL 全局角色/配置归档均使用 AES-256-GCM 和 SHA-256；恢复演练在核验集群身份后创建临时隔离库验证业务数据库，但不会自动将全局角色 SQL 应用到目标集群。集成管理支持明确允许名单下的 HTTPS 连接测试与异步 JSON 投递/幂等键/后台重试，但不代表任何特定 ERP 已完成业务映射。巡检按钮使用透明常态背景与中性色键盘焦点轮廓。
+
+**发布边界**：本版本仍为 RC。静态源码契约不等于严格类型检查、真实数据库迁移、端到端或生产环境验收；当前开发容器 Node.js 22.16.0 且缺少工作区依赖。必须在 Node.js 24+ 环境执行构建/测试、Prisma 校验/生成、隔离 PostgreSQL 迁移与恢复、浏览器 E2E 和目标 Windows 验收后，才能评估正式发布。
+
+> **v2.12.1-rc.1 源码缺陷修复**：对用户提供的 39 条源码缺陷清单逐项复核，修复已确认的状态同步、参数校验错误详情、发布审计准确性、项目归档竞态、回滚说明截断、子进程树超时终止、备份元数据/文件删除顺序、严格文件名校验、PostgreSQL 恢复目标集群身份检查、登录限流 HMAC 密钥耦合、刷新热路径历史数据清理、MFA 密文格式校验、强制改密并发条件等问题；另补充后台清理失败冷却与 MFA/限流单测。原缺陷清单中也有误报或产品建议，逐条理由见 `docs/源码缺陷审计与修复记录-v2.12.1-rc.1.md`。仍为 RC：完整 Node.js 24+ 构建、真实 PostgreSQL 迁移/并发、浏览器 E2E、Windows 进程树和备份恢复验证尚未完成。公网模式新增独立 `LOGIN_ATTEMPT_HMAC_KEY`；首次切换会改变已有登录限流桶 hash，不要与 JWT 密钥轮换叠加进行；恢复演练需能读取 `pg_control_system()` 的数据库运维账号（通常授予只读 `pg_monitor`）。
+
+> **v2.12.0-rc.1 统一基础字典与参数配置**：基于 v2.11.0-rc.1 增量新增基础字典、参数版本模型与迁移，提供“统一基础字典”和“统一参数配置”两个管理员工作台；参数支持全局默认/项目级覆盖、类型校验、管理员独占/业务可读范围、草稿显式发布、历史版本和回滚草稿；另提供仅登录可读的字典/有效参数 API，并按项目成员权限过滤项目级参数。实际成本录入的计量单位字段已接入统一 `MEASURE_UNIT` 字典提示，同时保留自由输入；普通业务 API 只返回被显式设为业务可读的已发布参数。字典和参数的加入不会自动改写合同金额生效规则、变更审批、结算收付或其他核心财务状态机。当前版本仍是 RC，Node.js 24+ 完整构建、Prisma/数据库迁移、浏览器 E2E 及其余业务模块逐个接入仍待验证，详见 `docs/统一基础字典与参数配置设计-v2.12.0-rc.1.md` 与 `docs/阶段验收记录-v2.12.0-rc.1.md`。
+
+> **v2.10.0-rc.1 导航职责、系统管理概览与个人改密**：将侧栏重组为“经营中心 / 工作台 / 项目管理 / 系统管理”，项目档案与成员授权移至项目管理，操作追溯归入管理员系统管理；新增长期账号菜单和自主修改密码，要求当前密码，新密码最少 12 位，已启用 MFA 的账号还要进行二次验证，修改后撤销全部旧会话。系统管理首页改为状态/风险概览与后续建设路线，不再重复展示全套管理入口。项目成员规范路由调整为 `/projects/members`，旧路径继续重定向兼容。公网安全候选仍未完成真实公网和完整构建验收，不代表已上线。详见 `docs/系统管理工作台与导航优化设计-v2.10.0-rc.1.md`、`docs/阶段验收记录-v2.10.0-rc.1.md`。
+
+> **v2.11.0-rc.1 系统管理扩展**：在 v2.10 账号安全与导航基线上，增加部门/岗位归属、版本化变更审批规则（草稿与发布分离，后端实际执行）、集成凭据 AES-256-GCM 加密存储与轮换、数据质量巡检，以及 PostgreSQL 备份/校验/隔离恢复演练工作台。公司级管理员身份不自动变成项目审批角色；审批规则不改变外部业主确认金额生效政策。备份/恢复需要部署配置 `BACKUP_DIR`、`PG_DUMP_PATH`、`PG_RESTORE_PATH`、`PSQL_PATH` 与独立的 `RESTORE_TEST_DATABASE_URL`；集成凭据需要独立的 `INTEGRATION_ENCRYPTION_KEY`。运行环境级验证仍未完成，详见 `docs/系统管理扩展设计与实施方案-v2.11.0-rc.1.md` 和 `docs/阶段验收记录-v2.11.0-rc.1.md`。
+
+本项目参考《施工单位成本管理系统完整设计方案 v1.0》。全局经营总览跨项目汇总；单项目成本与合同业务统一通过“成本工作台”（`/cost`）访问。项目档案与项目成员授权统一进入“项目管理”分组；公司级系统账号、安全中心和操作追溯统一进入“系统管理”分组；成本与管理界面共享同一套业务对象、数据库和服务端权限边界。历史 `/workspace/...` 和 `/settings/users` 路径保留重定向兼容。
+
+> **v2.9.0-rc.1 公网登录与安全管理**：新增会话与安全事件管理、公网模式 HTTPS 配置闸门、管理员 TOTP MFA、账号启停/密码重置、强制改密、刷新令牌重放防护、登录失败账号/IP 双维度限流。公网模式必须设置 `PUBLIC_BASE_URL=https://你的域名`、`COOKIE_SECURE=true`、独立 `MFA_ENCRYPTION_KEY` 与独立 `LOGIN_ATTEMPT_HMAC_KEY`；Caddy 示例和 Windows 部署顺序见 `docs/公网访问与系统安全管理设计-v2.9.0-rc.1.md` 及 `deploy/caddy/Caddyfile.example`。该版本尚需 Node.js 24+ 严格构建、Prisma 迁移、TLS/公网和浏览器端到端验证；静态验收结果见 `docs/阶段验收记录-v2.9.0-rc.1.md` 和 `docs/验证结果-v2.9.0-rc.1.txt`。
+
 
 > **v2.8.0-rc.1 成本工作台定名与系统管理入口拆分**：将单项目业务入口正式命名为“成本工作台”，组件文件/导出符号调整为 `CostWorkspaceLayout`，规范路由改为 `/cost/*`；原 `/workspace/*` 路径继续重定向兼容，旧成员路径转到 `/system/members`，旧账号管理路径转到 `/system/accounts`。新增“系统管理工作台”首页（`/system`），把项目档案、项目成员与权限、系统账号管理整理为独立管理入口。成员角色规则、API 权限校验、最后一名项目负责人保护和审计写入沿用既有实现；未修改 Prisma Schema、数据库迁移和财务金额规则。静态检查与构建状态见 `docs/阶段验收记录-v2.8.0-rc.1.md`。
 
@@ -139,7 +165,7 @@ docker compose logs -f api
 
 本轮保留 React + TypeScript、Fastify、Prisma、PostgreSQL 和当前 Windows 原生部署模式，不迁移框架、不拆微服务；新增的轻量队列直接使用 PostgreSQL，不增加 Redis、RabbitMQ、Kafka 或 Kubernetes 等必需服务。
 
-- 新增统一 API 模块注册表，现有 15 组路由插件由 `apps/api/src/platform/module-registry.ts` 统一挂载。
+- 新增统一 API 模块注册表，18 个 API 路由模块由 `apps/api/src/platform/module-registry.ts` 统一挂载，其中 16 个出现在集成元数据目录，公共配置读取与系统管理写接口不对外公开枚举。
 - 新增 `GET /api/meta`，用于发现应用版本、API 主版本和模块目录；具体接口契约仍以 `/docs/` 的 OpenAPI 文档为准。
 - 新增 `/health/live` 存活探针、`/health/ready` 数据库就绪探针，并保留旧 `/health` 路径供部署脚本兼容。
 - 响应提供 `x-request-id`；服务端日志对常见令牌/密码字段脱敏；生产 CORS 默认不再开放 Vite 开发来源。
@@ -223,3 +249,14 @@ scripts/windows/run-api.ps1               # 任务计划程序调用的前台运
 - [阶段验收记录 v1.4.0-rc.1](docs/阶段验收记录-v1.4.0-rc.1.md)
 - [分供合同与成本归集设计说明](docs/分供合同与成本归集设计说明.md)
 - [历史阶段验收记录 v1.3.0-rc.1](docs/阶段验收记录-v1.3.0-rc.1.md)
+
+
+## v2.12.1-rc.1 缺陷复核说明
+
+本版本逐条核验 39 项源码清单，修复确认缺陷；并非所有条目均被认定为真实缺陷。审计裁定及未改动项的技术理由见 `docs/源码缺陷审计与修复记录-v2.12.1-rc.1.md`。
+
+## Clean install / Prisma / experimental PoC Gate
+
+The root workspace requires a committed `package-lock.json` and uses `npm ci`. `npm run build` generates Prisma Client before TypeScript compilation, and API tests generate it when run independently. Run `npm run db:validate` against a shell with `DATABASE_URL` configured before deploying migrations.
+
+`experiments/pi-durable-poc` is outside npm workspaces and has its own dependency lock requirement. Commit `experiments/pi-durable-poc/package-lock.json` before expecting the separate Pi Durable CI job to pass. See `docs/pi-durable-poc-lockfile-gate-v1.0.md`.

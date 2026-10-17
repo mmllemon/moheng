@@ -91,7 +91,7 @@ function serializePayable(row: any) {
 }
 
 async function hasProjectWriteAccess(userId: string, userRole: UserRole, projectId: string, reply: any) {
-  return denyIfNoProjectAccess(userId, userRole, projectId, reply, writeRoles);
+  return denyIfNoProjectAccess(userId, userRole, projectId, reply, writeRoles, 'DOWNSTREAM_FINANCE_WRITE');
 }
 async function lockContract(tx: Prisma.TransactionClient, projectId: string, contractId: string) {
   await tx.$queryRaw`SELECT "id" FROM "DownstreamContract" WHERE "id" = ${contractId} AND "projectId" = ${projectId} AND "deletedAt" IS NULL FOR UPDATE`;
@@ -107,7 +107,7 @@ export async function downstreamFinanceRoutes(app: FastifyInstance) {
   app.get('/:projectId/downstream-finance', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const contracts = await prisma.downstreamContract.findMany({
       where: { projectId, deletedAt: null },
       include: {

@@ -3,6 +3,7 @@ import { CostType, DownstreamPaymentType } from '@prisma/client';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
+import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 import { canAccessProject } from '../lib/project-access.js';
 import { calculateDownstreamCurrentAmount, calculateContractCostGap } from '../lib/downstream-contract-math.js';
 import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
@@ -23,7 +24,7 @@ export async function analysisRoutes(app: FastifyInstance) {
   app.get('/projects/:projectId/analysis/three-way', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const project = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, include: { mainContract: true } });
     if (!project) return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
 
@@ -123,7 +124,8 @@ export async function analysisRoutes(app: FastifyInstance) {
 
   app.get('/dashboard', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
-    const projectWhere = { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) } as const;
+    const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'PROJECT_READ');
+    const projectWhere = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) } as const;
     const projects = await prisma.project.findMany({ where: projectWhere, include: { _count: { select: { costEntries: true, budgetItems: true } } }, orderBy: { updatedAt: 'desc' } });
     const ids = projects.map((p) => p.id);
     if (!ids.length) return success({ totals: { projectCount: 0, contractAmount: 0, targetCost: 0, actualCost: 0, receivedAmount: 0 }, projects: [], pendingChanges: [], recentActivities: [] });

@@ -12,6 +12,61 @@ enum UserRole {
   USER
 }
 
+enum UserProjectDataScope {
+  ASSIGNED_PROJECTS
+  ALL_PROJECTS_READONLY
+}
+
+enum GovernanceRuleStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+enum BackupRunType {
+  BACKUP
+  RESTORE_DRILL
+}
+
+enum BackupRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SystemParameterScope {
+  GLOBAL
+  PROJECT
+}
+
+enum SystemParameterValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+enum SystemParameterVisibility {
+  ADMIN_ONLY
+  BUSINESS_READABLE
+}
+
+enum SystemParameterStatus {
+  DRAFT
+  PUBLISHED
+  RETIRED
+}
+
+enum AuthorizationReviewStatus {
+  PENDING
+  REVIEWED
+}
+
 enum ReportTemplateScope {
   SYSTEM
   PROJECT
@@ -226,11 +281,36 @@ model User {
   email        String          @unique
   passwordHash String
   role         UserRole        @default(USER)
+  dataScope    UserProjectDataScope @default(ASSIGNED_PROJECTS)
   isActive     Boolean         @default(true)
+  authVersion  Int             @default(0)
+  passwordResetRequired Boolean @default(false)
+  departmentId String?
+  position String? @db.VarChar(120)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  mfaEnabled   Boolean         @default(false)
+  mfaSecretEncrypted String?
+  mfaPendingSecretEncrypted String?
+  mfaEnrolledAt DateTime?      @db.Timestamptz(3)
+  mfaLastUsedStep BigInt?
+  authSessions AuthSession[]
+  mfaRecoveryCodes MfaRecoveryCode[]
   memberships  ProjectMember[]
   refreshTokens RefreshToken[]
   auditLogs    AuditLog[]
+  securityEvents SecurityEvent[]
   backgroundJobs BackgroundJob[]
+  assistantConversations AssistantConversation[] @relation("AssistantConversationOwner")
+  assistantRuns AssistantRun[] @relation("AssistantRunOwner")
+  createdGovernanceRules GovernanceRuleVersion[] @relation("GovernanceRuleCreator")
+  publishedGovernanceRules GovernanceRuleVersion[] @relation("GovernanceRulePublisher")
+  triggeredBackupRuns SystemBackupRun[]
+  createdIntegrationCredentials IntegrationCredential[] @relation("IntegrationCredentialCreator")
+  updatedIntegrationCredentials IntegrationCredential[] @relation("IntegrationCredentialUpdater")
+  createdSystemParameterRevisions SystemParameterRevision[] @relation("SystemParameterRevisionCreator")
+  publishedSystemParameterRevisions SystemParameterRevision[] @relation("SystemParameterRevisionPublisher")
+  createdAuthorizationReviews SystemAuthorizationReview[] @relation("SystemAuthorizationReviewCreator")
+  reviewedAuthorizationReviews SystemAuthorizationReview[] @relation("SystemAuthorizationReviewReviewer")
   costEntries  CostEntry[]
   createdChanges Change[] @relation("ChangeCreator")
   submittedChanges Change[] @relation("ChangeSubmitter")
@@ -266,6 +346,175 @@ model User {
   createdOwnerAdvanceMovements OwnerAdvanceMovement[] @relation("OwnerAdvanceMovementCreator")
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+
+  @@index([departmentId])
+}
+
+
+model Department {
+  id        String       @id @default(cuid())
+  code      String       @unique @db.VarChar(40)
+  name      String       @db.VarChar(120)
+  parentId  String?
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime     @updatedAt @db.Timestamptz(3)
+  parent    Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children  Department[] @relation("DepartmentHierarchy")
+  users     User[]
+
+  @@index([parentId, isActive])
+  @@index([isActive, name])
+}
+
+model GovernanceRuleVersion {
+  id            String               @id @default(cuid())
+  ruleKey       String               @db.VarChar(80)
+  name          String               @db.VarChar(120)
+  version       Int
+  status        GovernanceRuleStatus @default(DRAFT)
+  definition    Json
+  changeNote    String?              @db.VarChar(1000)
+  createdById   String
+  publishedById String?
+  publishedAt   DateTime?            @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
+  createdBy     User                 @relation("GovernanceRuleCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  publishedBy   User?                @relation("GovernanceRulePublisher", fields: [publishedById], references: [id], onDelete: Restrict)
+
+  @@unique([ruleKey, version])
+  @@index([ruleKey, status, version])
+  @@index([createdById, createdAt])
+}
+
+model SystemBackupRun {
+  id          String         @id @default(cuid())
+  type        BackupRunType
+  status      BackupRunStatus @default(RUNNING)
+  fileName    String?        @db.VarChar(255)
+  sourceBackupId String?
+  globalsFileName String? @db.VarChar(255)
+  globalsFileSize BigInt?
+  globalsSha256 String? @db.VarChar(64)
+  fileSize    BigInt?
+  sha256      String?        @db.VarChar(64)
+  startedAt   DateTime       @default(now()) @db.Timestamptz(3)
+  finishedAt  DateTime?      @db.Timestamptz(3)
+  durationMs  Int?
+  verified    Boolean        @default(false)
+  message     String?        @db.VarChar(2000)
+  triggeredById String
+  triggeredBy User           @relation(fields: [triggeredById], references: [id], onDelete: Restrict)
+  sourceBackup SystemBackupRun? @relation("BackupRestoreSource", fields: [sourceBackupId], references: [id], onDelete: Restrict)
+  restoreDrills SystemBackupRun[] @relation("BackupRestoreSource")
+
+  @@index([sourceBackupId])
+  @@index([type, status, startedAt])
+  @@index([triggeredById, startedAt])
+}
+
+model SystemDictionary {
+  id          String   @id @default(cuid())
+  code        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.VarChar(1000)
+  isSystem    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  items       SystemDictionaryItem[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([isActive, code])
+}
+
+model SystemDictionaryItem {
+  id           String          @id @default(cuid())
+  dictionaryId String
+  code         String          @db.VarChar(80)
+  name         String          @db.VarChar(120)
+  description  String?         @db.VarChar(1000)
+  sortOrder    Int             @default(0)
+  isSystem     Boolean         @default(false)
+  isActive     Boolean         @default(true)
+  dictionary   SystemDictionary @relation(fields: [dictionaryId], references: [id], onDelete: Restrict)
+  createdAt    DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime        @updatedAt @db.Timestamptz(3)
+
+  @@unique([dictionaryId, code])
+  @@index([dictionaryId, isActive, sortOrder])
+}
+
+model SystemParameterRevision {
+  id           String                  @id @default(cuid())
+  key          String                  @db.VarChar(100)
+  name         String                  @db.VarChar(120)
+  description  String?                 @db.VarChar(1000)
+  value        Json
+  valueType    SystemParameterValueType
+  visibility   SystemParameterVisibility @default(ADMIN_ONLY)
+  scope        SystemParameterScope    @default(GLOBAL)
+  scopeKey     String                  @db.VarChar(120)
+  projectId    String?
+  version      Int
+  status       SystemParameterStatus   @default(DRAFT)
+  changeNote   String?                 @db.VarChar(1000)
+  createdById  String
+  publishedById String?
+  publishedAt  DateTime?               @db.Timestamptz(3)
+  createdAt    DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime                @updatedAt @db.Timestamptz(3)
+  project      Project?                @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdBy    User                    @relation("SystemParameterRevisionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  publishedBy  User?                   @relation("SystemParameterRevisionPublisher", fields: [publishedById], references: [id], onDelete: Restrict)
+
+  @@unique([key, scopeKey, version])
+  @@index([key, scopeKey, status, version])
+  @@index([projectId, createdAt])
+  @@index([createdById, createdAt])
+}
+
+model SystemAuthorizationReview {
+  id           String                    @id @default(cuid())
+  status       AuthorizationReviewStatus @default(PENDING)
+  summary      Json
+  snapshot     Json
+  reviewNote   String?                   @db.VarChar(1000)
+  createdById  String
+  reviewedById String?
+  createdAt    DateTime                  @default(now()) @db.Timestamptz(3)
+  reviewedAt   DateTime?                 @db.Timestamptz(3)
+  createdBy    User                      @relation("SystemAuthorizationReviewCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  reviewedBy   User?                     @relation("SystemAuthorizationReviewReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([createdById, createdAt])
+}
+
+model IntegrationCredential {
+  id               String            @id @default(cuid())
+  code             String            @unique @db.VarChar(80)
+  name             String            @db.VarChar(120)
+  adapterType      String            @db.VarChar(80)
+  endpointUrl      String?           @db.VarChar(1000)
+  description      String?           @db.VarChar(1000)
+  status           IntegrationStatus @default(ACTIVE)
+  secretCiphertext String?
+  secretIv         String?           @db.VarChar(32)
+  secretAuthTag    String?           @db.VarChar(32)
+  keyVersion       Int               @default(1)
+  lastRotatedAt    DateTime?         @db.Timestamptz(3)
+  lastTestAt       DateTime?         @db.Timestamptz(3)
+  lastTestStatus   String?           @db.VarChar(40)
+  lastTestSummary  String?           @db.VarChar(500)
+  createdById      String
+  updatedById      String
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  createdBy        User              @relation("IntegrationCredentialCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy        User              @relation("IntegrationCredentialUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([status, updatedAt])
 }
 
 model BusinessParty {
@@ -331,6 +580,9 @@ model Project {
   baselineMigrationReconciliations ContractBaselineMigrationReconciliation[]
   reportTemplates ReportTemplate[]
   backgroundJobs BackgroundJob[]
+  assistantConversations AssistantConversation[]
+  assistantRuns AssistantRun[]
+  systemParameterRevisions SystemParameterRevision[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?
@@ -343,12 +595,75 @@ model RefreshToken {
   id        String   @id @default(cuid())
   tokenHash String   @unique
   userId    String
+  sessionId String?
   expiresAt DateTime @db.Timestamptz(3)
+  consumedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   AuthSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([sessionId, expiresAt])
+  @@index([expiresAt])
+}
+
+model AuthSession {
+  id          String   @id @default(cuid())
+  userId      String
+  authVersion Int      @default(0)
+  ipAddress   String?  @db.VarChar(64)
+  userAgent   String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  lastSeenAt  DateTime @default(now()) @db.Timestamptz(3)
+  expiresAt   DateTime @db.Timestamptz(3)
+  revokedAt   DateTime? @db.Timestamptz(3)
+  revokeReason String? @db.VarChar(120)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([lastSeenAt])
+}
+
+model LoginAttemptBucket {
+  keyHash        String   @id @db.VarChar(64)
+  failures       Int      @default(0)
+  windowStartedAt DateTime @db.Timestamptz(3)
+  blockedUntil   DateTime? @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([blockedUntil])
+  @@index([updatedAt])
+}
+
+model SecurityEvent {
+  id           String   @id @default(cuid())
+  userId       String?
+  accountEmail String?  @db.VarChar(254)
+  sessionId    String?
+  action       String   @db.VarChar(80)
+  outcome      String   @db.VarChar(30)
+  ipAddress    String?  @db.VarChar(64)
+  userAgent    String?  @db.VarChar(500)
+  details      Json?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([accountEmail, createdAt])
+}
+
+model MfaRecoveryCode {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String   @unique @db.VarChar(64)
+  usedAt    DateTime? @db.Timestamptz(3)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, expiresAt])
-  @@index([expiresAt])
+  @@index([userId, usedAt])
 }
 
 model ProjectMember {
@@ -1193,4 +1508,86 @@ model BackgroundJob {
   @@index([ownerUserId, createdAt])
   @@index([projectId, status, createdAt])
   @@index([resultExpiresAt])
+}
+
+
+/// Persistent, owner-scoped conversation metadata for the opt-in read-only assistant.
+model AssistantConversation {
+  id            String   @id @default(cuid())
+  ownerUserId   String
+  projectId     String
+  title         String   @db.VarChar(200)
+  status        String   @default("ACTIVE") @db.VarChar(20)
+  lastMessageAt DateTime @default(now()) @db.Timestamptz(3)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+  owner         User     @relation("AssistantConversationOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  messages      AssistantMessage[]
+  runs          AssistantRun[]
+  events        AssistantRunEvent[]
+
+  @@index([ownerUserId, lastMessageAt])
+  @@index([ownerUserId, projectId, lastMessageAt])
+  @@index([projectId, status, lastMessageAt])
+}
+
+/// User and assistant messages are owner-scoped through their conversation. Tool results are not stored as chat messages.
+model AssistantMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  requestId      String?  @db.VarChar(100)
+  role           String   @db.VarChar(20)
+  content        String   @db.Text
+  status         String   @default("COMPLETED") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  conversation   AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, requestId])
+  @@index([conversationId, createdAt])
+}
+
+/// A durable agent invocation coordinated by the existing PostgreSQL BackgroundJob queue.
+model AssistantRun {
+  id                 String   @id @default(cuid())
+  conversationId     String
+  ownerUserId        String
+  projectId          String
+  requestId          String   @db.VarChar(100)
+  requestHash        String   @db.VarChar(64)
+  jobId              String?  @unique @db.VarChar(100)
+  status             String   @default("QUEUED") @db.VarChar(20)
+  cancelRequestedAt  DateTime? @db.Timestamptz(3)
+  lastEventSequence  Int      @default(0)
+  errorCode          String?  @db.VarChar(100)
+  startedAt          DateTime? @db.Timestamptz(3)
+  finishedAt         DateTime? @db.Timestamptz(3)
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+  conversation       AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  owner              User     @relation("AssistantRunOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  events             AssistantRunEvent[]
+
+  @@unique([ownerUserId, conversationId, requestId])
+  @@index([conversationId, status, createdAt])
+  @@index([ownerUserId, status, createdAt])
+  @@index([projectId, status, createdAt])
+}
+
+/// Durable, ordered events consumed by Server-Sent Events clients. Payloads must contain metadata, not secrets or raw prompts.
+model AssistantRunEvent {
+  id             Int      @id @default(autoincrement())
+  conversationId String
+  runId          String
+  sequence       Int
+  type           String   @db.VarChar(80)
+  payload        Json
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  conversation   AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  run            AssistantRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, sequence])
+  @@index([conversationId, id])
+  @@index([runId, sequence])
 }

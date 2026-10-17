@@ -76,8 +76,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 2.8.0-rc.1',
-  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.8.0-rc.1'") && server.includes('version: APP_VERSION'));
+check('package, API and Web versions agree on 2.19.0-rc.1',
+  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.1'") && server.includes('version: APP_VERSION'));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
 check('previously shipped migration remains byte-for-byte unchanged',
@@ -285,7 +285,7 @@ check('main-contract screen defaults to a compact summary and edits through a di
 
 check('project workspace groups business pages behind a shared tab navigation while preserving individual routes',
   appRoutes.includes('path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}') &&
-  appRoutes.includes('path="system/members" element={<NeedProject><ProjectMembersPage /></NeedProject>}') &&
+  appRoutes.includes('path="projects/members" element={<NeedProject><ProjectMembersPage /></NeedProject>}') &&
   appRoutes.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') &&
   appRoutes.includes('path="contracts" element={<ContractsPage />') &&
   appRoutes.includes('path="budget" element={<BudgetPage />') &&
@@ -373,7 +373,7 @@ check('historical documentation preserves the unit master, owner finance, combin
 check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
   indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
-  layout.includes('<strong>墨衡</strong>') && layout.includes('v2.8.0-rc.1') &&
+  layout.includes('<strong>墨衡</strong>') && layout.includes('v2.19.0-rc.1') &&
   loginPage.includes('<strong>墨衡</strong>') && !(await read('apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
 check('navigation group captions are removed while visual divider and group regions remain',
@@ -510,7 +510,7 @@ check('audit CSV has BOM/escaping, formula-injection protection and sensitive-ke
   auditCsvTests.includes('formula injection') && auditCsvTests.includes('redact credential-like keys') && auditCsvTests.includes('startsWith'));
 
 check('audit UI is routed and accessible from primary navigation and dashboard recent-activity panel',
-  appRoutes.includes('<Route path="audit-logs" element={<AuditLogsPage />} />') &&
+  appRoutes.includes('<Route path="audit-logs" element={<AdminOnly><AuditLogsPage /></AdminOnly>} />') &&
   layout.includes("{ to: '/audit-logs', label: '操作追溯'") &&
   dashboardPage.includes("navigate('/audit-logs')") && auditPage.includes('应用筛选') &&
   auditPage.includes('变更快照') && auditPage.includes('导出 CSV') && auditPage.includes('EmptyState') && auditPage.includes('ErrorBlock'));

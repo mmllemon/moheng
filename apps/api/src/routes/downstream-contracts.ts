@@ -122,7 +122,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
   app.get('/:projectId/downstream-contracts', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const rows = await prisma.downstreamContract.findMany({
       where: { projectId, deletedAt: null }, include: contractInclude,
       orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
@@ -152,7 +152,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
   app.post('/:projectId/downstream-contracts', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'DOWNSTREAM_CONTRACT_WRITE')) return;
     const parsed = contractInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '下游合同资料有误', parsed.error.flatten());
     const project = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: { id: true, code: true } });
@@ -187,7 +187,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
   app.patch('/:projectId/downstream-contracts/:contractId', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, contractId } = request.params as { projectId: string; contractId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'DOWNSTREAM_CONTRACT_WRITE')) return;
     const parsed = contractInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '下游合同资料有误', parsed.error.flatten());
     try {
@@ -240,7 +240,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
   app.patch('/:projectId/downstream-contracts/:contractId/status', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, contractId } = request.params as { projectId: string; contractId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER], 'DOWNSTREAM_CONTRACT_ADMIN')) return;
     const parsed = contractStatusInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '合同状态参数不正确', parsed.error.flatten());
     const old = await prisma.downstreamContract.findFirst({ where: { id: contractId, projectId, deletedAt: null } });
@@ -266,7 +266,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
   app.post('/:projectId/downstream-contracts/:contractId/adjustments', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, contractId } = request.params as { projectId: string; contractId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER], 'DOWNSTREAM_CONTRACT_ADMIN')) return;
     const parsed = adjustmentInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '下游合同补充协议资料有误', parsed.error.flatten());
     try {
@@ -314,7 +314,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
   app.post('/:projectId/downstream-contracts/:contractId/payment-plans', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, contractId } = request.params as { projectId: string; contractId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'DOWNSTREAM_CONTRACT_WRITE')) return;
     const parsed = planInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '付款计划资料有误', parsed.error.flatten());
     try {
@@ -347,7 +347,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
   app.post('/:projectId/downstream-contracts/:contractId/payments', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, contractId } = request.params as { projectId: string; contractId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'DOWNSTREAM_CONTRACT_WRITE')) return;
     const parsed = paymentInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '对下付款记录填写有误', parsed.error.flatten());
     try {

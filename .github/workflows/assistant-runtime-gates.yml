@@ -1,0 +1,104 @@
+name: Assistant runtime gates
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  assistant-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: moheng_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moheng_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/moheng_test?schema=public
+      PRODUCTION_DATABASE_URL: postgresql://production.invalid/never-use
+      ASSISTANT_RECOVERY_TESTS: 'true'
+      ASSISTANT_GATE_ARTIFACT_DIR: ${{ github.workspace }}/.assistant-gate-artifacts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Require committed root package lock
+        run: test -f package-lock.json
+      - name: Install dependencies reproducibly
+        run: npm ci --no-audit --no-fund
+      - name: Validate schema and migrate isolated PostgreSQL
+        run: |
+          npm run db:validate
+          npm run db:deploy
+      - name: Build application
+        run: npm run build
+      - name: Run API unit suite
+        run: npm run test -w @cms/api
+      - name: Run fake-provider and event-guard tests
+        run: |
+          npm run test:assistant-runtime-contracts
+          npx tsx --test apps/api/src/lib/assistant-event-safety.test.ts apps/api/src/assistant/runtime/langgraph-adapter.test.ts
+      - name: Run PostgreSQL recovery and success-path integration gate
+        shell: bash
+        run: |
+          mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR"
+          set -o pipefail
+          npm run test:assistant-recovery:postgres -w @cms/api 2>&1 | tee "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-runtime.log"
+      - name: Enforce persisted event and runtime log leak gate
+        run: >-
+          node scripts/validate-assistant-leaks.mjs
+          --logs "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-runtime.log"
+          --events "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-events.jsonl"
+          --markers "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-forbidden-markers.txt"
+
+
+  pi-durable-poc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: moheng_poc_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moheng_poc_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://business.invalid/never-use
+      PRODUCTION_DATABASE_URL: postgresql://production.invalid/never-use
+      ASSISTANT_POC_ALLOW_PG_TESTS: 'true'
+      ASSISTANT_POC_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/moheng_poc_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Require committed standalone PoC lockfile
+        shell: bash
+        run: |
+          if [[ ! -f experiments/pi-durable-poc/package-lock.json ]]; then
+            echo "::error::Missing experiments/pi-durable-poc/package-lock.json. Generate it once with npm install --package-lock-only --prefix experiments/pi-durable-poc, review it, and commit it."
+            exit 1
+          fi
+      - name: Install Pi Durable PoC dependencies reproducibly
+        run: npm ci --prefix experiments/pi-durable-poc --no-audit --no-fund
+      - name: Run Pi Durable SQLite and isolated PostgreSQL conformance
+        run: npm test --prefix experiments/pi-durable-poc

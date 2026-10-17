@@ -8,7 +8,7 @@ import { api, ApiError } from '../api';
 import BrandMark from '../components/BrandMark';
 import { useAuthStore } from '../auth-store';
 
-const loginSchema = z.object({ email: z.string().email('请输入有效邮箱'), password: z.string().min(1, '请输入密码') });
+const loginSchema = z.object({ email: z.string().email('请输入有效邮箱'), password: z.string().min(1, '请输入密码'), totpCode: z.string().max(100).optional() });
 const REMEMBER_ACCOUNT_KEY = 'moheng:remember-account';
 const REMEMBERED_EMAIL_KEY = 'moheng:remembered-email';
 function readRememberedEmail() { try { return typeof window !== 'undefined' && window.localStorage.getItem(REMEMBER_ACCOUNT_KEY) === '1' ? window.localStorage.getItem(REMEMBERED_EMAIL_KEY) ?? '' : ''; } catch { return ''; } }
@@ -18,14 +18,20 @@ type LoginValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const navigate = useNavigate();
   const setSession = useAuthStore((state) => state.setSession);
+  const setRestrictedSession = useAuthStore((state) => state.setRestrictedSession);
   const [submitError, setSubmitError] = useState('');
   const [rememberAccount, setRememberAccount] = useState(() => readRememberAccountPreference());
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: readRememberedEmail(), password: '' } });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: readRememberedEmail(), password: '', totpCode: '' } });
 
   const submit = handleSubmit(async (values) => {
     setSubmitError('');
     try {
-      const result = await api.login(values.email, values.password);
+      const result = await api.login(values.email, values.password, values.totpCode?.trim());
+      if ('flow' in result) {
+        setRestrictedSession(result.restrictedToken, result.user, result.flow);
+        navigate('/account/security-step', { replace: true });
+        return;
+      }
       setSession(result.accessToken, result.user);
       try { if (rememberAccount) { window.localStorage.setItem(REMEMBER_ACCOUNT_KEY, '1'); window.localStorage.setItem(REMEMBERED_EMAIL_KEY, values.email.trim()); } else { window.localStorage.removeItem(REMEMBER_ACCOUNT_KEY); window.localStorage.removeItem(REMEMBERED_EMAIL_KEY); } } catch { /* Storage may be disabled by browser policy; login should still succeed. */ }
       navigate('/');
@@ -45,6 +51,7 @@ export default function LoginPage() {
       <form className="login-form" onSubmit={submit} noValidate>
         <label>工作邮箱</label><div className={`input-with-icon ${errors.email ? 'input-invalid' : ''}`}><Mail size={17} /><input type="email" autoComplete="username" placeholder="name@company.com" {...register('email')} /></div>{errors.email && <span className="field-error">{errors.email.message}</span>}
         <label>登录密码</label><div className={`input-with-icon ${errors.password ? 'input-invalid' : ''}`}><LockKeyhole size={17} /><input type="password" autoComplete="current-password" placeholder="请输入密码" {...register('password')} /></div>{errors.password && <span className="field-error">{errors.password.message}</span>}
+        <label>验证器验证码 / 恢复码 <small className="optional-label">（启用多因素认证时填写）</small></label><div className="input-with-icon"><ShieldCheck size={17} /><input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={100} placeholder="6 位验证码或一次性恢复码" {...register('totpCode')} /></div>
         <label className="login-remember-row"><input type="checkbox" checked={rememberAccount} onChange={(e) => { const checked = e.target.checked; setRememberAccount(checked); if (!checked) { try { window.localStorage.removeItem(REMEMBER_ACCOUNT_KEY); window.localStorage.removeItem(REMEMBERED_EMAIL_KEY); } catch { /* Ignore unavailable browser storage. */ } } }} /><span><strong>记住账号</strong><small>密码由浏览器密码管理器安全保存，可使用浏览器的保存密码/自动填充功能。</small></span></label>
         {submitError && <div className="login-error">{submitError}</div>}
         <button className="button button-primary login-submit" type="submit" disabled={isSubmitting}>{isSubmitting ? '正在验证…' : <>登录系统 <ArrowRight size={17} /></>}</button>

@@ -42,7 +42,7 @@ export async function progressBillRoutes(app: FastifyInstance) {
   app.get('/:projectId/progress-bills', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const rows = await prisma.progressBill.findMany({ where: { projectId, deletedAt: null }, include: { payments: { orderBy: { paidAt: 'desc' } }, mainContract: { select: { id: true, contractNo: true, name: true } } }, orderBy: { periodNo: 'desc' } });
     return success(rows.map(serialise));
   });
@@ -50,7 +50,7 @@ export async function progressBillRoutes(app: FastifyInstance) {
   app.post('/:projectId/progress-bills', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'PROGRESS_BILL_WRITE')) return;
     const parsed = billInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '进度款申报资料有误', parsed.error.flatten());
     const mainContract = await prisma.mainContract.findUnique({ where: { projectId }, select: { id: true } });
@@ -71,7 +71,7 @@ export async function progressBillRoutes(app: FastifyInstance) {
   app.patch('/:projectId/progress-bills/:billId/status', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, billId } = request.params as { projectId: string; billId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'PROGRESS_BILL_WRITE')) return;
     const parsed = statusInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '状态参数不正确', parsed.error.flatten());
     const old = await prisma.progressBill.findFirst({ where: { id: billId, projectId, deletedAt: null } });
@@ -116,7 +116,7 @@ export async function progressBillRoutes(app: FastifyInstance) {
   app.post('/:projectId/progress-bills/:billId/payments', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, billId } = request.params as { projectId: string; billId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'PROGRESS_BILL_WRITE')) return;
     const parsed = paymentInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '到账记录填写有误', parsed.error.flatten());
     // Re-read and validate inside a serializable transaction so two concurrent

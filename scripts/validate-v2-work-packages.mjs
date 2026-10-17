@@ -41,9 +41,9 @@ const acceptance = await read('docs/阶段验收记录-v2.0.0-rc.1.md');
 const windowsGate = await read('scripts/windows/verify-release-candidate.ps1');
 const e2eChecklist = await read('docs/WP8-Windows与浏览器端到端验收清单-v2.0.0-rc.1.md');
 
-check('package and API versions agree on v2.8.0-rc.1 while retaining Node.js 24+ gate',
-  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && appInfo.includes("APP_VERSION = '2.8.0-rc.1'") && server.includes('version: APP_VERSION'));
+check('package and API versions agree on v2.19.0-rc.1 while retaining Node.js 24+ gate',
+  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
+  rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0' && appInfo.includes("APP_VERSION = '2.19.0-rc.1'") && server.includes('version: APP_VERSION'));
 check('release command combines original regression contracts, new WP checks and source audit coverage',
   rootPackage.scripts['validate:release-candidate'].includes('validate-release-candidate.mjs') &&
   rootPackage.scripts['validate:release-candidate'].includes('validate-v2-work-packages.mjs') &&
@@ -61,13 +61,13 @@ check('target-cost import shows column mapping, row-level errors and second serv
   budgetPage.includes('/budget/import/preview') && budgetPage.includes('if (!preflight.canImport)') && budgetPage.includes('/budget/import') && budgetRoute.includes('import-csv/preview'));
 check('target-cost import preview checks existing codes, duplicate rows and parent-before-child references',
   budgetRoute.includes('在导入文件中重复') && budgetRoute.includes('已存在于当前项目') && budgetRoute.includes('位于子级之后') && budgetRoute.includes('IMPORT_PARENT_MISSING'));
-check('project member management lives in system management and preserves server-side role assignment checks',
-  app.includes('path="system/members" element={<NeedProject><ProjectMembersPage /></NeedProject>}') &&
-  app.includes("suffix === '/members' ? '/system/members'") && !workspaceLayout.includes('项目成员与权限') &&
+check('project member management belongs to project management and preserves server-side role assignment checks',
+  app.includes('path="projects/members" element={<NeedProject><ProjectMembersPage /></NeedProject>}') &&
+  app.includes("suffix === '/members' ? '/projects/members'") && !workspaceLayout.includes('项目成员与权限') &&
   membersPage.includes('/members') && projectRoute.includes('MEMBER_ROLE_ASSIGNMENT_FORBIDDEN'));
 check('system account management is separated from project-member and project-role operations',
-  app.includes('path="system/accounts" element={<UserManagementPage />}') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') &&
-  systemManagementPage.includes("to: '/system/accounts'") && userManagementPage.includes('创建系统账号') && userManagementPage.includes('系统账号列表') &&
+  app.includes('path="system/accounts" element={<AdminOnly><UserManagementPage /></AdminOnly>}') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') &&
+  layout.includes("to: '/system/accounts', label: '账号管理'") && systemManagementPage.includes('系统管理概览') && userManagementPage.includes('创建系统账号') && userManagementPage.includes('系统账号列表') &&
   !userManagementPage.includes('当前项目角色关联') && !userManagementPage.includes('assignRole') &&
   membersPage.includes('添加项目成员') && membersPage.includes('角色调整'));
 check('member role changes preserve the project-owner invariant and write audit records',

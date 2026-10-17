@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { api } from '../api';
 import {
-  Activity, Banknote, ClipboardList, FileSignature, FolderKanban, HandCoins, ReceiptText, Workflow, FileCheck2,
+  Activity, Banknote, ClipboardList, FileSignature, FolderKanban, HandCoins, ReceiptText, Workflow, FileCheck2, Sparkles,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -21,10 +23,20 @@ function TabLink({ tab }: { tab: { to: string; label: string; icon: LucideIcon }
   return <NavLink to={tab.to} end={tab.to === '/cost'} className={({ isActive }) => `cost-workspace-tab ${isActive ? 'active' : ''}`}><Icon size={15} strokeWidth={1.8} /><span>{tab.label}</span></NavLink>;
 }
 export default function CostWorkspaceLayout() {
+  const [assistantEnabled, setAssistantEnabled] = useState(false);
+  useEffect(() => {
+    let current = true;
+    api.get<{ enabled: boolean }>('/assistant-poc/status')
+      .then((status) => { if (current) setAssistantEnabled(status.enabled); })
+      .catch(() => { if (current) setAssistantEnabled(false); });
+    return () => { current = false; };
+  }, []);
+
   return <div className="cost-workspace">
     <nav className="cost-workspace-tabs" aria-label="成本工作台业务导航">
       <div className="cost-workspace-nav-overview"><TabLink tab={{ to: '/cost', label: '项目驾驶舱', icon: FolderKanban }} /></div>
       <div className="cost-workspace-nav-group cost-workspace-nav-income" role="group" aria-label="业主侧业务"><div className="cost-workspace-nav-group-tabs">{incomeTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
+      {assistantEnabled && <><span className="cost-workspace-nav-separator" aria-hidden="true"><span /></span><div className="cost-workspace-nav-group cost-workspace-nav-assistant" role="group" aria-label="智能分析"><div className="cost-workspace-nav-group-tabs"><TabLink tab={{ to: '/cost/assistant', label: '成本助手', icon: Sparkles }} /></div></div></>}
       <span className="cost-workspace-nav-separator" aria-hidden="true"><span /></span>
       <div className="cost-workspace-nav-group cost-workspace-nav-cost" role="group" aria-label="成本与支出业务"><div className="cost-workspace-nav-group-tabs">{costTabs.map((tab) => <TabLink key={tab.to} tab={tab} />)}</div></div>
     </nav>

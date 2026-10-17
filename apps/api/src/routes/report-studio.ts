@@ -9,6 +9,7 @@ import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js'
 import { loadReportStudioDataset, reportStudioSources, type ReportStudioDomain } from '../lib/report-studio-data.js';
 import { domainFromStudioReportKey, STUDIO_REPORT_KEYS, studioReportKey, validateReportStudioDefinition } from '../lib/report-studio-definition.js';
 import { previewReportStudio, renderReportStudio } from '../lib/report-studio-render.js';
+import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 
 const domainSchema = z.enum(['PROJECT', 'COMPANY', 'PARTY']);
 const createSchema = z.object({
@@ -28,14 +29,15 @@ const updateSchema = z.object({
 }).strict();
 
 async function hasProject(user: AuthUser, projectId: string): Promise<boolean> {
-  return canAccessProject(user.sub, user.role, projectId);
+  return canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ');
 }
 async function hasBusinessParty(user: AuthUser, businessPartyId: string): Promise<boolean> {
   const party = await prisma.businessParty.findUnique({ where: { id: businessPartyId }, select: { id: true } });
   if (!party) return false;
   if (user.role === 'ADMIN') return true;
+  const canReadAllProjects = await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const visibleLinkedProject = await prisma.project.findFirst({
-    where: { deletedAt: null, members: { some: { userId: user.sub } }, OR: [
+    where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }), OR: [
       { ownerPartyId: businessPartyId },
       { downstreamContracts: { some: { counterpartyPartyId: businessPartyId, deletedAt: null } } },
       { costEntries: { some: { businessPartyId, downstreamContractId: null, deletedAt: null } } },
@@ -49,14 +51,14 @@ async function canRead(template: { scope: string; status: string; ownerUserId: s
   if (template.scope === 'PROJECT' && template.projectId) {
     if (!(await hasProject(user, template.projectId))) return false;
     if (template.status === 'PUBLISHED') return true;
-    return template.ownerUserId === user.sub || user.role === 'ADMIN' || canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER']);
+    return template.ownerUserId === user.sub || user.role === 'ADMIN' || canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER'], 'PROJECT_MANAGE');
   }
   return false;
 }
 async function canEdit(template: { scope: string; ownerUserId: string | null; projectId: string | null }, user: AuthUser): Promise<boolean> {
   if (template.scope === 'SYSTEM') return user.role === 'ADMIN';
   if (template.scope === 'PERSONAL') return template.ownerUserId === user.sub;
-  if (template.scope === 'PROJECT' && template.projectId) return canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER']);
+  if (template.scope === 'PROJECT' && template.projectId) return canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER'], 'PROJECT_MANAGE');
   return false;
 }
 function payloadTemplate(template: {
@@ -142,7 +144,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     if (input.scope === 'SYSTEM' && user.role !== 'ADMIN') return failure(reply, 403, 'REPORT_TEMPLATE_ADMIN_REQUIRED', '只有系统管理员可以创建系统模板');
     if (input.domain === 'PROJECT') {
       if (!input.projectId) return failure(reply, 400, 'PROJECT_ID_REQUIRED', '项目级报表必须指定项目');
-      if (!(await canAccessProject(user.sub, user.role, input.projectId, ['OWNER', 'MANAGER'])) && input.scope !== 'PERSONAL') return failure(reply, 403, 'PROJECT_REPORT_TEMPLATE_EDIT_DENIED', '只有项目负责人或经理可以创建项目共享模板');
+      if (!(await canAccessProject(user.sub, user.role, input.projectId, ['OWNER', 'MANAGER'], 'PROJECT_MANAGE')) && input.scope !== 'PERSONAL') return failure(reply, 403, 'PROJECT_REPORT_TEMPLATE_EDIT_DENIED', '只有项目负责人或经理可以创建项目共享模板');
       if (!(await hasProject(user, input.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目报表的权限');
     }
     if (input.domain !== 'PROJECT' && input.scope === 'PROJECT') return failure(reply, 400, 'REPORT_TEMPLATE_SCOPE_INVALID', '公司级或单位档案级模板不能使用项目共享范围');

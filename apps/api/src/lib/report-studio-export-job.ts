@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { ProjectRole } from '@prisma/client';
 import { prisma } from './prisma.js';
 import { canAccessProject } from './project-access.js';
+import { hasCrossProjectReadScope } from './project-data-scope.js';
 import { backgroundJobArtifactPath, backgroundJobStorageRoot } from './background-job-storage.js';
 import { PermanentBackgroundJobError } from './background-jobs.js';
 import type { BackgroundJobHandler } from './background-job-types.js';
@@ -24,7 +25,8 @@ async function canAccessBusinessParty(userId: string, role: string, businessPart
   const party = await prisma.businessParty.findUnique({ where: { id: businessPartyId }, select: { id: true } });
   if (!party) return false;
   if (role === 'ADMIN') return true;
-  const project = await prisma.project.findFirst({ where: { deletedAt: null, members: { some: { userId } }, OR: [
+  const canReadAllProjects = await hasCrossProjectReadScope(userId, role, 'REPORT_EXPORT');
+  const project = await prisma.project.findFirst({ where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId } } }), OR: [
     { ownerPartyId: businessPartyId },
     { downstreamContracts: { some: { counterpartyPartyId: businessPartyId, deletedAt: null } } },
     { costEntries: { some: { businessPartyId, downstreamContractId: null, deletedAt: null } } },
@@ -45,19 +47,19 @@ export const reportStudioXlsxExportJobHandler: BackgroundJobHandler = async (job
   ]);
   if (!user || !user.isActive) throw new PermanentBackgroundJobError('REPORT_STUDIO_EXPORT_OWNER_UNAVAILABLE');
   if (!template || template.status === 'ARCHIVED' || template.reportKey !== studioReportKey(payload.domain)) throw new PermanentBackgroundJobError('REPORT_STUDIO_EXPORT_TEMPLATE_UNAVAILABLE');
-  const authUser: AuthUser = { sub: user.id, email: user.email, role: user.role };
+  const authUser: AuthUser = { sub: user.id, email: user.email, role: user.role, sid: `background:${job.id}` };
   if (template.scope === 'SYSTEM') {
     if (template.status !== 'PUBLISHED' && user.role !== 'ADMIN') throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_ACCESS_REVOKED');
   } else if (template.scope === 'PERSONAL') {
     if (template.ownerUserId !== user.id) throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_ACCESS_REVOKED');
   } else if (template.scope === 'PROJECT' && template.projectId) {
-    const projectReadable = await canAccessProject(user.id, user.role, template.projectId);
-    const canManage = await canAccessProject(user.id, user.role, template.projectId, [ProjectRole.OWNER, ProjectRole.MANAGER]);
+    const projectReadable = await canAccessProject(user.id, user.role, template.projectId, undefined, 'REPORT_EXPORT');
+    const canManage = await canAccessProject(user.id, user.role, template.projectId, [ProjectRole.OWNER, ProjectRole.MANAGER], 'PROJECT_MANAGE');
     if (!projectReadable || (template.status !== 'PUBLISHED' && template.ownerUserId !== user.id && user.role !== 'ADMIN' && !canManage)) throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_ACCESS_REVOKED');
   } else throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_ACCESS_REVOKED');
   if (payload.domain === 'PROJECT' && template.projectId && payload.projectId !== template.projectId) throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_PROJECT_MISMATCH');
   if (payload.domain === 'PARTY' && template.businessPartyId && payload.businessPartyId !== template.businessPartyId) throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_PARTY_MISMATCH');
-  if (payload.projectId && !(await canAccessProject(user.id, user.role, payload.projectId))) throw new PermanentBackgroundJobError('REPORT_STUDIO_PROJECT_ACCESS_REVOKED');
+  if (payload.projectId && !(await canAccessProject(user.id, user.role, payload.projectId, undefined, 'REPORT_EXPORT'))) throw new PermanentBackgroundJobError('REPORT_STUDIO_PROJECT_ACCESS_REVOKED');
   if (payload.businessPartyId && !(await canAccessBusinessParty(user.id, user.role, payload.businessPartyId))) throw new PermanentBackgroundJobError('REPORT_STUDIO_PARTY_ACCESS_REVOKED');
   const validated = validateReportStudioDefinition(payload.templateDefinition);
   if (!validated.success || validated.data.domain !== payload.domain) throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_INVALID');

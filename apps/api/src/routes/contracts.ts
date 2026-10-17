@@ -36,7 +36,7 @@ export async function contractRoutes(app: FastifyInstance) {
   app.get('/:projectId/contracts/main', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const contract = await prisma.mainContract.findUnique({ where: { projectId } });
     if (!contract) return success(null);
     const project = await prisma.project.findUnique({ where: { id: projectId }, select: { contractAmount: true, originalContractAmount: true, ownerPartyId: true, ownerName: true, ownerParty: { select: { id: true, name: true, creditCode: true, contactName: true, phone: true, address: true, taxNo: true, invoiceTitle: true } } } });
@@ -46,7 +46,7 @@ export async function contractRoutes(app: FastifyInstance) {
   app.put('/:projectId/contracts/main', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'MAIN_CONTRACT_WRITE')) return;
     const parsed = contractInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '主合同资料有误', parsed.error.flatten());
     const exists = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, select: { id: true } });

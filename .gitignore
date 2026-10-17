@@ -9,3 +9,12 @@ apps/api/logs/
 
 apps/api/data/evidence/
 apps/api/data/jobs/
+
+# 本地验证产物与过程补丁
+*.patch
+GATE-*.jsonl
+GATE-*.txt
+.gate-package*/
+r3-injection.mjs
+r4-cancel-race.mjs
+r6-ops-drill.mjs

@@ -10,6 +10,7 @@ import { recalculateEffectiveContractAmount } from '../lib/contract-amount.js';
 import { classifyOriginalAmountUpdate } from '../lib/contract-base-policy.js';
 import { resolveBusinessParty } from '../lib/business-party.js';
 import { nextDocumentNumber } from '../lib/document-number.js';
+import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 
 const projectInput = z.object({
   name: z.string().trim().min(2).max(120),
@@ -30,12 +31,13 @@ export async function projectRoutes(app: FastifyInstance) {
     const user = authUser(request);
     const query = z.object({ q: z.string().optional(), status: z.nativeEnum(ProjectStatus).optional() }).safeParse(request.query);
     if (!query.success) return failure(reply, 400, 'VALIDATION_ERROR', '筛选参数不正确', query.error.flatten());
+    const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'PROJECT_READ');
     const projects = await prisma.project.findMany({
       where: {
         deletedAt: null,
         ...(query.data.status ? { status: query.data.status } : {}),
         ...(query.data.q ? { OR: [{ name: { contains: query.data.q, mode: 'insensitive' } }, { code: { contains: query.data.q, mode: 'insensitive' } }] } : {}),
-        ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }),
+        ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }),
       },
       include: { mainContract: true, changes: { where: { deletedAt: null, externalConfirmedAmount: { not: null } }, select: { id: true }, take: 1 }, _count: { select: { budgetItems: true, costEntries: true } } },
       orderBy: { updatedAt: 'desc' },
@@ -84,7 +86,7 @@ export async function projectRoutes(app: FastifyInstance) {
   app.get('/:id', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { id } = request.params as { id: string };
-    if (!(await canAccessProject(user.sub, user.role, id))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, id, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const project = await prisma.project.findFirst({ where: { id, deletedAt: null }, include: { mainContract: true, ownerParty: { select: { id: true, name: true, creditCode: true, contactName: true, phone: true, address: true, taxNo: true, invoiceTitle: true } } } });
     if (!project) return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
     return success({ ...project, ownerPartyId: project.ownerPartyId, contractAmount: Number(project.contractAmount), originalContractAmount: Number(project.originalContractAmount), mainContract: project.mainContract ? { ...project.mainContract, amount: Number(project.mainContract.amount), retentionRate: Number(project.mainContract.retentionRate), advanceDeductionRate: Number(project.mainContract.advanceDeductionRate) } : null });
@@ -93,7 +95,7 @@ export async function projectRoutes(app: FastifyInstance) {
   app.patch('/:id', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { id } = request.params as { id: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, id, reply, [ProjectRole.OWNER, ProjectRole.MANAGER])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, id, reply, [ProjectRole.OWNER, ProjectRole.MANAGER], 'PROJECT_MANAGE')) return;
     const parsed = projectInput.partial().safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '项目资料有误', parsed.error.flatten());
     if (Object.keys(parsed.data).length === 0) return failure(reply, 400, 'EMPTY_UPDATE', '没有需要更新的字段');
@@ -162,7 +164,7 @@ export async function projectRoutes(app: FastifyInstance) {
   app.get('/:id/members', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { id } = request.params as { id: string };
-    if (!(await canAccessProject(user.sub, user.role, id))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, id, [ProjectRole.OWNER, ProjectRole.MANAGER], 'PROJECT_MANAGE'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '只有项目负责人或项目经理可以查看完整成员与身份信息');
     const members = await prisma.projectMember.findMany({ where: { projectId: id }, include: { user: { select: { id: true, name: true, email: true } } } });
     return success(members.map((m) => ({ ...m.user, id: m.id, userId: m.userId, role: m.role, createdAt: m.createdAt })));
   });

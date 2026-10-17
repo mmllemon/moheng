@@ -1,18 +1,23 @@
 import { create } from 'zustand';
 import type { User } from './types';
 
+export type RestrictedAuthFlow = 'mfa-enrollment' | 'password-change';
 type AuthState = {
   accessToken: string | null;
   user: User | null;
+  restrictedFlow: RestrictedAuthFlow | null;
   setSession: (accessToken: string, user: User) => void;
+  setRestrictedSession: (accessToken: string, user: User, flow: RestrictedAuthFlow) => void;
   clearSession: () => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   user: null,
-  setSession: (accessToken, user) => set({ accessToken, user }),
-  clearSession: () => set({ accessToken: null, user: null }),
+  restrictedFlow: null,
+  setSession: (accessToken, user) => set({ accessToken, user, restrictedFlow: null }),
+  setRestrictedSession: (accessToken, user, restrictedFlow) => set({ accessToken, user, restrictedFlow }),
+  clearSession: () => set({ accessToken: null, user: null, restrictedFlow: null }),
 }));
 
 export type UiTheme = 'ivory' | 'champagne' | 'obsidian' | 'glacier' | 'system';

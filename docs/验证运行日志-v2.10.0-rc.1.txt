@@ -1,0 +1,293 @@
+
+> moheng-construction-cost-management@2.10.0-rc.1 validate:release-candidate
+> node scripts/validate-release-candidate.mjs && node scripts/validate-report-studio.mjs && node scripts/validate-report-studio-v2.mjs && node scripts/validate-v2-work-packages.mjs && node scripts/check-audit-coverage.mjs && node scripts/validate-architecture.mjs && node scripts/validate-background-jobs.mjs && node scripts/validate-typescript-fixes.mjs && node scripts/validate-ui-polish.mjs && node scripts/validate-navigation-regressions.mjs && node scripts/validate-public-access-security.mjs && node scripts/validate-system-management-v2.mjs
+
+PASS package, API and Web versions agree on 2.10.0-rc.1
+PASS previously shipped migration remains byte-for-byte unchanged (059b76e6da8be469a6e514554d9c26e89705ef4e8aaf17433cb489fbb2c5120b)
+PASS baseline migration records old/new values and uses main-contract ledger as baseline
+PASS internal amount review migration stores immutable comparison snapshots
+PASS schema models reconciliation records and snapshot fields
+PASS Prisma models contain no duplicate field declarations
+PASS project and main-contract APIs enforce original amount immutability
+PASS external-confirmation and C-verification paths preserve mismatch snapshots
+PASS amount review completion audits that effective amount is unchanged
+PASS Windows startup identifies the project by absolute server entry point
+PASS Windows startup requires a healthy API and database before reporting success
+PASS Windows stop script verifies Node process, entry point and process start time before kill
+PASS downstream contract schema and migration include contracts, amendments, plans, payments and cost link
+PASS payment migration supports separately linked refunds and reference-number idempotency
+PASS settlement-confirmed contracts may still record payments/refunds, but cannot add new payment plans
+PASS downstream business API supports registry, draft update, status, amendments, plans and payments
+PASS downstream payment API tests and applies net payment / refund limits
+PASS downstream contract current amount and commitment estimate are calculated separately
+PASS owner-side progress bills and changes must link to the main contract
+PASS existing revenue-side records are backfilled to the main contract when the contract is created or saved
+PASS actual cost can be linked and retro-linked to a same-project downstream contract without changing cost amount
+PASS analysis and UI show commitments, linked cost, net payments and refunds separately
+PASS server mounts downstream contract routes under project API
+PASS downstream contract/payment and settlement/payable views share a combined workspace entry
+PASS settlement detail lines are optional and do not require a contract or budget item reference
+PASS settlement, payable, payment allocation, advance, retention and invoice models have a dedicated additive migration
+PASS final settlement is cumulative and posts only the delta; signed adjustment credits are supported
+PASS settlement workflow has self-approval protection, documented rejection and draft recovery
+PASS ordinary payments are allocated against payable balances and refunds reverse original allocations
+PASS prepayments, retainage, and invoice verification are recorded separately from actual cost
+PASS settlement posting ledger preserves immutable cumulative-before/delta/after snapshots
+PASS payable schedules are optional, total exactly to the payable, and support schedule-level payment/refund reversal
+PASS main-contract screen defaults to a compact summary and edits through a dialog
+PASS project workspace groups business pages behind a shared tab navigation while preserving individual routes
+PASS global dashboard is independent from selected project and uses cross-project metrics
+PASS single-project cockpit is separate from portfolio dashboard and cost analysis
+PASS cost variance is not presented as an overrun when no target-cost baseline exists
+PASS business-party master supports multi-role parties, non-unique display names and audited identity verification
+PASS business-party migration is additive, preserves text snapshots and backfills legacy links for review
+PASS unit master can search by name/code, create/reuse parties, handle confirmed same-name entities, and audit changes
+PASS projects, owner contracts, downstream contracts and actual costs use common party identities
+PASS unit profile provides project/contract/settlement/payable/payment/cost/invoice aggregates with permission-scoped projects
+PASS party pages support master maintenance, cross-project profile, contract picker, verification warnings and clickable links
+PASS selecting a unit previews reusable contact, address and invoicing data; clear action removes both ID and name
+PASS historical documentation preserves the unit master, owner finance, combined navigation and numbering design
+PASS v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version
+PASS navigation group captions are removed while visual divider and group regions remain
+PASS UI preferences support four Pro-Tier themes, system mode, density, accents, wide content and reduced motion
+PASS UI preferences are a standalone top-right popover with presence-aware close animation
+PASS native dropdowns are replaced by keyboard-accessible custom listboxes and preserve form refs
+PASS native date popups are replaced by a custom bounded calendar with keyboard navigation and clear/today actions
+PASS project portfolio hides redundant project switcher, presents sourced operating summaries, and animates modal exit
+PASS presence helper and overlay animation states support smooth entry/exit transitions
+PASS global command palette supports Ctrl/Cmd+K, arrow selection, Enter navigation, Escape, and list keyboard inspection
+PASS Pro-Tier surface styling includes tabular numerics, floating table rows and reduced-motion fallback
+PASS owner finance UI is restructured into metrics and four interactive content tabs with responsive sticky tables
+PASS legacy ambiguous names require explicit unit selection and same-name duplicate creation is admin-controlled
+PASS migration directory present: 20261013000000_init
+PASS migration directory present: 20261013010000_add_refresh_tokens
+PASS migration directory present: 20261013020000_contract_change_external_confirmation
+PASS migration directory present: 20261013030000_reconcile_original_contract_amount
+PASS migration directory present: 20261013040000_internal_amount_review
+PASS migration directory present: 20261013050000_downstream_contract_management
+PASS migration directory present: 20261014010000_settlement_payables_invoice_retention
+PASS migration directory present: 20261014020000_business_party_master
+PASS migration directory present: 20261014030000_owner_settlement_receivables_document_sequence
+PASS owner-side final settlement, receivable, receipt/refund, advance and retention tables are registered with an additive migration
+PASS owner-side settlement has internal approval, external confirmation, immutable posting and cumulative final delta
+PASS owner receivable collection is capped by selected receivable and signed contract-level net open balance
+PASS owner receipt refunds reverse allocations and mirror negative rows in historical progress-bill ledger
+PASS automatic business numbers use transaction-backed project/type/year sequences and leave manual fields optional
+PASS login remembers account only in local storage and delegates password retention to browser password manager
+PASS unit edit dialog has a constrained scroll region and a persistent footer outside the scroll region
+PASS audit log endpoint constrains regular users to project memberships and supports read-only filters/pagination
+PASS audit CSV has BOM/escaping, formula-injection protection and sensitive-key redaction tests
+PASS audit UI is routed and accessible from primary navigation and dashboard recent-activity panel
+PASS next-step plan records current partial alignment, explicit conflicts and deferred higher-risk scope
+
+77/77 static release-candidate checks passed.
+PASS all application packages use v2.10.0-rc.1
+PASS ExcelJS is pinned to a specific version and API test command includes XLSX tests
+PASS eight report types share a central server-side data registry
+PASS XLSX exports produce typed styled data, freeze panes, filters, page settings, and optional explanation sheet
+PASS template schema bounds grid dimensions and validates field allowlists, duplicate bindings and merge overlap
+PASS template APIs support scopes, publishing, archive, optimistic concurrency, revision restore and audit logging
+PASS project template list checks actual read permission and edit permission separately
+PASS preview has bounded normal mode and separate complete-print data mode
+PASS designer supports live preview, columns, static columns, row/column insert-delete, merge-split, page setup, print and history
+PASS browser print fetches full capped dataset rather than printing the 80-row screen preview
+PASS template data and revisions are schema-backed and migration creates matching tables and foreign keys
+PASS budget XLSX import creates a native template, bounds ZIP expansion, and rejects formulas and non-XLSX content
+PASS legacy designer is routed and XLSX export now passes through formal preview
+PASS template validation has unit tests for unknown fields, visibility, duplicates and merges
+PASS XLSX tests check formulas-as-strings, leading zero IDs, merge, frozen view and metadata sheet
+PASS product documentation describes design boundary, scopes, APIs, security, acceptance and open release gates
+PASS responsive and print styles exist for the report designer and print surfaces
+PASS template DTOs include editability and version metadata
+
+18/18 report-studio static contracts passed.
+PASS all packages and app metadata use v2.10.0-rc.1
+PASS Univer editor direct dependencies are exactly pinned and no Pro package is required
+PASS report studio is independently registered at the stable reports/studio API boundary
+PASS schema v2 allows stable cell bindings, typed formats, and bounded independent repeat regions
+PASS template validator rejects formulas, non-whitelisted fields, duplicate cell bindings and unsafe region/merge overlap
+PASS project and company source registry includes multiple independent business domains
+PASS company sources include project identifiers so cross-project rows remain traceable
+PASS financial summaries never present partial capped source data as complete totals
+PASS renderer binds every repeated-row cell from the same source record and keeps independent regions separate
+PASS template validation rejects cross-source bindings inside a repeated row
+PASS collection queries include stable tie-breakers and party financial sums use integer cents
+PASS party downstream-contract caps are detected and dependent financial totals are disabled on truncation
+PASS ExcelJS is the final XLSX renderer, preserving supported styles and page settings
+PASS Univer cell number formats and wrap/rotation styles map consistently to XLSX
+PASS financial aggregation uses integer cents and preserves precision beyond spreadsheet safe numeric range
+PASS formal preview page is routed and is the XLSX confirmation boundary
+PASS project, company and party report scopes are supported with a built-in party operating-profile template
+PASS Univer component is lazy-loaded, disposed on unmount/domain-template switch, and saved as inert workbook data
+PASS cell binding UI adds visible inert placeholders and region binding constraints
+PASS preview resolves the saved template on the server, enforces project template scope, and does not expose unpublished draft snapshots
+PASS all regular native dropdown/date UI use shared controls
+PASS repository scan finds no business-page native select or type=date outside shared primitives
+PASS historical v2.4 docs still describe the previous release gates
+PASS current docs define row identity/order, preview-width policy, project/company/party scopes and workspace entry points
+PASS party template context is isolated by businessPartyId through an append-only migration
+PASS standard and studio preview grids use fixed natural-width columns to avoid stretching the last column
+PASS report center uses a compact scenario-led hierarchy with a filtered ledger picker and no duplicated hero
+PASS workspace and ledger pages expose common preview/export buttons and unit templates have an edit entry
+
+28/28 v2 report-studio contracts passed.
+PASS package and API versions agree on v2.10.0-rc.1 while retaining Node.js 24+ gate
+PASS release command combines original regression contracts, new WP checks and source audit coverage
+PASS eight standard CSV report types are declared and routed behind authenticated API
+PASS report export filters project IDs on the server and rejects inaccessible explicit project scope
+PASS CSV export applies BOM, quoting, formula neutralization and unit test coverage
+PASS target-cost import shows column mapping, row-level errors and second server preflight before commit
+PASS target-cost import preview checks existing codes, duplicate rows and parent-before-child references
+PASS project member management belongs to project management and preserves server-side role assignment checks
+PASS system account management is separated from project-member and project-role operations
+PASS member role changes preserve the project-owner invariant and write audit records
+PASS live notifications are scoped to accessible projects and cover high-risk ledger tasks
+PASS notification UI labels the list as dynamic tasks, not persistent read/unread messages
+PASS report and notification centers are routable, searchable in command palette, and globally scoped in header
+PASS budget drafts are browser-local only and do not save until explicit form submission
+PASS source schemas and database migrations remain intentionally unchanged by this work package
+PASS reduced-motion and responsive rules cover new report, notification, and member views
+PASS WP8 checklist includes runtime/build, Prisma/database, browser, Windows and restore gates
+PASS Windows WP8 script enforces Node 24+, reproducible dependency installation, build/test/Prisma gates and opt-in migrations
+PASS WP8 manual E2E checklist covers import, project authorization, finance reversals, alerts, backups and Windows ACL
+PASS user and developer documentation clearly distinguish CSV, drafts, alerts and incomplete release gates
+
+20/20 WP2–WP8 source contracts passed.
+PASS audit coverage contract: 项目创建/基本资料更新/成员角色变更
+PASS audit coverage contract: 业主主合同登记/更新
+PASS audit coverage contract: 目标成本新增/修改/批量导入
+PASS audit coverage contract: 实际成本新增/合同关联修正/归档
+PASS audit coverage contract: 进度款新增/状态流转/到账
+PASS audit coverage contract: 变更签证创建/内部审批/外部确认/凭证核验/金额差异复核
+PASS audit coverage contract: 分供合同创建/更新/状态变更/已签调整/付款计划/付款与退款
+PASS audit coverage contract: 分供应付结算/过账/分期/发票核验/分配/质保金
+PASS audit coverage contract: 业主结算/过账/应收/到账退款/预付款/质保金/分期
+PASS audit coverage contract: 往来单位主数据新增/更新
+PASS audit coverage contract: 管理员创建账号
+PASS audit coverage contract: 报表模板创建/修改/发布/归档/历史恢复
+
+12/12 static audit coverage contracts passed.
+PASS workspace/API/UI version and runtime metadata agree on 2.10.0-rc.1
+PASS module registry is the only server-side route registration entry point
+PASS all API route plugins are represented in the registry
+PASS module catalog has unique stable IDs and the expected 16 registered modules — module IDs found: 16
+PASS module registrations declare an API mount prefix and integration visibility
+PASS module catalog exposes descriptive metadata without requiring extra services
+PASS liveness does not depend on PostgreSQL and readiness checks database access
+PASS existing API prefix remains compatible and correlation ID is returned
+PASS production CORS does not default to development localhost origins
+PASS server logs redact authentication and secret fields
+PASS no new always-on cache/broker dependency added
+
+11/11 architecture checks passed
+PASS BackgroundJob Prisma model and forward-only PostgreSQL migration exist
+PASS queue avoids new broker/cache dependencies
+PASS task claim uses transactional SKIP LOCKED, indexed lease recovery and bounded retries
+PASS job records include versioned payload, idempotency hash, attempts, lease and expiry
+PASS report XLSX handler is registered via a stable task type registry
+PASS async XLSX API keeps existing synchronous export route for compatibility
+PASS task status/download routes enforce owner/admin and project-access checks
+PASS task idempotency key rejects conflicting payload reuse
+PASS queued reports preserve template identity and re-check access when the worker executes
+PASS worker has bounded retry/backoff and cleans expired output files
+PASS task output filename is server-derived and artifact path is kept out of public web root
+PASS report preview flow submits XLSX idempotently, polls status and supports later re-check/download
+PASS worker runs only after app listens and shuts down cleanly
+PASS environment template exposes opt-out, polling and restricted storage directory
+PASS release validator is wired into candidate checks
+
+15/15 background-job architecture checks passed
+PASS regex capture group access is explicitly guarded
+PASS missing effective contract amount import is present and array access is optional
+PASS project role is typed from Prisma enum
+PASS bigint cent accumulators avoid Math.max number mixing
+PASS error-map results are checked before tuple destructuring
+PASS money formatter string is not called with toFixed
+PASS Prisma audit JSON is serialized and narrowed at persistence boundary
+PASS Prisma Decimal comparison uses exact bigint cents
+PASS progress-bill calculations use a single bigint money conversion path
+PASS business party tests guard array index under noUncheckedIndexedAccess
+PASS business party sum reducer has an explicit numeric accumulator
+PASS union error result verifies defined value
+PASS audit and report date parsing validates split components
+PASS conditional pagination options no longer infer take as literal 5000
+PASS ExcelJS paper code compatibility cast is isolated
+PASS ExcelJS Buffer compatibility is cast at method parameter boundary
+PASS Lucide icon prop uses library icon type and Button exposes small size
+PASS React 19 refs that write current use explicit nullable generic
+PASS required React hooks are imported and owner advance type includes notes
+PASS legacy theme mapping and missing preview path are type-narrowed
+
+20/20 TypeScript-defect source contracts passed
+PASS release package/API/Web/runtime metadata consistently use v2.10.0-rc.1
+PASS report center removes redundant intro cards and repeated hero banner
+PASS report center has a single compact ledger catalog rather than duplicated report-type selector and large cards
+PASS project and company studio entry buttons show clear click affordance
+PASS ledger export options and preview remain available from the selected report configuration
+PASS report center responsive layout stacks under constrained widths and provides focus-visible cues
+PASS report workspace honors reduced-motion preferences
+PASS project members navigation is absent from cost workspace tabs and the tabs identify the cost workbench
+PASS sidebar health indicator without data semantics is removed and replaced by a functioning dashboard link
+PASS documentation discusses the health indicator as non-metric and records navigation/report layout changes
+
+10/10 UI polish checks passed.
+PASS all package and runtime versions are v2.10.0-rc.1
+PASS preview back uses known router history only when explicitly marked and a safe internal fallback otherwise
+PASS project summary auto-preview carries source route and replaces one-shot studio entry
+PASS studio manual preview returns to a clean editor path with its saved template ID
+PASS standard report center, ledger entry points and legacy designer carry explicit return targets
+PASS no other route uses a raw history-back operation outside the centralized preview handler
+PASS project overview chart reserves Y-axis labels and uses ECharts containLabel
+PASS cost workbench owns the cost layout and no longer contains member-management navigation
+PASS ExcelJS font builder correctly models incremental font-property assignment
+PASS system management has independent landing/member routes and legacy workspace URLs redirect safely
+PASS canonical cost workbench route and source identifiers use cost terminology
+PASS regression design and acceptance docs record safe return navigation, chart labels and font typing
+
+12/12 navigation/UI/XLSX regression checks passed.
+PASS workspace, API, Web and runtime all use v2.10.0-rc.1
+PASS public mode requires production HTTPS, loopback API bind, explicit proxy trust, Secure cookies and a distinct MFA key
+PASS proxy trust rejects wildcard trust and uses a configured allowlist
+PASS public mode disables the Swagger UI/API documentation endpoints
+PASS public mode uses HSTS and restrictive CSP
+PASS RefreshToken retains consumed history and links to AuthSession
+PASS new additive migration includes session, security events, MFA recovery and attempt buckets
+PASS protected API calls validate session status, idle timeout, expiry and current account status
+PASS refresh token consumption is atomic and replay revokes the related session
+PASS refresh token issuance is tied to a bounded session and no longer deletes tokens immediately
+PASS failed logins use identity+IP and IP HMAC buckets with a 15-minute lock window without global account lockout
+PASS TOTP MFA setup uses AES-256-GCM and unique recovery-code hashes
+PASS MFA verification supports replay checks and recovery codes are atomically consumed
+PASS authVersion invalidates sessions even if a sensitive-account-change request races session creation
+PASS MFA enrollment confirmation is an atomic one-time transition and revokes older sessions
+PASS admin public login requires MFA and uses a restricted enrollment token before activation
+PASS restricted password-change and MFA tokens cannot access business APIs
+PASS restricted challenge tokens are invalidated by authVersion changes and limited sessions enforce idle timeout
+PASS account deactivation revokes sessions and prevents disabling the last enabled admin
+PASS password reset requires subsequent change and revokes existing sessions
+PASS MFA reset requires another admin and forces fresh password and MFA enrollment
+PASS the security-center UI can view sessions/events and revoke sessions
+PASS public cookie endpoints enforce same-origin POSTs and MFA enrollment endpoints have tighter rate limits
+PASS refresh-token rotation races retry once without revoking a healthy cross-tab session
+PASS login UI handles TOTP and restricted enrollment/password-reset flows without local-storage token persistence
+PASS deployment template exposes only HTTPS reverse proxy and loops back to the private API port
+PASS security unit tests cover TOTP vectors, encrypted secrets and recovery-code hashing
+PASS public security deployment guide documents host prerequisites, env, MFA, and rollback caveats
+
+28/28 public-access security checks passed
+PASS all package and runtime versions agree on v2.10.0-rc.1
+PASS sidebar uses four distinct functional groups
+PASS project archive and membership routes belong to project management, not system management
+PASS business audit is grouped under system management with an admin-only page gate
+PASS system management landing is a dashboard, not a repeated project/account navigation directory
+PASS system management future expansion explicitly covers roles, workflows, operations and data governance
+PASS account popover exposes personal security and limits system-security shortcut to admins
+PASS personal password-change page loads MFA state, fails closed on unknown MFA state, and submits a current/new password pair
+PASS self-service password change requires a valid session, current password, 12+ char new password, and rate limiting
+PASS MFA-enabled password change requires and consumes a fresh TOTP step or a one-time recovery code
+PASS successful self password change atomically invalidates every session and refresh token and audits the event
+PASS security logger redacts current/new passwords, TOTP and recovery-code request fields
+PASS legacy member URL redirects to canonical project-management path and query/hash remain preserved
+PASS docs distinguish implemented source mechanisms from pending real public-deployment validation
+
+14/14 system-management/navigation/self-password checks passed.

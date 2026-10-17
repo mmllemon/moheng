@@ -1,11 +1,13 @@
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { analysisRoutes } from '../routes/analysis.js';
+import { assistantPocRoutes } from '../routes/assistant-poc.js';
 import { auditLogRoutes } from '../routes/audit-logs.js';
 import { authRoutes } from '../routes/auth.js';
 import { budgetRoutes } from '../routes/budget.js';
 import { businessPartyRoutes } from '../routes/business-parties.js';
 import { changeRoutes } from '../routes/changes.js';
 import { contractRoutes } from '../routes/contracts.js';
+import { configReadRoutes } from '../routes/config-read.js';
 import { costRoutes } from '../routes/costs.js';
 import { downstreamContractRoutes } from '../routes/downstream-contracts.js';
 import { downstreamFinanceRoutes } from '../routes/downstream-finance.js';
@@ -15,6 +17,7 @@ import { progressBillRoutes } from '../routes/progress-bills.js';
 import { projectRoutes } from '../routes/projects.js';
 import { reportRoutes } from '../routes/reports.js';
 import { reportStudioRoutes } from '../routes/report-studio.js';
+import { systemManagementRoutes } from '../routes/system-management.js';
 
 /**
  * A registry for the modular monolith. Each module owns its route plugin and URL prefix;
@@ -30,6 +33,7 @@ export interface ApiModuleDefinition {
 }
 
 export const apiModules = [
+  { id: 'assistant-poc', name: '只读 AI 助手 PoC', description: '开发阶段只读工具验证，默认关闭且不对外公布为正式模块', mountPrefix: '/api/assistant-poc', plugin: assistantPocRoutes, integrationVisible: false },
   { id: 'auth', name: '身份认证', description: '登录、会话与访问凭证', mountPrefix: '/api/auth', plugin: authRoutes, integrationVisible: true },
   { id: 'projects', name: '项目管理', description: '项目档案、项目成员与项目范围权限', mountPrefix: '/api/projects', plugin: projectRoutes, integrationVisible: true },
   { id: 'main-contracts', name: '业主主合同', description: '主合同档案与收入侧合同基础数据', mountPrefix: '/api/projects', plugin: contractRoutes, integrationVisible: true },
@@ -46,6 +50,8 @@ export const apiModules = [
   { id: 'report-studio', name: '综合报表工作室', description: '项目级与公司级多数据源报表、单元格绑定、重复区域和 XLSX 预览导出', mountPrefix: '/api/reports/studio', plugin: reportStudioRoutes, integrationVisible: true },
   { id: 'notifications', name: '待办与预警', description: '根据现有业务台账动态计算待办和预警', mountPrefix: '/api/notifications', plugin: notificationRoutes, integrationVisible: true },
   { id: 'business-parties', name: '往来单位', description: '往来单位主数据与项目经营档案', mountPrefix: '/api/parties', plugin: businessPartyRoutes, integrationVisible: true },
+  { id: 'system-config-read', name: '公共配置读取', description: '向已登录且有权访问的业务页面提供启用字典和已发布参数', mountPrefix: '/api/config', plugin: configReadRoutes, integrationVisible: false },
+  { id: 'system-management', name: '系统管理扩展', description: '组织归属、版本化规则、统一字典/参数、运维灾备与集成凭据', mountPrefix: '/api/system-management', plugin: systemManagementRoutes, integrationVisible: false },
 ] satisfies readonly ApiModuleDefinition[];
 
 export function getApiModuleCatalog() {

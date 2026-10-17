@@ -25,8 +25,13 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET 至少 32 个字符'),
   CORS_ORIGIN: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
+  PUBLIC_BASE_URL: z.preprocess((value) => typeof value === 'string' && !value.trim() ? undefined : value, z.string().url().optional()),
+  MFA_ENCRYPTION_KEY: z.preprocess((value) => typeof value === 'string' && !value.trim() ? undefined : value, z.string().regex(/^[a-fA-F0-9]{64}$/, 'MFA_ENCRYPTION_KEY 必须是 32 字节十六进制密钥').optional()),
+  LOGIN_ATTEMPT_HMAC_KEY: z.preprocess((value) => typeof value === 'string' && !value.trim() ? undefined : value, z.string().regex(/^[a-fA-F0-9]{64}$/, 'LOGIN_ATTEMPT_HMAC_KEY 必须是独立的 32 字节十六进制密钥').optional()),
+  TRUST_PROXY: z.string().optional(),
   BACKGROUND_WORKER_ENABLED: z.enum(['true', 'false']).default('true'),
   BACKGROUND_JOB_POLL_MS: z.coerce.number().int().min(250).max(60000).default(1000),
+  ASSISTANT_POC_ENABLED: z.enum(['true', 'false']).default('false'),
 });
 const envResult = envSchema.safeParse(process.env);
 if (!envResult.success) {
@@ -34,15 +39,35 @@ if (!envResult.success) {
   process.exit(1);
 }
 const env = envResult.data;
+if (env.PUBLIC_BASE_URL) {
+  const publicUrl = new URL(env.PUBLIC_BASE_URL);
+  const unsafeProxyRange = env.TRUST_PROXY?.split(',').some((entry) => entry.trim().endsWith('/0')) ?? false;
+  const normalizedJwtSecret = env.JWT_SECRET.trim();
+  const placeholderJwtSecret = ['replace-with-at-least-32-random-bytes', 'development-only-invalid-secret'].includes(normalizedJwtSecret) || !normalizedJwtSecret || normalizedJwtSecret !== env.JWT_SECRET;
+  const invalidPublicMode = env.NODE_ENV !== 'production' || env.HOST !== '127.0.0.1' || !env.TRUST_PROXY?.trim() || unsafeProxyRange || placeholderJwtSecret || publicUrl.protocol !== 'https:' || publicUrl.pathname !== '/' || Boolean(publicUrl.search || publicUrl.hash || publicUrl.username || publicUrl.password) || ['localhost', '127.0.0.1', '[::1]', '::1'].includes(publicUrl.hostname) || env.COOKIE_SECURE !== 'true' || !env.MFA_ENCRYPTION_KEY || env.MFA_ENCRYPTION_KEY === env.JWT_SECRET || !env.LOGIN_ATTEMPT_HMAC_KEY || env.LOGIN_ATTEMPT_HMAC_KEY === env.JWT_SECRET || env.LOGIN_ATTEMPT_HMAC_KEY === env.MFA_ENCRYPTION_KEY;
+  const mismatchedCors = corsOriginSettingForValidation(env.CORS_ORIGIN).some((origin) => origin !== publicUrl.origin);
+  if (invalidPublicMode || mismatchedCors) {
+    console.error('公网模式配置无效：PUBLIC_BASE_URL 必须是正式 HTTPS origin；NODE_ENV=production、HOST=127.0.0.1、明确且非全网段 TRUST_PROXY、非占位 JWT_SECRET、COOKIE_SECURE=true、与 JWT_SECRET 不同的有效 MFA_ENCRYPTION_KEY，以及独立于 JWT_SECRET/MFA_ENCRYPTION_KEY 的 LOGIN_ATTEMPT_HMAC_KEY 必须同时满足；CORS_ORIGIN 只能配置同源地址。');
+    process.exit(1);
+  }
+}
+if (env.TRUST_PROXY?.trim() && env.TRUST_PROXY.split(',').some((entry) => !entry.trim() || ['*', 'true', '1'].includes(entry.trim().toLowerCase()) || entry.trim().endsWith('/0'))) {
+  console.error('TRUST_PROXY 只能填写明确受信任的代理 IP/CIDR 列表，禁止使用 *、true 或 1。');
+  process.exit(1);
+}
+function corsOriginSettingForValidation(value: string | undefined): string[] {
+  return (value?.trim() ?? '').split(',').map((origin) => origin.trim()).filter(Boolean);
+}
 
 const corsOriginSetting = env.CORS_ORIGIN?.trim() || (env.NODE_ENV === 'development' ? 'http://localhost:5173' : '');
 const corsOrigins = corsOriginSetting.split(',').map((origin) => origin.trim()).filter(Boolean);
 
 const app = Fastify({
+  trustProxy: env.TRUST_PROXY?.trim() ? env.TRUST_PROXY.split(',').map((entry) => entry.trim()) : false,
   logger: {
     level: env.NODE_ENV === 'development' ? 'info' : 'warn',
     redact: {
-      paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["set-cookie"]', 'req.body.password', 'req.body.refreshToken', 'req.body.apiSecret'],
+      paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["set-cookie"]', 'req.body.password', 'req.body.secret', 'req.body.apiKey', 'req.body.integrationSecret', 'req.body.currentPassword', 'req.body.newPassword', 'req.body.refreshToken', 'req.body.apiSecret', 'req.body.totpCode', 'req.body.recoveryCode', 'req.body.code', 'req.body.totp', 'req.body.recoveryCodes'],
       censor: '[REDACTED]',
     },
   },
@@ -53,7 +78,14 @@ app.addHook('onSend', async (request, reply, payload) => {
   return payload;
 });
 
-await app.register(helmet, { contentSecurityPolicy: false });
+await app.register(helmet, {
+  contentSecurityPolicy: env.PUBLIC_BASE_URL ? { directives: {
+    defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", "'unsafe-inline'"],
+    imgSrc: ["'self'", 'data:', 'blob:'], fontSrc: ["'self'", 'data:'], connectSrc: ["'self'"],
+    workerSrc: ["'self'", 'blob:'], objectSrc: ["'none'"], baseUri: ["'self'"], frameAncestors: ["'none'"], formAction: ["'self'"],
+  } } : false,
+  hsts: env.PUBLIC_BASE_URL ? { maxAge: 15552000, includeSubDomains: false, preload: false } : false,
+});
 await app.register(cors, {
   origin: corsOrigins,
   credentials: true,
@@ -61,6 +93,7 @@ await app.register(cors, {
 await app.register(cookie);
 await app.register(jwt, { secret: env.JWT_SECRET });
 await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
+if (!env.PUBLIC_BASE_URL) {
 await app.register(swagger, {
   openapi: {
     info: { title: '墨衡工程经营管理 API', description: '施工阶段项目成本管理 API。请求统一使用 /api 前缀。', version: APP_VERSION },
@@ -74,6 +107,7 @@ await app.register(swagger, {
   },
 });
 await app.register(swaggerUi, { routePrefix: '/docs', uiConfig: { docExpansion: 'list', deepLinking: false } });
+}
 
 // In production, serve the compiled React SPA from the same origin as the API.
 // During Vite development the dist directory may not exist, so Vite serves the UI instead.
@@ -138,7 +172,7 @@ app.setNotFoundHandler((request, reply) => {
 app.setErrorHandler((error, request, reply) => {
   request.log.error({ err: error, requestId: request.id }, 'Unhandled request error');
   if (reply.sent) return;
-  return failure(reply, 500, 'INTERNAL_ERROR', env.NODE_ENV === 'production' ? '服务器暂时无法处理该请求' : error.message);
+  return failure(reply, 500, 'INTERNAL_ERROR', env.NODE_ENV === 'production' ? '服务器暂时无法处理该请求' : (error instanceof Error ? error.message : String(error)));
 });
 
 let stopBackgroundWorker: () => Promise<void> = async () => {};

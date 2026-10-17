@@ -1,6 +1,7 @@
 import { prisma } from './prisma.js';
 import { calculateDownstreamCurrentAmount } from './downstream-contract-math.js';
 import type { AuthUser } from './auth.js';
+import { hasCrossProjectReadScope } from './project-data-scope.js';
 
 export const reportCatalog = [
   { key: 'target-cost', label: '目标成本清单', description: '项目清单编号、父级、工程量、单价、目标合价与最近更新时间。', dateField: '更新时间', rowLimit: 10000 },
@@ -81,8 +82,9 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
   if ((from && Number.isNaN(from.getTime())) || (toExclusive && Number.isNaN(toExclusive.getTime()))) return { ok: false, status: 400, code: 'INVALID_DATE', message: '日期无效' };
   if (from && toExclusive && from >= toExclusive) return { ok: false, status: 400, code: 'INVALID_DATE_RANGE', message: '开始日期不能晚于结束日期' };
 
+  const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const accessibleProjects = await prisma.project.findMany({
-    where: { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) },
+    where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
     select: { id: true, name: true, code: true }, orderBy: { code: 'asc' },
   });
   const availableIds = accessibleProjects.map((p) => p.id);

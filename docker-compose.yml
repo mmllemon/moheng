@@ -36,9 +36,17 @@ services:
       BACKGROUND_WORKER_ENABLED: ${BACKGROUND_WORKER_ENABLED:-true}
       BACKGROUND_JOB_POLL_MS: ${BACKGROUND_JOB_POLL_MS:-1000}
       BACKGROUND_JOB_STORAGE_DIR: ${BACKGROUND_JOB_STORAGE_DIR:-/app/apps/api/data/jobs}
+      INTEGRATION_ENCRYPTION_KEY: ${INTEGRATION_ENCRYPTION_KEY:-}
+      BACKUP_DIR: ${BACKUP_DIR:-/app/backups}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      PG_DUMP_PATH: ${PG_DUMP_PATH:-pg_dump}
+      PG_RESTORE_PATH: ${PG_RESTORE_PATH:-pg_restore}
+      PSQL_PATH: ${PSQL_PATH:-psql}
+      RESTORE_TEST_DATABASE_URL: ${RESTORE_TEST_DATABASE_URL:-}
     volumes:
       - evidence-data:/app/apps/api/data/evidence
       - job-data:/app/apps/api/data/jobs
+      - backup-data:/app/backups
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,6 +55,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+  restore-test:
+    profiles: ["restore-test"]
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${RESTORE_TEST_POSTGRES_DB:-cost_management_restore_test}
+      POSTGRES_USER: ${POSTGRES_USER:-cms_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-restore-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cms_user} -d ${RESTORE_TEST_POSTGRES_DB:-cost_management_restore_test}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   background-worker:
     profiles: ["worker"]
@@ -85,3 +109,5 @@ volumes:
   postgres-data:
   evidence-data:
   job-data:
+  backup-data:
+  postgres-restore-test-data:

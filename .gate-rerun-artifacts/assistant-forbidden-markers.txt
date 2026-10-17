@@ -1,0 +1,3 @@
+SECRET-乙项目成本-999999
+test-only-no-provider-call
+https://provider.example.invalid/v1

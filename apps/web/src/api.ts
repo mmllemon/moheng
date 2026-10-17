@@ -23,14 +23,31 @@ async function decode<T>(response: Response): Promise<T> {
   return body.data;
 }
 
+let refreshInFlight: Promise<boolean> | null = null;
 async function refreshSession(): Promise<boolean> {
-  try {
-    const response = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
-    const body = await response.json() as Envelope<{ accessToken: string; user: import('./types').User }> | ErrorEnvelope;
-    if (!response.ok || body.success === false) return false;
-    useAuthStore.getState().setSession(body.data.accessToken, body.data.user);
-    return true;
-  } catch { return false; }
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const response = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+        const body = await response.json() as Envelope<{ accessToken: string; user: import('./types').User }> | ErrorEnvelope;
+        if (response.ok && body.success !== false) {
+          useAuthStore.getState().setSession(body.data.accessToken, body.data.user);
+          return true;
+        }
+        if (attempt === 0 && body.success === false && body.error.code === 'REFRESH_ROTATION_RACE') {
+          // Another tab just rotated the shared HttpOnly cookie. Let its Set-Cookie reach the jar, then retry once.
+          await new Promise((resolve) => setTimeout(resolve, 180));
+          continue;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  })();
+  try { return await refreshInFlight; } finally { refreshInFlight = null; }
 }
 
 async function request<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
@@ -75,8 +92,9 @@ export const api = {
   post: <T>(path: string, body?: unknown, headers?: HeadersInit) => request<T>(path, { method: 'POST', headers, body: body === undefined ? undefined : JSON.stringify(body) }),
   put: <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown) => request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   download: (path: string) => requestBlob(path),
-  login: (email: string, password: string) => request<{ accessToken: string; user: import('./types').User }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }, false),
+  login: (email: string, password: string, totpCode?: string) => request<{ accessToken: string; user: import('./types').User } | { flow: 'mfa-enrollment' | 'password-change'; restrictedToken: string; user: import('./types').User }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password, ...(totpCode ? { totpCode } : {}) }) }, false),
   logout: () => request<{ loggedOut: boolean }>('/auth/logout', { method: 'POST' }, false),
   refreshSession,
 };

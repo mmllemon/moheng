@@ -1,7 +1,7 @@
 {
   "name": "@cms/api",
   "private": true,
-  "version": "2.8.0-rc.1",
+  "version": "2.19.0-rc.1",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -15,9 +15,13 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
-    "test": "tsx --test src/lib/contract-amount-math.test.ts src/lib/contract-base-policy.test.ts src/lib/downstream-contract-math.test.ts src/lib/downstream-payment-math.test.ts src/lib/evidence-storage.test.ts src/lib/downstream-settlement-math.test.ts src/lib/business-party.test.ts src/lib/owner-settlement-math.test.ts src/lib/audit-log-csv.test.ts src/lib/csv-export.test.ts src/lib/report-template.test.ts src/lib/report-xlsx.test.ts src/lib/budget-xlsx.test.ts src/lib/background-job-storage.test.ts src/lib/report-studio-render.test.ts src/lib/report-studio-definition.test.ts",
+    "test": "tsx --test src/lib/contract-amount-math.test.ts src/lib/contract-base-policy.test.ts src/lib/downstream-contract-math.test.ts src/lib/downstream-payment-math.test.ts src/lib/evidence-storage.test.ts src/lib/downstream-settlement-math.test.ts src/lib/business-party.test.ts src/lib/owner-settlement-math.test.ts src/lib/audit-log-csv.test.ts src/lib/csv-export.test.ts src/lib/report-template.test.ts src/lib/report-xlsx.test.ts src/lib/budget-xlsx.test.ts src/lib/background-job-storage.test.ts src/lib/report-studio-render.test.ts src/lib/report-studio-definition.test.ts src/lib/auth-security.test.ts src/lib/integration-vault.test.ts src/lib/governance-rules.test.ts src/lib/access-policy.test.ts src/lib/workflow-definitions.test.ts src/lib/backup-encryption.test.ts src/lib/integration-http.test.ts src/lib/business-parameters.test.ts src/lib/project-data-scope.test.ts src/lib/assistant-read-only-tools.test.ts src/lib/assistant-run-events.test.ts src/lib/assistant-event-safety.test.ts src/assistant/runtime/langgraph-adapter.test.ts src/lib/auth-prehandler-regression.test.ts",
     "worker": "node dist/src/worker.js",
-    "worker:dev": "tsx src/worker.ts"
+    "worker:dev": "tsx src/worker.ts",
+    "assistant:checkpoint:setup": "tsx src/assistant/runtime/setup-checkpoint-schema.ts",
+    "test:assistant-recovery:postgres": "tsx --test src/lib/assistant-recovery.integration.test.ts",
+    "prisma:validate": "prisma validate",
+    "pretest": "npm run prisma:generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -26,17 +30,22 @@
     "@fastify/cookie": "11.0.2",
     "@fastify/cors": "11.0.1",
     "@fastify/helmet": "13.0.1",
-    "@fastify/jwt": "9.1.0",
+    "@fastify/jwt": "10.2.4",
     "@fastify/rate-limit": "10.3.0",
     "@fastify/swagger": "9.5.1",
-    "@fastify/swagger-ui": "5.2.3",
-    "@fastify/static": "8.2.0",
+    "@fastify/swagger-ui": "6.1.2",
+    "@fastify/static": "10.1.6",
     "bcryptjs": "3.0.2",
     "dotenv": "17.2.1",
-    "fastify": "5.5.0",
+    "fastify": "5.12.7",
     "zod": "3.25.76",
     "@prisma/client": "6.19.3",
-    "exceljs": "4.4.0"
+    "exceljs": "4.4.0",
+    "@langchain/core": "1.2.18",
+    "@langchain/langgraph": "1.5.0",
+    "@langchain/langgraph-checkpoint-postgres": "1.1.0",
+    "@langchain/openai": "1.6.2",
+    "langchain": "1.5.18"
   },
   "devDependencies": {
     "@types/node": "22.18.6",

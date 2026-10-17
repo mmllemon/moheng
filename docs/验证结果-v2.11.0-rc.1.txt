@@ -1,0 +1,31 @@
+墨衡 v2.11.0-rc.1 — 验证结果
+生成日期：2026-10-16
+基线：v2.10.0-rc.1（9569b5e85e306806a2818267c855aad5b145005d）
+状态：本地 RC 源码交付；不是生产就绪版本。
+
+通过项
+1. npm run validate:release-candidate：285 PASS、0 FAIL。分组：77 静态发布候选、18 报表工作室、28 报表工作室 v2、20 WP2–WP8、12 审计覆盖、11 架构、15 后台任务、20 TS 缺陷契约、10 UI、12 导航/UI/XLSX、28 公开访问安全、14 既有系统管理/密码、20 本轮系统扩展。
+2. scripts/validate-system-expansion-v2.mjs：20/20。
+3. 全部 15 个变更/新增 TS/TSX 文件经全局 TypeScript transpileModule 语法解析，0 语法诊断。此项不等于 TypeScript 完整类型检查。
+4. 新增的治理角色和集成保险库工具独立冒烟测试：3/3；测试包含角色白名单、AES-256-GCM 上下文绑定、防止跨集成/版本替换、缺失主密钥和空明文拒绝。
+5. docker-compose.yml YAML 解析通过；git diff --check 通过。
+
+环境阻塞/未验收项
+- 环境 Node v22.16.0，而项目声明需要 Node >=24；root/apps/api 均无 node_modules。
+- npm run build：退出码 2，TS2688 缺少 Node 类型定义。
+- npm run lint：退出码 2，同样被 TS2688 阻塞。
+- npm test：退出码 127，tsx 不存在；完整测试套件未执行。
+- npm run db:generate：退出码 127，prisma 不存在。
+- 未完成 Prisma schema validate/客户端生成、真实 PostgreSQL 迁移、pg_dump 备份、pg_restore 隔离恢复、浏览器 E2E、外部集成连通性和公网 TLS/防火墙验收。当前运行环境没有 Docker/psql/pg_dump。
+
+安全和业务边界
+- 公司级 ADMIN/USER 与项目级角色仍分离；部门/岗位不自动授予项目访问。
+- 可发布规则目前只控制变更签证内部审批角色；不改变外部业主/授权代表确认金额的生效逻辑。
+- 密钥不会由 API/UI 回显；集成凭据使用 AES-256-GCM 与集成编码/凭据版本绑定。
+- 生成备份和通过恢复演练是不同状态；恢复只允许目标名以 _restore_test 或 -restore_test 结尾且 DNS 解析地址不与生产源重叠。仍须在隔离环境实际演练。
+- 备份保留清理在成功的手工备份流程中触发，不等于定时备份调度器。
+
+本地版本控制
+- 开发分支：feat/system-management-expansion-v2.11.0-rc.1
+- 本地标签：`v2.11.0-rc.1`；源码 ZIP 与完整历史 Git Bundle 均由该标签生成并完成完整性校验。
+- 当前仓库未配置远端，未发生远端同步或推送。

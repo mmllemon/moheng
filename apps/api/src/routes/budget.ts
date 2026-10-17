@@ -29,7 +29,7 @@ export async function budgetRoutes(app: FastifyInstance) {
   app.get('/:projectId/budget/import-template.xlsx', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const buffer = await buildBudgetImportTemplate();
     return reply.header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       .header('content-disposition', `attachment; filename="moheng-budget-import-template.xlsx"; filename*=UTF-8''${encodeURIComponent('墨衡-目标成本导入模板.xlsx')}`)
@@ -39,7 +39,7 @@ export async function budgetRoutes(app: FastifyInstance) {
   app.post('/:projectId/budget/import-xlsx/inspect', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'TARGET_COST_WRITE')) return;
     const parsedBody = z.object({ filename: z.string().trim().min(1).max(255), workbookBase64: z.string().min(1).max(Math.ceil(BUDGET_XLSX_MAX_BYTES * 4 / 3) + 8) }).safeParse(request.body);
     if (!parsedBody.success) return failure(reply, 400, 'VALIDATION_ERROR', 'XLSX 上传数据不正确；文件不能超过 8 MB', parsedBody.error.flatten());
     try {
@@ -56,7 +56,7 @@ export async function budgetRoutes(app: FastifyInstance) {
   app.get('/:projectId/budget', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const items = await prisma.budgetItem.findMany({ where: { projectId, deletedAt: null }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] });
     return success(items.map(serialise));
   });
@@ -64,7 +64,7 @@ export async function budgetRoutes(app: FastifyInstance) {
   app.post('/:projectId/budget/items', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'TARGET_COST_WRITE')) return;
     const parsed = budgetInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '清单条目填写有误', parsed.error.flatten());
     const parent = parsed.data.parentId ? await prisma.budgetItem.findFirst({ where: { id: parsed.data.parentId, projectId, deletedAt: null } }) : null;
@@ -91,7 +91,7 @@ export async function budgetRoutes(app: FastifyInstance) {
   app.patch('/:projectId/budget/items/:itemId', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, itemId } = request.params as { projectId: string; itemId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'TARGET_COST_WRITE')) return;
     const parsed = budgetInput.partial().safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '清单条目填写有误', parsed.error.flatten());
     const old = await prisma.budgetItem.findFirst({ where: { id: itemId, projectId, deletedAt: null } });
@@ -123,7 +123,7 @@ export async function budgetRoutes(app: FastifyInstance) {
   const budgetImportPreviewHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'TARGET_COST_WRITE')) return;
     const rawSchema = z.object({ rows: z.array(z.unknown()).min(1).max(5000) });
     const parsedBody = rawSchema.safeParse(request.body);
     if (!parsedBody.success) return failure(reply, 400, 'VALIDATION_ERROR', '预检数据格式不正确，单次最多 5,000 行', parsedBody.error.flatten());
@@ -156,7 +156,7 @@ export async function budgetRoutes(app: FastifyInstance) {
   const budgetImportCommitHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'TARGET_COST_WRITE')) return;
     const parsed = importRowsSchema.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '导入数据格式不正确，请检查预览中的错误行', parsed.error.flatten());
     const codes = parsed.data.rows.map((r) => r.code);

@@ -1,88 +1,93 @@
-import { ArrowRight, FolderKanban, ShieldCheck, UserCog, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Activity, ArrowRight, BookOpen, Database, Fingerprint, KeyRound, RefreshCw, ServerCog, ShieldAlert, ShieldCheck, SlidersHorizontal, Users, ClipboardCheck } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
+import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { PageHeader } from '../components/Ui';
+import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 
-type ManagementEntry = {
-  title: string;
-  eyebrow: string;
-  description: string;
-  detail: string;
-  to: string;
-  icon: typeof FolderKanban;
+type ManagedUser = { id: string; name: string; email: string; role: 'ADMIN' | 'USER'; isActive: boolean; mfaEnabled: boolean; passwordResetRequired: boolean; createdAt: string };
+type AuthSession = { id: string; isValid: boolean; createdAt: string; lastSeenAt: string; user: { name: string; email: string }; ipAddress: string | null };
+type SecurityEvent = { id: string; action: string; outcome: string; createdAt: string; accountEmail: string | null; ipAddress: string | null; user?: { name: string } | null };
+
+const eventLabels: Record<string, string> = {
+  LOGIN_FAILED: '登录失败', LOGIN_SUCCEEDED: '登录成功', LOGIN_MFA_FAILED: 'MFA 验证失败', LOGIN_RATE_LIMITED: '登录尝试被限流',
+  REFRESH_TOKEN_REUSE: '检测到刷新令牌重放', SESSION_REVOKED: '会话已撤销', USER_DEACTIVATED: '账号已停用',
+  USER_PASSWORD_RESET: '管理员重置密码', SELF_PASSWORD_CHANGED: '用户修改密码', MFA_ENABLED: '启用多因素认证',
+  USER_MFA_RESET: '管理员重置 MFA', ADMIN_MFA_SETUP_REQUIRED: '管理员需设置 MFA',
 };
+function displayDate(value: string) {
+  return new Date(value).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 
 export default function SystemManagementPage() {
-  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const usersQuery = useQuery({ queryKey: ['admin-users'], queryFn: () => api.get<ManagedUser[]>('/auth/users'), enabled: user?.role === 'ADMIN' });
+  const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: () => api.get<AuthSession[]>('/auth/security/sessions'), enabled: user?.role === 'ADMIN' });
+  const eventsQuery = useQuery({ queryKey: ['security-events'], queryFn: () => api.get<SecurityEvent[]>('/auth/security/events'), enabled: user?.role === 'ADMIN' });
 
-  const entries: ManagementEntry[] = [
-    {
-      title: '项目档案',
-      eyebrow: 'PROJECT REGISTER',
-      description: '维护项目基础档案，查看可访问的项目并进入对应成本工作台。',
-      detail: '项目级业务数据仍按项目权限隔离',
-      to: '/projects',
-      icon: FolderKanban,
-    },
-    {
-      title: '项目成员与权限',
-      eyebrow: 'PROJECT MEMBERS',
-      description: '为当前项目分配项目负责人、项目经理、预算/成本经办或只读角色。',
-      detail: '成员角色仅对对应项目生效',
-      to: '/system/members',
-      icon: Users,
-    },
-    ...(user?.role === 'ADMIN' ? [{
-      title: '系统账号管理',
-      eyebrow: 'SYSTEM ACCOUNTS',
-      description: '创建公司级登录账号，并查看账号身份与当前项目角色的关联。',
-      detail: '仅系统管理员可以创建系统账号',
-      to: '/system/accounts',
-      icon: UserCog,
-    }] : []),
-  ];
+  const users = usersQuery.data ?? [];
+  const sessions = sessionsQuery.data ?? [];
+  const events = eventsQuery.data ?? [];
+  const activeSessions = sessions.filter((session) => session.isValid);
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recentRiskEvents = useMemo(() => events.filter((event) =>
+    ['DENIED', 'BLOCKED', 'SESSION_REVOKED'].includes(event.outcome)
+      || ['REFRESH_TOKEN_REUSE', 'LOGIN_RATE_LIMITED', 'LOGIN_MFA_FAILED', 'USER_DEACTIVATED'].includes(event.action),
+  ).slice(0, 6), [events]);
+  const newEventsLast7Days = events.filter((event) => new Date(event.createdAt).getTime() >= sevenDaysAgo).length;
+  const accountsNeedingAttention = users.filter((managedUser) => managedUser.isActive && (managedUser.passwordResetRequired || (managedUser.role === 'ADMIN' && !managedUser.mfaEnabled))).length;
+
+  if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
+  if (usersQuery.isLoading || sessionsQuery.isLoading || eventsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在汇总系统管理状态…" /></div>;
+  const failedQuery = usersQuery.error ? usersQuery : sessionsQuery.error ? sessionsQuery : eventsQuery.error ? eventsQuery : null;
+  if (failedQuery) return <div className="page-wrap"><ErrorBlock message={(failedQuery.error as Error).message} retry={() => { void usersQuery.refetch(); void sessionsQuery.refetch(); void eventsQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap system-management-page">
-    <PageHeader
-      eyebrow="SYSTEM MANAGEMENT"
-      title="系统管理工作台"
-      subtitle="集中处理项目组织、成员授权与公司级账号管理。此处是统一管理入口，不代表独立数据库或独立业务系统。"
-    />
+    <PageHeader eyebrow="SYSTEM MANAGEMENT / OVERVIEW" title="系统管理概览" subtitle="这里展示系统状态、需要关注的安全事项和治理建设进度。字典、参数、组织与运维分别进入专门工作台，避免在概览页重复摆放复杂表单。" actions={<button type="button" className="panel-header-action" onClick={() => { void usersQuery.refetch(); void sessionsQuery.refetch(); void eventsQuery.refetch(); }}><RefreshCw size={14} />刷新状态</button>} />
 
-    <section className="system-management-boundary" aria-label="管理边界说明">
-      <div className="system-management-boundary-item">
-        <span className="system-management-boundary-icon"><ShieldCheck size={18} /></span>
-        <div><strong>项目级授权</strong><p>项目成员与角色按项目分别维护；项目负责人、项目经理的可操作范围仍由现有权限规则决定。</p></div>
-      </div>
-      <div className="system-management-boundary-item">
-        <span className="system-management-boundary-icon"><UserCog size={18} /></span>
-        <div><strong>公司级账号身份</strong><p>系统管理员身份与项目角色相互独立。菜单迁移不会自动授予新权限，服务端仍是最终校验边界。</p></div>
-      </div>
+    <section className="system-overview-metrics" aria-label="系统管理指标">
+      <article className="panel system-overview-metric"><span className="system-overview-icon"><Users size={18} /></span><div><small>启用账号</small><strong>{users.filter((managedUser) => managedUser.isActive).length}<em> / {users.length}</em></strong><span>停用账号不能继续建立会话</span></div><Link to="/system/accounts" aria-label="查看系统账号"><ArrowRight size={15} /></Link></article>
+      <article className="panel system-overview-metric"><span className="system-overview-icon"><Fingerprint size={18} /></span><div><small>最近 200 条中的有效会话</small><strong>{activeSessions.length}</strong><span>最长 7 天 · 闲置 12 小时失效</span></div><Link to="/system/security" aria-label="查看登录会话"><ArrowRight size={15} /></Link></article>
+      <article className="panel system-overview-metric"><span className="system-overview-icon"><ShieldAlert size={18} /></span><div><small>近 7 天安全事件</small><strong>{newEventsLast7Days}</strong><span>显示最近 200 条事件中的匹配记录</span></div><Link to="/system/security" aria-label="查看安全事件"><ArrowRight size={15} /></Link></article>
+      <article className="panel system-overview-metric"><span className="system-overview-icon"><KeyRound size={18} /></span><div><small>账号待处理</small><strong>{accountsNeedingAttention}</strong><span>强制改密或管理员 MFA 尚待检查</span></div><Link to="/system/accounts" aria-label="处理账号安全问题"><ArrowRight size={15} /></Link></article>
     </section>
 
-    <section className="section-block system-management-entry-section">
-      <div className="section-heading"><div><h2>管理入口</h2><p>当前入口复用已有项目、成员和账号功能；尚未实现的管理能力不会伪装成可用功能。</p></div><span className="system-management-count">{entries.length} 个可用入口</span></div>
-      <div className="system-management-grid">
-        {entries.map((entry) => {
-          const Icon = entry.icon;
-          return <button key={entry.to} type="button" className="system-management-card" onClick={() => navigate(entry.to)}>
-            <span className="system-management-card-icon"><Icon size={19} strokeWidth={1.8} /></span>
-            <span className="system-management-card-copy">
-              <span className="system-management-card-eyebrow">{entry.eyebrow}</span>
-              <strong>{entry.title}</strong>
-              <span className="system-management-card-description">{entry.description}</span>
-              <small>{entry.detail}</small>
-            </span>
-            <ArrowRight size={16} className="system-management-card-arrow" />
-          </button>;
-        })}
-      </div>
+    <section className="system-overview-two-column">
+      <section className="panel system-overview-events">
+        <div className="panel-heading"><div><h3><Activity size={17} />需要关注的安全事件</h3><p>优先显示失败、阻断、会话撤销和高风险认证事件。</p></div><Link className="panel-header-action" to="/system/security">完整安全中心 <ArrowRight size={14} /></Link></div>
+        {!recentRiskEvents.length ? <div className="system-overview-empty"><ShieldCheck size={18} /><span><strong>当前展示范围内没有需要关注的事件</strong><small>这不代表系统已经通过公网安全验收，只说明最近 200 条事件中未发现匹配项。</small></span></div> : <div className="system-overview-event-list">{recentRiskEvents.map((event) => <div className="system-overview-event-row" key={event.id}>
+          <span className={`system-event-mark ${['DENIED', 'BLOCKED'].includes(event.outcome) ? 'is-risk' : ''}`}><ShieldAlert size={15} /></span>
+          <div className="system-overview-event-copy"><strong>{eventLabels[event.action] ?? event.action}</strong><span>{event.accountEmail ?? event.user?.name ?? '未关联账号'} · {event.ipAddress ?? '来源未记录'}</span></div>
+          <time>{displayDate(event.createdAt)}</time>
+        </div>)}</div>}
+      </section>
+
+      <section className="panel system-overview-readiness">
+        <div className="panel-heading"><div><h3><ServerCog size={17} />当前治理能力</h3><p>区分源码已落地、需部署配置与仍需环境验收的事项。</p></div><span className="system-overview-readiness-tag">RC 候选</span></div>
+        <div className="system-readiness-line"><span><ShieldCheck size={15} />账号、会话与安全事件</span><StatusBadge status="ACTIVE" /></div>
+        <div className="system-readiness-line"><span><ShieldCheck size={15} />管理员 TOTP MFA</span><StatusBadge status="ACTIVE" /></div>
+        <div className="system-readiness-line"><span><ShieldCheck size={15} />组织与版本化审批规则</span><StatusBadge status="ACTIVE" /></div>
+        <div className="system-readiness-line"><span><BookOpen size={15} />统一基础字典</span><StatusBadge status="ACTIVE" /></div>
+        <div className="system-readiness-line"><span><SlidersHorizontal size={15} />统一参数配置</span><StatusBadge status="ACTIVE" /></div>
+        <div className="system-readiness-line"><span><Database size={15} />备份恢复验证工作台</span><StatusBadge status="ACTIVE" /></div>
+        <div className="system-readiness-line"><span><RefreshCw size={15} />真实公网 TLS 与端到端验收</span><StatusBadge status="PENDING" /></div>
+        <p className="system-readiness-note">公网访问需由部署人员完成真实域名、证书、防火墙、数据库迁移与浏览器端到端测试。这里的“已实现”表示源码已有对应机制，不代表当前部署已对公网开放。</p>
+      </section>
     </section>
 
     <section className="panel system-management-roadmap">
-      <div className="panel-heading"><div><h3>后续扩展边界</h3><p>根据实际岗位职责逐步增加，不提前制造空菜单或重复数据入口。</p></div><span className="panel-icon"><ShieldCheck size={18} /></span></div>
-      <div className="system-management-roadmap-items"><span>角色与数据范围配置</span><span>审批流程配置</span><span>基础资料与字典</span><span>集成、备份与运行状态</span></div>
+      <div className="panel-heading"><div><h3>系统管理扩展入口</h3><p>以下能力已进入源码并提供管理页面；执行状态仍取决于部署配置与真实环境验证。</p></div><span className="panel-icon"><ServerCog size={18} /></span></div>
+      <div className="system-roadmap-grid">
+        <article><span className="roadmap-stage is-next">已实现</span><strong>组织与规则治理</strong><p>部门/岗位归属、变更审批规则草稿与版本发布、集成凭据加密/轮换和数据质量巡检。</p><Link to="/system/governance" className="panel-header-action">打开治理工作台 <ArrowRight size={14} /></Link></article>
+        <article><span className="roadmap-stage is-next">已实现</span><strong>权限治理与授权复核</strong><p>只读展示服务端权限基线，记录跨项目范围与项目成员授权的时间点快照，支持管理员复核留痕。</p><Link to="/system/authorization" className="panel-header-action">打开权限治理 <ArrowRight size={14} /></Link></article>
+        <article><span className="roadmap-stage is-next">已实现</span><strong>统一基础字典</strong><p>统一分类编码、字典项名称、排序与启停状态；软停用保留历史，不直接替换核心财务枚举。</p><Link to="/system/dictionaries" className="panel-header-action">打开基础字典 <ArrowRight size={14} /></Link></article>
+        <article><span className="roadmap-stage is-next">已实现</span><strong>统一参数配置</strong><p>全局默认与项目级覆盖、类型校验、草稿发布、历史版本和回滚草稿；敏感凭据由专用保险库维护。</p><Link to="/system/parameters" className="panel-header-action">打开参数配置 <ArrowRight size={14} /></Link></article>
+        <article><span className="roadmap-stage is-next">需配置</span><strong>运行维护与备份恢复</strong><p>数据库备份、文件完整性校验、隔离库恢复演练、后台任务和磁盘容量监控。</p><Link to="/system/operations" className="panel-header-action">打开运维工作台 <ArrowRight size={14} /></Link></article>
+        <article><span className="roadmap-stage">安全边界</span><strong>公司角色与项目角色分离</strong><p>公司管理员身份不自动等价于项目审批角色；已发布的规则只控制公司内部变更审批，不改变外部确认金额生效政策。</p></article>
+        <article><span className="roadmap-stage">待环境验收</span><strong>部署闭环</strong><p>需要在目标部署机验证 pg_dump/pg_restore、异地隔离目标、HTTPS/TLS、日志保留策略与真实登录流程。</p></article>
+      </div>
     </section>
+    <div className="data-note"><span className="note-mark">i</span><span>当前首页为管理概览，不替代“系统账号管理”“登录安全中心”“操作追溯”等专门页面。MFA、TLS 与项目授权等状态在开发环境或未完成部署时仍需结合实际环境复核。</span></div>
   </div>;
 }

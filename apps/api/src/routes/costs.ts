@@ -33,7 +33,7 @@ export async function costRoutes(app: FastifyInstance) {
   app.get('/:projectId/costs', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const query = z.object({ type: z.nativeEnum(CostType).optional(), from: z.string().optional(), to: z.string().optional() }).safeParse(request.query);
     if (!query.success) return failure(reply, 400, 'VALIDATION_ERROR', '筛选参数不正确', query.error.flatten());
     const rows = await prisma.costEntry.findMany({
@@ -48,7 +48,7 @@ export async function costRoutes(app: FastifyInstance) {
   app.post('/:projectId/costs', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'ACTUAL_COST_WRITE')) return;
     const parsed = costInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '成本记录填写有误', parsed.error.flatten());
     if (parsed.data.budgetItemId) {
@@ -85,7 +85,7 @@ export async function costRoutes(app: FastifyInstance) {
   app.patch('/:projectId/costs/:entryId/link-contract', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, entryId } = request.params as { projectId: string; entryId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'ACTUAL_COST_WRITE')) return;
     const parsed = z.object({ downstreamContractId: z.string().trim().min(1).nullable() }).safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '合同关联参数不正确', parsed.error.flatten());
     const old = await prisma.costEntry.findFirst({ where: { id: entryId, projectId, deletedAt: null }, include: { downstreamContract: { select: { id: true, contractNo: true, name: true, status: true, counterpartyPartyId: true, counterpartyName: true } } } });
@@ -124,7 +124,7 @@ export async function costRoutes(app: FastifyInstance) {
   app.post('/:projectId/costs/:entryId/archive', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, entryId } = request.params as { projectId: string; entryId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER], 'ACTUAL_COST_ADMIN')) return;
     const entry = await prisma.costEntry.findFirst({ where: { id: entryId, projectId, deletedAt: null } });
     if (!entry) return failure(reply, 404, 'COST_NOT_FOUND', '成本记录不存在');
     await prisma.$transaction(async (tx) => {

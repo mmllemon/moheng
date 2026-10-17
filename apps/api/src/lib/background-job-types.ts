@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 export type ClaimedBackgroundJob = {
   id: string;
   type: string;
+  idempotencyKey: string | null;
   status: string;
   payloadVersion: number;
   payload: Prisma.JsonValue;

@@ -11,6 +11,8 @@ import { moneyToCents } from '../lib/contract-amount-math.js';
 import { hasInternalExternalAmountMismatch } from '../lib/contract-base-policy.js';
 import { publicEvidenceFile, readEvidenceFile, removeEvidenceFiles, storeEvidenceFiles, type EvidenceFileMetadata } from '../lib/evidence-storage.js';
 import { nextDocumentNumber } from '../lib/document-number.js';
+import { DEFAULT_CHANGE_APPROVER_ROLES, parseChangeApprovalDefinition } from '../lib/governance-rules.js';
+import { DEFAULT_CHANGE_WORKFLOW, parseWorkflowDefinition, workflowTransitionAllowed } from '../lib/workflow-definitions.js';
 
 const changeInput = z.object({
   code: z.string().trim().max(80).optional().or(z.literal('')),
@@ -116,7 +118,7 @@ export async function changeRoutes(app: FastifyInstance) {
   app.get('/:projectId/changes', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const rows = await prisma.change.findMany({ where: { projectId, deletedAt: null }, include: { mainContract: { select: { id: true, contractNo: true, name: true } } }, orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }] });
     return success(rows.map(serialise));
   });
@@ -124,7 +126,7 @@ export async function changeRoutes(app: FastifyInstance) {
   app.get('/:projectId/changes/:changeId/evidence-files/:fileId', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, changeId, fileId } = request.params as { projectId: string; changeId: string; fileId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const change = await prisma.change.findFirst({ where: { id: changeId, projectId, deletedAt: null }, select: { evidenceFiles: true } });
     if (!change) return failure(reply, 404, 'CHANGE_NOT_FOUND', '变更签证记录不存在');
     const files = Array.isArray(change.evidenceFiles) ? change.evidenceFiles as unknown as EvidenceFileMetadata[] : [];
@@ -154,7 +156,7 @@ export async function changeRoutes(app: FastifyInstance) {
   app.post('/:projectId/changes', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'CHANGE_SUBMIT')) return;
     const parsed = changeInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '变更签证资料有误', parsed.error.flatten());
     const mainContract = await prisma.mainContract.findUnique({ where: { projectId }, select: { id: true } });
@@ -194,15 +196,55 @@ export async function changeRoutes(app: FastifyInstance) {
     const allowedRoles = parsed.data.status === 'SUBMITTED'
       ? [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR]
       : [ProjectRole.OWNER, ProjectRole.MANAGER];
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, allowedRoles)) return;
+    const permissionKey = parsed.data.status === 'SUBMITTED' ? 'CHANGE_SUBMIT' : 'CHANGE_APPROVE';
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, allowedRoles, permissionKey)) return;
     const old = await prisma.change.findFirst({ where: { id: changeId, projectId, deletedAt: null } });
     if (!old) return failure(reply, 404, 'CHANGE_NOT_FOUND', '变更签证记录不存在');
     if (!transitions[old.status].includes(parsed.data.status)) return failure(reply, 409, 'INVALID_STATUS_TRANSITION', `不能从“${old.status}”流转到“${parsed.data.status}”`);
     if (parsed.data.status === 'CONFIRMED' && parsed.data.approvedAmount === undefined) return failure(reply, 400, 'APPROVED_AMOUNT_REQUIRED', '内部审批通过时必须填写内部核定金额');
     if (parsed.data.status === 'CONFIRMED' && actorIsSubmitter(old, user.sub)) return failure(reply, 403, 'SELF_APPROVAL_FORBIDDEN', '提交人不能审批本人提交的变更业务');
 
+    // Company-level ADMIN is not a project approver by virtue of being ADMIN.
+    // The active rule, project membership, state transition, and audit are checked
+    // in one serializable transaction below so a concurrent rule publish or role
+    // change cannot authorize an approval against a stale policy snapshot.
+    let approvalRuleVersion: number | null = null;
+    let approvalRuleRoles: ProjectRole[] = [...DEFAULT_CHANGE_APPROVER_ROLES];
+    let workflowVersion: number | null = null;
+
     try {
       const row = await prisma.$transaction(async (tx) => {
+        const publishedWorkflow = await tx.governanceRuleVersion.findFirst({
+          where: { ruleKey: 'WORKFLOW:CHANGE_INTERNAL_APPROVAL', status: 'PUBLISHED' },
+          orderBy: { version: 'desc' }, select: { version: true, definition: true },
+        });
+        const workflow = publishedWorkflow ? parseWorkflowDefinition(publishedWorkflow.definition) : DEFAULT_CHANGE_WORKFLOW;
+        if (!workflow) throw new Error('CHANGE_WORKFLOW_RULE_INVALID');
+        workflowVersion = publishedWorkflow?.version ?? null;
+        const membership = await tx.projectMember.findUnique({
+          where: { projectId_userId: { projectId, userId: user.sub } }, select: { role: true },
+        });
+        if (!membership) throw new Error('CHANGE_WORKFLOW_PROJECT_MEMBERSHIP_REQUIRED');
+        const workflowDecision = workflowTransitionAllowed({
+          definition: workflow, from: old.status, to: parsed.data.status, role: membership.role,
+          submittedAmount: old.submittedAmount,
+        });
+        if (!workflowDecision.allowed) throw new Error(`CHANGE_WORKFLOW_TRANSITION_DENIED:${workflowDecision.reason ?? 'UNKNOWN'}`);
+        if (workflowDecision.selfApprovalForbidden && actorIsSubmitter(old, user.sub)) throw new Error('SELF_APPROVAL_FORBIDDEN');
+        if (parsed.data.status === 'CONFIRMED') {
+          const publishedRule = await tx.governanceRuleVersion.findFirst({
+            where: { ruleKey: 'CHANGE_APPROVAL', status: 'PUBLISHED' },
+            orderBy: { version: 'desc' },
+            select: { version: true, definition: true },
+          });
+          if (publishedRule) {
+            const definition = parseChangeApprovalDefinition(publishedRule.definition);
+            if (!definition) throw new Error('CHANGE_APPROVAL_RULE_INVALID');
+            approvalRuleVersion = publishedRule.version;
+            approvalRuleRoles = definition.allowedProjectRoles;
+          }
+          if (!approvalRuleRoles.includes(membership.role)) throw new Error('CHANGE_APPROVAL_ROLE_REQUIRED');
+        }
         const claimed = await tx.change.updateMany({
           where: { id: changeId, projectId, deletedAt: null, status: old.status },
           data: {
@@ -222,13 +264,22 @@ export async function changeRoutes(app: FastifyInstance) {
             from: old.status, to: updated.status, approvedAmount: parsed.data.approvedAmount,
             decisionNote: parsed.data.decisionNote, submitterId: updated.submittedById,
             internalApproverId: updated.internalApprovedById,
+            workflowSource: workflowVersion === null ? 'BUILT_IN_DEFAULT' : 'PUBLISHED', workflowVersion,
+            ...(parsed.data.status === 'CONFIRMED' ? { approvalRuleVersion, approvalRuleRoles } : {}),
           },
         } });
         return updated;
-      });
+      }, { isolationLevel: 'Serializable' });
       return success(serialise(row));
     } catch (error) {
       if (error instanceof Error && error.message === 'INTERNAL_CHANGE_STATE_CHANGED') return failure(reply, 409, 'INTERNAL_CHANGE_STATE_CHANGED', '变更状态已被其他人员更新，请刷新后重试');
+      if (error instanceof Error && error.message === 'CHANGE_WORKFLOW_RULE_INVALID') return failure(reply, 503, 'CHANGE_WORKFLOW_RULE_INVALID', '当前已发布的内部审批流程无效，系统已拒绝状态流转');
+      if (error instanceof Error && error.message === 'CHANGE_WORKFLOW_PROJECT_MEMBERSHIP_REQUIRED') return failure(reply, 403, 'CHANGE_WORKFLOW_PROJECT_MEMBERSHIP_REQUIRED', '执行内部审批状态流转的账号必须是该项目成员');
+      if (error instanceof Error && error.message.startsWith('CHANGE_WORKFLOW_TRANSITION_DENIED:')) return failure(reply, 403, 'CHANGE_WORKFLOW_TRANSITION_DENIED', `当前发布的内部审批流程不允许该角色执行此状态流转（${error.message.split(':')[1]}）`);
+      if (error instanceof Error && error.message === 'SELF_APPROVAL_FORBIDDEN') return failure(reply, 403, 'SELF_APPROVAL_FORBIDDEN', '提交人不能审批本人提交的变更业务');
+      if (error instanceof Error && error.message === 'CHANGE_APPROVAL_ROLE_REQUIRED') return failure(reply, 403, 'CHANGE_APPROVAL_ROLE_REQUIRED', `当前项目角色无权审批该变更；生效规则允许：${approvalRuleRoles.join('、')}`);
+      if (error instanceof Error && error.message === 'CHANGE_APPROVAL_RULE_INVALID') return failure(reply, 503, 'CHANGE_APPROVAL_RULE_INVALID', '当前已发布的审批规则无效，系统已拒绝审批操作');
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2034') return failure(reply, 409, 'CHANGE_APPROVAL_CONCURRENT_UPDATE', '审批规则或项目权限发生并发变更，请刷新后重试');
       throw error;
     }
   });
@@ -236,7 +287,7 @@ export async function changeRoutes(app: FastifyInstance) {
   app.post('/:projectId/changes/:changeId/external-confirmation', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, changeId } = request.params as { projectId: string; changeId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'CHANGE_EXTERNAL_CONFIRM')) return;
     const parsed = externalConfirmationInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '外部确认凭证信息不完整或格式不正确', parsed.error.flatten());
     const old = await prisma.change.findFirst({ where: { id: changeId, projectId, deletedAt: null } });
@@ -363,7 +414,7 @@ export async function changeRoutes(app: FastifyInstance) {
   app.post('/:projectId/changes/:changeId/internal-amount-review/complete', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, changeId } = request.params as { projectId: string; changeId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER], 'CHANGE_EVIDENCE_VERIFY')) return;
     const parsed = amountReviewCompletionInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '金额差异复核意见不正确', parsed.error.flatten());
     const old = await prisma.change.findFirst({ where: { id: changeId, projectId, deletedAt: null } });
@@ -406,7 +457,7 @@ export async function changeRoutes(app: FastifyInstance) {
   app.post('/:projectId/changes/:changeId/external-confirmation/review', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const { projectId, changeId } = request.params as { projectId: string; changeId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER], 'CHANGE_EVIDENCE_VERIFY')) return;
     const parsed = evidenceReviewInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '凭证核验结果不正确', parsed.error.flatten());
     if (parsed.data.decision !== 'VERIFIED' && !parsed.data.decisionNote?.trim()) return failure(reply, 400, 'DECISION_NOTE_REQUIRED', '核验不通过或存在争议时必须填写原因');

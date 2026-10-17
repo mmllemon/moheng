@@ -1,0 +1,215 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  AuiIf,
+  AssistantRuntimeProvider,
+  ComposerPrimitive,
+  ErrorPrimitive,
+  MessagePrimitive,
+  ThreadPrimitive,
+  useExternalStoreRuntime,
+  type AppendMessage,
+  type ThreadMessageLike,
+} from '@assistant-ui/react';
+import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
+import remarkGfm from 'remark-gfm';
+import { ArrowUp, CircleAlert, Square } from 'lucide-react';
+import {
+  ApiError,
+} from '../../api';
+import {
+  cancelAssistantRun,
+  createRequestId,
+  submitAssistantMessage,
+  type AssistantConversationDetail,
+  type AssistantMessage,
+} from '../../assistant-api';
+
+const QUICK_PROMPTS = [
+  { title: '项目经营概览', label: '合同、成本与进度款口径', prompt: '请概览当前项目经营情况，并说明各项金额的来源口径、统计时间和限制。' },
+  { title: '成本偏差分析', label: '目标成本与已记录实际成本', prompt: '请比较当前项目目标成本与已记录实际成本，解释差异，并明确这不代表预计完工成本或会计利润。' },
+  { title: '变更资料检查', label: '内审与外部确认资料缺口', prompt: '请检查当前项目变更签证资料完整性，区分内部审批和外部业主确认，不要作出审批或法律效力结论。' },
+];
+
+function toThreadMessage(message: AssistantMessage): ThreadMessageLike {
+  return {
+    id: message.id,
+    role: message.role === 'USER' ? 'user' : 'assistant',
+    content: [{ type: 'text', text: message.content }],
+    createdAt: new Date(message.createdAt),
+  };
+}
+
+function extractText(message: AppendMessage) {
+  return message.content
+    .filter((part): part is Extract<(typeof message.content)[number], { type: 'text' }> => part.type === 'text')
+    .map((part) => part.text)
+    .join('\n')
+    .trim();
+}
+
+export function AssistantThread({
+  conversation,
+  onRun,
+  activeRunId,
+  activeRunStatus,
+}: {
+  conversation: AssistantConversationDetail;
+  onRun: (conversationId: string, runId: string) => Promise<void>;
+  activeRunId: string | null;
+  activeRunStatus: string | null;
+}) {
+  const [messages, setMessages] = useState<readonly AssistantMessage[]>(conversation.messages);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localError, setLocalError] = useState('');
+  const activeRunIdRef = useRef<string | null>(activeRunId);
+  const mountedConversationId = conversation.id;
+  const hasActiveRun = activeRunStatus === 'QUEUED' || activeRunStatus === 'RUNNING';
+  const isRunning = isSubmitting || hasActiveRun;
+
+  useEffect(() => {
+    setMessages(conversation.messages);
+    setLocalError('');
+  }, [conversation.id, conversation.messages]);
+
+  useEffect(() => {
+    activeRunIdRef.current = activeRunId;
+  }, [activeRunId]);
+
+  const onNew = useCallback(async (message: AppendMessage) => {
+    const content = extractText(message);
+    if (!content) return;
+    setLocalError('');
+    const requestId = createRequestId();
+    const optimistic: AssistantMessage = {
+      id: `local-${requestId}`,
+      conversationId: mountedConversationId,
+      requestId,
+      role: 'USER',
+      content,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((current) => [...current, optimistic]);
+    setIsSubmitting(true);
+    try {
+      const run = await submitAssistantMessage(mountedConversationId, content, requestId);
+      activeRunIdRef.current = run.runId;
+      await onRun(mountedConversationId, run.runId);
+    } catch (error) {
+      const messageText = error instanceof ApiError ? error.message : '提交失败，请检查连接后重试。';
+      setLocalError(messageText);
+      setMessages((current) => current.map((item) => item.id === optimistic.id ? { ...item, status: 'FAILED' } : item));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [mountedConversationId, onRun]);
+
+  const onCancel = useCallback(async () => {
+    const runId = activeRunIdRef.current;
+    if (!runId) return;
+    try {
+      await cancelAssistantRun(mountedConversationId, runId);
+    } catch (error) {
+      setLocalError(error instanceof ApiError ? error.message : '取消请求未能送达，请稍后检查运行状态。');
+    }
+  }, [mountedConversationId]);
+
+  const runtime = useExternalStoreRuntime<AssistantMessage>({
+    messages,
+    convertMessage: toThreadMessage,
+    onNew,
+    onCancel,
+    isRunning,
+    isSendDisabled: conversation.status !== 'ACTIVE' || isRunning,
+  });
+
+  return <AssistantRuntimeProvider runtime={runtime}>
+    <div className="assistant-thread-shell">
+      <ThreadPrimitive.Root className="assistant-thread-root">
+        <AuiIf condition={(state) => state.thread.isEmpty}>
+          <div className="assistant-empty-state">
+            <span className="assistant-empty-mark" aria-hidden="true">M</span>
+            <p className="assistant-empty-kicker">MOHENG · COST INTELLIGENCE</p>
+            <h2>先从一个具体的成本问题开始。</h2>
+            <p className="assistant-empty-description">只读取当前授权项目的业务台账。回答会说明统计口径与数据限制，不代替审批、结算或财务判断。</p>
+            <div className="assistant-prompt-grid">
+              {QUICK_PROMPTS.map((item) => <ThreadPrimitive.Suggestion key={item.title} prompt={item.prompt} send className="assistant-prompt-card">
+                <span>{item.title}</span><small>{item.label}</small><ArrowUp size={14} />
+              </ThreadPrimitive.Suggestion>)}
+            </div>
+          </div>
+        </AuiIf>
+        <ThreadPrimitive.Viewport className="assistant-thread-viewport" aria-label="成本助手对话记录">
+          <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
+          <ThreadPrimitive.ViewportFooter className="assistant-composer-footer">
+            {localError && <div className="assistant-inline-error" role="alert"><CircleAlert size={15} />{localError}</div>}
+            {hasActiveRun && <div className="assistant-live-run" role="status"><span className="assistant-live-dot" />{activeRunStatus === 'QUEUED' ? '任务已排队，等待执行' : '正在读取台账并整理分析'}<span> · 可随时取消</span></div>}
+            {conversation.status === 'ARCHIVED'
+              ? <div className="assistant-archived-note">此会话已归档，只能查看历史内容。</div>
+              : <Composer disabled={isRunning} />}
+            <p className="assistant-composer-footnote">请核对关键金额与原始台账。助手只读，不执行审批、合同修改或资金操作。</p>
+          </ThreadPrimitive.ViewportFooter>
+        </ThreadPrimitive.Viewport>
+      </ThreadPrimitive.Root>
+    </div>
+  </AssistantRuntimeProvider>;
+}
+
+function UserMessage() {
+  return <MessagePrimitive.Root className="assistant-message assistant-message-user">
+    <div className="assistant-message-role">你</div>
+    <div className="assistant-message-content"><MessagePrimitive.Content components={{ Text: AssistantMarkdown }} /></div>
+  </MessagePrimitive.Root>;
+}
+
+function AssistantMessage() {
+  return <MessagePrimitive.Root className="assistant-message assistant-message-agent">
+    <div className="assistant-agent-avatar" aria-hidden="true">M</div>
+    <div className="assistant-message-body">
+      <div className="assistant-message-role">墨衡助手</div>
+      <div className="assistant-message-content"><MessagePrimitive.Content components={{ Text: AssistantMarkdown }} /></div>
+      <MessagePrimitive.Error>
+        <ErrorPrimitive.Root className="assistant-message-error"><CircleAlert size={14} /><ErrorPrimitive.Message /></ErrorPrimitive.Root>
+      </MessagePrimitive.Error>
+    </div>
+  </MessagePrimitive.Root>;
+}
+
+function AssistantMarkdown() {
+  return <MarkdownTextPrimitive remarkPlugins={[remarkGfm]} className="assistant-markdown" />;
+}
+
+function Composer({ disabled }: { disabled: boolean }) {
+  const [composing, setComposing] = useState(false);
+  return <ComposerPrimitive.Root className={`assistant-composer ${disabled ? 'is-disabled' : ''}`}>
+    <div className="assistant-composer-input-wrap" onKeyDownCapture={(event) => {
+      const native = event.nativeEvent as KeyboardEvent;
+      if (composing || native.isComposing || native.keyCode === 229) event.stopPropagation();
+    }}>
+      <ComposerPrimitive.Input asChild>
+        <textarea
+          rows={1}
+          maxLength={8000}
+          disabled={disabled}
+          placeholder="描述你需要核对的成本问题……"
+          aria-label="输入成本分析问题"
+          onCompositionStart={() => setComposing(true)}
+          onCompositionEnd={() => setComposing(false)}
+          onKeyDown={(event) => {
+            const native = event.nativeEvent as KeyboardEvent;
+            if (composing || native.isComposing || native.keyCode === 229) event.stopPropagation();
+          }}
+        />
+      </ComposerPrimitive.Input>
+      <div className="assistant-composer-toolbar">
+        <span>Enter 发送 <i /> Shift + Enter 换行</span>
+        <AuiIf condition={(state) => !state.thread.isRunning}>
+          <ComposerPrimitive.Send className="assistant-send-button" aria-label="发送消息"><ArrowUp size={17} /></ComposerPrimitive.Send>
+        </AuiIf>
+        <AuiIf condition={(state) => state.thread.isRunning}>
+          <ComposerPrimitive.Cancel className="assistant-cancel-button" aria-label="取消运行"><Square size={12} fill="currentColor" /></ComposerPrimitive.Cancel>
+        </AuiIf>
+      </div>
+    </div>
+  </ComposerPrimitive.Root>;
+}

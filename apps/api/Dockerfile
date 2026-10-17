@@ -9,7 +9,7 @@ COPY . .
 RUN npm run db:generate && npm run build
 
 FROM node:24-alpine AS runtime
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl postgresql-client
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app/package.json ./package.json

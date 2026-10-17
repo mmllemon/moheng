@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { runLangGraphAssistantTurn, type LangGraphAssistantTurn } from './langgraph-adapter.js';
+import { assertSafeAssistantEventPayload } from '../../lib/assistant-run-events.js';
+import type { AuthUser } from '../../lib/auth.js';
+import type { AssistantReadOnlyToolInput } from '../../lib/assistant-read-only-tools.js';
+import { createFakeRuntimeDependencies, FAKE_PROVIDER_PRIVATE_MARKER } from '../../../test-support/fake-assistant-provider.js';
+
+const actor: AuthUser = { sub: 'test-user', email: 'test@example.invalid', role: 'ADMIN', sid: 'test-session' };
+
+function turn(prompt: string, emitted: Array<{ type: string; payload: Record<string, unknown> }>): LangGraphAssistantTurn {
+  return {
+    apiKey: 'test-only-not-a-real-api-key', modelId: 'fake-provider', baseURL: 'https://provider.example.invalid/v1',
+    checkpointUrl: 'postgres://not-used-by-memory-checkpointer', conversationId: 'gate-conversation', runId: 'gate-run', projectId: 'project-乙', actor,
+    messages: [{ role: 'user', content: prompt }], isCancellationRequested: async () => false,
+    emit: async (type, payload) => {
+      assertSafeAssistantEventPayload(type, payload);
+      emitted.push({ type, payload });
+    },
+  };
+}
+
+test('fake provider autonomously chooses cost_variance, invokes the server tool, and grounds the answer in its result', async () => {
+  const toolCalls: AssistantReadOnlyToolInput[] = [];
+  const emitted: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  const answer = await runLangGraphAssistantTurn(turn('请分析乙项目成本差异。', emitted), createFakeRuntimeDependencies(toolCalls));
+  assert.deepEqual(toolCalls.map((call) => call.toolId), ['cost_variance']);
+  assert.equal(toolCalls[0]?.projectId, 'project-乙');
+  assert.match(answer, /100000\.00/);
+  assert.match(answer, /999999\.00/);
+  assert.match(answer, /\+899999\.00/);
+  assert.match(answer, /900%/);
+  assert.match(answer, /OVER_TARGET/);
+  assert.doesNotMatch(answer, new RegExp(FAKE_PROVIDER_PRIVATE_MARKER));
+  assert.deepEqual(emitted.map((event) => event.type), ['tool.started', 'tool.completed']);
+  assert.doesNotMatch(JSON.stringify(emitted), new RegExp(FAKE_PROVIDER_PRIVATE_MARKER));
+  assert.doesNotMatch(JSON.stringify(emitted), /999999\.00|100000\.00|899999\.00/);
+});
+
+test('fake provider autonomously chooses project_operating_overview for an overview question', async () => {
+  const toolCalls: AssistantReadOnlyToolInput[] = [];
+  const emitted: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  const answer = await runLangGraphAssistantTurn(turn('请给我乙项目经营概览。', emitted), createFakeRuntimeDependencies(toolCalls));
+  assert.deepEqual(toolCalls.map((call) => call.toolId), ['project_operating_overview']);
+  assert.match(answer, /有效合同额 1200000\.00/);
+  assert.match(answer, /目标成本 100000\.00/);
+  assert.doesNotMatch(JSON.stringify(emitted), new RegExp(FAKE_PROVIDER_PRIVATE_MARKER));
+});

@@ -2,6 +2,13 @@ import type { FastifyInstance } from 'fastify';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
+import { businessNumberParameter, loadBusinessNumberParameters } from '../lib/business-parameters.js';
+import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
+
+const warningDefinitions = {
+  CONTRACT_EXPIRY_WARNING_DAYS: { defaultValue: 30, min: 1, max: 365 },
+  TARGET_COST_OVERRUN_DANGER_PERCENT: { defaultValue: 0, min: 0, max: 100 },
+} as const;
 
 function openAmount(netAmount: unknown, allocations: { amount: unknown }[]) {
   return Number(netAmount ?? 0) - allocations.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
@@ -10,15 +17,19 @@ function openAmount(netAmount: unknown, allocations: { amount: unknown }[]) {
 export async function notificationRoutes(app: FastifyInstance) {
   app.get('/', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
+    const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'PROJECT_READ');
     const query = await prisma.project.findMany({
-      where: { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) },
+      where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
       select: { id: true, name: true, code: true }, orderBy: { code: 'asc' },
     });
     const ids = query.map((project) => project.id);
     if (!ids.length) return success({ generatedAt: new Date().toISOString(), total: 0, bySeverity: { danger: 0, warning: 0, info: 0 }, items: [] });
     const projectMap = new Map(query.map((project) => [project.id, project]));
     const now = new Date();
-    const soon = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const warningParameters = await loadBusinessNumberParameters(ids, warningDefinitions);
+    const expiryDaysFor = (projectId: string) => businessNumberParameter(warningParameters, 'CONTRACT_EXPIRY_WARNING_DAYS', projectId, warningDefinitions.CONTRACT_EXPIRY_WARNING_DAYS);
+    const maxExpiryDays = Math.max(...ids.map(expiryDaysFor), warningDefinitions.CONTRACT_EXPIRY_WARNING_DAYS.defaultValue);
+    const soon = new Date(now.getTime() + maxExpiryDays * 24 * 60 * 60 * 1000);
     const [pendingChanges, pendingEvidence, pendingBills, overdueReceivables, overduePayableSchedules, pendingSettlements, expiringContracts, budgetItems, costEntries] = await Promise.all([
       prisma.change.findMany({ where: { projectId: { in: ids }, deletedAt: null, status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } }, select: { id: true, projectId: true, code: true, name: true, status: true, submittedAmount: true, occurredAt: true }, orderBy: { updatedAt: 'asc' }, take: 250 }),
       prisma.change.findMany({ where: { projectId: { in: ids }, deletedAt: null, externalConfirmationStatus: { in: ['PENDING_SUPPLEMENT', 'PENDING_VERIFICATION', 'DISPUTED'] } }, select: { id: true, projectId: true, code: true, name: true, externalConfirmationStatus: true, evidenceClass: true, externalConfirmerName: true }, orderBy: { updatedAt: 'asc' }, take: 250 }),
@@ -62,6 +73,8 @@ export async function notificationRoutes(app: FastifyInstance) {
     }
     for (const row of expiringContracts) {
       const p = projectMap.get(row.projectId); if (!p) continue;
+      const days = expiryDaysFor(row.projectId);
+      if (row.plannedEndDate && row.plannedEndDate.getTime() > now.getTime() + days * 24 * 60 * 60 * 1000) continue;
       items.push({ id: `contract-expiring:${row.id}`, kind: 'CONTRACT_EXPIRING', severity: 'info', title: `分供合同即将到期：${row.contractNo}`, description: `${row.name} · ${row.counterpartyName} · 计划结束 ${row.plannedEndDate?.toISOString().slice(0, 10) ?? '未填写'}`, projectId: p.id, projectName: p.name, projectCode: p.code, occurredAt: row.plannedEndDate?.toISOString() ?? now.toISOString(), href: '/workspace/downstream' });
     }
     // Match the project budget view's leaf-only baseline; only alert where a positive
@@ -80,7 +93,9 @@ export async function notificationRoutes(app: FastifyInstance) {
       if (actualCost <= targetCost) continue;
       const p = projectMap.get(projectId); if (!p) continue;
       const overrun = actualCost - targetCost;
-      items.push({ id: `target-cost-overrun:${projectId}`, kind: 'TARGET_COST_OVERRUN', severity: 'danger', title: `实际成本超过目标成本：${p.code}`, description: `目标成本 ${targetCost.toFixed(2)} 元 · 实际成本 ${actualCost.toFixed(2)} 元 · 超出 ${overrun.toFixed(2)} 元（${((overrun / targetCost) * 100).toFixed(1)}%）`, projectId: p.id, projectName: p.name, projectCode: p.code, occurredAt: now.toISOString(), href: '/workspace/analysis', amount: overrun });
+      const overrunPercent = (overrun / targetCost) * 100;
+      const dangerThreshold = businessNumberParameter(warningParameters, 'TARGET_COST_OVERRUN_DANGER_PERCENT', projectId, warningDefinitions.TARGET_COST_OVERRUN_DANGER_PERCENT);
+      items.push({ id: `target-cost-overrun:${projectId}`, kind: 'TARGET_COST_OVERRUN', severity: overrunPercent >= dangerThreshold ? 'danger' : 'warning', title: `实际成本超过目标成本：${p.code}`, description: `目标成本 ${targetCost.toFixed(2)} 元 · 实际成本 ${actualCost.toFixed(2)} 元 · 超出 ${overrun.toFixed(2)} 元（${overrunPercent.toFixed(1)}%）`, projectId: p.id, projectName: p.name, projectCode: p.code, occurredAt: now.toISOString(), href: '/workspace/analysis', amount: overrun });
     }
     const severityRank = { danger: 0, warning: 1, info: 2 };
     items.sort((a, b) => severityRank[a.severity] - severityRank[b.severity] || new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());

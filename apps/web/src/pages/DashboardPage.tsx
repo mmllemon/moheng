@@ -5,7 +5,7 @@ import ReactECharts from 'echarts-for-react';
 import { ArrowRight, ArrowUpRight, CircleAlert, ClipboardCheck, Coins, FolderKanban, Gauge, HandCoins, ReceiptText, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { useUiStore } from '../auth-store';
+import { useAuthStore, useUiStore } from '../auth-store';
 import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, formatWan, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import type { Project } from '../types';
 
@@ -29,6 +29,7 @@ const statusOptions = [{ value: 'ALL', label: '全部项目状态' }, { value: '
 export default function DashboardPage() {
   const navigate = useNavigate();
   const setSelectedProjectId = useUiStore((state) => state.setSelectedProjectId);
+  const currentUser = useAuthStore((state) => state.user);
   const uiTheme = useUiStore((state) => state.theme);
   const uiAccent = useUiStore((state) => state.accent);
   const dashboard = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<DashboardData>('/dashboard') });
@@ -117,7 +118,7 @@ export default function DashboardPage() {
           {data!.pendingChanges.length === 0 ? <div className="compact-empty"><ClipboardCheck size={20} /><span>当前没有待跟进变更</span></div> : <div className="pending-list">{data!.pendingChanges.slice(0, 6).map((item) => <button className="pending-item" key={item.id} onClick={() => { setSelectedProjectId(item.projectId); navigate('/cost/changes'); }}><span className="pending-icon"><CircleAlert size={16} /></span><span className="pending-copy"><strong>{item.name}</strong><small>{item.projectName} · {item.code}</small></span><span className="pending-amount">{formatMoney(item.submittedAmount, 0)}</span><ArrowRight size={14} /></button>)}</div>}
           <div className="panel-divider" /><button className="panel-footer-link" onClick={() => navigate('/projects')}><HandCoins size={15} />项目和回款总览 <ArrowRight size={14} /></button>
         </article>
-        <article className="panel activity-panel portfolio-activity-panel"><div className="panel-heading"><div><h3>最近操作</h3><p>所有可访问项目的操作流水</p></div><button type="button" className="panel-header-action" onClick={() => navigate('/audit-logs')}>查看全部 <ArrowRight size={14} /></button></div>
+        <article className="panel activity-panel portfolio-activity-panel"><div className="panel-heading"><div><h3>最近操作</h3><p>当前账号有权访问的项目操作摘要</p></div>{currentUser?.role === 'ADMIN' && <button type="button" className="panel-header-action" onClick={() => navigate('/audit-logs')}>查看全部 <ArrowRight size={14} /></button>}</div>
           {data!.recentActivities.length === 0 ? <div className="compact-empty">暂无操作记录</div> : <div className="activity-list">{data!.recentActivities.map((activity) => <div className="activity-row" key={activity.id}><span className="activity-dot" /><div className="activity-text"><strong>{activity.actor} <span>{activityLabel[activity.action] ?? activity.action}</span></strong><small>{activity.projectName} · {activity.entity}</small></div><time>{new Date(activity.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time></div>)}</div>}
         </article>
       </section>

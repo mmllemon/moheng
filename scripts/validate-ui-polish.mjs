@@ -22,8 +22,10 @@ const appInfo = await read('apps/api/src/platform/app-info.ts');
 const design = await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md');
 const acceptance = await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md');
 
-check('release package/API/Web/runtime metadata consistently use v2.8.0-rc.1',
-  rootPackage.version === '2.8.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.8.0-rc.1'"));
+const expectedVersion = rootPackage.version;
+const validReleaseVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(expectedVersion);
+check(`release package/API/Web/runtime metadata consistently use ${expectedVersion}`,
+  validReleaseVersion && apiPackage.version === expectedVersion && webPackage.version === expectedVersion && appInfo.includes(`APP_VERSION = '${expectedVersion}'`));
 check('report center removes redundant intro cards and repeated hero banner',
   !center.includes('report-intro-grid') && !center.includes('report-center-hero') && !center.includes('report-library'));
 check('report center has a single compact ledger catalog rather than duplicated report-type selector and large cards',
@@ -37,7 +39,7 @@ check('report center responsive layout stacks under constrained widths and provi
 check('report workspace honors reduced-motion preferences',
   styles.includes('@media (prefers-reduced-motion: reduce), :root[data-motion="reduced"]') && styles.includes('.report-studio-entry-card, .report-report-option, .sidebar-note { transition: none !important; }'));
 check('project members navigation is absent from cost workspace tabs and the tabs identify the cost workbench',
-  !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && workspace.includes('aria-label="成本工作台业务导航"') && layout.includes("to: '/system/members', label: '项目成员与权限'") && layout.includes("to: '/system', label: '系统管理工作台'"));
+  !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && workspace.includes('aria-label="成本工作台业务导航"') && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system', label: '系统管理'") && layout.includes("to: '/system', label: '概览'") && layout.includes("'经营中心', '工作台', '项目管理', '系统管理'"));
 check('sidebar health indicator without data semantics is removed and replaced by a functioning dashboard link',
   !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
 check('documentation discusses the health indicator as non-metric and records navigation/report layout changes',

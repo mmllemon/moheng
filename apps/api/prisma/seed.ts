@@ -12,7 +12,7 @@ async function main() {
   if (!admin) {
     const passwordHash = await bcrypt.hash(password, 12);
     admin = await prisma.user.create({
-      data: { name: process.env.SEED_ADMIN_NAME ?? '系统管理员', email, passwordHash, role: 'ADMIN' },
+      data: { name: process.env.SEED_ADMIN_NAME ?? '系统管理员', email, passwordHash, role: 'ADMIN', passwordResetRequired: process.env.NODE_ENV === 'production' },
     });
     console.log(`Created seed administrator: ${email}`);
   } else if (admin.role !== 'ADMIN') {

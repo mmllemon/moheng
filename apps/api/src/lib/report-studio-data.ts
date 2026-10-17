@@ -2,6 +2,7 @@ import { prisma } from './prisma.js';
 import { calculateEffectiveContractAmount, centsToMoney, moneyToCents } from './contract-amount-math.js';
 import { calculateDownstreamCurrentAmount } from './downstream-contract-math.js';
 import type { AuthUser } from './auth.js';
+import { hasCrossProjectReadScope } from './project-data-scope.js';
 
 export type ReportStudioDomain = 'PROJECT' | 'COMPANY' | 'PARTY';
 export type ReportStudioFieldType = 'TEXT' | 'NUMBER' | 'MONEY' | 'DATE' | 'BOOLEAN';
@@ -128,7 +129,8 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   if (!businessPartyId) throw Object.assign(new Error('往来单位经营档案报表必须指定单位'), { statusCode: 400, code: 'BUSINESS_PARTY_ID_REQUIRED' });
   const party = await prisma.businessParty.findUnique({ where: { id: businessPartyId } });
   if (!party) throw Object.assign(new Error('往来单位档案不存在'), { statusCode: 404, code: 'BUSINESS_PARTY_NOT_FOUND' });
-  const projectScope = { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) };
+  const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
+  const projectScope = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) };
   const visibleProjects = await prisma.project.findMany({ where: projectScope, select: { id: true, code: true, name: true, status: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] });
   const visibleIds = visibleProjects.map((project) => project.id);
   const projectFilter = { projectId: { in: visibleIds } };
@@ -212,8 +214,9 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
 
 export async function loadReportStudioDataset(user: AuthUser, domain: ReportStudioDomain, projectId?: string, businessPartyId?: string): Promise<ReportStudioDataset> {
   if (domain === 'PARTY') return loadBusinessPartyReportDataset(user, businessPartyId);
+  const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const accessibleProjects = await prisma.project.findMany({
-    where: { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) },
+    where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
     include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }],
   });
   const accessibleIds = accessibleProjects.map((project) => project.id);

@@ -5,7 +5,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { Prisma } from '@prisma/client';
 import { prisma } from './prisma.js';
 import { backgroundJobArtifactPath, backgroundJobStorageRoot } from './background-job-storage.js';
-import { claimNextBackgroundJob, PermanentBackgroundJobError } from './background-jobs.js';
+import { claimNextBackgroundJob, PermanentBackgroundJobError, reconcileOrphanAssistantRuns } from './background-jobs.js';
 import type { BackgroundJobHandlerResult, ClaimedBackgroundJob } from './background-job-types.js';
 import { backgroundJobHandlers } from '../platform/background-job-registry.js';
 
@@ -44,11 +44,16 @@ async function executeClaimedJob(job: ClaimedBackgroundJob, workerId: string, le
     const status = permanent || exhausted ? 'FAILED' : 'QUEUED';
     const backoffSeconds = Math.min(300, 5 * (2 ** Math.max(0, job.attempts - 1)));
     const lastError = (error instanceof Error ? error.message : 'UNKNOWN_BACKGROUND_JOB_ERROR').slice(0, 1900);
-    await prisma.backgroundJob.updateMany({
-      where: { id: job.id, status: 'RUNNING', lockedBy: workerId },
-      data: { status, availableAt: status === 'QUEUED' ? new Date(Date.now() + backoffSeconds * 1000) : new Date(),
-        finishedAt: status === 'FAILED' ? new Date() : null, lockedAt: null, lockedBy: null, lastError, updatedAt: new Date() },
-    });
+    try {
+      await prisma.backgroundJob.updateMany({
+        where: { id: job.id, status: 'RUNNING', lockedBy: workerId },
+        data: { status, availableAt: status === 'QUEUED' ? new Date(Date.now() + backoffSeconds * 1000) : new Date(),
+          finishedAt: status === 'FAILED' ? new Date() : null, lockedAt: null, lockedBy: null, lastError, updatedAt: new Date() },
+      });
+    } catch (persistError) {
+      // Keep the worker alive. The lease enables recovery when the database becomes available again.
+      logger.error({ err: persistError, jobId: job.id, workerId }, 'Unable to persist background job failure; lease recovery will handle the task');
+    }
     logger.error({ err: error, jobId: job.id, type: job.type, attempts: job.attempts, maxAttempts: job.maxAttempts, nextStatus: status }, 'Background job failed');
   } finally { clearInterval(heartbeatInterval); }
 }
@@ -91,7 +96,16 @@ async function cleanupExpiredResults(logger: FastifyBaseLogger): Promise<void> {
   } catch (error) {
     logger.warn({ err: error }, 'Background job orphan-file sweep failed');
   }
-  if (expired.length > 0 || pruned.count > 0 || orphanFilesRemoved > 0) logger.info({ expiredArtifacts: expired.length, prunedJobs: pruned.count, orphanFilesRemoved }, 'Background job retention cleanup completed');
+  const now = Date.now();
+  const cleanupResults = await Promise.allSettled([
+    prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: new Date(now - 30 * 24 * 60 * 60 * 1000) } } }),
+    prisma.loginAttemptBucket.deleteMany({ where: { updatedAt: { lt: new Date(now - 7 * 24 * 60 * 60 * 1000) } } }),
+    prisma.securityEvent.deleteMany({ where: { createdAt: { lt: new Date(now - 180 * 24 * 60 * 60 * 1000) } } }),
+  ]);
+  for (const [index, result] of cleanupResults.entries()) {
+    if (result.status === 'rejected') logger.warn({ err: result.reason, cleanup: ['refresh-tokens', 'login-attempt-buckets', 'security-events'][index] }, 'Auth retention cleanup failed');
+  }
+  if (expired.length > 0 || pruned.count > 0 || orphanFilesRemoved > 0 || cleanupResults.some((result) => result.status === 'fulfilled' && result.value.count > 0)) logger.info({ expiredArtifacts: expired.length, prunedJobs: pruned.count, orphanFilesRemoved, authRetentionCleanups: cleanupResults.map((result) => result.status === 'fulfilled' ? result.value.count : null) }, 'Background and auth retention cleanup completed');
 }
 
 export function startBackgroundWorker(logger: FastifyBaseLogger, options: WorkerOptions = {}): () => Promise<void> {
@@ -100,11 +114,29 @@ export function startBackgroundWorker(logger: FastifyBaseLogger, options: Worker
   const workerId = `${hostname()}:${process.pid}:${randomUUID()}`.slice(0, 150);
   let stopping = false;
   let lastCleanupAt = 0;
+  let lastAssistantOrphanSweepAt = 0;
   const sleep = (ms: number) => new Promise<void>((resolveSleep) => setTimeout(resolveSleep, ms));
   const loop = async () => {
     while (!stopping) {
       try {
-        if (Date.now() - lastCleanupAt >= CLEANUP_INTERVAL_MS) { await cleanupExpiredResults(logger); lastCleanupAt = Date.now(); }
+        if (Date.now() - lastCleanupAt >= CLEANUP_INTERVAL_MS) {
+          lastCleanupAt = Date.now();
+          try { await cleanupExpiredResults(logger); }
+          catch (error) {
+            // Avoid hammering PostgreSQL with a retention query every poll while the database is unhealthy.
+            lastCleanupAt = Date.now() - CLEANUP_INTERVAL_MS + 60_000;
+            logger.error({ err: error }, 'Background/auth retention cleanup failed; retrying after a cooldown');
+          }
+        }
+        if (Date.now() - lastAssistantOrphanSweepAt >= 30_000) {
+          lastAssistantOrphanSweepAt = Date.now();
+          try {
+            const reconciled = await reconcileOrphanAssistantRuns();
+            if (reconciled > 0) logger.warn({ reconciled }, 'Orphan assistant runs reconciled to terminal state');
+          } catch (error) {
+            logger.error({ err: error }, 'Assistant orphan-run reconciliation failed');
+          }
+        }
         const job = await claimNextBackgroundJob(workerId, leaseSeconds);
         if (job) await executeClaimedJob(job, workerId, leaseSeconds, logger);
         else await sleep(pollIntervalMs);

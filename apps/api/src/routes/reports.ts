@@ -11,6 +11,7 @@ import { backgroundJobArtifactPath } from '../lib/background-job-storage.js';
 import { canAccessProject } from '../lib/project-access.js';
 import { loadReportSnapshot, makeReportFields, reportCatalog, reportKeys, type ReportKey, type ReportFilters } from '../lib/report-data.js';
 import { buildReportWorkbook, reportKeyToFilename, reportRowToJson } from '../lib/report-xlsx.js';
+import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 import { createDefaultDefinition, validateReportTemplateDefinition, type ReportTemplateDefinition, type ReportTemplateScope } from '../lib/report-template.js';
 
 const querySchema = z.object({
@@ -40,8 +41,9 @@ function queryFilters(value: z.infer<typeof querySchema>): ReportFilters {
 }
 
 async function accessibleProjectIds(user: AuthUser): Promise<string[]> {
+  const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const projects = await prisma.project.findMany({
-    where: { deletedAt: null, ...(user.role === 'ADMIN' ? {} : { members: { some: { userId: user.sub } } }) },
+    where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
     select: { id: true },
   });
   return projects.map((project) => project.id);
@@ -51,9 +53,9 @@ async function canReadTemplate(template: { scope: string; status: string; ownerU
   if (template.scope === 'SYSTEM') return template.status === 'PUBLISHED' || user.role === 'ADMIN';
   if (template.scope === 'PERSONAL') return template.ownerUserId === user.sub;
   if (template.scope === 'PROJECT' && template.projectId) {
-    if (!(await canAccessProject(user.sub, user.role, template.projectId))) return false;
+    if (!(await canAccessProject(user.sub, user.role, template.projectId, undefined, 'REPORT_EXPORT'))) return false;
     if (template.status === 'PUBLISHED') return true;
-    return template.ownerUserId === user.sub || user.role === 'ADMIN' || canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER']);
+    return template.ownerUserId === user.sub || user.role === 'ADMIN' || canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER'], 'PROJECT_MANAGE');
   }
   return false;
 }
@@ -61,7 +63,7 @@ async function canReadTemplate(template: { scope: string; status: string; ownerU
 async function canEditTemplate(template: { scope: string; ownerUserId: string | null; projectId: string | null }, user: AuthUser): Promise<boolean> {
   if (template.scope === 'SYSTEM') return user.role === 'ADMIN';
   if (template.scope === 'PERSONAL') return template.ownerUserId === user.sub;
-  if (template.scope === 'PROJECT' && template.projectId) return canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER']);
+  if (template.scope === 'PROJECT' && template.projectId) return canAccessProject(user.sub, user.role, template.projectId, ['OWNER', 'MANAGER'], 'PROJECT_MANAGE');
   return false;
 }
 
@@ -121,7 +123,7 @@ export async function reportRoutes(app: FastifyInstance) {
     if (input.scope === 'SYSTEM' && user.role !== 'ADMIN') return failure(reply, 403, 'REPORT_TEMPLATE_ADMIN_REQUIRED', '只有系统管理员可以创建系统模板');
     if (input.scope === 'PROJECT') {
       if (!input.projectId) return failure(reply, 400, 'PROJECT_ID_REQUIRED', '项目模板必须指定项目');
-      if (!(await canAccessProject(user.sub, user.role, input.projectId, ['OWNER', 'MANAGER']))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '只有项目负责人或项目经理可以创建项目共享模板');
+      if (!(await canAccessProject(user.sub, user.role, input.projectId, ['OWNER', 'MANAGER'], 'PROJECT_MANAGE'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '只有项目负责人或项目经理可以创建项目共享模板');
       const project = await prisma.project.findFirst({ where: { id: input.projectId, deletedAt: null }, select: { id: true } });
       if (!project) return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
     }
@@ -389,7 +391,7 @@ export async function reportRoutes(app: FastifyInstance) {
     };
     if (!validDay(filters.from) || !validDay(filters.to)) return failure(reply, 400, 'INVALID_DATE', '日期无效，请检查筛选条件');
     if (filters.from && filters.to && filters.from > filters.to) return failure(reply, 400, 'INVALID_DATE_RANGE', '开始日期不能晚于结束日期');
-    if (filters.projectId && !(await canAccessProject(user.sub, user.role, filters.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问所选项目报表的权限');
+    if (filters.projectId && !(await canAccessProject(user.sub, user.role, filters.projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问所选项目报表的权限');
 
     let definition = createDefaultDefinition(key.data);
     let templateName = '系统默认模板';
@@ -448,7 +450,7 @@ export async function reportRoutes(app: FastifyInstance) {
     const { jobId } = request.params as { jobId: string };
     const job = await prisma.backgroundJob.findFirst({ where: { id: jobId, ...(user.role === 'ADMIN' ? {} : { ownerUserId: user.sub }) } });
     if (!job) return failure(reply, 404, 'BACKGROUND_JOB_NOT_FOUND', '任务不存在或当前账号无权查看');
-    if (job.projectId && !(await canAccessProject(user.sub, user.role, job.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你已无权访问该任务关联的项目');
+    if (job.projectId && !(await canAccessProject(user.sub, user.role, job.projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你已无权访问该任务关联的项目');
     const fileAvailable = job.status === 'SUCCEEDED' && Boolean(job.resultFileName) && (!job.resultExpiresAt || job.resultExpiresAt.getTime() > Date.now());
     return success({ id: job.id, type: job.type, status: job.status, attempts: job.attempts, maxAttempts: job.maxAttempts,
       createdAt: job.createdAt, startedAt: job.startedAt, finishedAt: job.finishedAt, result: job.resultMetadata,
@@ -462,7 +464,7 @@ export async function reportRoutes(app: FastifyInstance) {
     const { jobId } = request.params as { jobId: string };
     const job = await prisma.backgroundJob.findFirst({ where: { id: jobId, ...(user.role === 'ADMIN' ? {} : { ownerUserId: user.sub }) } });
     if (!job) return failure(reply, 404, 'BACKGROUND_JOB_NOT_FOUND', '任务不存在或当前账号无权下载');
-    if (job.projectId && !(await canAccessProject(user.sub, user.role, job.projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你已无权访问该任务关联的项目');
+    if (job.projectId && !(await canAccessProject(user.sub, user.role, job.projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你已无权访问该任务关联的项目');
     if (job.status !== 'SUCCEEDED') return failure(reply, 409, 'BACKGROUND_JOB_RESULT_NOT_READY', '任务尚未完成，请等待后台处理');
     if (job.resultExpiresAt && job.resultExpiresAt.getTime() <= Date.now()) return failure(reply, 410, 'BACKGROUND_JOB_RESULT_EXPIRED', '导出文件已过期，请重新提交导出任务');
     if (!job.resultFileName) return failure(reply, 410, 'BACKGROUND_JOB_RESULT_MISSING', '导出文件已不存在，请重新提交导出任务');

@@ -1,3 +1,131 @@
+## v2.19.0-rc.1 Gate hardening follow-up
+
+- Root `build` generates Prisma Client before compiling API/Web; standalone API tests also generate Prisma Client.
+- Add `db:validate` and run schema validation in the isolated PostgreSQL CI path. Update the orphan-run SQL and its static contract to use valid, consistently quoted target-table references.
+- Use `npm ci` with committed lock files for the main workspace and the standalone Pi Durable PoC.
+- Correct the UI-polish release-version assertion label to use the current package version rather than the stale v2.13.0 label.
+- Align Pi Durable PoC `@langchain/core` with `langchain@1.5.18` and pin Vitest as a development dependency.
+- Add separate CI coverage for Pi Durable SQLite/Vitest and isolated PostgreSQL conformance; the PoC job intentionally remains blocked until its independent lockfile is committed. Update admin-guard and report-path static assertions to match correct runtime behavior on Windows and POSIX.
+
+## v2.19.0-rc.1（2026-10-17）
+
+- 为 LangGraph 适配器增加仅通过代码依赖注入的模型、checkpointer 与只读工具 seam；不增加运行时环境开关，不允许 HTTP 请求启用测试 provider。
+- 新增 fake chat model 成功走工具调用到最终回答的自动测试，断言回答来自工具结果。
+- 助手持久化事件新增 payload 白名单与嵌套结构校验，禁止事件写入 prompt、回答正文、金额值、凭据或未知字段；`tool.completed` 仅允许固定白名单中的限制说明与字段级来源元数据，拒绝任意业务口径/正文。
+- 新增日志/事件泄漏扫描器和负向测试，覆盖密钥格式、显式敏感标记、endpoint 值及事件 payload 结构；事件来源 scope 进一步约束为固定描述白名单。
+- 新增隔离 PostgreSQL 恢复回归测试，固化六个 lease/取消场景，并测试宽限期内不误杀与宽限期后孤立 run 收敛；加入 fake provider 工具调用成功路径测试和 GitHub Actions CI Gate。
+- 生产助手开关保持默认关闭；本版本仍为 RC，不构成生产批准。
+
+## v2.18.0-rc.1（2026-10-17）
+
+- 对齐 `langchain@1.5.18` 所需的 `@langchain/core@1.2.18` peer 版本，避免主 API workspace 安装被 ERESOLVE 阻断。
+- 增加可选 `OPENAI_BASE_URL` 配置并通过 `ChatOpenAI.configuration.baseURL` 传递到模型客户端，支持采用 OpenAI-compatible API 的隔离测试端点；不改变工具白名单与只读权限边界。
+- 从 `Project` 模型移除 5 个不存在合法反向关系的治理规则、备份运行和集成凭据关系字段；保留合法的 `systemParameterRevisions` 关系。
+- 新增后台 worker 的孤立助手 run 收敛：运行至少 60 秒、且缺少有效匹配 `assistant.agent.run` queue job 的 `QUEUED/RUNNING` run 会终态化；尊重已提交的取消请求，持久化终态事件并为失败写入审计。
+- SSE 失败后的 UI 状态回读以持久化 run 终态优先，并为孤立 run/worker lease 失败提供明确提示。
+- 保留当前前端助手 SSE parser 的 6 项测试与全套静态发布验证。此 RC 的源码修复与用户上一轮独立 Gate 证据分开记录；用户本地完整构建、真实 PG 并发/取消/回放与浏览器 SSE 恢复结果未在当前容器独立复跑。**不批准生产启用。**
+
+## v2.17.0-rc.1（2026-10-16）
+
+- 将助手 SSE 事件块解析提取为无网络副作用的纯模块，并新增 6 项 Node 内置测试，覆盖事件信封、CRLF/多行 data、heartbeat、畸形 JSON、非法游标和数组 payload。
+- 保持 `@assistant-ui/react` 外部存储运行时与墨衡现有 API/SSE 的解耦，不把 UI 适配器和 LangGraph checkpoint 协议混为一谈；助手仍默认关闭。
+- 发布候选验证链新增 SSE parser 单测。当前执行环境仍只有 Node.js 22.16.0、且工作区依赖未安装，完整类型检查、构建、数据库和浏览器 E2E 仍受环境阻塞，不能把静态契约检查视为运行态通过。
+
+## v2.16.0-rc.1（2026-10-16）
+
+- 基于 `@assistant-ui/react` 建设成本工作台内的助手前端，使用 `useExternalStoreRuntime` 对接现有墨衡 REST/SSE，会话与执行状态仍由后端持久化 API 管理，不把 LangGraph 私有事件格式绑定到 UI。
+- 新增 `/cost/assistant` 三栏工作台：当前项目会话列表/搜索/归档，消息时间线、快捷成本问题、Markdown/GFM 表格、取消与运行状态，以及工具来源实体/字段/行数/范围和限制说明。
+- 入口仅在认证后的助手状态接口返回 enabled 时出现；路由本身仍检查开关。前端切换项目后不展示旧项目会话详情，会话列表由服务端按 projectId 收敛。
+- 使用 `fetch` 读取持久化 SSE，携带现有 Authorization header，支持 refresh-session、`Last-Event-ID` 恢复与重复序号过滤；重新打开旧会话会重放最新运行的事件，恢复来源/限制面板。
+- 精确固定 `@assistant-ui/react@0.15.29`、`@assistant-ui/react-markdown@0.14.23` 和 `remark-gfm@4.0.1`；从 `open-claude-ui` 只借鉴中文输入法与滚动交互模式，不引入其品牌素材或整套 Claude 外观。
+- 修正会话列表非法查询分支缺少 Fastify `reply` 参数的问题；增加 `scripts/validate-assistant-ui.mjs` 并接入发布候选静态验证。
+- **尚未通过完整运行态 Gate**：当前环境 Node.js 22.16.0、未安装工作区依赖，未完成 Node.js 24+ 全量类型检查/生产构建、真实 PostgreSQL 与浏览器 E2E。Assistant 仍默认关闭，不批准生产启用。
+
+## v2.15.0-rc.1（2026-10-16）
+
+- 基于 v2.14.0-rc.1 增量实现只读助手会话后端第一阶段：会话列表/新建/详情/归档、消息提交、运行状态、取消请求和持久化 SSE 事件回放接口；所有路由仍位于默认关闭的隐藏 PoC 模块下。
+- 新增 `AssistantConversation`、`AssistantMessage`、`AssistantRun`、`AssistantRunEvent` 四个模型及追加式迁移；会话 owner 与 project 由服务端绑定，读取每次重新校验项目权限，跨用户会话按 404 处理。
+- 消息请求使用 `requestId + requestHash` 幂等保护；同一会话通过事务行锁避免并发运行重叠，消息与 `assistant.agent.run` 后台任务在同一事务入队，任务 payload 不复制用户 prompt。
+- 持久化运行事件使用单调递增的每 run 序号，SSE 支持 `Last-Event-ID`/`after` 重放、心跳及终态关闭；浏览器断开不会取消已提交任务，并拒绝超出当前事件序号的游标。取消、归档和关键运行状态有审计记录。
+- 加固消息提交与归档并发、运行完成与取消并发：行锁后重新验证 ACTIVE 状态，完成/失败/取消使用条件状态迁移；已提交的取消请求不会被无条件完成写入覆盖。
+- 新增独立 `apps/api/src/assistant/runtime/langgraph-adapter.ts`，把 LangGraph/provider SDK 与通用任务处理隔离；checkpoint schema 使用显式 setup 命令初始化，正常请求不执行 DDL。耗尽的 worker lease 会将对应助手 run 收敛为失败状态，避免 UI 永久停留 RUNNING。
+- 将会话/API/SSE 静态契约检查接入 Release Candidate 验证链，并添加 runtime 依赖固定版本。尚未实现前端助手 UI；尚未在 Node.js 24+ 环境完成 TypeScript/build、Prisma Client 生成、真实 PostgreSQL 迁移/并发、SSE 浏览器重连、fake/真实模型 E2E 或恢复演练。仍为 RC，助手生产开关必须保持关闭。
+
+## v2.14.0-rc.1（2026-10-16）
+
+- 固化只读 AI 助手下一阶段运行时/存储决策：下一阶段以 LangGraph.js + PostgreSQL `PostgresSaver` 为集成候选，并明确不代表生产准入；Pi Durable + SQLite 的实验性 API 与单进程 storage owner 限制不作为长期默认存储。
+- 将只读助手安全契约与 runtime/storage 决策一致性校验并入 Release Candidate 验证链；继续要求三工具白名单、逐次项目权限复核、失败/成功审计、无业务对象写操作及默认关闭。
+- 新增助手运行时决策与下一阶段验收清单。会话 API、SSE 重连/取消、UI、真实模型端到端、备份恢复、提示注入及生产准入仍未完成。
+
+- 新增显式账号数据范围 `ASSIGNED_PROJECTS` / `ALL_PROJECTS_READONLY`，默认所有既有账号继续仅能访问已分配项目；管理员可对普通账号授权跨项目只读，并触发会话撤销与审计。跨项目只读不授予写入、审批、外部确认、付款、成员管理或安全日志访问。已接入项目清单、经营总览、业务报表、报表工作室、往来单位经营档案及动态待办/预警的只读数据范围。
+- 项目角色权限策略在服务端项目访问辅助层强制执行，仅可在代码声明的角色能力上限内收紧。内部工作流草稿/发布/历史回滚已接入变更签证状态转换；为避免发布无效配置，当前只允许 `CHANGE_INTERNAL_APPROVAL` 一个已接入的工作流代码，不宣称已有任意业务流程设计器。
+- 新增 `CONTRACT_EXPIRY_WARNING_DAYS`（默认 30 天、范围 1–365）和 `TARGET_COST_OVERRUN_DANGER_PERCENT`（默认 0%、范围 0–100）两个业务可读数值参数消费点；仅已发布、`BUSINESS_READABLE`、类型与范围正确的参数生效，项目值覆盖全局值，无效值安全回退。
+- PostgreSQL 业务数据库备份与 `pg_dumpall --globals-only` 全局角色/配置归档均使用 AES-256-GCM 加密、SHA-256 校验和密钥 ID 版本标记；下载仅提供加密归档。恢复演练在不同集群身份上验证并清理临时数据库。全局 SQL 仅执行解密/完整性检查，不会由演练自动在目标集群执行；灾备运维需受控人工恢复全局角色，并把它作为单独验收步骤。
+- 集成凭据支持 HTTPS 连接探测和异步 JSON POST 投递，目标主机由 `INTEGRATION_ALLOWED_HOSTS` 显式允许名单控制，禁止重定向并检查 DNS 公网地址；投递使用稳定幂等键和既有后台任务重试。未实现特定 ERP/对象存储协议适配器与自动业务事件映射。
+- 将登录范围变更设为强制撤销会话；修正两个报表后台任务的认证上下文 `sid`；添加跨项目只读和业务数值参数单测。巡检按钮保持透明背景，使用中性色 focus-visible 轮廓。
+- 新增迁移 `20261016040000_system_security_workflow_integration`、`20261016050000_project_data_scope`。迁移仅增量追加。
+- **仍为 RC**：当前 Node.js 22.16.0 且未安装工作区依赖；严格类型检查、生产构建、完整单测、Prisma 生成、PostgreSQL 迁移/并发测试、浏览器 E2E、备份恢复和 Windows 部署验收未通过或尚未执行。详见 `docs/系统管理关键缺口闭环-v2.14.0-rc.1.md` 和 `docs/阶段验收记录-v2.14.0-rc.1.md`。
+
+## v2.13.0-rc.1（2026-10-16）
+
+- 精简主侧边导航：系统管理保留单一入口，账号、安全、权限治理、组织规则、字典、参数、运维和操作追溯移入横向滚动的二级导航；侧栏导航区独立滚动，底部账号区不再被长菜单挤出可视区域。
+- 新增只读现行权限矩阵 API 和授权复核工作台：按生成时刻记录账号、项目成员角色、风险发现项，支持管理员提交复核说明，生成和复核均写审计；复核不会直接授予/撤销权限。
+- 新增 `SystemAuthorizationReview` 表和追加式迁移 `20261016030000_system_authorization_reviews`。
+- 字典分类、字典项、参数键按显示名称自动推荐稳定编码；用户开始手动编辑编码后不再被名称输入覆盖，服务端格式与唯一性校验保持权威。
+- 数据质量巡检按钮改为低强调中性色操作，减少卡片右侧的视觉污染。
+- RC Gate：需在 Node.js 24+ 与隔离 PostgreSQL 中执行严格类型检查、构建、迁移、权限/E2E 和恢复演练后才可考虑正式发布。
+
+## v2.12.1-rc.1（2026-10-16）
+
+- 复核用户提供的 39 项源码缺陷清单；逐条区分可复现缺陷、加固建议和误报，形成 `docs/源码缺陷审计与修复记录-v2.12.1-rc.1.md`。
+- 修复系统治理页面部门/账号归属状态不同步、默认/运行中/已取消/失败状态文案和颜色、会话用户空值防御、字典表格可访问名称与选择守卫。
+- 修复参数配置 API 的 params/body 错误详情、参数定义冲突查询、发布审计事实值、草稿创建事务内项目有效性复核、回滚说明静默截断；显式保护无项目范围查询的生效参数逻辑。参数值继续不写入审计快照。
+- 运维增强：超时终止子进程树；备份元数据先退休再删文件，防止数据库指向不存在的备份；下载文件名校验统一；恢复前除 DNS/IP 检查外再核对 PostgreSQL system identifier，集群相同或标识不可验证时 fail-closed。
+- 安全增强：新增独立 `LOGIN_ATTEMPT_HMAC_KEY`，公网模式要求它与 JWT/MFA 密钥分离，避免 JWT 密钥轮换同时重置登录限流桶；加强 MFA 加密段格式检查；强制改密加入 authVersion 乐观锁。
+- 把刷新令牌签发热路径中的历史清理移入后台定期任务；后台任务状态回写失败增加独立日志；清理失败增加冷却，避免数据库故障期间每秒重复运行清理查询。
+- 新增单测覆盖独立限流 HMAC key 与 JWT 轮换隔离、MFA 密文格式错误。
+- **仍为 RC**：当前容器 Node.js 22.16.0 且无完整依赖；完整 TypeScript lint/build/test、Prisma 验证/生成、真实 PostgreSQL 迁移/并发、浏览器 E2E、Windows 进程树与备份恢复仍需在目标环境完成。恢复演练目标现在需要运维账号具备读取 `pg_control_system()` 的权限（通常授予只读 `pg_monitor`）。首次切换 `LOGIN_ATTEMPT_HMAC_KEY` 会改变已有登录限流桶 hash，部署时不要与 JWT 密钥轮换叠加。
+
+## v2.12.0-rc.1（2026-10-16）
+
+- 新增统一基础字典模型及管理页，支持内置/自定义分类、稳定编码、描述、条目排序、启停与软停用；新增付款方式、计量单位、资料分类和预警等级初始字典项。
+- 新增版本化参数配置，支持字符串/数值/布尔/JSON，提供全局默认与项目级覆盖、草稿/发布/归档、发布人/时间、历史浏览与新版本回滚草稿；数据库约束保证同一键/范围最多一个已发布版本。
+- 新增已认证的公共配置只读 API。字典只返回启用条目；参数只返回显式设置为 BUSINESS_READABLE 的已发布值，项目参数按项目成员权限收敛；管理员专用值不对普通业务用户开放，敏感键被拒绝或过滤。字典/参数维护、发布和回滚均写入审计摘要，审计中不复制参数原值。
+- 新增迁移 `20261016020000_system_dictionaries_parameters`，接入系统管理导航和概览，并补充设计/验收文档与静态契约验证。
+- 未自动将现有合同金额、变更签证、结算、付款/退款核销或核心状态机切换为动态参数/字典；每个消费方必须另行接入和验收。
+- 仍为 RC：当前容器为 Node.js 22.16.0 且未安装工作区依赖；完整 Node.js 24+ 类型检查/构建/测试、Prisma 生成、PostgreSQL 迁移/事务和浏览器 E2E 尚待执行。
+
+## v2.11.0-rc.1（2026-10-16）
+
+- 系统管理新增组织部门、层级维护、用户部门/岗位归属；此功能不授予公司角色或项目角色。
+- 新增 `GovernanceRuleVersion` 规则版本模型与草稿/发布工作流。已发布的 `CHANGE_APPROVAL` 规则由变更签证 API 服务端执行；没有发布版本时使用既有 OWNER/MANAGER 默认规则；禁止 ESTIMATOR/VIEWER 获得审批权，公司 ADMIN 也必须具有允许的项目成员角色且不得审批本人提交的业务。规则不影响外部确认金额生效。
+- 新增系统状态、后台任务、存储容量和 PostgreSQL 运维工作台；数据库备份通过 `pg_dump` 生成、计算 SHA-256，下载前重验；恢复演练检查备份完整性并在独立地址的 `*_restore_test` 数据库执行 `pg_restore`，再校验 `User`、`Project`、`MainContract` 核心表。备份文件按保留期清理并保留审计元数据，至少保留最近两个成功备份文件。
+- 新增集成凭据保险库，凭据采用 AES-256-GCM、上下文绑定和独立 `INTEGRATION_ENCRYPTION_KEY` 加密；支持元数据管理、启停与凭据轮换，API 与管理页均不回显密文解密后的真实值。尚未实现通用连接测试适配器。
+- 新增只读数据质量巡检，覆盖项目主合同缺失、已审批变更金额缺失、外部确认资料不完整、超期金额差异复核、管理员安全待办、无部门账号和缺少集成凭据，并对每次巡检写入审计记录。
+- 新增迁移 `20261016010000_system_management_expansion`，未重写或删除历史迁移。
+- 真实 `pg_dump`/`pg_restore`、PostgreSQL 迁移/Client 生成、全量 TypeScript 构建、浏览器端到端与公网部署仍须在 Node.js 24+、真实目标环境中验证。本版本是候选版本，不宣称生产就绪。
+
+## v2.10.0-rc.1（2026-10-15）
+
+- 重组侧边导航为“经营中心 / 工作台 / 项目管理 / 系统管理”四个职责分组；经营总览、报表、待办与往来单位属于经营中心，成本工作台独立归入工作台。
+- 项目档案与项目成员/角色统一归入项目管理；项目成员规范路由为 `/projects/members`，旧 `/system/members` 与 `/workspace/members` 保留兼容重定向。
+- 系统管理页调整为真正的管理概览：显示账号、活跃会话、安全事件与待处理账号摘要，展示治理能力现状/验收差距和后续扩展路线；不再重复摆放项目档案和成员管理入口。
+- 将操作追溯从经营中心迁入系统管理分组，并将页面入口限制为系统管理员；经营总览仍可看到当前账号权限范围内的最近操作摘要，普通成员不再看到越权的“查看全部”入口。
+- 顶栏增加个人中心菜单；新增自主修改密码页面与 `POST /api/auth/password/change-self`，要求当前密码及至少 12 位新密码，MFA 已启用时还要求新的 TOTP/未使用恢复码；变更后撤销全部会话和刷新令牌并记录审计。
+- 新增系统管理扩展路线：组织与权限治理、审批与规则配置、运维与灾备、数据治理与集成，并明确哪些是规划项而不是已实现功能。
+- 公网异地访问仍须完成真实域名/DNS/TLS、反向代理、防火墙、Node.js 24+ 构建、Prisma 迁移和浏览器端到端验收；本版本不宣称已在公网环境正式上线。
+
+## v2.9.0-rc.1（2026-10-15）
+
+- 新增公网访问安全配置契约：只有配置 `PUBLIC_BASE_URL=https://...`、`NODE_ENV=production`、`COOKIE_SECURE=true` 和独立 `MFA_ENCRYPTION_KEY` 才进入公网模式；公网模式禁止启动 API 文档界面、启用 HSTS 与基础内容安全策略。
+- 新增登录会话实体、会话即时吊销、刷新令牌单次消费与重放检测；旧版未消费刷新令牌会在首次刷新时迁移到会话模型，不在数据库迁移时批量失效。
+- 新增登录失败按账号/IP 双维度限流桶、安全事件审计和 180 天安全事件清理策略；限流标识采用服务端密钥 HMAC，避免明文存储账号/IP 的计数键。
+- 公网模式强制管理员首次登录进入 TOTP 多因素认证设置；恢复码仅生成时展示、数据库仅保存哈希；MFA 种子使用独立 32 字节 AES-256-GCM 密钥加密存储。
+- 系统账号管理增加启停、密码重置、强制首次改密和 MFA 恢复；停用/改密/MFA 重置均撤销已有会话，并保护最后一个启用管理员账号。
+- 系统管理工作台增加“登录安全中心”，支持查看登录事件、查看活跃会话与撤销非当前会话。
+- 新增 Windows + Caddy HTTPS 反向代理示例与公网部署手册。API 仍绑定 `127.0.0.1`；公网仅开放 80/443，PostgreSQL 不对公网开放。
+- 新增 TOTP、密钥加密和恢复码单元测试。当前环境为 Node.js 22，而项目要求 Node.js 24+ 且没有安装依赖，严格 TypeScript 构建、Prisma Client 生成、真实数据库迁移与浏览器 E2E 仍需在目标环境完成；此版本不得在这些验收完成前标记为生产就绪。
+
 # 更新日志
 
 ## v2.8.0-rc.1（2026-10-15）

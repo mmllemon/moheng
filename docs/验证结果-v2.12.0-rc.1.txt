@@ -1,0 +1,40 @@
+墨衡 v2.12.0-rc.1 验证结果
+
+提交：bd96a7e feat(system-config): add unified dictionaries and versioned parameters
+分支：feat/system-dictionaries-parameters-v2.12.0-rc.1
+性质：发布候选源码（RC），不是生产验收通过。
+
+一、已执行并通过的静态检查
+
+- release-candidate 基础静态契约：77/77
+- 本轮统一字典/参数配置契约：21/21
+- 报表工作室静态契约：18/18
+- 报表工作室 v2 契约：28/28
+- WP2–WP8 源码契约：20/20
+- 审计覆盖静态契约：12/12
+- API 架构检查：11/11
+- 后台任务架构检查：15/15
+- TypeScript 缺陷源码契约：20/20
+- UI polish 回归：10/10
+- 导航、UI、XLSX 回归：12/12
+- 公网访问与安全契约：28/28
+- 系统管理/导航/改密契约：14/14
+- 系统扩展契约：20/20
+- 总计：306 项静态源码契约/回归检查通过（不同检查可能覆盖相关联的代码边界，不代表 306 个端到端业务用例）。
+- 本轮影响的 10 个 TypeScript/TSX 文件通过 TypeScript transpile parser 语法解析。
+- git diff --check 通过；新增静态验证脚本通过 node --check。
+
+二、当前环境限制
+
+- 当前 Node.js：v22.16.0；项目 engines 要求 Node.js >=24.0.0。
+- 工作区没有安装 npm 依赖；因此没有声称完整 TypeScript 类型检查、API/Web 生产构建和项目测试通过。
+- 未执行 Prisma schema validate/client generate，未执行 PostgreSQL 迁移或数据库集成测试，未执行浏览器 E2E、Windows 部署和备份恢复演练。
+
+三、部署前必须完成的 Gate
+
+1. 在 Node.js 24+ 环境安装锁定依赖后执行 npm run lint、npm test、npm run build。
+2. 执行 Prisma schema validate 与 client generate；在隔离 PostgreSQL 测试库执行 migration deploy。
+3. 验证旧业务表行数和合同、变更、结算、收付款关键金额无非预期变化。
+4. 验证字典启停、参数草稿/发布/版本递增/回滚、同范围仅一个发布版本、项目参数覆盖全局默认。
+5. 使用真实会话测试管理员/普通用户、项目成员/非成员、ADMIN_ONLY/BUSINESS_READABLE、敏感键拒绝、审计不含原始参数值。
+6. 完成浏览器和目标 Windows 部署验收后，再决定是否从 RC 升级正式版本。

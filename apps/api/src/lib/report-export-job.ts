@@ -35,11 +35,11 @@ async function ensureTemplateStillReadable(templateId: string, user: AuthUser, r
     throw new PermanentBackgroundJobError('REPORT_EXPORT_TEMPLATE_ACCESS_REVOKED');
   }
   if (template.scope === 'PROJECT' && template.projectId) {
-    if (!(await canAccessProject(user.sub, user.role, template.projectId))) {
+    if (!(await canAccessProject(user.sub, user.role, template.projectId, undefined, 'REPORT_EXPORT'))) {
       throw new PermanentBackgroundJobError('REPORT_EXPORT_TEMPLATE_PROJECT_ACCESS_REVOKED');
     }
     if (template.status === 'PUBLISHED' || template.ownerUserId === user.sub || user.role === 'ADMIN' ||
-      await canAccessProject(user.sub, user.role, template.projectId, [ProjectRole.OWNER, ProjectRole.MANAGER])) return;
+      await canAccessProject(user.sub, user.role, template.projectId, [ProjectRole.OWNER, ProjectRole.MANAGER], 'PROJECT_MANAGE')) return;
   }
   throw new PermanentBackgroundJobError('REPORT_EXPORT_TEMPLATE_ACCESS_REVOKED');
 }
@@ -51,7 +51,7 @@ export const reportXlsxExportJobHandler: BackgroundJobHandler = async (job) => {
   const payload = parsed.data;
   const user = await prisma.user.findUnique({ where: { id: job.ownerUserId }, select: { id: true, email: true, role: true, isActive: true } });
   if (!user || !user.isActive) throw new PermanentBackgroundJobError('REPORT_EXPORT_OWNER_UNAVAILABLE');
-  const authUser: AuthUser = { sub: user.id, email: user.email, role: user.role };
+  const authUser: AuthUser = { sub: user.id, email: user.email, role: user.role, sid: `background:${job.id}` };
   if (payload.templateId) await ensureTemplateStillReadable(payload.templateId, authUser, payload.reportKey);
   const loaded = await loadReportSnapshot(payload.reportKey as ReportKey, authUser, payload.filters as ReportFilters);
   if (!loaded.ok) throw new PermanentBackgroundJobError(`REPORT_EXPORT_NOT_AUTHORIZED:${loaded.code}`);

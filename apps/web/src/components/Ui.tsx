@@ -25,12 +25,12 @@ export function MetricCard({ label, value, detail, trend, icon: Icon, tone = 'bl
 }
 
 const statusText: Record<string, string> = {
-  CONSTRUCTION: '施工中', SETTLEMENT_PENDING: '待结算', SETTLED: '已结算', PAUSED: '已暂停', ADMIN: '系统管理员', USER: '普通账号',
-  DRAFT: '草稿', SUBMITTED: '已提交', UNDER_REVIEW: '审核中', APPROVED: '审批通过', PAID: '已到账', REJECTED: '已驳回', CONFIRMED: '内部审批通过', OPEN: '未收款', PARTIALLY_RECEIVED: '部分收款', RECEIVED: '已收款', VOID: '已作废',
+  CONSTRUCTION: '施工中', SETTLEMENT_PENDING: '待结算', SETTLED: '已结算', PAUSED: '已暂停', ADMIN: '系统管理员', USER: '普通账号', PLANNED: '规划中', PENDING: '待验收',
+  ACTIVE: '有效/正常', INACTIVE: '停用', DEFAULT: '内置默认', RUNNING: '执行中', CANCELLED: '已取消', FAILED: '失败', MFA_ENABLED: 'MFA 已启用', DRAFT: '草稿', SUBMITTED: '已提交', UNDER_REVIEW: '审核中', APPROVED: '审批通过', PAID: '已到账', REJECTED: '已驳回', CONFIRMED: '内部审批通过', OPEN: '未收款', PARTIALLY_RECEIVED: '部分收款', RECEIVED: '已收款', VOID: '已作废',
 };
 const statusClass: Record<string, string> = {
-  CONSTRUCTION: 'status-blue', SETTLEMENT_PENDING: 'status-orange', SETTLED: 'status-green', PAUSED: 'status-gray', ADMIN: 'status-blue', USER: 'status-gray',
-  DRAFT: 'status-gray', SUBMITTED: 'status-blue', UNDER_REVIEW: 'status-orange', APPROVED: 'status-green', PAID: 'status-green', REJECTED: 'status-red', CONFIRMED: 'status-green', OPEN: 'status-orange', PARTIALLY_RECEIVED: 'status-blue', RECEIVED: 'status-green', VOID: 'status-gray',
+  CONSTRUCTION: 'status-blue', SETTLEMENT_PENDING: 'status-orange', SETTLED: 'status-green', PAUSED: 'status-gray', ADMIN: 'status-blue', USER: 'status-gray', PLANNED: 'status-gray', PENDING: 'status-orange',
+  ACTIVE: 'status-green', INACTIVE: 'status-gray', DEFAULT: 'status-blue', RUNNING: 'status-blue', CANCELLED: 'status-gray', FAILED: 'status-red', MFA_ENABLED: 'status-green', DRAFT: 'status-gray', SUBMITTED: 'status-blue', UNDER_REVIEW: 'status-orange', APPROVED: 'status-green', PAID: 'status-green', REJECTED: 'status-red', CONFIRMED: 'status-green', OPEN: 'status-orange', PARTIALLY_RECEIVED: 'status-blue', RECEIVED: 'status-green', VOID: 'status-gray',
 };
 export function StatusBadge({ status }: { status: string }) {
   return <span className={`status-badge ${statusClass[status] ?? 'status-gray'}`}><span className="status-dot" />{statusText[status] ?? status}</span>;

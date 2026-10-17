@@ -89,7 +89,7 @@ function serialiseSettlement(row: any) {
 export async function ownerFinanceRoutes(app: FastifyInstance) {
   app.get('/:projectId/owner-finance', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId } = request.params as { projectId: string };
-    if (!(await canAccessProject(user.sub, user.role, projectId))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const main = await prisma.mainContract.findUnique({ where: { projectId }, include: { project: { select: { id: true, code: true, name: true, ownerName: true } } } });
     if (!main) return success({ hasMainContract: false, mainContract: null, summary: null, settlements: [], receivables: [], receipts: [], retentionMovements: [], advanceMovements: [] });
     const [settlementRows, receivableRows, receiptRows, retentionRows, advanceRows] = await Promise.all([
@@ -149,7 +149,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
 
   app.post('/:projectId/owner-finance/settlements', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
     const parsed = createSettlementInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '业主结算资料有误', parsed.error.flatten());
     try {
@@ -172,7 +172,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
 
   app.post('/:projectId/owner-finance/settlements/:settlementId/action', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId, settlementId } = request.params as { projectId: string; settlementId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
     const parsed = settlementActionInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '结算操作参数有误', parsed.error.flatten());
     try {
@@ -247,7 +247,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
 
   app.post('/:projectId/owner-finance/receivables/:receivableId/receipts', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId, receivableId } = request.params as { projectId: string; receivableId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
     const parsed = receiptInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '到账记录填写有误', parsed.error.flatten());
     try {
@@ -294,7 +294,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
 
   app.post('/:projectId/owner-finance/receipts/:receiptId/refund', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId, receiptId } = request.params as { projectId: string; receiptId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
     const parsed = refundInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '退款记录填写有误', parsed.error.flatten());
     try {
@@ -362,7 +362,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
 
   app.post('/:projectId/owner-finance/advances', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
     const parsed = advanceInput.safeParse(request.body); if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '业主预付款资料有误', parsed.error.flatten());
     try {
       const created = await prisma.$transaction(async (tx) => {
@@ -380,7 +380,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
 
   app.post('/:projectId/owner-finance/retention/release', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId } = request.params as { projectId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
     const parsed = retentionInput.safeParse(request.body); if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '质保金释放资料有误', parsed.error.flatten());
     try {
       const created = await prisma.$transaction(async (tx) => {
@@ -408,7 +408,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
 
   app.put('/:projectId/owner-finance/receivables/:receivableId/schedules', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId, receivableId } = request.params as { projectId: string; receivableId: string };
-    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR])) return;
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
     const parsed = scheduleInput.safeParse(request.body); if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '应收分期资料有误', parsed.error.flatten());
     const sum = sumCents(parsed.data.schedules.map((s) => s.amount));
     try {
