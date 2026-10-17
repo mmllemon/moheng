@@ -16,9 +16,9 @@ const [rootPackage, apiPackage, webPackage, schema, migration, adminRoute, readR
   read('docs/统一基础字典与参数配置设计-v2.12.0-rc.1.md'), read('docs/阶段验收记录-v2.12.0-rc.1.md'), read('docs/开发维护指南.md'),
 ]);
 
-check('root/API/Web versions are v2.19.0-rc.1 and runtime metadata/footer agree',
-  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  (await read('apps/api/src/platform/app-info.ts')).includes("APP_VERSION = '2.19.0-rc.1'") && layout.includes('v2.19.0-rc.1'));
+check('root/API/Web versions agree with the current candidate and runtime metadata/footer',
+  apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
+  (await read('apps/api/src/platform/app-info.ts')).includes("APP_VERSION = '" + rootPackage.version + "'") && layout.includes('v' + rootPackage.version));
 check('Prisma schema contains one dictionary, item, and parameter-revision model',
   (schema.match(/model SystemDictionary \{/g) ?? []).length === 1 && (schema.match(/model SystemDictionaryItem \{/g) ?? []).length === 1 && (schema.match(/model SystemParameterRevision \{/g) ?? []).length === 1);
 check('Prisma schema defines typed scopes and revision statuses once',
@@ -72,7 +72,7 @@ check('parameter UI supports global/project scopes, draft publish, history and r
   parameterPage.includes("'/system-management/parameters/drafts'") && parameterPage.includes('PROJECT') && parameterPage.includes('发布') && parameterPage.includes('publishDraft.mutate') &&
   parameterPage.includes("'/system-management/parameters/") && parameterPage.includes('创建回滚草稿') && parameterPage.includes('草稿不会影响有效配置'));
 check('README, changelog, guide, design, and acceptance notes describe scope and RC verification limits',
-  readme.includes('v2.12.0-rc.1 统一基础字典与参数配置') && changelog.startsWith('## v2.19.0-rc.1') && changelog.includes('## v2.12.0-rc.1') &&
+  readme.includes('v2.12.0-rc.1 统一基础字典与参数配置') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('## v2.12.0-rc.1') &&
   guide.includes('v2.12.0-rc.1：统一基础字典与参数配置') && design.includes('已认证业务页面的只读接口') && acceptance.includes('当前为发布候选（RC）'));
 
 const failed = checks.filter((item) => !item.ok);
