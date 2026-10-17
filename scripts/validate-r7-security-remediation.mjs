@@ -15,6 +15,7 @@ const auth = await read('apps/api/src/lib/auth.ts');
 const pocRoute = await read('apps/api/src/routes/assistant-poc.ts');
 const conversations = await read('apps/api/src/routes/assistant-conversations.ts');
 const systemRoutes = await read('apps/api/src/routes/system-management.ts');
+const lockfileText = await read('package-lock.json');
 const regressionTest = await read('apps/api/src/lib/auth-prehandler-regression.test.ts');
 const server = await read('apps/api/src/server.ts');
 const policiesPage = await read('apps/web/src/pages/SystemPoliciesPage.tsx');
@@ -25,7 +26,7 @@ verify('JWT plugin patched version', () => assert.equal(apiPackage.dependencies[
 verify('static plugin patched version', () => assert.equal(apiPackage.dependencies['@fastify/static'], '10.1.6'));
 verify('Swagger UI 6 removes vulnerable nested static tree', () => assert.equal(apiPackage.dependencies['@fastify/swagger-ui'], '6.1.2'));
 verify('Fastify patched version', () => assert.equal(apiPackage.dependencies.fastify, '5.12.7'));
-verify('React Router patched v6 dependency pin', () => assert.equal(webPackage.dependencies['react-router-dom'], '6.30.6'));
+verify('React Router patched dependency pin', () => assert.equal(webPackage.dependencies['react-router-dom'], '7.18.4'));
 verify('Prisma Client is pinned to the Prisma 7 target', () => assert.equal(apiPackage.dependencies['@prisma/client'], '7.10.1'));
 verify('Prisma CLI is pinned to the matching Prisma 7 target', () => assert.equal(apiPackage.devDependencies.prisma, '7.10.1'));
 
@@ -61,7 +62,10 @@ for (const [pkg, version] of Object.entries({
   verify(`${pkg} install script allowlist is exact-version pinned`, () => assert.equal(rootPackage.allowScripts[`${pkg}@${version}`], true));
 }
 verify('protobufjs install script remains denied', () => assert.equal(rootPackage.allowScripts['protobufjs@7.6.6'], false));
-verify('ExcelJS unzipper override removes binary/buffers chain', () => assert.equal(rootPackage.overrides.exceljs.unzipper, '0.12.3'));
+verify('ExcelJS hardened alias keeps unzipper without binary/buffers chain', () => {
+  assert.doesNotMatch(lockfileText, /"node_modules\/(binary|buffers)"|"apps\/api\/node_modules\/(binary|buffers)"/);
+  assert.match(lockfileText, /"apps\/api\/node_modules\/unzipper": \{[\s\S]{0,80}?"version": "0\.12\./);
+});
 verify('release-candidate command runs source-completeness preflight', () => assert.match(rootPackage.scripts['validate:release-candidate'], /validate-source-bundle-completeness\.mjs/));
 verify('release-candidate command runs R7 static contract', () => assert.match(rootPackage.scripts['validate:release-candidate'], /validate-r7-security-remediation\.mjs/));
 verify('API test command includes auth preHandler regression test', () => assert.match(apiPackage.scripts.test, /auth-prehandler-regression\.test\.ts/));

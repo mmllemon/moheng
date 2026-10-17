@@ -9,22 +9,25 @@ const [root, api, web, lock] = await Promise.all([
 ]);
 
 const packages = lock.packages ?? {};
+// Dependencies may be hoisted to the root node_modules or nested under the workspace
+// (apps/api/node_modules, apps/web/node_modules) depending on version conflicts.
+const pkgAt = (...paths) => paths.map((p) => packages[p]).find(Boolean) ?? {};
 const checks = [
   [
     'ExcelJS is pinned to the security-hardened 5.1.0 alias',
     api.dependencies?.exceljs === 'npm:exceljs-hardened@5.1.0' &&
-      packages['node_modules/exceljs']?.version === '5.1.0' &&
-      packages['node_modules/exceljs']?.name === 'exceljs-hardened',
+      pkgAt('apps/api/node_modules/exceljs', 'node_modules/exceljs').version === '5.1.0' &&
+      pkgAt('apps/api/node_modules/exceljs', 'node_modules/exceljs').name === 'exceljs-hardened',
   ],
   [
     'Apache ECharts is fixed at 6.1.0 or later',
-    /^6\\./.test(web.dependencies?.echarts ?? '') &&
-      (packages['node_modules/echarts']?.version ?? '') >= '6.1.0',
+    /^6\./.test(web.dependencies?.echarts ?? '') &&
+      (pkgAt('apps/web/node_modules/echarts', 'node_modules/echarts').version ?? '') >= '6.1.0',
   ],
   [
     'echarts-for-react avoids known compromised 3.0.7 and is fixed at 3.0.6',
     web.dependencies?.['echarts-for-react'] === '3.0.6' &&
-      packages['node_modules/echarts-for-react']?.version === '3.0.6',
+      pkgAt('apps/web/node_modules/echarts-for-react', 'node_modules/echarts-for-react').version === '3.0.6',
   ],
   [
     'React Router DOM and core are both patched at 7.18.4',
