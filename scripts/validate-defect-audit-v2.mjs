@@ -16,7 +16,7 @@ const [rootPackage, apiPackage, webPackage, gov, ui, ops, sec, dict, config, sys
   read('docs/源码缺陷审计与修复记录-v2.12.1-rc.1.md'),
 ]);
 
-check('all version metadata advanced coherently to v2.19.0-rc.1', rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
+check('all version metadata advanced coherently to the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
 check('defect audit validator is part of the release candidate gate', rootPackage.scripts['validate:release-candidate'].includes('validate-defect-audit-v2.mjs'));
 check('organization name and account role controls resync when refreshed props change', gov.includes('setName(department.name)') && gov.includes('setDepartmentId(user.departmentId ?? \'\')') && gov.includes('setPosition(user.position ?? \'\')'));
 check('default rule, running backup and cancelled task have truthful status labels', ui.includes("DEFAULT: '内置默认'") && ui.includes("RUNNING: '执行中'") && ui.includes("CANCELLED: '已取消'") && ops.includes('status={job.status}'));

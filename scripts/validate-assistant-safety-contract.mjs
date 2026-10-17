@@ -11,7 +11,7 @@ const [rootPackage, apiPackage, adapter, events, adapterTests, eventTests, integ
 ]);
 const checks = [];
 function check(name, condition) { checks.push({ name, passed: Boolean(condition) }); }
-check('root/API/Web version aligned to 2.19.0-rc.1', rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && JSON.parse(await read('apps/web/package.json')).version === rootPackage.version);
+check('root/API/Web version aligned to the current candidate', rootPackage.version === apiPackage.version && JSON.parse(await read('apps/web/package.json')).version === rootPackage.version);
 check('fake provider is injected in-process with no public environment toggle', adapter.includes('dependencies: Partial<AssistantRuntimeTestDependencies>') && !adapter.includes('ASSISTANT_POC_FAKE_PROVIDER'));
 check('production factory remains ChatOpenAI + PostgresSaver', adapter.includes('PostgresSaver.fromConnString') && adapter.includes('new ChatOpenAI') && adapter.includes('createAgent'));
 check('tool.completed persists bounded source metadata and fixed limitation copy, never result body', adapter.includes('sources: result.sources.map') && adapter.includes('limitations: result.limitations') && events.includes('ASSISTANT_EVENT_LIMITATION_NOT_ALLOWED') && events.includes('ASSISTANT_SAFE_LIMITATIONS.includes(item)'));

@@ -27,8 +27,8 @@ const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
 
-check('all package and runtime versions are v2.19.0-rc.1',
-  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.1'"));
+check('all package and runtime versions agree with the current candidate',
+  apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes(`APP_VERSION = '${rootPackage.version}'`));
 check('preview back uses known router history only when explicitly marked and a safe internal fallback otherwise',
   preview.includes('routeState?.safeReportPreviewBack === true') && preview.includes('navigate(safeReturnTo, { replace: true })') && preview.includes("?? '/reports'") && preview.includes("!candidate.startsWith('//')"));
 check('project summary auto-preview carries source route and replaces one-shot studio entry',

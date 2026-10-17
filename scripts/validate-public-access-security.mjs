@@ -27,7 +27,7 @@ const rootPackage = JSON.parse(await read('package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
 
-check('workspace, API, Web and runtime all use v2.19.0-rc.1', rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.1'"));
+check('workspace, API, Web and runtime agree with the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes(`APP_VERSION = '${rootPackage.version}'`));
 check('public mode requires production HTTPS, loopback API bind, explicit proxy trust, Secure cookies and a distinct MFA key', server.includes('env.PUBLIC_BASE_URL') && server.includes("publicUrl.protocol !== 'https:'") && server.includes("env.COOKIE_SECURE !== 'true'") && server.includes("env.HOST !== '127.0.0.1'") && server.includes('!env.TRUST_PROXY?.trim()') && server.includes('env.MFA_ENCRYPTION_KEY === env.JWT_SECRET') && server.includes('placeholderJwtSecret') && server.includes('unsafeProxyRange') && server.includes('publicUrl.username || publicUrl.password') && server.includes('normalizedJwtSecret'));
 check('proxy trust rejects wildcard trust and uses a configured allowlist', server.includes('trustProxy: env.TRUST_PROXY?.trim()') && server.includes("['*', 'true', '1'].includes(entry.trim().toLowerCase())") && server.includes("entry.trim().endsWith('/0')") && env.includes('TRUST_PROXY=127.0.0.1,::1'));
 check('public mode disables the Swagger UI/API documentation endpoints', server.includes('if (!env.PUBLIC_BASE_URL) {') && server.includes("routePrefix: '/docs'"));

@@ -16,7 +16,7 @@ const [appInfo, layout, app, systemPage, accountPage, authRoutes, authLib, serve
   read('docs/系统管理扩展设计与实施方案-v2.11.0-rc.1.md'),
 ]);
 
-check('all package and runtime versions agree on v2.19.0-rc.1', rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.1'"));
+check('all package and runtime versions agree on the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes(`APP_VERSION = '${rootPackage.version}'`));
 check('sidebar uses four distinct functional groups', layout.includes("['经营中心', '工作台', '项目管理', '系统管理']") && layout.includes("group: '经营中心'") && layout.includes("group: '工作台'") && layout.includes("group: '项目管理'") && layout.includes("group: '系统管理'"));
 check('project archive and membership routes belong to project management, not system management', layout.includes("to: '/projects', label: '项目档案'") && layout.includes("to: '/projects/members', label: '项目成员与权限'") && !layout.includes("to: '/system/members'") && app.includes('path="projects/members" element={<NeedProject><ProjectMembersPage /></NeedProject>}') && app.includes('path="system/members" element={<Navigate to="/projects/members" replace />}'));
 check('business audit is grouped under system management with an admin-only page gate', layout.includes("to: '/audit-logs', label: '操作追溯', icon: History, group: '系统管理', end: true, adminOnly: true") && app.includes('<Route path="audit-logs" element={<AdminOnly><AuditLogsPage /></AdminOnly>} />') && dashboard.includes(`currentUser?.role === 'ADMIN' && <button type="button" className="panel-header-action"`));

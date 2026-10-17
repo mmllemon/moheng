@@ -19,9 +19,9 @@ const systemManagementRoutesSource = await read('apps/api/src/routes/system-mana
 const assistantPocRoutesSource = await read('apps/api/src/routes/assistant-poc.ts');
 const integratedRouteFiles = new Set(['assistant-conversations.ts']);
 
-check('workspace/API/UI version and runtime metadata agree on 2.19.0-rc.1',
-  rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  appInfo.includes("APP_VERSION = '2.19.0-rc.1'") && server.includes('version: APP_VERSION'));
+check('workspace/API/UI version and runtime metadata agree on the current candidate',
+  rootPackage.version === apiPackage.version && webPackage.version === rootPackage.version &&
+  appInfo.includes(`APP_VERSION = '${rootPackage.version}'`) && server.includes('version: APP_VERSION'));
 check('module registry is the only server-side route registration entry point',
   server.includes('await registerApiModules(app)') && registry.includes('export async function registerApiModules') &&
   !/app\.register\(\w+Routes,\s*\{\s*prefix:/.test(server));

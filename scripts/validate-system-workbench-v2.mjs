@@ -16,7 +16,7 @@ const [rootPackage, apiPackage, webPackage, appInfo, schema, migration, systemRo
   read('docs/系统管理工作台完善与导航方案-v2.13.0-rc.1.md'), read('docs/阶段验收记录-v2.13.0-rc.1.md'),
 ]);
 
-check('root/API/Web/runtime version metadata all use v2.19.0-rc.1', rootPackage.version === '2.19.0-rc.1' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.1'"));
+check('root/API/Web/runtime version metadata agree on the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes(`APP_VERSION = '${rootPackage.version}'`));
 check('new authorization review schema and additive migration are registered with audit fields and constraints', schema.includes('model SystemAuthorizationReview {') && schema.includes('enum AuthorizationReviewStatus {') && migration.includes('CREATE TABLE "SystemAuthorizationReview"') && migration.includes('SystemAuthorizationReview_review_state_check') && migration.includes('SystemAuthorizationReview_createdById_fkey') && migration.includes('SystemAuthorizationReview_reviewedById_fkey'));
 check('all authorization governance API routes are registered behind session and ADMIN guard', systemRoute.includes("app.addHook('preHandler', authRequired)") && systemRoute.includes("app.addHook('preHandler', async (request, reply)") && systemRoute.includes("authUser(request).role !== 'ADMIN'") && ["/authorization/matrix", "/authorization-reviews", "/authorization-reviews/:id", "/authorization-reviews/:id/complete"].every((path) => systemRoute.includes(path)));
 check('authorization matrix documents company/project roles, modules and cross-project scopes', systemRoute.includes('companyRoles:') && systemRoute.includes('projectRoles:') && systemRoute.includes('modules:') && systemRoute.includes('scopeRules:') && systemRoute.includes('editable: false'));
@@ -34,7 +34,7 @@ check('data-quality action is a low-emphasis neutral control rather than primary
 check('system management overview links authorization governance as a dedicated workbench', manager.includes('/system/authorization') && manager.includes('权限治理与授权复核'));
 check('docs record navigation rationale, matrix read-only boundary, code suggestion limit and environment gates', design.includes('为什么不把所有管理项继续放在侧栏') && design.includes('矩阵是基于现有后端守卫') && design.includes('不保证完整汉语拼音转换') && design.includes('Node.js 24+') && acceptance.includes('RC'));
 check('release candidate gate includes this system workbench contract suite', rootPackage.scripts['validate:release-candidate'].includes('validate-system-workbench-v2.mjs'));
-check('README and changelog describe current navigation, authorization review and code recommendation', readme.includes('v2.14.0-rc.1 系统管理关键缺口闭环') && changelog.startsWith('## v2.19.0-rc.1') && changelog.includes('授权复核工作台'));
+check('README and changelog describe current navigation, authorization review and code recommendation', readme.includes('v2.14.0-rc.1 系统管理关键缺口闭环') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('授权复核工作台'));
 
 const failed = checks.filter((item) => !item.pass);
 for (const item of checks) console.log(`${item.pass ? 'PASS' : 'FAIL'} ${item.name}`);
