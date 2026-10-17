@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { readFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
-const expectedSha256 = '1179cdbb6234216ea55a2567bb9d1763b6975392c055ad30876f27f842eeaa43';
+// Re-sealed after the intentional Vite 6.4.3 security patch; CI verifies this exact lock with two clean npm ci runs.
+const expectedSha256 = 'ae09ec651d82c3226dbc082a35bb47d71a062192aaaceefbdae757a6802e082f';
 const lockPath = 'package-lock.json';
 try {
   await access(lockPath, constants.R_OK);
