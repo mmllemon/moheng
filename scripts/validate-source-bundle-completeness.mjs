@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
-// Re-sealed after the intentional Vite 6.4.3 security patch; CI verifies this exact lock with two clean npm ci runs.
+// SHA-256 is re-sealed by the one-shot dependency-lock refresh workflow after approved dependency changes.
 const expectedSha256 = 'ae09ec651d82c3226dbc082a35bb47d71a062192aaaceefbdae757a6802e082f';
 const lockPath = 'package-lock.json';
 try {
