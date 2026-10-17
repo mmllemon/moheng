@@ -34,7 +34,7 @@ const designDoc = await read('docs/原生XLSX与报表模板设计器-v2.1.0-rc.
 check('all application packages use the same candidate version',
   apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
 check('ExcelJS is pinned to a specific version and API test command includes XLSX tests',
-  apiPackage.dependencies.exceljs === '4.4.0' && apiPackage.scripts.test.includes('report-template.test.ts') && apiPackage.scripts.test.includes('report-xlsx.test.ts') && apiPackage.scripts.test.includes('budget-xlsx.test.ts'));
+  apiPackage.dependencies.exceljs === 'npm:exceljs-hardened@5.1.0' && apiPackage.scripts.test.includes('report-template.test.ts') && apiPackage.scripts.test.includes('report-xlsx.test.ts') && apiPackage.scripts.test.includes('budget-xlsx.test.ts'));
 check('eight report types share a central server-side data registry',
   ['target-cost','actual-cost','progress-bills','changes','owner-receivables','owner-receipts','downstream-contracts','downstream-payables'].every((key) => reportData.includes(`key: '${key}'`)) && reportRoute.includes('loadReportSnapshot'));
 check('XLSX exports produce typed styled data, freeze panes, filters, page settings, and optional explanation sheet',

@@ -3,7 +3,9 @@ import { readFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
 // SHA-256 is re-sealed by the one-shot dependency-lock refresh workflow after approved dependency changes.
-const expectedSha256 = 'ae09ec651d82c3226dbc082a35bb47d71a062192aaaceefbdae757a6802e082f';
+// The hash is computed over LF-normalized text so that the gate is byte-identical on Windows
+// (core.autocrlf=true checks the file out as CRLF) and on Linux/CI (checked out as LF).
+const expectedSha256 = 'a6f8a53a1ce8fb0a3313443ac3470ee23f1c3f43c5ae97545c12807d7ef93743';
 const lockPath = 'package-lock.json';
 try {
   await access(lockPath, constants.R_OK);
@@ -14,6 +16,8 @@ try {
 }
 
 const lockText = await readFile(lockPath, 'utf8');
+// Normalize CRLF to LF before hashing: line endings are a checkout artifact, not lock content.
+const lockTextNormalized = lockText.replace(/\r\n/g, '\n');
 let lock;
 try {
   lock = JSON.parse(lockText);
@@ -29,7 +33,7 @@ if (!lock.packages || !lock.packages['']) {
   console.error('[BLOCK] package-lock.json 缺少根 packages[""] 元数据。');
   process.exit(1);
 }
-const actualSha256 = createHash('sha256').update(lockText).digest('hex');
+const actualSha256 = createHash('sha256').update(lockTextNormalized).digest('hex');
 if (actualSha256 !== expectedSha256) {
   console.error('[BLOCK] 根 lock SHA-256 与当前 R7 封版记录不一致。');
   console.error(`expected=${expectedSha256.toUpperCase()}`);
