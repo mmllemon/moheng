@@ -247,7 +247,7 @@ export default function Layout() {
         })}
       </nav>}
       <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
-      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>施工单位成本管理 <i /> v2.19.0-rc.1</span></footer>
+      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>施工单位成本管理 <i /> v2.19.0-rc.2</span></footer>
     </div>
 
     {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>
