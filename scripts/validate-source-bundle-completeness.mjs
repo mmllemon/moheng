@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
-const expectedSha256 = '3e72e5b1753e8301b2be2d58ac69ed117e95ed61e7c9076aa886f70ee5239256';
+const expectedSha256 = '1179cdbb6234216ea55a2567bb9d1763b6975392c055ad30876f27f842eeaa43';
 const lockPath = 'package-lock.json';
 try {
   await access(lockPath, constants.R_OK);
