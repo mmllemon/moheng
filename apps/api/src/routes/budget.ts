@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { ProjectRole } from '@prisma/client';
+import { ProjectRole } from '../generated/prisma/client.js';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';

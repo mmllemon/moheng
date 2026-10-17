@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { z } from 'zod';
-import { ProjectRole } from '@prisma/client';
+import { ProjectRole } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import { canAccessProject } from './project-access.js';
 import { loadReportSnapshot, type ReportFilters, type ReportKey, reportKeys } from './report-data.js';

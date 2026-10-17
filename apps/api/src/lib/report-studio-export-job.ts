@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises';
-import { ProjectRole } from '@prisma/client';
+import { ProjectRole } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import { canAccessProject } from './project-access.js';
 import { hasCrossProjectReadScope } from './project-data-scope.js';

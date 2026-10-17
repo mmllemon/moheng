@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 
 export type BusinessNumberParameter = { defaultValue: number; min: number; max: number };

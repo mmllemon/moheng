@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { BusinessPartyRole, BusinessPartyStatus, Prisma } from '@prisma/client';
+import { BusinessPartyRole, BusinessPartyStatus, Prisma } from '../generated/prisma/client.js';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';

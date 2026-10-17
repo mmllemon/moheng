@@ -1,4 +1,4 @@
-import type { BusinessPartyRole, Prisma } from '@prisma/client';
+import type { BusinessPartyRole, Prisma } from '../generated/prisma/client.js';
 
 export function normalizeBusinessPartyName(value: string): string {
   return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('zh-CN');

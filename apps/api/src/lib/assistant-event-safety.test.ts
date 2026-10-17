@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../generated/prisma/client.js';
 import { appendAssistantRunEvent, assertSafeAssistantEventPayload } from './assistant-run-events.js';
 import { ASSISTANT_LIMITATION_COPY as LIMITATION } from './assistant-safe-copy.js';
 

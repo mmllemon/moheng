@@ -1,3 +1,11 @@
+## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
+
+- 创建独立分支 `feat/v2.19.0-rc.2-prisma7`，从 `ceb0f335624209178e37e1279fb9c845d5f7b924` 开始；不改写 `main`，不自动合并。
+- 将 `prisma` 与 `@prisma/client` 固定升级到 `7.10.1`，并增加同版本 `@prisma/adapter-pg`、`pg@8.23.1` 与 `@types/pg@8.23.1`。
+- 切换 `prisma-client` 生成器，显式生成到 `apps/api/src/generated/prisma`，并将数据库连接 URL 移入 `apps/api/prisma.config.ts`。
+- 迁移 API 源码中的 Prisma Client、类型与枚举导入；更新 Docker 构建为锁文件驱动的 `npm ci`，并纳入 Prisma 7 结构静态门禁。
+- 此提交先由 GitHub Actions 在 Node 24 runner 重建根锁文件并校验 SHA；严格类型检查、构建、124 项 API 单测、完整 Release Candidate、隔离 PostgreSQL 迁移/恢复和 `npm audit` 结果均以实际运行日志为准。若生成客户端、类型或运行时 gate 失败，分支保留未完成状态并继续修复；R7 不自动转为 PASS。
+
 ## v2.19.0-rc.1 Gate hardening follow-up
 
 - Root `build` generates Prisma Client before compiling API/Web; standalone API tests also generate Prisma Client.

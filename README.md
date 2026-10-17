@@ -1,6 +1,10 @@
 # 墨衡｜施工单位成本管理系统
-版本：MVP 2.19.0-rc.1 验证候选（Windows 原生部署优先）
+版本：MVP 2.19.0-rc.2 验证候选（Prisma 7 迁移分支；Windows 原生部署优先）
 
+
+## v2.19.0-rc.2 Prisma 7 迁移候选（2026-10-17）
+
+本候选将 Prisma ORM 与 Client 统一到 7.10.1，使用显式 PostgreSQL driver adapter `@prisma/adapter-pg`，将数据库 URL 移入 `apps/api/prisma.config.ts`，并把生成客户端放到 `apps/api/src/generated/prisma`。所有 API 中原先从 `@prisma/client` 导入生成类型/枚举的文件改为引用项目内的生成客户端。迁移在独立分支 `feat/v2.19.0-rc.2-prisma7` 进行；只有 Node 24 构建、完整测试、隔离 PostgreSQL 迁移和漏洞审计通过后才可考虑合并。**不批准生产启用，也没有自动合并到 main。**
 
 ## 只读 AI 助手后端缺陷收敛（2026-10-17）
 

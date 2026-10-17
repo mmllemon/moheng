@@ -1,5 +1,5 @@
 import type { FastifyReply } from 'fastify';
-import type { ProjectRole, UserRole } from '@prisma/client';
+import type { ProjectRole, UserRole } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import { failure } from './http.js';
 import { parseProjectPermissionPolicy, type ProjectPermissionKey } from './access-policy.js';

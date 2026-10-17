@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import { authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';

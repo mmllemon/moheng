@@ -1,4 +1,4 @@
-import type { ProjectRole } from '@prisma/client';
+import type { ProjectRole } from '../generated/prisma/client.js';
 
 export const PROJECT_PERMISSION_BASELINES = {
   PROJECT_READ: ['OWNER', 'MANAGER', 'ESTIMATOR', 'VIEWER'],

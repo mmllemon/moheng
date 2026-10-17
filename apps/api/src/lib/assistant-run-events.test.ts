@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../generated/prisma/client.js';
 import { appendAssistantRunEvent } from './assistant-run-events.js';
 
 test('assistant run events allocate a monotonic sequence and persist the event in the transaction', async () => {

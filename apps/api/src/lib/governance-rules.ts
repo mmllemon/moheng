@@ -1,4 +1,4 @@
-import type { ProjectRole } from '@prisma/client';
+import type { ProjectRole } from '../generated/prisma/client.js';
 
 export const DEFAULT_CHANGE_APPROVER_ROLES: readonly ProjectRole[] = ['OWNER', 'MANAGER'];
 export type ChangeApprovalDefinition = { allowedProjectRoles: ProjectRole[] };

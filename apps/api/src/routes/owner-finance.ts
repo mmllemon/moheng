@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { OwnerReceivableType, OwnerSettlementStatus, OwnerSettlementType, OwnerReceiptType, OwnerRetentionMovementType, OwnerAdvanceMovementType, Prisma, ProjectRole } from '@prisma/client';
+import { OwnerReceivableType, OwnerSettlementStatus, OwnerSettlementType, OwnerReceiptType, OwnerRetentionMovementType, OwnerAdvanceMovementType, Prisma, ProjectRole } from '../generated/prisma/client.js';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';

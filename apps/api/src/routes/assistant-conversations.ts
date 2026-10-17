@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import { z } from 'zod';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';

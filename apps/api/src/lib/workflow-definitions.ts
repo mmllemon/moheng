@@ -1,4 +1,4 @@
-import type { ProjectRole } from '@prisma/client';
+import type { ProjectRole } from '../generated/prisma/client.js';
 import { moneyToCents } from './contract-amount-math.js';
 
 export type ChangeWorkflowStatus = 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'CONFIRMED' | 'REJECTED';

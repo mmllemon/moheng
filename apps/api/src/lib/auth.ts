@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual, createCipheriv, createDecipheriv } from 'node:crypto';
 import type { FastifyRequest, FastifyReply, preHandlerHookHandler } from 'fastify';
-import { Prisma, type UserRole } from '@prisma/client';
+import { Prisma, type UserRole } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import { failure } from './http.js';
 

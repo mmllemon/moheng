@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import { z } from 'zod';
 import type { BackgroundJobHandler } from './background-job-types.js';
 import { PermanentBackgroundJobError } from './background-jobs.js';

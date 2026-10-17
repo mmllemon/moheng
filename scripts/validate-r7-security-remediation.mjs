@@ -26,8 +26,8 @@ verify('static plugin patched version', () => assert.equal(apiPackage.dependenci
 verify('Swagger UI 6 removes vulnerable nested static tree', () => assert.equal(apiPackage.dependencies['@fastify/swagger-ui'], '6.1.2'));
 verify('Fastify patched version', () => assert.equal(apiPackage.dependencies.fastify, '5.12.7'));
 verify('React Router patched v6 dependency pin', () => assert.equal(webPackage.dependencies['react-router-dom'], '6.30.6'));
-verify('Prisma client migration remains separately scoped', () => assert.equal(apiPackage.dependencies['@prisma/client'], '6.19.3'));
-verify('Prisma CLI migration remains separately scoped', () => assert.equal(apiPackage.devDependencies.prisma, '6.19.3'));
+verify('Prisma Client is pinned to the Prisma 7 target', () => assert.equal(apiPackage.dependencies['@prisma/client'], '7.10.1'));
+verify('Prisma CLI is pinned to the matching Prisma 7 target', () => assert.equal(apiPackage.devDependencies.prisma, '7.10.1'));
 
 const authStart = auth.indexOf('export const authRequired:');
 const authBlock = auth.slice(authStart, auth.indexOf('\n};', authStart));
@@ -52,11 +52,11 @@ verify('ErrorBlock component contract remains message/retry', () => assert.match
 verify('Fastify unknown error is safely narrowed', () => assert.match(server, /error instanceof Error \? error\.message : String\(error\)/));
 
 for (const [pkg, version] of Object.entries({
-  '@prisma/client': '6.19.3',
-  '@prisma/engines': '6.19.3',
+  '@prisma/client': '7.10.1',
+  '@prisma/engines': '7.10.1',
   '@tailwindcss/oxide': '4.1.13',
   esbuild: '0.25.12',
-  prisma: '6.19.3',
+  prisma: '7.10.1',
 })) {
   verify(`${pkg} install script allowlist is exact-version pinned`, () => assert.equal(rootPackage.allowScripts[`${pkg}@${version}`], true));
 }
@@ -78,6 +78,6 @@ console.log(JSON.stringify({
     'root package-lock presence/hash is checked by validate-source-bundle-completeness.mjs',
     'npm audit after dependency resolution',
     'full runtime regression on Node 24',
-    'Prisma 7 major migration',
+    'Prisma 7 runtime compatibility and isolated PostgreSQL migration require CI/runtime execution',
   ],
 }, null, 2));

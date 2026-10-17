@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../generated/prisma/client.js';
 import { ASSISTANT_SAFE_LIMITATIONS, ASSISTANT_SAFE_SOURCE_SCOPES } from './assistant-safe-copy.js';
 
 export type AssistantEventJsonValue = string | number | boolean | null | readonly AssistantEventJsonValue[] | { readonly [key: string]: AssistantEventJsonValue };

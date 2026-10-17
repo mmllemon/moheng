@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import { z } from 'zod';
 import { authRequired, authUser, type AuthUser } from '../lib/auth.js';
 import { canAccessProject } from '../lib/project-access.js';

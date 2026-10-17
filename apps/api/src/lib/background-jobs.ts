@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Prisma, type BackgroundJobStatus } from '@prisma/client';
+import { Prisma, type BackgroundJobStatus } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import type { ClaimedBackgroundJob } from './background-job-types.js';
 import { appendAssistantRunEvent } from './assistant-run-events.js';

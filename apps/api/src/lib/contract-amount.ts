@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client';
-import type { Prisma as PrismaTypes } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
+import type { Prisma as PrismaTypes } from '../generated/prisma/client.js';
 import { calculateEffectiveContractAmount } from './contract-amount-math.js';
 
 /**

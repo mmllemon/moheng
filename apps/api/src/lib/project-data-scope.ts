@@ -1,5 +1,5 @@
 import type { ProjectPermissionKey, ProjectPermissionPolicy } from './access-policy.js';
-import type { UserRole } from '@prisma/client';
+import type { UserRole } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import { defaultProjectPermissionPolicy, parseProjectPermissionPolicy } from './access-policy.js';
 

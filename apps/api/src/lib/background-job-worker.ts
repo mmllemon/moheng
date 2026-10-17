@@ -2,7 +2,7 @@ import { hostname } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { readdir, rm, stat } from 'node:fs/promises';
 import type { FastifyBaseLogger } from 'fastify';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import { backgroundJobArtifactPath, backgroundJobStorageRoot } from './background-job-storage.js';
 import { claimNextBackgroundJob, PermanentBackgroundJobError, reconcileOrphanAssistantRuns } from './background-jobs.js';

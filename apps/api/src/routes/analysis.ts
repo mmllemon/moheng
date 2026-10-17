@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { CostType, DownstreamPaymentType } from '@prisma/client';
+import { CostType, DownstreamPaymentType } from '../generated/prisma/client.js';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';

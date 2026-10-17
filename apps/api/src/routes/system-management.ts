@@ -7,7 +7,7 @@ import { lookup } from 'node:dns/promises';
 import { basename, isAbsolute, join, parse as parsePath, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { z } from 'zod';
-import { ProjectRole, Prisma } from '@prisma/client';
+import { ProjectRole, Prisma } from '../generated/prisma/client.js';
 import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';

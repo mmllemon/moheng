@@ -1,0 +1,120 @@
+name: Prisma 7 migration bootstrap
+
+on:
+  push:
+    branches: [feat/v2.19.0-rc.2-prisma7]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: moheng_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moheng_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/moheng_test?schema=public
+      PRODUCTION_DATABASE_URL: postgresql://production.invalid/never-use
+      ASSISTANT_RECOVERY_TESTS: 'true'
+      ASSISTANT_GATE_ARTIFACT_DIR: ${{ github.workspace }}/.assistant-gate-artifacts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/v2.19.0-rc.2-prisma7
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Resolve lockfile from the migration manifests
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Pin lockfile SHA and commit the reproducible lock to the migration branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCK_SHA="$(sha256sum package-lock.json | awk '{print tolower($1)}')"
+          node --input-type=module - "$LOCK_SHA" <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+          const sha = process.argv[2];
+          if (!/^[0-9a-f]{64}$/.test(sha)) throw new Error('Invalid package-lock SHA-256');
+          const path = 'scripts/validate-source-bundle-completeness.mjs';
+          const source = await readFile(path, 'utf8');
+          const match = source.match(/const expectedSha256 = '[0-9a-f]{64}';/);
+          if (!match) throw new Error('Cannot locate pinned package-lock SHA in source completeness gate');
+          await writeFile(path, source.replace(match[0], "const expectedSha256 = '" + sha + "';"), 'utf8');
+          console.log('Root lock SHA-256: ' + sha.toUpperCase());
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json scripts/validate-source-bundle-completeness.mjs
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: lock Prisma 7 dependency tree"
+            git push origin HEAD:feat/v2.19.0-rc.2-prisma7
+          fi
+      - name: Install from the generated committed lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Verify lock stability
+        shell: bash
+        run: |
+          EXPECTED="$(sha256sum package-lock.json | awk '{print tolower($1)}')"
+          npm ci --no-audit --no-fund
+          ACTUAL="$(sha256sum package-lock.json | awk '{print tolower($1)}')"
+          test "$EXPECTED" = "$ACTUAL"
+          printf 'lockfile-sha256=%s\n' "$ACTUAL" | tee lockfile-sha256.txt
+      - name: Validate Prisma 7 schema and deploy migrations to isolated PostgreSQL
+        run: |
+          npm run db:validate
+          npm run db:deploy
+      - name: Build application
+        run: npm run build
+      - name: Run API tests
+        run: npm test
+      - name: Run assistant event contracts and PostgreSQL recovery tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR"
+          npm run test:assistant-runtime-contracts
+          npx tsx --test apps/api/src/lib/assistant-event-safety.test.ts apps/api/src/assistant/runtime/langgraph-adapter.test.ts
+          npm run test:assistant-recovery:postgres -w @cms/api 2>&1 | tee "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-runtime.log"
+          node scripts/validate-assistant-leaks.mjs \
+            --logs "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-runtime.log" \
+            --events "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-events.jsonl" \
+            --markers "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-forbidden-markers.txt"
+      - name: Run complete release-candidate static suite
+        run: npm run validate:release-candidate
+      - name: Produce and classify dependency audit
+        shell: bash
+        run: |
+          npm audit --json > npm-audit.json || true
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const audit = JSON.parse(await readFile('npm-audit.json', 'utf8'));
+          if (!audit.metadata?.vulnerabilities) throw new Error('npm audit did not return vulnerability metadata');
+          const v = audit.metadata.vulnerabilities;
+          console.log(JSON.stringify({ vulnerabilities: v }, null, 2));
+          if ((v.critical ?? 0) > 0 || (v.high ?? 0) > 0) process.exitCode = 1;
+          NODE
+      - name: Upload migration evidence and resolved lock
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma7-migration-evidence
+          if-no-files-found: warn
+          path: |
+            package-lock.json
+            lockfile-sha256.txt
+            npm-audit.json
+            .assistant-gate-artifacts/
