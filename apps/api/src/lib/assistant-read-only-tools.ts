@@ -103,7 +103,7 @@ async function getDownstreamCashSummary(projectId: string) {
   const rows = await prisma.downstreamContractPayment.findMany({
     where: { downstreamContract: { projectId, deletedAt: null } },
     select: {
-      id: true, type: true, amount: true, paidAt: true,
+      id: true, type: true, amount: true, paidAt: true, referenceNo: true,
       downstreamContract: { select: { contractNo: true } },
       refundOfPayment: { select: { referenceNo: true } },
     },
