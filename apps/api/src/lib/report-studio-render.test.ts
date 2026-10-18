@@ -273,3 +273,19 @@ test('marks truncation on the affected worksheet without mislabeling other works
   const preview = previewReportStudio(result);
   assert.equal(preview.sheets[1]!.truncated, false, 'the preview must preserve per-worksheet truncation status');
 });
+
+
+test('marks a worksheet truncated when defensive row rendering limit stops source layout', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
+  };
+  // A malformed/internal snapshot may bypass definition validation. Rendering must still report
+  // that it stopped at the hard row limit rather than silently returning an incomplete sheet.
+  workbook.sheets.main!.mergeData.push({ startRow: 10001, startColumn: 0, endRow: 10001, endColumn: 1 });
+  const result = renderReportStudio(report, dataset);
+  assert.equal(result.truncated, true);
+  assert.equal(result.sheets[0]!.rows.length, 10000);
+  assert.equal(result.sheets[0]!.truncated, true);
+  assert.ok(result.warnings.some((warning) => warning.includes('已达到 10000 行渲染上限')));
+});
