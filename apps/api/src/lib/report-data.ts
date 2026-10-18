@@ -83,14 +83,15 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
   if (from && toExclusive && from >= toExclusive) return { ok: false, status: 400, code: 'INVALID_DATE_RANGE', message: '开始日期不能晚于结束日期' };
 
   const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
-  const accessibleProjects = await prisma.project.findMany({
-    where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
-    select: { id: true, name: true, code: true }, orderBy: { code: 'asc' },
-  });
-  const availableIds = accessibleProjects.map((p) => p.id);
-  if (filters.projectId && !availableIds.includes(filters.projectId)) return { ok: false, status: 403, code: 'PROJECT_ACCESS_DENIED', message: '你没有导出所选项目数据的权限' };
-  const projectIds = filters.projectId ? [filters.projectId] : availableIds;
-  const projectFilter = { projectId: { in: projectIds } };
+  const projectScope = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) };
+  const selectedProject = filters.projectId
+    ? await prisma.project.findFirst({ where: { ...projectScope, id: filters.projectId }, select: { id: true, name: true } })
+    : null;
+  if (filters.projectId && !selectedProject) return { ok: false, status: 403, code: 'PROJECT_ACCESS_DENIED', message: '你没有导出所选项目数据的权限' };
+  // Use relational project scope instead of expanding every accessible project into an IN-list.
+  // This preserves row-level authorization and avoids PostgreSQL bind-parameter growth for large companies.
+  const selectedProjectScope = { ...projectScope, ...(filters.projectId ? { id: filters.projectId } : {}) };
+  const projectFilter = { project: selectedProjectScope };
   const dateRange = (field: 'date' | 'applyDate' | 'occurredAt' | 'postedAt' | 'receivedAt' | 'createdAt' | 'updatedAt' | 'dueAt') => from || toExclusive ? { [field]: { ...(from ? { gte: from } : {}), ...(toExclusive ? { lt: toExclusive } : {}) } } : {};
   let rows: unknown[][] = [];
   let truncated = false;
@@ -128,7 +129,7 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
       return [r.project.name, r.project.code, r.contractNo, r.name, r.type, r.counterpartyName, r.scope, r.originalAmount, (netAdjustCents / 100).toFixed(2), currentAmount, r.status, r.signedAt, r.startDate, r.plannedEndDate, r.paymentTerms, r.notes];
     });
   } else {
-    const data = await prisma.downstreamPayable.findMany({ where: { downstreamContract: { projectId: { in: projectIds }, deletedAt: null }, ...dateRange('postedAt') }, include: { downstreamContract: { include: { project: { select: { name: true, code: true } }, counterpartyParty: { select: { name: true } } } }, settlement: { select: { settlementNo: true, type: true, status: true } }, schedules: { select: { dueAt: true, amount: true } } }, orderBy: [{ postedAt: 'desc' }, { payableNo: 'asc' }], take: 10001 });
+    const data = await prisma.downstreamPayable.findMany({ where: { downstreamContract: { project: selectedProjectScope, deletedAt: null }, ...dateRange('postedAt') }, include: { downstreamContract: { include: { project: { select: { name: true, code: true } }, counterpartyParty: { select: { name: true } } } }, settlement: { select: { settlementNo: true, type: true, status: true } }, schedules: { select: { dueAt: true, amount: true } } }, orderBy: [{ postedAt: 'desc' }, { payableNo: 'asc' }], take: 10001 });
     truncated = data.length > 10000;
     rows = data.slice(0, 10000).map(r => [r.downstreamContract.project.name, r.downstreamContract.project.code, r.downstreamContract.contractNo, r.downstreamContract.name, r.downstreamContract.counterpartyParty?.name ?? r.downstreamContract.counterpartyName, r.payableNo, r.type, r.settlement?.settlementNo, r.settlement?.type, r.settlement?.status, r.grossAmount, r.advanceRecoveryAmount, r.retentionAmount, r.otherDeductionAmount, r.netAmount, r.dueAt, r.schedules.length, r.notes]);
   }
@@ -141,7 +142,7 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
     snapshot: {
       report: reportCatalog.find((r) => r.key === reportKey)!,
       fields: makeReportFields(reportKey, rows[0] ?? []), rows, rowCount: rows.length, truncated,
-      generatedAt: new Date(), projectScope: projectNames.length === accessibleProjects.length && !filters.projectId ? '全部可访问项目' : projectNames.join('、') || '无可访问项目',
+      generatedAt: new Date(), projectScope: filters.projectId ? selectedProject!.name : '全部可访问项目',
       filters,
     },
   };
