@@ -29,7 +29,7 @@ const types = await read('apps/web/src/report-template-types.ts');
 const reportCenter = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const styles = await read('apps/web/src/styles.css');
 const app = await read('apps/web/src/App.tsx');
-const designDoc = await read('docs/原生XLSX与报表模板设计器-v2.1.0-rc.1.md');
+const designDoc = await read('docs/报表中心规格与验收.md');
 
 check('all application packages use the same candidate version',
   apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
