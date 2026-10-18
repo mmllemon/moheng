@@ -71,6 +71,11 @@ check('project and company source registry includes multiple independent busines
   ['project','mainContract','financialSummary','downstreamContracts','ownerReceivables','ownerReceipts','actualCosts','changes','progressBills','downstreamPayables','companySummary','companyProjects','companyDownstreamContracts','companyOwnerReceivables','companyOwnerReceipts','companyActualCosts','companyChanges','companyProgressBills','companyDownstreamPayables','businessParty','partySummary','partyProjects','partyMainContracts','partyDownstreamContracts','partyStandaloneCosts'].every((source) => data.includes(`id: '${source}'`)));
 check('company sources include project identifiers so cross-project rows remain traceable',
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
+check('project/company report data queries apply authorized project scopes relationally instead of binding all project IDs',
+  data.includes('const selectedProjectScope = { ...projectScope') &&
+  data.includes('const projectFilter = { project: selectedProjectScope }') &&
+  data.includes('downstreamContract: { project: selectedProjectScope, deletedAt: null }') &&
+  !data.includes('projectId: { in: projectIds }'));
 check('party contract finance metrics aggregate child histories in PostgreSQL while capping contract detail rows',
   data.includes('prisma.downstreamContractAdjustment.groupBy') &&
   data.includes('prisma.downstreamSettlementPosting.groupBy') &&
