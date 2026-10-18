@@ -58,6 +58,30 @@ test('Report Studio scopes company rows, financial totals, and project previews 
     await prisma.projectMember.create({
       data: { projectId: projectA.id, userId: user.id, role: 'ESTIMATOR' },
     });
+    const authorizedDownstreamContract = await prisma.downstreamContract.create({
+      data: {
+        projectId: projectA.id,
+        contractNo: `RSG-A-C-${suffix}`,
+        name: 'authorized high precision contract',
+        type: 'MATERIAL_PURCHASE',
+        counterpartyName: 'Scope Gate Authorized Supplier',
+        originalAmount: '90071992547409.93',
+        createdById: user.id,
+      },
+    });
+    downstreamContractIds.push(authorizedDownstreamContract.id);
+    await prisma.downstreamContractAdjustment.create({
+      data: {
+        downstreamContractId: authorizedDownstreamContract.id,
+        code: `RSG-ADJ-${suffix}`,
+        name: 'exact-cent precision fixture',
+        direction: 'INCREASE',
+        amount: '0.07',
+        effectiveAt: new Date('2026-03-01T00:00:00.000Z'),
+        documentReference: 'isolated PostgreSQL test fixture',
+        createdById: user.id,
+      },
+    });
     await prisma.costEntry.create({
       data: {
         projectId: projectB.id,
@@ -102,17 +126,19 @@ test('Report Studio scopes company rows, financial totals, and project previews 
       downstreamNetPaymentTotal: string | null;
     };
     const companyActualCosts = company.sources.companyActualCosts as Array<{ amount: string; projectCode: string }>;
-    const companyDownstreamContracts = company.sources.companyDownstreamContracts as Array<{ contractNo: string; projectCode: string }>;
+    const companyDownstreamContracts = company.sources.companyDownstreamContracts as Array<{ contractNo: string; projectCode: string; effectiveAmount: string | null }>;
     const companyDownstreamPayments = company.sources.companyDownstreamPayments as Array<{ referenceNo: string; projectCode: string }>;
 
     assert.equal(company.accessibleProjectCount, 1);
     assert.equal(companySummary.projectCount, 1);
     assert.deepEqual(companyProjects.map((row) => row.code), [projectA.code]);
     assert.deepEqual(companyActualCosts, []);
-    assert.deepEqual(companyDownstreamContracts, [], 'another project’s downstream contract must not leak into company report details');
+    assert.deepEqual(companyDownstreamContracts.map((row) => row.contractNo), [authorizedDownstreamContract.contractNo], 'only the authorized project contract may appear in company report details');
+    assert.equal(companyDownstreamContracts[0]?.projectCode, projectA.code);
+    assert.equal(companyDownstreamContracts[0]?.effectiveAmount, '90071992547410.00', 'high-precision contract value must be exact after its adjustment');
     assert.deepEqual(companyDownstreamPayments, [], 'payments attached to an unauthorized downstream contract must not leak into company report details');
     assert.equal(companySummary.actualCostTotal, '0.00', 'another project’s cost must not affect a company summary outside the user’s project scope');
-    assert.equal(companySummary.downstreamContractTotal, '0.00', 'another project’s contract must not affect company contract totals');
+    assert.equal(companySummary.downstreamContractTotal, '90071992547410.00', 'unauthorized contract value must not affect the authorized company-scope total');
     assert.equal(companySummary.downstreamPaymentTotal, '0.00', 'another project’s payment must not affect company payment totals');
     assert.equal(companySummary.downstreamNetPaymentTotal, '0.00', 'another project’s payment must not affect company net cash flow');
 
@@ -127,7 +153,14 @@ test('Report Studio scopes company rows, financial totals, and project previews 
       const companySnapshot = await loadReportSnapshot(reportKey, actor, {});
       assert.equal(companySnapshot.ok, true, `authorized-company scope should load ${reportKey}`);
       if (companySnapshot.ok) {
-        assert.equal(companySnapshot.snapshot.rows.length, 0, `unauthorized project rows must not leak into ${reportKey}`);
+        if (reportKey === 'downstream-contracts') {
+          assert.equal(companySnapshot.snapshot.rows.length, 1, 'only the authorized downstream contract should be exported');
+          assert.equal(companySnapshot.snapshot.rows[0]?.[2], authorizedDownstreamContract.contractNo);
+          assert.equal(companySnapshot.snapshot.rows[0]?.[8], '0.07', 'contract adjustment delta must use exact cents for large amounts');
+          assert.equal(companySnapshot.snapshot.rows[0]?.[9], '90071992547410.00');
+        } else {
+          assert.equal(companySnapshot.snapshot.rows.length, 0, `unauthorized project rows must not leak into ${reportKey}`);
+        }
         assert.equal(companySnapshot.snapshot.projectScope, '全部可访问项目');
       }
 
@@ -141,6 +174,7 @@ test('Report Studio scopes company rows, financial totals, and project previews 
   } finally {
     if (downstreamContractIds.length) {
       await prisma.downstreamContractPayment.deleteMany({ where: { downstreamContractId: { in: downstreamContractIds } } });
+      await prisma.downstreamContractAdjustment.deleteMany({ where: { downstreamContractId: { in: downstreamContractIds } } });
       await prisma.downstreamContract.deleteMany({ where: { id: { in: downstreamContractIds } } });
     }
     if (projectIds.length) {
