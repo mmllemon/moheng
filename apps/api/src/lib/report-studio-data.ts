@@ -461,8 +461,9 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
 export async function loadReportStudioDataset(user: AuthUser, domain: ReportStudioDomain, projectId?: string, businessPartyId?: string): Promise<ReportStudioDataset> {
   if (domain === 'PARTY') return loadBusinessPartyReportDataset(user, businessPartyId);
   const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
+  const projectScope = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) };
   const accessibleProjects = await prisma.project.findMany({
-    where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
+    where: projectScope,
     include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }],
   });
   const accessibleIds = accessibleProjects.map((project) => project.id);
