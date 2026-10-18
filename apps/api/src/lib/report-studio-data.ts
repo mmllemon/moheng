@@ -113,10 +113,16 @@ export interface ReportStudioDataset {
   sources: Record<string, unknown>;
   warnings: string[];
   truncated?: boolean;
-  /** Stable source IDs whose detail rows or derived metrics are incomplete. */
+  /** Stable source IDs whose detail rows are incomplete as collections. */
   truncatedSources?: string[];
-  /** Human-readable truncation warnings tied to the report sources they affect. */
-  truncationNotices?: Array<{ sourceIds: string[]; message: string }>;
+  /** Specific scalar fields whose values may be incomplete because a source query was capped. */
+  truncatedFields?: Array<{ sourceId: string; fieldIds: string[] }>;
+  /** Human-readable truncation warnings tied to affected collections or scalar fields. */
+  truncationNotices?: Array<{
+    sourceIds: string[];
+    fields?: Array<{ sourceId: string; fieldIds: string[] }>;
+    message: string;
+  }>;
 }
 
 function dateText(value: Date | null | undefined): string | null { return value ? value.toISOString().slice(0, 10) : null; }
