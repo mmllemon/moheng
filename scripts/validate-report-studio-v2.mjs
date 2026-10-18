@@ -78,6 +78,7 @@ check('party contract finance metrics aggregate child histories in PostgreSQL wh
   data.includes('prisma.costEntry.groupBy') &&
   data.includes('prisma.downstreamSupplierInvoice.groupBy') &&
   data.includes('FROM "DownstreamPaymentAllocation"') &&
+  data.includes('scoped_payable."downstreamContractId" IN (${Prisma.join(downstreamContractIds)})') &&
   !data.includes('supplierInvoices: { select: { amount: true, taxAmount: true, status: true } }') &&
   data.includes('take: MAX_ROWS_PER_SOURCE + 1') &&
   data.includes('invoiceCount: invoices.count'));
