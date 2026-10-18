@@ -293,10 +293,12 @@ test('marks a report incomplete when a scalar-bound summary source is truncated'
     truncated: true,
     truncatedSources: ['financialSummary'],
     warnings: ['依赖财务汇总的数据源明细已截断。'],
+    truncationNotices: [{ sourceIds: ['financialSummary'], message: '依赖财务汇总的数据源明细已截断。' }],
   });
 
   assert.equal(result.truncated, true);
   assert.equal(result.sheets[0]!.truncated, true, 'single-value bindings must participate in source dependency detection');
+  assert.ok(result.warnings.includes('依赖财务汇总的数据源明细已截断。'), 'notices for bound summary sources must remain visible');
 });
 
 test('does not label a report incomplete when only an unused source was truncated', () => {
@@ -305,10 +307,12 @@ test('does not label a report incomplete when only an unused source was truncate
     truncated: true,
     truncatedSources: ['actualCosts'],
     warnings: ['实际成本明细超过 10,000 条，明细已截断。'],
+    truncationNotices: [{ sourceIds: ['actualCosts'], message: '实际成本明细超过 10,000 条，明细已截断。' }],
   });
 
   assert.equal(result.truncated, false, 'global status reflects the data actually bound into the report');
   assert.equal(result.sheets[0]!.truncated, false, 'a sheet with no binding or region for the truncated source remains complete');
+  assert.equal(result.warnings.includes('实际成本明细超过 10,000 条，明细已截断。'), false, 'irrelevant truncation notices must not clutter the report');
   const preview = previewReportStudio(result);
   assert.equal(preview.truncated, false);
   assert.equal(preview.sheets[0]!.truncated, false);
