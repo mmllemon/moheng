@@ -131,7 +131,12 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const rowHeights: Record<number, number> = {};
     let outputIndex = 0;
     for (let sourceRow = 0; sourceRow <= lastSourceRow; sourceRow += 1) {
-      if (outputIndex >= MAX_RENDERED_ROWS_PER_SHEET) { allTruncated = true; break; }
+      if (outputIndex >= MAX_RENDERED_ROWS_PER_SHEET) {
+        allTruncated = true;
+        sheetTruncated = true;
+        warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行渲染上限，后续行已省略。`);
+        break;
+      }
       rowOutputStart.set(sourceRow, outputIndex);
       const rowCells = sourceRows[String(sourceRow)] ?? {};
       const rowStyles = sourceSheet.rowData?.[String(sourceRow)];
