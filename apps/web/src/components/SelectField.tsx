@@ -174,7 +174,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
   return <div ref={wrapperRef} className={`select-control ${className}`.trim()} data-open={open ? 'true' : 'false'}>
     <select
       {...otherProps}
-      id={id}
+      id={id ? `${id}-native` : undefined}
       name={name}
       ref={handleProxyRef}
       defaultValue={defaultValue}
@@ -190,7 +190,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
     <button
       ref={triggerRef}
       type="button"
-      id={id ? `${id}-trigger` : undefined}
+      id={id}
       className={`select-control-trigger ${ariaInvalid ? 'is-invalid' : ''}`}
       role="combobox"
       aria-label={props['aria-label']}
