@@ -107,6 +107,7 @@ check('cell binding UI adds visible inert placeholders and region binding constr
 check('report binding removal clears only generated placeholders and region edits preserve validator cardinality rules',
   studioPage.includes('function clearBindingPlaceholder') &&
   studioPage.includes('range.getValue() === expectedPlaceholder') &&
+  studioPage.includes('UI cleanup is best-effort') &&
   studioPage.includes('clearBindingPlaceholder(instanceRef.current?.api, removed)') &&
   studioPage.includes('单条记录字段不能放在重复区域样板行中') &&
   studioPage.includes('bindings: current.bindings.filter((binding) => !removedBindingIds.has(binding.id))'));
