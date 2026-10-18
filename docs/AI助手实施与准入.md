@@ -2,6 +2,8 @@
 
 ## 1. 当前实现状态
 
+当前选型采用 **LangGraph.js + PostgreSQL `PostgresSaver`**，运行时封装在墨衡自己的适配层后；这一技术决定不构成生产启用批准。
+
 源码中已有：
 - LangGraph.js + PostgreSQL `PostgresSaver` 运行时适配，位于 `apps/api/src/assistant/runtime/langgraph-adapter.ts`。
 - 会话、消息、运行记录、持久化事件、SSE 重放/心跳、取消请求和 requestId 幂等 API。
