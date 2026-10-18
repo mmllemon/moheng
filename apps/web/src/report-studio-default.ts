@@ -85,19 +85,21 @@ function defaultProjectData() {
 }
 function defaultCompanyData() {
   const cellData = rowsFrom([
-    ['公司经营汇总报告'], ['公司核心指标'], ['可访问项目数', '', '当前有效合同额合计', '', '累计登记净收款', ''], ['登记净应收合计', '', '已录入实际成本合计', '', '分供合同当前金额合计', ''], ['累计分供净支付', '', '累计分供退款', '', '已登记净应付合计', ''], ['项目经营情况'], ['项目编号', '项目名称', '项目状态', '项目负责人', '当前有效合同额', '累计登记净收款', '登记净应收', '实际成本'], [''], [''], ['业主收款与退款流水'], ['项目编号', '项目名称', '流水编号', '类型', '金额', '到账日期', '参考号', '原始收款编号'], [''], [''], ['分供合同付款与退款流水'], ['项目编号', '项目名称', '分供合同编号', '类型', '支付/退款金额', '支付日期', '支付参考号', '原付款参考号'], [''],
+    ['公司经营汇总报告'], ['公司核心指标'], ['可访问项目数', '', '当前有效合同额合计', '', '累计登记净收款', ''], ['登记净应收合计', '', '已录入实际成本合计', '', '分供合同当前金额合计', ''], ['累计分供净支付', '', '累计分供退款', '', '已登记净应付合计', ''], ['项目经营情况'], ['项目编号', '项目名称', '项目状态', '项目负责人', '当前有效合同额', '累计登记净收款', '登记净应收', '实际成本'], [''], [''], ['分供合同清单'], ['项目编号', '项目名称', '合同编号', '合同名称', '合同类别', '往来单位', '合同状态', '签订日期', '原始合同额', '当前有效合同额'], [''], [''], ['业主收款与退款流水'], ['项目编号', '项目名称', '流水编号', '类型', '金额', '到账日期', '参考号', '原始收款编号'], [''], [''], ['分供合同付款与退款流水'], ['项目编号', '项目名称', '分供合同编号', '类型', '支付/退款金额', '支付日期', '支付参考号', '原付款参考号'], [''],
   ]);
   const put = (r: number, c: number, v: unknown, s?: Record<string, unknown>) => { (cellData[String(r)] ??= {})[String(c)] = cell(v, s); };
-  put(0,0,'公司经营汇总报告',titleStyle); put(1,0,'公司核心指标',sectionStyle); put(5,0,'项目经营情况',sectionStyle); put(9,0,'业主收款与退款流水',sectionStyle); put(13,0,'分供合同付款与退款流水',sectionStyle);
+  put(0,0,'公司经营汇总报告',titleStyle); put(1,0,'公司核心指标',sectionStyle); put(5,0,'项目经营情况',sectionStyle); put(9,0,'分供合同清单',sectionStyle); put(13,0,'业主收款与退款流水',sectionStyle); put(17,0,'分供合同付款与退款流水',sectionStyle);
   for (const r of [2,3,4]) for (const c of [0,2,4]) put(r,c,cellData[String(r)]![String(c)]!.v,labelStyle);
   for (const r of [2,3,4]) for (const c of [1,3,5]) put(r,c,'',valueStyle);
   for (let c=0;c<8;c+=1) put(6,c,cellData['6']![String(c)]!.v,headerStyle);
   for (let c=0;c<8;c+=1) put(7,c,'',valueStyle);
-  for (let c=0;c<8;c+=1) put(10,c,cellData['10']![String(c)]!.v,headerStyle);
-  for (let c=0;c<8;c+=1) put(11,c,'',valueStyle);
+  for (let c=0;c<10;c+=1) put(10,c,cellData['10']![String(c)]!.v,headerStyle);
+  for (let c=0;c<10;c+=1) put(11,c,'',valueStyle);
   for (let c=0;c<8;c+=1) put(14,c,cellData['14']![String(c)]!.v,headerStyle);
   for (let c=0;c<8;c+=1) put(15,c,'',valueStyle);
-  const workbook = { id: 'moheng-company-studio', name: '公司经营汇总报告', appVersion: '1.0.4', locale: 'zhCN', styles: {}, sheetOrder: ['sheet1'], sheets: { sheet1: { id:'sheet1', name:'公司经营汇总', rowCount:80, columnCount:12, defaultColumnWidth:110, defaultRowHeight:24, mergeData:[{startRow:0,startColumn:0,endRow:0,endColumn:7},{startRow:1,startColumn:0,endRow:1,endColumn:7},{startRow:5,startColumn:0,endRow:5,endColumn:7},{startRow:9,startColumn:0,endRow:9,endColumn:7},{startRow:13,startColumn:0,endRow:13,endColumn:7}], cellData, rowData:{'0':{h:34},'1':{h:28},'5':{h:28},'9':{h:28},'13':{h:28}}, columnData:{'0':{w:120},'1':{w:170},'2':{w:100},'3':{w:120},'4':{w:145},'5':{w:145},'6':{w:140},'7':{w:140}}, showGridlines:1, freeze:{startRow:-1,startColumn:-1,ySplit:7,xSplit:0} } } };
+  for (let c=0;c<8;c+=1) put(18,c,cellData['18']![String(c)]!.v,headerStyle);
+  for (let c=0;c<8;c+=1) put(19,c,'',valueStyle);
+  const workbook = { id: 'moheng-company-studio', name: '公司经营汇总报告', appVersion: '1.0.4', locale: 'zhCN', styles: {}, sheetOrder: ['sheet1'], sheets: { sheet1: { id:'sheet1', name:'公司经营汇总', rowCount:80, columnCount:12, defaultColumnWidth:110, defaultRowHeight:24, mergeData:[{startRow:0,startColumn:0,endRow:0,endColumn:9},{startRow:1,startColumn:0,endRow:1,endColumn:9},{startRow:5,startColumn:0,endRow:5,endColumn:7},{startRow:9,startColumn:0,endRow:9,endColumn:9},{startRow:13,startColumn:0,endRow:13,endColumn:7},{startRow:17,startColumn:0,endRow:17,endColumn:7}], cellData, rowData:{'0':{h:34},'1':{h:28},'5':{h:28},'9':{h:28},'13':{h:28},'17':{h:28}}, columnData:{'0':{w:120},'1':{w:170},'2':{w:100},'3':{w:120},'4':{w:145},'5':{w:145},'6':{w:140},'7':{w:140},'8':{w:145},'9':{w:145}}, showGridlines:1, freeze:{startRow:-1,startColumn:-1,ySplit:7,xSplit:0} } } };
   const bindings: ReportStudioBinding[] = [
     ['B3','companySummary','projectCount','NUMBER'], ['D3','companySummary','effectiveContractAmount','MONEY'], ['F3','companySummary','netReceipts','MONEY'],
     ['B4','companySummary','issuedReceivableNetAmount','MONEY'], ['D4','companySummary','actualCostTotal','MONEY'], ['F4','companySummary','downstreamContractTotal','MONEY'],
@@ -106,14 +108,17 @@ function defaultCompanyData() {
   const fields = ['code','name','status','managerName','effectiveContractAmount','netReceipts','issuedReceivableNetAmount','actualCostTotal'];
   const regions: ReportStudioRegion[] = [
     { id:'company-projects', sheetId:'sheet1', sourceId:'companyProjects', templateRow:7, startColumn:0, endColumn:7, maxRows:10000 },
-    { id:'company-owner-receipts', sheetId:'sheet1', sourceId:'companyOwnerReceipts', templateRow:11, startColumn:0, endColumn:7, maxRows:10000 },
-    { id:'company-downstream-payments', sheetId:'sheet1', sourceId:'companyDownstreamPayments', templateRow:15, startColumn:0, endColumn:7, maxRows:10000 },
+    { id:'company-downstream-contracts', sheetId:'sheet1', sourceId:'companyDownstreamContracts', templateRow:11, startColumn:0, endColumn:9, maxRows:10000 },
+    { id:'company-owner-receipts', sheetId:'sheet1', sourceId:'companyOwnerReceipts', templateRow:15, startColumn:0, endColumn:7, maxRows:10000 },
+    { id:'company-downstream-payments', sheetId:'sheet1', sourceId:'companyDownstreamPayments', templateRow:19, startColumn:0, endColumn:7, maxRows:10000 },
   ];
   fields.forEach((fieldId,c) => bindings.push({id:`project-row-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}8`,sourceId:'companyProjects',fieldId,format:/Amount|Receipts|Cost/i.test(fieldId)?'MONEY':'AUTO'}));
+  const contractFields = ['projectCode','projectName','contractNo','name','type','counterpartyName','status','signedAt','originalAmount','effectiveAmount'];
+  contractFields.forEach((fieldId,c) => bindings.push({id:`company-downstream-contract-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}12`,sourceId:'companyDownstreamContracts',fieldId,format:['originalAmount','effectiveAmount'].includes(fieldId) ? 'MONEY' : 'AUTO'}));
   const ownerReceiptFields = ['projectCode','projectName','receiptNo','type','amount','receivedAt','referenceNo','originalReceiptNo'];
-  ownerReceiptFields.forEach((fieldId,c) => bindings.push({id:`company-owner-receipt-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}12`,sourceId:'companyOwnerReceipts',fieldId,format:fieldId === 'amount' ? 'MONEY' : 'AUTO'}));
+  ownerReceiptFields.forEach((fieldId,c) => bindings.push({id:`company-owner-receipt-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}16`,sourceId:'companyOwnerReceipts',fieldId,format:fieldId === 'amount' ? 'MONEY' : 'AUTO'}));
   const paymentFields = ['projectCode','projectName','contractNo','type','amount','paidAt','referenceNo','originalReferenceNo'];
-  paymentFields.forEach((fieldId,c) => bindings.push({id:`company-downstream-payment-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}16`,sourceId:'companyDownstreamPayments',fieldId,format:fieldId === 'amount' ? 'MONEY' : 'AUTO'}));
+  paymentFields.forEach((fieldId,c) => bindings.push({id:`company-downstream-payment-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}20`,sourceId:'companyDownstreamPayments',fieldId,format:fieldId === 'amount' ? 'MONEY' : 'AUTO'}));
   addBindingPlaceholders(workbook, bindings);
   return { workbook, bindings, regions };
 }
