@@ -150,13 +150,19 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const projectScope = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) };
   const ownedProjectScope = { ...projectScope, ownerPartyId: businessPartyId };
-  const [visibleProjectCount, ownedProjects, downstreamContractsFetched, standaloneCosts, standaloneCostTotals] = await Promise.all([
+  const standaloneCostScope = { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope };
+  const [visibleProjectCount, ownedProjectsFetched, downstreamContractsFetched, standaloneCosts, standaloneCostTotalsFetched, standaloneCostAggregate] = await Promise.all([
     prisma.project.count({ where: projectScope }),
-    prisma.project.findMany({ where: ownedProjectScope, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] }),
+    prisma.project.findMany({ where: ownedProjectScope, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.costEntry.findMany({ where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
-    prisma.costEntry.groupBy({ by: ['projectId'], where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, _sum: { amount: true }, _count: { _all: true } }),
+    prisma.costEntry.findMany({ where: standaloneCostScope, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
+    prisma.costEntry.groupBy({ by: ['projectId'], where: standaloneCostScope, _sum: { amount: true }, _count: { _all: true }, orderBy: { projectId: 'asc' }, take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.costEntry.aggregate({ where: standaloneCostScope, _sum: { amount: true }, _count: { _all: true } }),
   ]);
+  const ownedProjectsTruncated = ownedProjectsFetched.length > MAX_ROWS_PER_SOURCE;
+  const ownedProjects = ownedProjectsFetched.slice(0, MAX_ROWS_PER_SOURCE);
+  const standaloneCostProjectGroupsTruncated = standaloneCostTotalsFetched.length > MAX_ROWS_PER_SOURCE;
+  const standaloneCostTotals = standaloneCostTotalsFetched.slice(0, MAX_ROWS_PER_SOURCE);
   const [progressBillMetrics, changeMetrics, progressPaymentMetrics] = await Promise.all([
     prisma.progressBill.groupBy({
       by: ['projectId'],
@@ -352,14 +358,20 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
       changeCount: changeCountByProject.get(project.id) ?? 0,
     };
   });
-  const partyProjectsListTruncated = projectRows.length > MAX_ROWS_PER_SOURCE;
-  const partyMainContractsTruncated = mainContractRows.length > MAX_ROWS_PER_SOURCE;
-  const standaloneCostAmount = sumPartyMoney(standaloneCostTotals.map((row) => row._sum.amount));
+  const partyProjectsListTruncated = ownedProjectsTruncated || standaloneCostProjectGroupsTruncated || projectRows.length > MAX_ROWS_PER_SOURCE;
+  const partyMainContractsTruncated = ownedProjectsTruncated || mainContractRows.length > MAX_ROWS_PER_SOURCE;
+  const standaloneCostAmount = moneyValue(standaloneCostAggregate._sum.amount);
+  const standaloneCostCount = standaloneCostAggregate._count._all;
   const sum = (key: string, source = downstreamRows) => sumPartyMoney(source.map((row) => (row as Record<string, unknown>)[key]));
+  const projectListIncomplete = downstreamContractsTruncated || ownedProjectsTruncated || standaloneCostProjectGroupsTruncated;
   const summary = {
-    projectCount: downstreamContractsTruncated ? null : projectRows.length, mainContractCount: mainContractRows.length, downstreamContractCount: downstreamContractsTruncated ? null : downstreamRows.length,
-    ownerCurrentContractAmount: sumPartyMoney(mainContractRows.map((row) => row.currentAmount)), ownerApprovedBillAmount: sumPartyMoney(mainContractRows.map((row) => row.approvedAmount)), ownerReceivedAmount: sumPartyMoney(mainContractRows.map((row) => row.paidAmount)),
-    downstreamCurrentContractAmount: downstreamContractsTruncated ? null : sumPartyMoney(downstreamRows.filter((row) => row.status !== 'TERMINATED').map((row) => row.currentAmount)), downstreamSettledAmount: downstreamContractsTruncated ? null : sum('settledAmount'), downstreamPaidAmount: downstreamContractsTruncated ? null : sum('paidAmount'), downstreamOpenPayableAmount: downstreamContractsTruncated ? null : sum('openPayableAmount'), downstreamSupplierCreditAmount: downstreamContractsTruncated ? null : sum('supplierCreditAmount'), downstreamActualCostAmount: downstreamContractsTruncated ? null : sum('actualCostAmount'), downstreamInvoiceAmount: downstreamContractsTruncated ? null : sum('invoiceAmount'), downstreamVerifiedInvoiceAmount: downstreamContractsTruncated ? null : sum('verifiedInvoiceAmount'), downstreamInvoiceCount: downstreamContractsTruncated ? null : sumNumbers(downstreamRows.map((row) => row.invoiceCount)), standaloneCostAmount, standaloneCostCount: standaloneCostTotals.reduce((total, row) => total + row._count._all, 0), downstreamTotalCostAmount: downstreamContractsTruncated ? null : plusPartyMoney(sum('actualCostAmount'), standaloneCostAmount),
+    projectCount: projectListIncomplete ? null : projectRows.length,
+    mainContractCount: ownedProjectsTruncated ? null : mainContractRows.length,
+    downstreamContractCount: downstreamContractsTruncated ? null : downstreamRows.length,
+    ownerCurrentContractAmount: ownedProjectsTruncated ? null : sumPartyMoney(mainContractRows.map((row) => row.currentAmount)),
+    ownerApprovedBillAmount: ownedProjectsTruncated ? null : sumPartyMoney(mainContractRows.map((row) => row.approvedAmount)),
+    ownerReceivedAmount: ownedProjectsTruncated ? null : sumPartyMoney(mainContractRows.map((row) => row.paidAmount)),
+    downstreamCurrentContractAmount: downstreamContractsTruncated ? null : sumPartyMoney(downstreamRows.filter((row) => row.status !== 'TERMINATED').map((row) => row.currentAmount)), downstreamSettledAmount: downstreamContractsTruncated ? null : sum('settledAmount'), downstreamPaidAmount: downstreamContractsTruncated ? null : sum('paidAmount'), downstreamOpenPayableAmount: downstreamContractsTruncated ? null : sum('openPayableAmount'), downstreamSupplierCreditAmount: downstreamContractsTruncated ? null : sum('supplierCreditAmount'), downstreamActualCostAmount: downstreamContractsTruncated ? null : sum('actualCostAmount'), downstreamInvoiceAmount: downstreamContractsTruncated ? null : sum('invoiceAmount'), downstreamVerifiedInvoiceAmount: downstreamContractsTruncated ? null : sum('verifiedInvoiceAmount'), downstreamInvoiceCount: downstreamContractsTruncated ? null : sumNumbers(downstreamRows.map((row) => row.invoiceCount)), standaloneCostAmount, standaloneCostCount, downstreamTotalCostAmount: downstreamContractsTruncated ? null : plusPartyMoney(sum('actualCostAmount'), standaloneCostAmount),
   };
   const warnings: string[] = [];
   const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
