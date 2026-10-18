@@ -275,6 +275,21 @@ test('marks truncation on the affected worksheet without mislabeling other works
 });
 
 
+test('extends vertical merges when a repeated region expands inside the merged row span', () => {
+  const report = definition();
+  const sheets = (report.workbook as unknown as { sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }> }).sheets;
+  // This merge is in column D, outside the A:B repeated region, so it is valid;
+  // its vertical span still crosses the region's template row and must grow with it.
+  sheets.main!.mergeData.push({ startRow: 1, startColumn: 3, endRow: 3, endColumn: 3 });
+  const result = renderReportStudio(report, dataset);
+  assert.deepEqual(result.sheets[0]!.merges.at(-1), {
+    startRow: 1,
+    startColumn: 3,
+    endRow: 4,
+    endColumn: 3,
+  });
+});
+
 test('marks a worksheet truncated when defensive row rendering limit stops source layout', () => {
   const report = definition();
   const workbook = report.workbook as unknown as {
