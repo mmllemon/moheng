@@ -200,7 +200,7 @@ function addOverviewSheet(
     '本工作簿是生成时点的只读快照，不会修改或回写墨衡业务台账。',
     '公司级汇总只包含当前账号有权访问的项目；请勿将报表范围误解为系统全部数据。',
     ...(rendered.truncated ? ['存在明细截断；请缩小筛选范围后重新生成完整报表。'] : []),
-    ...rendered.warnings,
+    ...(rendered.warnings.length ? ['以下为本次报表生成提示：', ...rendered.warnings] : []),
   ];
   notes.forEach((note, index) => {
     const rowNumber = noteTitleRow + index + 1;
