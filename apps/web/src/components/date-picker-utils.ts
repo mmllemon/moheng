@@ -28,7 +28,7 @@ export function isIsoDateWithinBounds(value: string, min?: string | number | nul
  * Keep calendar focus on an enabled day when a controlled form changes the value
  * or its min/max constraints without remounting the date picker.
  */
-export function normalizeIsoDateWithinBounds(value: string, min?: string | null, max?: string | null): string | null {
+export function normalizeIsoDateWithinBounds(value: string, min?: string | number | null, max?: string | number | null): string | null {
   const date = parseIsoDate(value);
   if (!date) return null;
   const minimum = parsedBound(min);
