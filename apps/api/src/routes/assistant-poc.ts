@@ -30,9 +30,20 @@ function asToolFailure(reply: FastifyReply, error: unknown) {
 export async function assistantPocRoutes(app: FastifyInstance) {
   // Availability is intentionally distinct from the gated tool/run APIs so the UI can hide the entry point when disabled.
   // This reports only the feature switch; it never exposes provider credentials or runtime configuration.
-  app.get('/status', { preHandler: [authRequired], config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async () =>
-    success({ enabled: process.env.ASSISTANT_POC_ENABLED === 'true' }),
-  );
+  app.get('/status', { preHandler: [authRequired], config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async () => {
+    const providerConfigured = Boolean(process.env.OPENAI_API_KEY?.trim());
+    const modelConfigured = Boolean(process.env.ASSISTANT_POC_MODEL_ID?.trim());
+    const checkpointConfigured = Boolean((process.env.ASSISTANT_CHECKPOINT_DATABASE_URL ?? process.env.DATABASE_URL)?.trim());
+    return success({
+      enabled: process.env.ASSISTANT_POC_ENABLED === 'true',
+      configurationReady: providerConfigured && modelConfigured && checkpointConfigured,
+      configuration: {
+        providerConfigured,
+        modelConfigured,
+        checkpointConfigured,
+      },
+    });
+  });
 
   app.get('/tools', {
     preHandler: [featureGate, authRequired],
