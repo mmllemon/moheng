@@ -212,7 +212,7 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const standaloneCostAmount = sumPartyMoney(standaloneCostTotals.map((row) => row._sum.amount));
   const sum = (key: string, source = downstreamRows) => sumPartyMoney(source.map((row) => (row as Record<string, unknown>)[key]));
   const summary = {
-    projectCount: projectRows.length, mainContractCount: mainContractRows.length, downstreamContractCount: downstreamContractsTruncated ? null : downstreamRows.length,
+    projectCount: downstreamContractsTruncated ? null : projectRows.length, mainContractCount: mainContractRows.length, downstreamContractCount: downstreamContractsTruncated ? null : downstreamRows.length,
     ownerCurrentContractAmount: sumPartyMoney(mainContractRows.map((row) => row.currentAmount)), ownerApprovedBillAmount: sumPartyMoney(mainContractRows.map((row) => row.approvedAmount)), ownerReceivedAmount: sumPartyMoney(mainContractRows.map((row) => row.paidAmount)),
     downstreamCurrentContractAmount: downstreamContractsTruncated ? null : sumPartyMoney(downstreamRows.filter((row) => row.status !== 'TERMINATED').map((row) => row.currentAmount)), downstreamSettledAmount: downstreamContractsTruncated ? null : sum('settledAmount'), downstreamPaidAmount: downstreamContractsTruncated ? null : sum('paidAmount'), downstreamOpenPayableAmount: downstreamContractsTruncated ? null : sum('openPayableAmount'), downstreamSupplierCreditAmount: downstreamContractsTruncated ? null : sum('supplierCreditAmount'), downstreamActualCostAmount: downstreamContractsTruncated ? null : sum('actualCostAmount'), downstreamInvoiceAmount: downstreamContractsTruncated ? null : sum('invoiceAmount'), downstreamVerifiedInvoiceAmount: downstreamContractsTruncated ? null : sum('verifiedInvoiceAmount'), downstreamInvoiceCount: downstreamContractsTruncated ? null : sumNumbers(downstreamRows.map((row) => row.invoiceCount)), standaloneCostAmount, standaloneCostCount: standaloneCostTotals.reduce((total, row) => total + row._count._all, 0), downstreamTotalCostAmount: downstreamContractsTruncated ? null : plusPartyMoney(sum('actualCostAmount'), standaloneCostAmount),
   };
@@ -234,11 +234,11 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     const message = `该往来单位关联分供合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；依赖分供合同集合的合同、应付、成本和发票金额汇总已停用，避免将部分数据冒充完整总额。`;
     const affectedFields = [
       { sourceId: 'partyProjects', fieldIds: ['downstreamContractAmount', 'downstreamPaidAmount', 'downstreamActualCostAmount', 'downstreamContractCount'] },
-      { sourceId: 'partySummary', fieldIds: ['downstreamContractCount', 'downstreamCurrentContractAmount', 'downstreamSettledAmount', 'downstreamPaidAmount', 'downstreamOpenPayableAmount', 'downstreamSupplierCreditAmount', 'downstreamActualCostAmount', 'downstreamInvoiceAmount', 'downstreamVerifiedInvoiceAmount', 'downstreamInvoiceCount', 'downstreamTotalCostAmount'] },
+      { sourceId: 'partySummary', fieldIds: ['projectCount', 'downstreamContractCount', 'downstreamCurrentContractAmount', 'downstreamSettledAmount', 'downstreamPaidAmount', 'downstreamOpenPayableAmount', 'downstreamSupplierCreditAmount', 'downstreamActualCostAmount', 'downstreamInvoiceAmount', 'downstreamVerifiedInvoiceAmount', 'downstreamInvoiceCount', 'downstreamTotalCostAmount'] },
     ];
     warnings.push(message);
     partyTruncatedFields.push(...affectedFields);
-    truncationNotices.push({ sourceIds: ['partyDownstreamContracts'], fields: affectedFields, message });
+    truncationNotices.push({ sourceIds: ['partyDownstreamContracts', 'partyProjects'], fields: affectedFields, message });
   }
   if (standaloneCosts.length > 200) {
     const message = '独立关联成本明细仅显示最近 200 条；汇总金额使用完整分组统计。';
@@ -254,7 +254,7 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     partyStandaloneCosts: standaloneCosts.slice(0, 200).map((cost) => ({ projectCode: cost.project.code, projectName: cost.project.name, date: dateText(cost.date), description: cost.description, type: cost.type, amount: moneyValue(cost.amount), vendorName: cost.vendorName ?? '' })),
   };
   const truncatedSources = [
-    ...(partyProjectsListTruncated ? ['partyProjects'] : []),
+    ...(partyProjectsListTruncated || downstreamContractsTruncated ? ['partyProjects'] : []),
     ...(partyMainContractsTruncated ? ['partyMainContracts'] : []),
     ...(downstreamContractsTruncated ? ['partyDownstreamContracts'] : []),
     ...(standaloneCosts.length > 200 ? ['partyStandaloneCosts'] : []),
