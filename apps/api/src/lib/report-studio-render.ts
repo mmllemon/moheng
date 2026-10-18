@@ -107,6 +107,10 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const sheetRegions = definition.regions.filter((region) => region.sheetId === sheetId).sort((a, b) => a.templateRow - b.templateRow);
     const regionByRow = new Map(sheetRegions.map((region) => [region.templateRow, region] as const));
     const sourceRows = sourceSheet.cellData ?? {};
+    const declaredColumnCount = Number(sourceSheet.columnCount ?? 40);
+    const renderColumnLimit = Number.isFinite(declaredColumnCount) && declaredColumnCount > 0
+      ? Math.min(40, Math.floor(declaredColumnCount))
+      : 40;
     const rowKeys = Object.keys(sourceRows).map(Number).filter(Number.isInteger);
     const rowStyleKeys = Object.keys(sourceSheet.rowData ?? {}).map(Number).filter(Number.isInteger);
     const mergeEndRow = Math.max(-1, ...(sourceSheet.mergeData ?? []).map((merge) => merge.endRow));
@@ -161,7 +165,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
         const columnsToRender = new Set([...Object.keys(rowCells), ...boundColumns]);
         for (const columnKey of columnsToRender) {
           const column = Number(columnKey);
-          if (!Number.isInteger(column) || column < 0 || column >= Number(sourceSheet.columnCount ?? 40)) continue;
+          if (!Number.isInteger(column) || column < 0 || column >= renderColumnLimit) continue;
           const rawCell = rowCells[columnKey] ?? {};
           const binding = bindingByCoordinate.get(`${sourceRow}:${column}`);
           let value = primitive((rawCell as StudioCellData).v);
@@ -176,6 +180,8 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
           while (outputRow.length <= column) outputRow.push({ value: null });
           outputRow[column] = { value: formatValue(value, format), style: workbookStyle(workbook, rawCell as StudioCellData), ...(format ? { format } : {}) };
         }
+        if (totalRenderedCells + outputRow.length > MAX_RENDERED_CELLS) throw new Error('REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED');
+        totalRenderedCells += outputRow.length;
         renderedRows.push(outputRow);
         if (typeof rowStyles?.h === 'number' && Number.isFinite(rowStyles.h)) rowHeights[outputIndex] = Math.min(400, Math.max(8, rowStyles.h));
         outputIndex += 1;
@@ -205,8 +211,6 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const freeze = sourceSheet.freeze && typeof sourceSheet.freeze === 'object' ? sourceSheet.freeze as Record<string, unknown> : {};
     const frozenRows = Math.max(0, Number(freeze.ySplit ?? 0) || 0);
     const frozenColumns = Math.max(0, Number(freeze.xSplit ?? 0) || 0);
-    totalRenderedCells += renderedRows.reduce((total, row) => total + row.length, 0);
-    if (totalRenderedCells > MAX_RENDERED_CELLS) throw new Error('REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED');
     renderedSheets.push({ id: sheetId, name: String(sourceSheet.name ?? sheetId), rows: renderedRows, rowHeights, columnWidths, merges, frozenRows, frozenColumns, rowCount: renderedRows.length, truncated: sheetTruncated });
   }
   return { title: definition.title, domain: definition.domain, generatedAt: dataset.generatedAt, projectId: dataset.projectId, sheets: renderedSheets, warnings: [...new Set(warnings)], truncated: allTruncated };
