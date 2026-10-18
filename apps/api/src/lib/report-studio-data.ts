@@ -461,14 +461,18 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   if (domain === 'PARTY') return loadBusinessPartyReportDataset(user, businessPartyId);
   const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const projectScope = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) };
-  const accessibleProjects = await prisma.project.findMany({
-    where: projectScope,
-    include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }],
-  });
-  const accessibleIds = accessibleProjects.map((project) => project.id);
   if (domain === 'PROJECT' && !projectId) throw Object.assign(new Error('项目级报表必须指定项目'), { statusCode: 400, code: 'PROJECT_ID_REQUIRED' });
-  if (projectId && !accessibleIds.includes(projectId)) throw Object.assign(new Error('你没有访问该项目报表的权限'), { statusCode: 403, code: 'PROJECT_ACCESS_DENIED' });
-  const scopedProjects = domain === 'PROJECT' ? accessibleProjects.filter((project) => project.id === projectId) : accessibleProjects;
+  const [accessibleProjectCount, accessibleProjects, selectedProject] = await Promise.all([
+    prisma.project.count({ where: projectScope }),
+    domain === 'COMPANY'
+      ? prisma.project.findMany({ where: projectScope, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] })
+      : Promise.resolve([]),
+    projectId
+      ? prisma.project.findFirst({ where: { ...projectScope, id: projectId }, include: { mainContract: true } })
+      : Promise.resolve(null),
+  ]);
+  if (projectId && !selectedProject) throw Object.assign(new Error('你没有访问该项目报表的权限'), { statusCode: 403, code: 'PROJECT_ACCESS_DENIED' });
+  const scopedProjects = domain === 'PROJECT' ? (selectedProject ? [selectedProject] : []) : accessibleProjects;
   const projectIds = scopedProjects.map((project) => project.id);
   // Apply project authorization and report scope through relational filters instead of
   // expanding every accessible project ID into each query's bind parameters.
@@ -731,7 +735,7 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   const truncatedFields = [...truncatedFieldsBySource.entries()].map(([sourceId, fieldIds]) => ({ sourceId, fieldIds: [...fieldIds] }));
 
   return {
-    domain, generatedAt: new Date().toISOString(), projectId: projectId ?? null, accessibleProjectCount: accessibleProjects.length,
+    domain, generatedAt: new Date().toISOString(), projectId: projectId ?? null, accessibleProjectCount,
     sources: singleSourceData, warnings,
     truncated: truncatedSources.size > 0 || truncatedFields.length > 0,
     truncatedSources: [...truncatedSources], truncatedFields, truncationNotices,
