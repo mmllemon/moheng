@@ -254,7 +254,13 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   const projectIds = scopedProjects.map((project) => project.id);
   const projectFilter = { projectId: { in: projectIds } };
   const warnings: string[] = [];
-  if (domain === 'COMPANY' && scopedProjects.length > MAX_ROWS_PER_SOURCE) warnings.push(`当前账号可访问项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 个，公司项目明细列表会截断；公司汇总范围仍依据权限内项目计算。`);
+  const warnings: string[] = [];
+  const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
+  if (domain === 'COMPANY' && scopedProjects.length > MAX_ROWS_PER_SOURCE) {
+    const message = `当前账号可访问项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 个，公司项目明细列表会截断；公司汇总范围仍依据权限内项目计算。`;
+    warnings.push(message);
+    truncationNotices.push({ sourceIds: ['companyProjects'], message });
+  }
   if (projectIds.length === 0) warnings.push('当前账号没有可访问项目，因此仅能生成空数据模板。');
 
   const [changes, downstreamContracts, ownerReceivables, ownerReceipts, actualCosts, progressBills, downstreamPayables, downstreamPayments, budgetItems] = await Promise.all([
@@ -287,6 +293,29 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     downstreamPayments: downstreamPayments.length > MAX_ROWS_PER_SOURCE,
     budgetItems: budgetItems.length > MAX_ROWS_PER_SOURCE * 10,
   };
+  const directSourceIds: Record<keyof typeof truncation, string> = domain === 'PROJECT'
+    ? {
+        changes: 'changes',
+        downstreamContracts: 'downstreamContracts',
+        ownerReceivables: 'ownerReceivables',
+        ownerReceipts: 'ownerReceipts',
+        actualCosts: 'actualCosts',
+        progressBills: 'progressBills',
+        downstreamPayables: 'downstreamPayables',
+        downstreamPayments: 'downstreamPayments',
+        budgetItems: 'financialSummary',
+      }
+    : {
+        changes: 'companyChanges',
+        downstreamContracts: 'companyDownstreamContracts',
+        ownerReceivables: 'companyOwnerReceivables',
+        ownerReceipts: 'companyOwnerReceipts',
+        actualCosts: 'companyActualCosts',
+        progressBills: 'companyProgressBills',
+        downstreamPayables: 'companyDownstreamPayables',
+        downstreamPayments: 'companyDownstreamPayments',
+        budgetItems: 'companySummary',
+      };
   const safeChanges = changes.slice(0, MAX_ROWS_PER_SOURCE);
   const safeDownstreamContracts = downstreamContracts.slice(0, MAX_ROWS_PER_SOURCE);
   const safeOwnerReceivables = ownerReceivables.slice(0, MAX_ROWS_PER_SOURCE);
@@ -303,7 +332,17 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     ['downstreamPayables', '分供应付', MAX_ROWS_PER_SOURCE], ['downstreamPayments', '分供付款/退款流水', MAX_ROWS_PER_SOURCE],
     ['budgetItems', '目标成本清单', MAX_ROWS_PER_SOURCE * 10],
   ];
-  for (const [key, label, limit] of labels) if (truncation[key]) warnings.push(`${label}超过 ${limit.toLocaleString('zh-CN')} 条，明细已截断；依赖该数据源的金额汇总将显示为空，不会把部分数据伪装为完整财务总额。请缩小项目范围或查询条件后重新生成。`);
+  const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
+  for (const [key, label, limit] of labels) {
+    if (!truncation[key]) continue;
+    const message = `${label}超过 ${limit.toLocaleString('zh-CN')} 条，明细已截断；依赖该数据源的金额汇总将显示为空，不会把部分数据伪装为完整财务总额。请缩小项目范围或查询条件后重新生成。`;
+    warnings.push(message);
+    const affectedSourceIds = new Set<string>([
+      directSourceIds[key],
+      ...(domain === 'PROJECT' ? ['financialSummary', ...(key === 'changes' ? ['project'] : [])] : ['companySummary', 'companyProjects']),
+    ]);
+    truncationNotices.push({ sourceIds: [...affectedSourceIds], message });
+  }
   const parentIds = new Set(safeBudgetItems.map((item) => item.parentId).filter((id): id is string => Boolean(id)));
   const leafBudgetByProject = new Map<string, string>();
   for (const item of safeBudgetItems) if (!parentIds.has(item.id)) leafBudgetByProject.set(item.projectId, plusMoney(leafBudgetByProject.get(item.projectId) ?? '0.00', item.totalPrice));
@@ -387,29 +426,6 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   }
 
   const truncatedSources = new Set<string>();
-  const directSourceIds: Record<keyof typeof truncation, string> = domain === 'PROJECT'
-    ? {
-        changes: 'changes',
-        downstreamContracts: 'downstreamContracts',
-        ownerReceivables: 'ownerReceivables',
-        ownerReceipts: 'ownerReceipts',
-        actualCosts: 'actualCosts',
-        progressBills: 'progressBills',
-        downstreamPayables: 'downstreamPayables',
-        downstreamPayments: 'downstreamPayments',
-        budgetItems: 'financialSummary',
-      }
-    : {
-        changes: 'companyChanges',
-        downstreamContracts: 'companyDownstreamContracts',
-        ownerReceivables: 'companyOwnerReceivables',
-        ownerReceipts: 'companyOwnerReceipts',
-        actualCosts: 'companyActualCosts',
-        progressBills: 'companyProgressBills',
-        downstreamPayables: 'companyDownstreamPayables',
-        downstreamPayments: 'companyDownstreamPayments',
-        budgetItems: 'companySummary',
-      };
   for (const key of Object.keys(truncation) as Array<keyof typeof truncation>) {
     if (truncation[key]) truncatedSources.add(directSourceIds[key]);
   }
@@ -427,6 +443,6 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
 
   return {
     domain, generatedAt: new Date().toISOString(), projectId: projectId ?? null, accessibleProjectCount: accessibleProjects.length,
-    sources: singleSourceData, warnings, truncated: truncatedSources.size > 0, truncatedSources: [...truncatedSources],
+    sources: singleSourceData, warnings, truncated: truncatedSources.size > 0, truncatedSources: [...truncatedSources], truncationNotices,
   };
 }
