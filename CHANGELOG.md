@@ -9,7 +9,8 @@
 - Added project/company report sources and default-template sections for downstream cash payments and refunds, separated from posted payables and actual costs; added exact-cent aggregation and truncated-data safeguards.
 - Improved shared date/select control label targets and accessibility metadata; added static coverage for core business pages to prevent native date/select controls from returning.
 - Added safe AI configuration-readiness diagnostics, bounded model-call defaults (1,800 tokens, 45-second timeout, one SDK retry), downstream cash-flow evidence in the read-only project overview, and `INDETERMINATE` cost variance when target-cost rows are truncated.
-- Added/expanded XLSX, payment summary, AI configuration, cost-variance and runtime-policy tests. Current-head CI is required; this draft does not claim real-model E2E, real browser visual sign-off, sanitized user-staging reconciliation or production rollout approval.
+- Added/expanded XLSX, payment summary, AI configuration, cost-variance and runtime-policy tests.
+- Consolidated system configuration and authorization governance into dedicated workbenches, including dictionary/parameter revision controls and the authorization review workbench; production acceptance remains subject to the documented RC gates. Current-head CI is required; this draft does not claim real-model E2E, real browser visual sign-off, sanitized user-staging reconciliation or production rollout approval.
 
 ---
 
