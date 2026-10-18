@@ -9,3 +9,9 @@ for (const domain of ['PROJECT', 'COMPANY', 'PARTY'] as const) {
     assert.equal(result.success, true, result.success ? '' : result.message);
   });
 }
+
+test('the party template labels its internal database identifier honestly', () => {
+  const definition = createDefaultStudioDefinition('PARTY');
+  const workbook = definition.workbook as { sheets: Record<string, { cellData: Record<string, Record<string, { v?: unknown }>> }> };
+  assert.equal(workbook.sheets.sheet1?.cellData['3']?.['6']?.v, '系统档案 ID');
+});
