@@ -152,7 +152,7 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const [visibleProjectCount, ownedProjects, downstreamContractsFetched, standaloneCosts, standaloneCostTotals] = await Promise.all([
     prisma.project.count({ where: projectScope }),
     prisma.project.findMany({ where: { ...projectScope, ownerPartyId: businessPartyId }, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] }),
-    prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } }, adjustments: { select: { direction: true, amount: true } }, settlements: { where: { status: 'POSTED' }, include: { posting: { select: { deltaAmount: true, cumulativeAfter: true, postedAt: true } } } }, payments: { select: { type: true, amount: true, paidAt: true } }, payables: { include: { paymentAllocations: { select: { amount: true } } } }, costEntries: { where: { deletedAt: null }, select: { amount: true } }, supplierInvoices: { select: { amount: true, taxAmount: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.costEntry.findMany({ where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
     prisma.costEntry.groupBy({ by: ['projectId'], where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, _sum: { amount: true }, _count: { _all: true } }),
   ]);
@@ -187,6 +187,92 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const progressPaidByProject = new Map(progressPaymentMetrics.map((row) => [row.projectId, moneyValue(row.paidAmount)] as const));
   const downstreamContractsTruncated = downstreamContractsFetched.length > MAX_ROWS_PER_SOURCE;
   const downstreamContracts = downstreamContractsFetched.slice(0, MAX_ROWS_PER_SOURCE);
+  const downstreamContractIds = downstreamContracts.map((contract) => contract.id);
+  const [
+    adjustmentMetrics,
+    settlementMetrics,
+    paymentMetrics,
+    downstreamCostMetrics,
+    invoiceMetrics,
+    payableMetrics,
+  ] = await Promise.all([
+    prisma.downstreamContractAdjustment.groupBy({
+      by: ['downstreamContractId', 'direction'],
+      where: { downstreamContractId: { in: downstreamContractIds } },
+      _sum: { amount: true },
+    }),
+    prisma.downstreamSettlementPosting.groupBy({
+      by: ['downstreamContractId'],
+      where: { downstreamContractId: { in: downstreamContractIds }, settlement: { status: 'POSTED' } },
+      _sum: { deltaAmount: true },
+    }),
+    prisma.downstreamContractPayment.groupBy({
+      by: ['downstreamContractId', 'type'],
+      where: { downstreamContractId: { in: downstreamContractIds } },
+      _sum: { amount: true },
+    }),
+    prisma.costEntry.groupBy({
+      by: ['downstreamContractId'],
+      where: { downstreamContractId: { in: downstreamContractIds }, deletedAt: null },
+      _sum: { amount: true },
+    }),
+    prisma.downstreamSupplierInvoice.groupBy({
+      by: ['downstreamContractId', 'status'],
+      where: { downstreamContractId: { in: downstreamContractIds } },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
+    downstreamContractIds.length
+      ? prisma.$queryRaw<Array<{ contractId: string; openPayableAmount: string; supplierCreditAmount: string }>>(Prisma.sql`
+          SELECT payable."downstreamContractId" AS "contractId",
+                 COALESCE(SUM(
+                   CASE WHEN payable."netAmount" > 0
+                     THEN GREATEST(payable."netAmount" - COALESCE(allocation_totals."allocatedAmount", 0), 0)
+                     ELSE 0
+                   END
+                 ), 0)::text AS "openPayableAmount",
+                 COALESCE(SUM(
+                   CASE WHEN payable."netAmount" < 0 THEN ABS(payable."netAmount") ELSE 0 END
+                 ), 0)::text AS "supplierCreditAmount"
+          FROM "DownstreamPayable" AS payable
+          LEFT JOIN (
+            SELECT "payableId", SUM("amount") AS "allocatedAmount"
+            FROM "DownstreamPaymentAllocation"
+            GROUP BY "payableId"
+          ) AS allocation_totals ON allocation_totals."payableId" = payable."id"
+          WHERE payable."downstreamContractId" IN (${Prisma.join(downstreamContractIds)})
+          GROUP BY payable."downstreamContractId"
+        `)
+      : Promise.resolve([] as Array<{ contractId: string; openPayableAmount: string; supplierCreditAmount: string }>),
+  ]);
+  const adjustmentsByContract = new Map<string, { increases: string; decreases: string }>();
+  for (const row of adjustmentMetrics) {
+    const amounts = adjustmentsByContract.get(row.downstreamContractId) ?? { increases: '0.00', decreases: '0.00' };
+    if (row.direction === 'DECREASE') amounts.decreases = plusPartyMoney(amounts.decreases, row._sum.amount);
+    else amounts.increases = plusPartyMoney(amounts.increases, row._sum.amount);
+    adjustmentsByContract.set(row.downstreamContractId, amounts);
+  }
+  const settlementAmountByContract = new Map(settlementMetrics.map((row) => [row.downstreamContractId, moneyValue(row._sum.deltaAmount)] as const));
+  const paymentAmountsByContract = new Map<string, { grossPaidAmount: string; refundedAmount: string }>();
+  for (const row of paymentMetrics) {
+    const amounts = paymentAmountsByContract.get(row.downstreamContractId) ?? { grossPaidAmount: '0.00', refundedAmount: '0.00' };
+    if (row.type === 'REFUND') amounts.refundedAmount = plusPartyMoney(amounts.refundedAmount, row._sum.amount);
+    else amounts.grossPaidAmount = plusPartyMoney(amounts.grossPaidAmount, row._sum.amount);
+    paymentAmountsByContract.set(row.downstreamContractId, amounts);
+  }
+  const downstreamCostByContract = new Map(downstreamCostMetrics.map((row) => [row.downstreamContractId, moneyValue(row._sum.amount)] as const));
+  const invoiceMetricsByContract = new Map<string, { amount: string; verifiedAmount: string; count: number }>();
+  for (const row of invoiceMetrics) {
+    const amounts = invoiceMetricsByContract.get(row.downstreamContractId) ?? { amount: '0.00', verifiedAmount: '0.00', count: 0 };
+    amounts.amount = plusPartyMoney(amounts.amount, row._sum.amount);
+    if (row.status === 'VERIFIED') amounts.verifiedAmount = plusPartyMoney(amounts.verifiedAmount, row._sum.amount);
+    amounts.count += row._count._all;
+    invoiceMetricsByContract.set(row.downstreamContractId, amounts);
+  }
+  const payableMetricsByContract = new Map(payableMetrics.map((row) => [row.contractId, {
+    openPayableAmount: moneyValue(row.openPayableAmount),
+    supplierCreditAmount: moneyValue(row.supplierCreditAmount),
+  }] as const));
   if (user.role !== 'ADMIN' && !ownedProjects.length && !downstreamContracts.length && !standaloneCostTotals.length) {
     throw Object.assign(new Error('单位不存在，或当前账号无权查看其关联项目资料'), { statusCode: 404, code: 'BUSINESS_PARTY_NOT_FOUND' });
   }
@@ -203,22 +289,25 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     });
   }
   const downstreamRows = downstreamContracts.map((contract) => {
-    const currentAmount = centsToMoney(contract.adjustments.reduce<bigint>((total, adjustment) => total + (adjustment.direction === 'DECREASE' ? -1n : 1n) * moneyToCents(adjustment.amount), moneyToCents(contract.originalAmount)));
-    const settledAmount = sumPartyMoney(contract.settlements.map((settlement) => settlement.posting?.deltaAmount));
-    const paidAmount = subtractPartyMoney(sumPartyMoney(contract.payments.filter((payment) => payment.type !== 'REFUND').map((payment) => payment.amount)), sumPartyMoney(contract.payments.filter((payment) => payment.type === 'REFUND').map((payment) => payment.amount)));
-    const openPayableCents = contract.payables.reduce<bigint>((total, payable) => { const net = moneyToCents(payable.netAmount); if (net <= 0n) return total; const paid = payable.paymentAllocations.reduce<bigint>((sum, allocation) => sum + moneyToCents(allocation.amount), 0n); return total + (net > paid ? net - paid : 0n); }, 0n);
-    const openPayableAmount = centsToMoney(openPayableCents);
-    const supplierCreditAmount = centsToMoney(contract.payables.reduce<bigint>((total, payable) => { const net = moneyToCents(payable.netAmount); return total + (net < 0n ? -net : 0n); }, 0n));
-    const actualCostAmount = sumPartyMoney(contract.costEntries.map((cost) => cost.amount));
-    const invoiceAmount = sumPartyMoney(contract.supplierInvoices.map((invoice) => invoice.amount));
-    const verifiedInvoiceAmount = sumPartyMoney(contract.supplierInvoices.filter((invoice) => invoice.status === 'VERIFIED').map((invoice) => invoice.amount));
+    const adjustments = adjustmentsByContract.get(contract.id) ?? { increases: '0.00', decreases: '0.00' };
+    const currentAmount = centsToMoney(moneyToCents(contract.originalAmount) + moneyToCents(adjustments.increases) - moneyToCents(adjustments.decreases));
+    const settledAmount = settlementAmountByContract.get(contract.id) ?? '0.00';
+    const paymentAmounts = paymentAmountsByContract.get(contract.id) ?? { grossPaidAmount: '0.00', refundedAmount: '0.00' };
+    const paidAmount = subtractPartyMoney(paymentAmounts.grossPaidAmount, paymentAmounts.refundedAmount);
+    const payable = payableMetricsByContract.get(contract.id) ?? { openPayableAmount: '0.00', supplierCreditAmount: '0.00' };
+    const openPayableAmount = payable.openPayableAmount;
+    const supplierCreditAmount = payable.supplierCreditAmount;
+    const actualCostAmount = downstreamCostByContract.get(contract.id) ?? '0.00';
+    const invoices = invoiceMetricsByContract.get(contract.id) ?? { amount: '0.00', verifiedAmount: '0.00', count: 0 };
+    const invoiceAmount = invoices.amount;
+    const verifiedInvoiceAmount = invoices.verifiedAmount;
     const existing = projectMap.get(contract.project.id) ?? { id: contract.project.id, code: contract.project.code, name: contract.project.name, status: contract.project.status, role: 'COUNTERPARTY', incomeContractAmount: '0.00', downstreamContractAmount: '0.00', incomePaidAmount: '0.00', downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00', downstreamContractCount: 0, incomeBillCount: 0 };
     existing.downstreamContractCount = plainNumber(existing.downstreamContractCount) + 1;
     if (contract.status !== 'TERMINATED') existing.downstreamContractAmount = plusPartyMoney(existing.downstreamContractAmount, currentAmount);
     existing.downstreamPaidAmount = plusPartyMoney(existing.downstreamPaidAmount, paidAmount);
     existing.downstreamActualCostAmount = plusPartyMoney(existing.downstreamActualCostAmount, actualCostAmount);
     projectMap.set(contract.project.id, existing);
-    return { id: contract.id, projectId: contract.project.id, projectCode: contract.project.code, projectName: contract.project.name, contractNo: contract.contractNo, name: contract.name, type: contract.type, status: contract.status, originalAmount: moneyValue(contract.originalAmount), currentAmount, settledAmount, paidAmount, openPayableAmount, supplierCreditAmount, actualCostAmount, invoiceAmount, verifiedInvoiceAmount, invoiceCount: contract.supplierInvoices.length };
+    return { id: contract.id, projectId: contract.projectId, projectCode: contract.project.code, projectName: contract.project.name, contractNo: contract.contractNo, name: contract.name, type: contract.type, status: contract.status, originalAmount: moneyValue(contract.originalAmount), currentAmount, settledAmount, paidAmount, openPayableAmount, supplierCreditAmount, actualCostAmount, invoiceAmount, verifiedInvoiceAmount, invoiceCount: invoices.count };
   });
   const projectIdsForCosts = standaloneCostTotals.map((row) => row.projectId);
   const costProjects = projectIdsForCosts.length ? await prisma.project.findMany({ where: { ...projectScope, id: { in: projectIdsForCosts } }, select: { id: true, code: true, name: true, status: true } }) : [];
