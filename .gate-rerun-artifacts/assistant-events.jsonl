@@ -1,5 +1,0 @@
-{"type":"run.queued","payload":{"runId":"cmvbqlsw9000jqokwb1ijr66e","messageId":"seed-0a0ce18e29d34e89"}}
-{"type":"run.started","payload":{"runId":"cmvbqlsw9000jqokwb1ijr66e"}}
-{"type":"tool.started","payload":{"toolId":"cost_variance"}}
-{"type":"tool.completed","payload":{"toolId":"cost_variance","sources":[{"scope":"deletedAt = null; leaf items only","entity":"BudgetItem","fields":["totalPrice","children"],"rowCount":1}],"durationMs":3,"generatedAt":"2026-10-17T00:00:00.000Z","limitations":["目标成本按叶子预算项汇总，避免将父级汇总行与子项重复累计。","差异 = 实际成本记录 - 叶子预算项目标成本；正值表示已记录实际成本超过目标成本。它不等于预计完工成本或会计利润。"],"sourceCount":1}}
-{"type":"run.completed","payload":{"runId":"cmvbqlsw9000jqokwb1ijr66e","messageId":"cmvbqlt39000nqokwmlh4zvgx"}}
