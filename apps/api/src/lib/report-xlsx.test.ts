@@ -65,7 +65,7 @@ test('standard XLSX overview explicitly warns when the standard report row limit
   assert.equal(overview.getCell('D7').value, '2026-10-15');
   assert.match(String(overview.getCell('A21').value), /达到导出上限|分批导出/);
   assert.equal(overview.pageSetup.fitToHeight, 0, 'row-limit warnings must not be compressed onto a single printed page');
-  const overviewPrintEndRow = Number(String(overview.pageSetup.printArea).match(/D(\\d+)$/)?.[1]);
+  const overviewPrintEndRow = Number(String(overview.pageSetup.printArea).match(/D(\d+)$/)?.[1]);
   assert.ok(overviewPrintEndRow >= 21, 'the overview print area must include its truncation warning');
   const dataSheet = workbook.getWorksheet('数据')!;
   assert.match(String(dataSheet.getCell(dataSheet.rowCount, 1).value), /达到导出上限/);
