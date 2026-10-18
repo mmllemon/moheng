@@ -276,6 +276,21 @@ test('marks truncation on the affected worksheet without mislabeling other works
 });
 
 
+test('does not label a report incomplete when only an unused source was truncated', () => {
+  const result = renderReportStudio(definition(), {
+    ...dataset,
+    truncated: true,
+    truncatedSources: ['actualCosts'],
+    warnings: ['实际成本明细超过 10,000 条，明细已截断。'],
+  });
+
+  assert.equal(result.truncated, false, 'global status reflects the data actually bound into the report');
+  assert.equal(result.sheets[0]!.truncated, false, 'a sheet with no binding or region for the truncated source remains complete');
+  const preview = previewReportStudio(result);
+  assert.equal(preview.truncated, false);
+  assert.equal(preview.sheets[0]!.truncated, false);
+});
+
 test('bounds malformed internal worksheet columns before expanding rendered rows', () => {
   const report = definition();
   const workbook = report.workbook as unknown as {
