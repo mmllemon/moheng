@@ -80,6 +80,7 @@ check('project/company report data queries apply authorized project scopes relat
   data.includes('prisma.project.count({ where: projectScope })') &&
   data.includes("prisma.project.findFirst({ where: { ...projectScope, id: projectId }") &&
   data.includes("domain === 'COMPANY'") &&
+  !data.includes('const projectIds = scopedProjects.map((project) => project.id)') &&
   !data.includes('projectId: { in: projectIds }'));
 check('project and party report loaders select only fields used by summaries, avoiding complete main-contract records',
   data.includes('mainContract: { select: { contractNo: true, name: true } }') &&
