@@ -85,7 +85,16 @@ function formatValue(value: unknown, format: string | undefined): unknown {
 /** Pure deterministic renderer shared by the preview and XLSX adapters. */
 export function renderReportStudio(definition: ReportStudioDefinition, dataset: ReportStudioDataset): ReportStudioRenderResult {
   const workbook = definition.workbook as unknown as StudioWorkbookData;
-  const warnings = [...dataset.warnings];
+  const usedSourceIds = new Set([
+    ...definition.bindings.map((binding) => binding.sourceId),
+    ...definition.regions.map((region) => region.sourceId),
+  ]);
+  const truncationNotices = dataset.truncationNotices ?? [];
+  const knownTruncationMessages = new Set(truncationNotices.map((notice) => notice.message));
+  const warnings = [
+    ...dataset.warnings.filter((warning) => !knownTruncationMessages.has(warning)),
+    ...truncationNotices.filter((notice) => notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))).map((notice) => notice.message),
+  ];
   const renderedSheets: ReportStudioRenderedSheet[] = [];
   const truncatedSourceIds = new Set(dataset.truncatedSources ?? []);
   // Prefer source-scoped truncation when the loader identifies the affected sources.
