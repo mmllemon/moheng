@@ -35,7 +35,7 @@ function defaultProjectData() {
     ['项目摘要'],
     ['项目名称', '', '项目编号', '', '业主单位', ''],
     ['当前有效合同额', '', '累计登记净收款', '', '登记净应收合计', ''],
-    [''],
+    ['累计分供净支付', '', '累计分供退款', '', '已登记净应付合计', ''],
     ['主合同信息'],
     ['主合同编号', '', '主合同名称', '', '原始金额', ''],
     [''],
@@ -58,8 +58,8 @@ function defaultProjectData() {
   const put = (r: number, c: number, v: unknown, s?: Record<string, unknown>) => { (cellData[String(r)] ??= {})[String(c)] = cell(v, s); };
   put(0, 0, '项目综合经营报告', titleStyle);
   for (const [r, c, v] of [[1,0,'项目摘要'],[5,0,'主合同信息'],[8,0,'分供合同明细'],[11,0,'业主收款与退款流水'],[14,0,'项目成本及其他指标'],[17,0,'变更签证清单'],[21,0,'分供合同付款与退款流水']] as Array<[number, number, string]>) put(r,c,v,sectionStyle);
-  for (const r of [2,3,6,15]) for (const c of [0,2,4]) if (cellData[String(r)]?.[String(c)]) put(r,c,cellData[String(r)]![String(c)]!.v,labelStyle);
-  for (const r of [2,3,6,15]) for (const c of [1,3,5]) put(r,c,'',valueStyle);
+  for (const r of [2,3,4,6,15]) for (const c of [0,2,4]) if (cellData[String(r)]?.[String(c)]) put(r,c,cellData[String(r)]![String(c)]!.v,labelStyle);
+  for (const r of [2,3,4,6,15]) for (const c of [1,3,5]) put(r,c,'',valueStyle);
   for (const r of [9,12,18,22]) for (let c = 0; c < 6; c += 1) put(r,c,cellData[String(r)]![String(c)]!.v,headerStyle);
   for (const regionRow of [10,13,19,23]) for (let c = 0; c < 6; c += 1) put(regionRow,c,'', { ...valueStyle, ...(c === 4 ? { ht: 3 } : {}) });
   const merges = [1,5,8,11,14,17,21].map((r) => ({ startRow: r, startColumn: 0, endRow: r, endColumn: 5 }));
@@ -68,6 +68,7 @@ function defaultProjectData() {
   const bindings: ReportStudioBinding[] = [
     ['B3','project','name'], ['D3','project','code'], ['F3','project','ownerName'],
     ['B4','financialSummary','effectiveContractAmount'], ['D4','financialSummary','netReceipts'], ['F4','financialSummary','issuedReceivableNetAmount'],
+    ['B5','financialSummary','downstreamNetPaymentTotal'], ['D5','financialSummary','downstreamRefundTotal'], ['F5','financialSummary','postedPayableTotal'],
     ['B7','mainContract','contractNo'], ['D7','mainContract','name'], ['F7','mainContract','amount'],
     ['B16','financialSummary','targetCostTotal'], ['D16','financialSummary','actualCostTotal'], ['F16','financialSummary','postedPayableTotal'],
   ].map(([cellAddress, sourceId, fieldId], index) => ({ id: `binding-${index + 1}`, sheetId: 'sheet1', cell: cellAddress!, sourceId: sourceId!, fieldId: fieldId!, format: /Amount|Receipts|Total/i.test(fieldId!) ? 'MONEY' as const : 'AUTO' as const }));
@@ -84,12 +85,12 @@ function defaultProjectData() {
 }
 function defaultCompanyData() {
   const cellData = rowsFrom([
-    ['公司经营汇总报告'], ['公司核心指标'], ['可访问项目数', '', '当前有效合同额合计', '', '累计登记净收款', ''], ['登记净应收合计', '', '已录入实际成本合计', '', '分供合同当前金额合计', ''], [''], ['项目经营情况'], ['项目编号', '项目名称', '项目状态', '项目负责人', '当前有效合同额', '累计登记净收款', '登记净应收', '实际成本'], [''], [''], ['分供合同付款与退款流水'], ['项目编号', '项目名称', '分供合同编号', '类型', '支付/退款金额', '支付日期', '支付参考号', '原付款参考号'], [''],
+    ['公司经营汇总报告'], ['公司核心指标'], ['可访问项目数', '', '当前有效合同额合计', '', '累计登记净收款', ''], ['登记净应收合计', '', '已录入实际成本合计', '', '分供合同当前金额合计', ''], ['累计分供净支付', '', '累计分供退款', '', '已登记净应付合计', ''], ['项目经营情况'], ['项目编号', '项目名称', '项目状态', '项目负责人', '当前有效合同额', '累计登记净收款', '登记净应收', '实际成本'], [''], [''], ['分供合同付款与退款流水'], ['项目编号', '项目名称', '分供合同编号', '类型', '支付/退款金额', '支付日期', '支付参考号', '原付款参考号'], [''],
   ]);
   const put = (r: number, c: number, v: unknown, s?: Record<string, unknown>) => { (cellData[String(r)] ??= {})[String(c)] = cell(v, s); };
   put(0,0,'公司经营汇总报告',titleStyle); put(1,0,'公司核心指标',sectionStyle); put(5,0,'项目经营情况',sectionStyle); put(9,0,'分供合同付款与退款流水',sectionStyle);
-  for (const r of [2,3]) for (const c of [0,2,4]) put(r,c,cellData[String(r)]![String(c)]!.v,labelStyle);
-  for (const r of [2,3]) for (const c of [1,3,5]) put(r,c,'',valueStyle);
+  for (const r of [2,3,4]) for (const c of [0,2,4]) put(r,c,cellData[String(r)]![String(c)]!.v,labelStyle);
+  for (const r of [2,3,4]) for (const c of [1,3,5]) put(r,c,'',valueStyle);
   for (let c=0;c<8;c+=1) put(6,c,cellData['6']![String(c)]!.v,headerStyle);
   for (let c=0;c<8;c+=1) put(7,c,'',valueStyle);
   for (let c=0;c<8;c+=1) put(10,c,cellData['10']![String(c)]!.v,headerStyle);
@@ -98,6 +99,7 @@ function defaultCompanyData() {
   const bindings: ReportStudioBinding[] = [
     ['B3','companySummary','projectCount','NUMBER'], ['D3','companySummary','effectiveContractAmount','MONEY'], ['F3','companySummary','netReceipts','MONEY'],
     ['B4','companySummary','issuedReceivableNetAmount','MONEY'], ['D4','companySummary','actualCostTotal','MONEY'], ['F4','companySummary','downstreamContractTotal','MONEY'],
+    ['B5','companySummary','downstreamNetPaymentTotal','MONEY'], ['D5','companySummary','downstreamRefundTotal','MONEY'], ['F5','companySummary','postedPayableTotal','MONEY'],
   ].map(([cellAddress, sourceId, fieldId, format], index) => ({ id:`binding-${index+1}`, sheetId:'sheet1', cell:cellAddress!, sourceId:sourceId!, fieldId:fieldId!, format:format as ReportStudioBinding['format'] }));
   const fields = ['code','name','status','managerName','effectiveContractAmount','netReceipts','issuedReceivableNetAmount','actualCostTotal'];
   const regions: ReportStudioRegion[] = [
