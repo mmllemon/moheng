@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 
-const baseUrl = process.env.API_SMOKE_BASE_URL ?? \`http://127.0.0.1:\${process.env.API_SMOKE_PORT ?? '3181'}\`;
+const baseUrl = process.env.API_SMOKE_BASE_URL ?? `http://127.0.0.1:${process.env.API_SMOKE_PORT ?? '3181'}`;
 const email = process.env.SMOKE_ADMIN_EMAIL;
 const password = process.env.SMOKE_ADMIN_PASSWORD;
 if (!process.env.DATABASE_URL || !email || !password) {
@@ -12,7 +12,7 @@ function invariant(condition, message) {
   if (!condition) throw new Error(message);
 }
 function successEnvelope(body, label) {
-  invariant(body && body.success === true, \`\${label}: API did not return a success envelope.\`);
+  invariant(body && body.success === true, `${label}: API did not return a success envelope.`);
   return body.data;
 }
 const logs = [];
@@ -33,15 +33,15 @@ const child = spawn(process.execPath, ['apps/api/dist/src/server.js'], {
 let exited = false;
 let exitSummary = '';
 const capture = (stream, prefix) => stream.on('data', (chunk) => {
-  logs.push(\`\${prefix}\${chunk.toString()}\`);
+  logs.push(`${prefix}${chunk.toString()}`);
   while (logs.join('').length > 16000) logs.shift();
 });
 capture(child.stdout, '[stdout] ');
 capture(child.stderr, '[stderr] ');
-child.once('error', (error) => { exited = true; exitSummary = \`spawn error: \${error.message}\`; });
+child.once('error', (error) => { exited = true; exitSummary = `spawn error: ${error.message}`; });
 child.once('exit', (code, signal) => {
   exited = true;
-  exitSummary = \`API exited before completion (code=\${code}, signal=\${signal}).\`;
+  exitSummary = `API exited before completion (code=${code}, signal=${signal}).`;
 });
 
 async function jsonRequest(path, options = {}) {
@@ -52,7 +52,7 @@ async function jsonRequest(path, options = {}) {
   });
   let body;
   try { body = await response.json(); }
-  catch { throw new Error(\`\${path}: expected JSON response, received HTTP \${response.status}.\`); }
+  catch { throw new Error(`${path}: expected JSON response, received HTTP ${response.status}.`); }
   return { response, body };
 }
 
@@ -81,7 +81,7 @@ try {
     } catch { /* server is still starting */ }
     await delay(400);
   }
-  invariant(!exited && readiness, \`API did not become ready within 45 seconds. \${exitSummary}\n\${logs.join('')}\`);
+  invariant(!exited && readiness, `API did not become ready within 45 seconds. ${exitSummary}\n${logs.join('')}`);
   successEnvelope(readiness.body, 'readiness');
   console.log('PASS API process starts and PostgreSQL readiness is healthy');
 
@@ -100,16 +100,16 @@ try {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
-  invariant(login.response.status === 200, \`Admin login must return HTTP 200; received \${login.response.status}.\`);
+  invariant(login.response.status === 200, `Admin login must return HTTP 200; received ${login.response.status}.`);
   const loginData = successEnvelope(login.body, 'admin login');
   invariant(typeof loginData.accessToken === 'string' && loginData.accessToken.length > 20, 'Login must issue an access token.');
   invariant(loginData.user?.role === 'ADMIN', 'Smoke fixture must authenticate as an administrator.');
   token = loginData.accessToken;
-  const authorization = { authorization: \`Bearer \${token}\` };
+  const authorization = { authorization: `Bearer ${token}` };
   console.log('PASS seeded administrator can log in and receives an access token');
 
   const projects = await jsonRequest('/api/projects', { headers: authorization });
-  invariant(projects.response.status === 200, \`Authenticated project listing must return HTTP 200; received \${projects.response.status}.\`);
+  invariant(projects.response.status === 200, `Authenticated project listing must return HTTP 200; received ${projects.response.status}.`);
   const projectRows = successEnvelope(projects.body, 'project listing');
   invariant(Array.isArray(projectRows), 'Project listing data must be an array.');
   const demo = projectRows.find((item) => item.code === 'DEMO-001');
@@ -118,13 +118,13 @@ try {
   console.log('PASS authenticated project and main-contract read path');
 
   const reports = await jsonRequest('/api/reports/catalog', { headers: authorization });
-  invariant(reports.response.status === 200, \`Report catalog must return HTTP 200; received \${reports.response.status}.\`);
+  invariant(reports.response.status === 200, `Report catalog must return HTTP 200; received ${reports.response.status}.`);
   const reportRows = successEnvelope(reports.body, 'standard report catalog');
   invariant(Array.isArray(reportRows) && reportRows.length > 0, 'Standard report catalog must contain entries.');
   console.log('PASS authenticated standard report catalog');
 
   const studio = await jsonRequest('/api/reports/studio/catalog?domain=COMPANY', { headers: authorization });
-  invariant(studio.response.status === 200, \`Company report-studio catalog must return HTTP 200; received \${studio.response.status}.\`);
+  invariant(studio.response.status === 200, `Company report-studio catalog must return HTTP 200; received ${studio.response.status}.`);
   const studioData = successEnvelope(studio.body, 'company report-studio catalog');
   invariant(studioData.domain === 'COMPANY' && Array.isArray(studioData.sources) && studioData.sources.length > 0,
     'Company report-studio catalog must include available data sources.');

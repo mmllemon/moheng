@@ -6,25 +6,25 @@ Provide a repeatable pre-release rehearsal for PostgreSQL logical backup and res
 
 ## Automated gate
 
-Workflow: \`.github/workflows/prisma7-migration-bootstrap.yml\`
+Workflow: `.github/workflows/prisma7-migration-bootstrap.yml`
 
 The job performs these steps in order:
 
-1. Run \`npm ci\` twice and verify the committed lockfile does not change.
-2. Validate the Prisma schema and apply all committed migrations to the isolated \`moheng_test\` database.
+1. Run `npm ci` twice and verify the committed lockfile does not change.
+2. Validate the Prisma schema and apply all committed migrations to the isolated `moheng_test` database.
 3. Seed a synthetic project, main contract, six budget items, cost entries, a progress bill, and a change record.
-4. Create a PostgreSQL custom-format logical dump with \`pg_dump\`.
-5. Restore the dump into a fresh database named \`moheng_restore\` using \`pg_restore --single-transaction\`.
+4. Create a PostgreSQL custom-format logical dump with `pg_dump`.
+5. Restore the dump into a fresh database named `moheng_restore` using `pg_restore --single-transaction`.
 6. Compare the public base-table manifests and canonical JSONB content hashes for every table, then assert that the representative business fixture and successful Prisma migration ledger survive restoration.
-7. Emit a non-sensitive text report to \`gate-artifacts/postgres-backup-restore.txt\`. The dump itself is temporary and is not uploaded as an artifact.
+7. Emit a non-sensitive text report to `gate-artifacts/postgres-backup-restore.txt`. The dump itself is temporary and is not uploaded as an artifact.
 
-The script hard-fails unless the source URL and PostgreSQL connection environment identify the disposable loopback database \`moheng_test\` on port 5432. It will not target an external host or another named database.
+The script hard-fails unless the source URL and PostgreSQL connection environment identify the disposable loopback database `moheng_test` on port 5432. It will not target an external host or another named database.
 
 ## Mechanical acceptance criteria
 
 - The source database contains all six expected demo fixture categories.
-- \`pg_dump\` exits 0 and its archive listing is non-empty.
-- \`pg_restore\` exits 0 when restoring into a freshly created database.
+- `pg_dump` exits 0 and its archive listing is non-empty.
+- `pg_restore` exits 0 when restoring into a freshly created database.
 - Source and restored public base-table manifests match exactly.
 - Per-table canonical JSONB row-content hashes match for every public base table, including Prisma's migration ledger.
 - The restored database retains the demo project, contract amount, budget items, cost entries, progress bill, change record, and at least one successful, non-rolled-back Prisma migration.
