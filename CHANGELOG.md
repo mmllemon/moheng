@@ -1,4 +1,6 @@
-## Draft: v2.20.0 product completion (not released)
+## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
+
+### Draft: v2.20.0 product completion (not released)
 
 > Draft notes for [PR #4: consolidated v2.20 product completion](https://github.com/mmllemon/moheng/pull/4). This is not a release announcement; package versions remain `2.19.0-rc.2` and the PR is not merged.
 
@@ -11,8 +13,6 @@
 - Consolidated system configuration and authorization governance into dedicated workbenches, including dictionary/parameter revision controls and the authorization review workbench; production acceptance remains subject to the documented RC gates. Current-head CI is required; this draft does not claim real-model E2E, real browser visual sign-off, sanitized user-staging reconciliation or production rollout approval.
 
 ---
-
-## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
 
 - 创建独立分支 `feat/v2.19.0-rc.2-prisma7`，从 `ceb0f335624209178e37e1279fb9c845d5f7b924` 开始；不改写 `main`，不自动合并。
 - 将 `prisma` 与 `@prisma/client` 固定升级到 `7.10.1`，并增加同版本 `@prisma/adapter-pg`、`pg@8.23.1` 与 `@types/pg@8.23.1`。
