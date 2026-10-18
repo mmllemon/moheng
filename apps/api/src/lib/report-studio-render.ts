@@ -89,17 +89,22 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     ...definition.bindings.map((binding) => binding.sourceId),
     ...definition.regions.map((region) => region.sourceId),
   ]);
+  const usedBindingKeys = new Set(definition.bindings.map((binding) => `${binding.sourceId}:${binding.fieldId}`));
   const truncationNotices = dataset.truncationNotices ?? [];
   const knownTruncationMessages = new Set(truncationNotices.map((notice) => notice.message));
+  const noticeIsRelevant = (notice: (typeof truncationNotices)[number]) =>
+    notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))
+    || (notice.fields ?? []).some(({ sourceId, fieldIds }) => fieldIds.some((fieldId) => usedBindingKeys.has(`${sourceId}:${fieldId}`)));
   const warnings = [
     ...dataset.warnings.filter((warning) => !knownTruncationMessages.has(warning)),
-    ...truncationNotices.filter((notice) => notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))).map((notice) => notice.message),
+    ...truncationNotices.filter(noticeIsRelevant).map((notice) => notice.message),
   ];
   const renderedSheets: ReportStudioRenderedSheet[] = [];
   const truncatedSourceIds = new Set(dataset.truncatedSources ?? []);
-  // Prefer source-scoped truncation when the loader identifies the affected sources.
-  // Keep the legacy global fallback for older datasets without a usable source map.
-  const hasScopedTruncation = dataset.truncated === true && truncatedSourceIds.size > 0;
+  const truncatedFieldKeys = new Set((dataset.truncatedFields ?? []).flatMap(({ sourceId, fieldIds }) => fieldIds.map((fieldId) => `${sourceId}:${fieldId}`)));
+  // Prefer source/field-scoped truncation when the loader identifies affected outputs.
+  // Keep the legacy global fallback for older datasets without a usable dependency map.
+  const hasScopedTruncation = dataset.truncated === true && (truncatedSourceIds.size > 0 || truncatedFieldKeys.size > 0);
   let allTruncated = dataset.truncated === true && !hasScopedTruncation;
   let totalRenderedCells = 0;
   for (const sheetId of workbook.sheetOrder) {
@@ -132,9 +137,9 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow, bindingMaxRow);
     let sheetTruncated = dataset.truncated === true && !hasScopedTruncation;
     if (hasScopedTruncation) {
-      // A source cap only makes sheets that actually consume that source incomplete.
-      // Collections are detected through regions as well as cell bindings.
-      sheetTruncated = sheetBindings.some((binding) => truncatedSourceIds.has(binding.sourceId))
+      // A capped collection affects any binding/region that consumes it; a partial summary
+      // affects only cells whose specific source field depends on the capped collection.
+      sheetTruncated = sheetBindings.some((binding) => truncatedSourceIds.has(binding.sourceId) || truncatedFieldKeys.has(`${binding.sourceId}:${binding.fieldId}`))
         || sheetRegions.some((region) => truncatedSourceIds.has(region.sourceId));
     }
     if (sheetTruncated) allTruncated = true;
