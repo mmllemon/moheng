@@ -154,7 +154,7 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const [visibleProjectCount, ownedProjectsFetched, downstreamContractsFetched, standaloneCosts, standaloneCostTotalsFetched, standaloneCostAggregate] = await Promise.all([
     prisma.project.count({ where: projectScope }),
     prisma.project.findMany({ where: ownedProjectScope, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true, ownerPartyId: true, contractAmount: true, originalContractAmount: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.costEntry.findMany({ where: standaloneCostScope, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
     prisma.costEntry.groupBy({ by: ['projectId'], where: standaloneCostScope, _sum: { amount: true }, _count: { _all: true }, orderBy: { projectId: 'asc' }, take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.costEntry.aggregate({ where: standaloneCostScope, _sum: { amount: true }, _count: { _all: true } }),
@@ -293,6 +293,23 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     throw Object.assign(new Error('单位不存在，或当前账号无权查看其关联项目资料'), { statusCode: 404, code: 'BUSINESS_PARTY_NOT_FOUND' });
   }
   const projectMap = new Map<string, Record<string, unknown>>();
+  const emptyProjectSummary = (project: {
+    id: string; code: string; name: string; status: string;
+    ownerPartyId?: string | null; contractAmount?: unknown; originalContractAmount?: unknown;
+  }, fallbackRole: string): Record<string, unknown> => {
+    const isOwner = project.ownerPartyId === businessPartyId;
+    const billMetrics = progressBillMetricsByProject.get(project.id);
+    return {
+      id: project.id, code: project.code, name: project.name, status: project.status,
+      role: isOwner ? 'OWNER' : fallbackRole,
+      incomeContractAmount: isOwner ? moneyValue(project.contractAmount) : '0.00',
+      incomeOriginalAmount: isOwner ? moneyValue(project.originalContractAmount) : '0.00',
+      incomePaidAmount: isOwner ? (progressPaidByProject.get(project.id) ?? '0.00') : '0.00',
+      downstreamContractAmount: '0.00', downstreamPaidAmount: '0.00',
+      downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00',
+      downstreamContractCount: 0, incomeBillCount: isOwner ? (billMetrics?.count ?? 0) : 0,
+    };
+  };
   for (const project of ownedProjects) {
     const billMetrics = progressBillMetricsByProject.get(project.id);
     projectMap.set(project.id, {
@@ -317,7 +334,7 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     const invoices = invoiceMetricsByContract.get(contract.id) ?? { amount: '0.00', verifiedAmount: '0.00', count: 0 };
     const invoiceAmount = invoices.amount;
     const verifiedInvoiceAmount = invoices.verifiedAmount;
-    const existing = projectMap.get(contract.project.id) ?? { id: contract.project.id, code: contract.project.code, name: contract.project.name, status: contract.project.status, role: 'COUNTERPARTY', incomeContractAmount: '0.00', downstreamContractAmount: '0.00', incomePaidAmount: '0.00', downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00', downstreamContractCount: 0, incomeBillCount: 0 };
+    const existing = projectMap.get(contract.project.id) ?? emptyProjectSummary(contract.project, 'COUNTERPARTY');
     existing.downstreamContractCount = plainNumber(existing.downstreamContractCount) + 1;
     if (contract.status !== 'TERMINATED') existing.downstreamContractAmount = plusPartyMoney(existing.downstreamContractAmount, currentAmount);
     existing.downstreamPaidAmount = plusPartyMoney(existing.downstreamPaidAmount, paidAmount);
@@ -326,12 +343,12 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     return { id: contract.id, projectId: contract.projectId, projectCode: contract.project.code, projectName: contract.project.name, contractNo: contract.contractNo, name: contract.name, type: contract.type, status: contract.status, originalAmount: moneyValue(contract.originalAmount), currentAmount, settledAmount, paidAmount, openPayableAmount, supplierCreditAmount, actualCostAmount, invoiceAmount, verifiedInvoiceAmount, invoiceCount: invoices.count };
   });
   const projectIdsForCosts = standaloneCostTotals.map((row) => row.projectId);
-  const costProjects = projectIdsForCosts.length ? await prisma.project.findMany({ where: { ...projectScope, id: { in: projectIdsForCosts } }, select: { id: true, code: true, name: true, status: true } }) : [];
+  const costProjects = projectIdsForCosts.length ? await prisma.project.findMany({ where: { ...projectScope, id: { in: projectIdsForCosts } }, select: { id: true, code: true, name: true, status: true, ownerPartyId: true, contractAmount: true, originalContractAmount: true } }) : [];
   const costProjectById = new Map(costProjects.map((project) => [project.id, project] as const));
   for (const aggregate of standaloneCostTotals) {
     const project = costProjectById.get(aggregate.projectId);
     if (!project) continue;
-    const existing = projectMap.get(project.id) ?? { id: project.id, code: project.code, name: project.name, status: project.status, role: 'COST_PARTY', incomeContractAmount: '0.00', downstreamContractAmount: '0.00', incomePaidAmount: '0.00', downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00', downstreamContractCount: 0, incomeBillCount: 0 };
+    const existing = projectMap.get(project.id) ?? emptyProjectSummary(project, 'COST_PARTY');
     existing.standaloneCostAmount = moneyValue(aggregate._sum.amount);
     existing.standaloneCostCount = aggregate._count._all;
     projectMap.set(project.id, existing);
