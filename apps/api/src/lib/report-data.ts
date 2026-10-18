@@ -149,9 +149,29 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
   };
 }
 
+function significantDecimalDigits(raw: string): number {
+  const match = /^[+-]?(\\d+)(?:\\.(\\d+))?$/.exec(raw.trim());
+  if (!match) return Number.POSITIVE_INFINITY;
+  const digits = `${match[1] ?? ''}${match[2] ?? ''}`.replace(/^0+/, '').replace(/0+$/, '');
+  return digits.length;
+}
+
+/**
+ * Excel and JavaScript numbers preserve at most 15 significant decimal digits reliably.
+ * Keep larger Prisma Decimal values as decimal text rather than silently rounding contracts
+ * and ledger amounts in preview JSON or exported workbooks.
+ */
+export function decimalValueForJson(value: unknown): number | string {
+  const raw = String(value);
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || significantDecimalDigits(raw) > 15) return raw;
+  return numeric;
+}
+
 export function valueForJson(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString();
-  if (value !== null && typeof value === 'object' && value.constructor?.name === 'Decimal') return Number(value);
+  if (value !== null && typeof value === 'object' && value.constructor?.name === 'Decimal') return decimalValueForJson(value);
   if (value === undefined) return null;
+  if (typeof value === 'bigint') return value.toString();
   return value;
 }
