@@ -348,17 +348,32 @@ test('marks a report incomplete when a scalar-bound summary source is truncated'
 });
 
 test('does not label a report incomplete when a bound summary uses an unaffected field', () => {
-  const result = renderReportStudio(definition(), {
+  const report = definition();
+  report.bindings.push({
+    id: 'receipt-total-binding',
+    sheetId: 'main',
+    cell: 'C1',
+    sourceId: 'financialSummary',
+    fieldId: 'receiptTotal',
+    format: 'MONEY',
+  });
+  const message = '实际成本明细超过 10,000 条，明细已截断；仅影响实际成本合计。';
+  const result = renderReportStudio(report, {
     ...dataset,
     truncated: true,
     truncatedSources: ['actualCosts'],
-    warnings: ['实际成本明细超过 10,000 条，明细已截断。'],
-    truncationNotices: [{ sourceIds: ['actualCosts'], message: '实际成本明细超过 10,000 条，明细已截断。' }],
+    truncatedFields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+    warnings: [message],
+    truncationNotices: [{
+      sourceIds: ['actualCosts'],
+      fields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+      message,
+    }],
   });
 
   assert.equal(result.truncated, false, 'global status reflects the data actually bound into the report');
   assert.equal(result.sheets[0]!.truncated, false, 'a sheet with no binding or region for the truncated source remains complete');
-  assert.equal(result.warnings.includes('实际成本明细超过 10,000 条，明细已截断。'), false, 'irrelevant truncation notices must not clutter the report');
+  assert.equal(result.warnings.includes(message), false, 'irrelevant field-level truncation notices must not clutter the report');
   const preview = previewReportStudio(result);
   assert.equal(preview.truncated, false);
   assert.equal(preview.sheets[0]!.truncated, false);
