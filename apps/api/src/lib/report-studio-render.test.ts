@@ -240,3 +240,36 @@ test('renders downstream payment and refund collections into independent report 
   assert.equal(rows[section + 3]![0]!.value, 'SC-002');
   assert.equal(rows[section + 3]![1]!.value, 3.25);
 });
+
+
+test('marks truncation on the affected worksheet without mislabeling other worksheets', () => {
+  const report = definition();
+  report.regions[0]!.maxRows = 1;
+  const workbook = report.workbook as unknown as {
+    sheetOrder: string[];
+    sheets: Record<string, {
+      id: string; name: string; rowCount: number; columnCount: number;
+      cellData: Record<string, Record<string, { v?: unknown }>>;
+      rowData: Record<string, unknown>; columnData: Record<string, unknown>;
+      mergeData: unknown[]; freeze: Record<string, unknown>;
+    }>;
+  };
+  workbook.sheetOrder.push('secondary');
+  workbook.sheets.secondary = {
+    ...structuredClone(workbook.sheets.main!),
+    id: 'secondary',
+    name: '未截断工作表',
+    cellData: { '0': { '0': { v: '正常数据' } } },
+    rowData: {},
+    columnData: {},
+    mergeData: [],
+    freeze: {},
+  };
+
+  const result = renderReportStudio(report, dataset);
+  assert.equal(result.truncated, true, 'the workbook must report that some data was truncated');
+  assert.equal(result.sheets[0]!.truncated, true, 'the worksheet with a capped repeating region must be marked truncated');
+  assert.equal(result.sheets[1]!.truncated, false, 'an unaffected worksheet must not be labeled truncated');
+  const preview = previewReportStudio(result);
+  assert.equal(preview.sheets[1]!.truncated, false, 'the preview must preserve per-worksheet truncation status');
+});
