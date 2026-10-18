@@ -71,6 +71,14 @@ check('project and company source registry includes multiple independent busines
   ['project','mainContract','financialSummary','downstreamContracts','ownerReceivables','ownerReceipts','actualCosts','changes','progressBills','downstreamPayables','companySummary','companyProjects','companyDownstreamContracts','companyOwnerReceivables','companyOwnerReceipts','companyActualCosts','companyChanges','companyProgressBills','companyDownstreamPayables','businessParty','partySummary','partyProjects','partyMainContracts','partyDownstreamContracts','partyStandaloneCosts'].every((source) => data.includes(`id: '${source}'`)));
 check('company sources include project identifiers so cross-project rows remain traceable',
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
+check('party report owner metrics aggregate progress bills, signed payments, and changes in PostgreSQL instead of loading nested histories',
+  data.includes('prisma.progressBill.groupBy') &&
+  data.includes('prisma.change.groupBy') &&
+  data.includes('prisma.$queryRaw<Array<{ projectId: string; paidAmount: string }>>') &&
+  data.includes('COALESCE(SUM(pp."amount"), 0)::text') &&
+  !data.includes('include: { mainContract: true, progressBills:') &&
+  data.includes('const progressPaidByProject = new Map') &&
+  (await read('apps/api/src/routes/owner-finance.ts')).includes('amount: amountString(-allocation.amount)'));
 check('party report collection outputs enforce row caps and source-specific completeness',
   data.includes('partyProjects: projectRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
   data.includes('partyMainContracts: mainContractRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
