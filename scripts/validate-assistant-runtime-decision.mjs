@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFile(join(root, path), 'utf8');
 const [decision, acceptance, rootPackage, apiPackage, webPackage, server, routes, registry, releaseScript] = await Promise.all([
-  read('docs/assistant-runtime-decision-v1.0.md'),
-  read('docs/assistant-next-stage-acceptance-v1.0.md'),
+  read('docs/AI助手实施与准入.md'),
+  read('docs/后续四阶段开发路线图.md'),
   read('package.json').then(JSON.parse),
   read('apps/api/package.json').then(JSON.parse),
   read('apps/web/package.json').then(JSON.parse),
@@ -27,9 +27,9 @@ assert.match(decision, /LangGraph\.js \+ PostgreSQL `PostgresSaver`/, 'the adopt
 assert.match(decision, /不构成生产启用批准/, 'runtime choice must not grant production approval');
 assert.match(decision, /BackgroundJob/, 'long-running assistant runs must remain inside the PostgreSQL job boundary');
 assert.match(decision, /canAccessProject/, 'runtime integration must preserve server-side project authorization');
-assert.match(acceptance, /Gate C.*Gate 未通过/, 'conversation API/SSE work must remain explicitly incomplete until delivered');
-assert.match(acceptance, /Gate D.*未完成/, 'production-readiness tasks must remain explicitly incomplete');
-assert.match(acceptance, /六张业务表零变化/, 'business-table no-write regression must remain a hard gate');
+assert.match(acceptance, /阶段三：完成 AI 助手的产品闭环/, 'assistant implementation must remain a defined development phase');
+assert.match(acceptance, /阶段四：统一回归、整理交付与发布评审/, 'release readiness and regression must be a separate phase');
+assert.match(decision, /六张业务表零变化/, 'business-table no-write regression must remain a hard gate');
 assert.match(releaseScript, /node scripts\/validate-assistant-poc\.mjs[\s\S]*?node scripts\/validate-assistant-runtime-decision\.mjs/, 'both assistant gates must execute in the release validation script');
 
 console.log(JSON.stringify({
