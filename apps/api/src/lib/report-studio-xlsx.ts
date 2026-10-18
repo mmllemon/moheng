@@ -83,7 +83,11 @@ function sourceName(source: unknown): string | undefined {
   return typeof name === 'string' && name.trim() ? name.trim() : undefined;
 }
 function uniqueWorksheetName(rawName: string, usedNames: Set<string>): string {
-  const base = rawName.replace(/[\\/?*\\[\\]:]/g, '-').replace(/^'+|'+$/g, '').trim().slice(0, 31) || '报表';
+  let sanitizedName = rawName;
+  for (const invalidCharacter of [String.fromCharCode(92), '/', '?', '*', '[', ']', ':']) {
+    sanitizedName = sanitizedName.replaceAll(invalidCharacter, '-');
+  }
+  const base = sanitizedName.replace(/^'+|'+$/g, '').trim().slice(0, 31) || '报表';
   let candidate = base;
   let suffix = 2;
   while (usedNames.has(candidate.toLocaleLowerCase())) {
