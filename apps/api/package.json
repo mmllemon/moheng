@@ -19,6 +19,7 @@
     "worker": "node dist/src/worker.js",
     "worker:dev": "tsx src/worker.ts",
     "assistant:checkpoint:setup": "tsx src/assistant/runtime/setup-checkpoint-schema.ts",
+    "test:report-studio-data:postgres": "tsx --test src/lib/report-studio-data.integration.test.ts",
     "test:assistant-recovery:postgres": "tsx --test src/lib/assistant-recovery.integration.test.ts",
     "prisma:validate": "prisma validate",
     "pretest": "npm run prisma:generate"
