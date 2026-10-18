@@ -113,6 +113,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const regionMaxRow = Math.max(-1, ...sheetRegions.map((region) => region.templateRow));
     const bindingMaxRow = Math.max(-1, ...sheetBindings.map((binding) => parseCell(binding.cell).row));
     const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow, bindingMaxRow);
+    let sheetTruncated = dataset.truncated === true;
     const regionExpansions = new Map<number, unknown[]>();
     for (const region of sheetRegions) {
       const collection = dataset.sources[region.sourceId];
@@ -137,7 +138,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       const regionRecords = region ? regionExpansions.get(sourceRow) ?? [] : null;
       const repetitions = region ? Math.max(regionRecords?.length ?? 0, 1) : 1;
       const allowedRepetitions = Math.min(repetitions, MAX_RENDERED_ROWS_PER_SHEET - outputIndex);
-      if (region && repetitions > allowedRepetitions) { allTruncated = true; warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行上限。`); }
+      if (region && repetitions > allowedRepetitions) { allTruncated = true; sheetTruncated = true; warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行上限。`); }
       for (let repeat = 0; repeat < allowedRepetitions; repeat += 1) {
         const outputRow: ReportStudioRenderedCell[] = [];
         // A binding is authoritative even if the spreadsheet adapter omitted an otherwise-empty cell from cellData.
@@ -189,7 +190,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const frozenColumns = Math.max(0, Number(freeze.xSplit ?? 0) || 0);
     totalRenderedCells += renderedRows.reduce((total, row) => total + row.length, 0);
     if (totalRenderedCells > MAX_RENDERED_CELLS) throw new Error('REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED');
-    renderedSheets.push({ id: sheetId, name: String(sourceSheet.name ?? sheetId), rows: renderedRows, rowHeights, columnWidths, merges, frozenRows, frozenColumns, rowCount: renderedRows.length, truncated: allTruncated });
+    renderedSheets.push({ id: sheetId, name: String(sourceSheet.name ?? sheetId), rows: renderedRows, rowHeights, columnWidths, merges, frozenRows, frozenColumns, rowCount: renderedRows.length, truncated: sheetTruncated });
   }
   return { title: definition.title, domain: definition.domain, generatedAt: dataset.generatedAt, projectId: dataset.projectId, sheets: renderedSheets, warnings: [...new Set(warnings)], truncated: allTruncated };
 }
