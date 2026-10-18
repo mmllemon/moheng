@@ -197,7 +197,9 @@ test('XLSX overview sheet remains available when the optional metadata sheet is 
   const overview = workbook.getWorksheet('报表预览')!;
   assert.equal(overview.getCell('B6').value, '测试项目');
   assert.equal(overview.getCell('B7').value, '存在截断，详见生成提示');
-  assert.ok((overview.getColumn(1).values as unknown[]).some((value) => String(value ?? '').includes(generationWarning)), 'generation warnings must remain visible when the optional metadata sheet is disabled');
+  const overviewFirstColumnValues: unknown[] = [];
+  overview.getColumn(1).eachCell({ includeEmpty: false }, (cell) => overviewFirstColumnValues.push(cell.value));
+  assert.ok(overviewFirstColumnValues.some((value) => String(value ?? '').includes(generationWarning)), 'generation warnings must remain visible when the optional metadata sheet is disabled');
   assert.match(String(overview.pageSetup.printArea), /^A1:D\\d+$/);
 });
 
