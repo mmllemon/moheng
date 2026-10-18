@@ -197,6 +197,46 @@ test('XLSX overview ignores truncation of an unbound field in a used summary sou
   assert.equal(columnValues.some((value) => String(value ?? '').includes(unrelatedWarning)), false);
 });
 
+test('XLSX overview reports truncation when a bound summary field is affected', async () => {
+  const message = '实际成本明细超过 10,000 条，实际成本合计不完整。';
+  const report = definition();
+  report.bindings.push({
+    id: 'actual-cost-summary',
+    sheetId: 'main',
+    cell: 'C1',
+    sourceId: 'financialSummary',
+    fieldId: 'actualCostTotal',
+    format: 'MONEY',
+  });
+  const buffer = await buildReportStudioWorkbook({
+    definition: report,
+    dataset: {
+      ...dataset,
+      warnings: [message],
+      truncated: true,
+      truncatedSources: ['actualCosts'],
+      truncatedFields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+      truncationNotices: [{
+        sourceIds: ['actualCosts'],
+        fields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+        message,
+      }],
+    },
+    templateName: '字段级截断模板',
+    templateVersion: 2,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('B7').value, '存在截断，详见生成提示');
+  assert.equal(overview.getCell('D7').value, 1);
+  assert.equal(overview.getCell('D12').value, '数据不完整，详见生成提示');
+  const columnValues: unknown[] = [];
+  overview.getColumn(1).eachCell({ includeEmpty: false }, (cell) => columnValues.push(cell.value));
+  assert.ok(columnValues.some((value) => String(value ?? '').includes(message)));
+});
+
 test('XLSX overview prints truncation warnings when a repeating region reaches its configured cap', async () => {
   const report = definition();
   report.regions[0]!.maxRows = 1;
@@ -345,6 +385,9 @@ test('marks a report incomplete when a scalar-bound summary source is truncated'
   assert.equal(result.truncated, true);
   assert.equal(result.sheets[0]!.truncated, true, 'single-value bindings must participate in source dependency detection');
   assert.ok(result.warnings.includes(message), 'notices for bound summary fields must remain visible');
+  const preview = previewReportStudio(result);
+  assert.equal(preview.truncated, true);
+  assert.equal(preview.sheets[0]!.truncated, true, 'preview must preserve field-level truncation');
 });
 
 test('does not label a report incomplete when a bound summary uses an unaffected field', () => {
