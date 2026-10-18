@@ -71,6 +71,16 @@ check('project and company source registry includes multiple independent busines
   ['project','mainContract','financialSummary','downstreamContracts','ownerReceivables','ownerReceipts','actualCosts','changes','progressBills','downstreamPayables','companySummary','companyProjects','companyDownstreamContracts','companyOwnerReceivables','companyOwnerReceipts','companyActualCosts','companyChanges','companyProgressBills','companyDownstreamPayables','businessParty','partySummary','partyProjects','partyMainContracts','partyDownstreamContracts','partyStandaloneCosts'].every((source) => data.includes(`id: '${source}'`)));
 check('company sources include project identifiers so cross-project rows remain traceable',
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
+check('party contract finance metrics aggregate child histories in PostgreSQL while capping contract detail rows',
+  data.includes('prisma.downstreamContractAdjustment.groupBy') &&
+  data.includes('prisma.downstreamSettlementPosting.groupBy') &&
+  data.includes('prisma.downstreamContractPayment.groupBy') &&
+  data.includes('prisma.costEntry.groupBy') &&
+  data.includes('prisma.downstreamSupplierInvoice.groupBy') &&
+  data.includes('FROM "DownstreamPaymentAllocation"') &&
+  !data.includes('supplierInvoices: { select: { amount: true, taxAmount: true, status: true } }') &&
+  data.includes('take: MAX_ROWS_PER_SOURCE + 1') &&
+  data.includes('invoiceCount: invoices.count'));
 check('party report owner metrics aggregate progress bills, signed payments, and changes in PostgreSQL instead of loading nested histories',
   data.includes('prisma.progressBill.groupBy') &&
   data.includes('prisma.change.groupBy') &&
