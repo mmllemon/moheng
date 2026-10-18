@@ -71,6 +71,11 @@ check('project and company source registry includes multiple independent busines
   ['project','mainContract','financialSummary','downstreamContracts','ownerReceivables','ownerReceipts','actualCosts','changes','progressBills','downstreamPayables','companySummary','companyProjects','companyDownstreamContracts','companyOwnerReceivables','companyOwnerReceipts','companyActualCosts','companyChanges','companyProgressBills','companyDownstreamPayables','businessParty','partySummary','partyProjects','partyMainContracts','partyDownstreamContracts','partyStandaloneCosts'].every((source) => data.includes(`id: '${source}'`)));
 check('company sources include project identifiers so cross-project rows remain traceable',
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
+check('party report collection outputs enforce row caps and source-specific completeness',
+  data.includes('partyProjects: projectRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
+  data.includes('partyMainContracts: mainContractRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
+  data.includes("sourceIds: ['partyProjects']") &&
+  data.includes("sourceIds: ['partyMainContracts']"));
 check('financial summaries never present partial capped source data as complete totals',
   data.includes('依赖该数据源的相关汇总字段将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
 check('report truncation flags and warnings follow bound collections and exact summary fields',
