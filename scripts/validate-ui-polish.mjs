@@ -109,8 +109,11 @@ check('controlled date picker keeps focus inside externally updated bounds witho
   datePicker.includes('openCalendar()') &&
   datePickerUtils.includes('normalizeIsoDateWithinBounds') &&
   datePickerUtils.includes('isIsoDateWithinBounds') &&
+  datePicker.includes('monthIntersectsIsoDateBounds') &&
+  datePickerUtils.includes('monthIntersectsIsoDateBounds') &&
   datePickerUtilsTests.includes('controlled values normalize to the nearest valid min/max boundary') &&
-  datePickerUtilsTests.includes('contradictory bounds never become a keyboard focus target'));
+  datePickerUtilsTests.includes('contradictory bounds never become a keyboard focus target') &&
+  datePickerUtilsTests.includes('calendar navigation cannot move into a month with no enabled date'));
 check('design docs enforce neutral professional visual language and record navigation/report cleanup',
   design.includes('色彩不是装饰品') && design.includes('150ms ~ 350ms') &&
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
