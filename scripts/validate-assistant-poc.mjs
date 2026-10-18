@@ -20,8 +20,20 @@ const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgPr
   read('.github/workflows/assistant-runtime-gates.yml'),
 ]);
 
+const [cashSummary, costVariance] = await Promise.all([
+  read('apps/api/src/lib/report-studio-payment-summary.ts'),
+  read('apps/api/src/lib/assistant-cost-variance.ts'),
+]);
+
 const packageJson = JSON.parse(packageJsonText);
 const pocPackage = JSON.parse(pocPackageText);
+assert.match(service, /prisma\\.downstreamContractPayment\\.findMany/, 'read-only project overview must read actual downstream payment/refund records separately');
+assert.match(service, /summarizeDownstreamPaymentTotals/, 'cash payment and refund summaries must use exact-cent shared logic');
+assert.match(service, /downstreamCash\\.scanTruncated/, 'cash summary must surface truncation rather than presenting partial totals as complete');
+assert.match(service, /calculateAssistantCostVarianceSummary/, 'cost variance must delegate to the tested calculation policy');
+assert.match(costVariance, /input\\.targetTruncated/);
+assert.match(costVariance, /INDETERMINATE/, 'target-cost truncation must suppress a complete-looking variance result');
+assert.match(cashSummary, /centsToMoney\\(paidCents - refundCents\\)/, 'refund must be subtracted exactly once from net cash paid');
 const toolIds = [...service.matchAll(/^  '([a-z_]+)',$/gm)].map((m) => m[1]);
 assert.deepEqual(toolIds, ['project_operating_overview', 'cost_variance', 'change_evidence_completeness'], 'only the three approved read-only tools may be exposed');
 assert.match(service, /canAccessProject\(actor\.sub, actor\.role, projectId, undefined, 'PROJECT_READ'\)/, 'project access must be rechecked at execution time');
