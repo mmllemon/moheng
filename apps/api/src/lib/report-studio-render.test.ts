@@ -275,6 +275,42 @@ test('marks truncation on the affected worksheet without mislabeling other works
 });
 
 
+test('dataset truncation only marks worksheets that consume an affected source', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheetOrder: string[];
+    sheets: Record<string, {
+      id: string; name: string; rowCount: number; columnCount: number;
+      cellData: Record<string, Record<string, { v?: unknown }>>;
+      rowData: Record<string, unknown>; columnData: Record<string, unknown>;
+      mergeData: unknown[]; freeze: Record<string, unknown>;
+    }>;
+  };
+  workbook.sheetOrder.push('secondary');
+  workbook.sheets.secondary = {
+    ...structuredClone(workbook.sheets.main!),
+    id: 'secondary',
+    name: '与截断源无关',
+    cellData: { '0': { '0': { v: '完整数据' } } },
+    rowData: {},
+    columnData: {},
+    mergeData: [],
+    freeze: {},
+  };
+
+  const result = renderReportStudio(report, {
+    ...dataset,
+    truncated: true,
+    truncatedSources: ['contracts'],
+    warnings: ['合同数据源明细已截断。'],
+  });
+  assert.equal(result.truncated, true, 'the workbook must retain its global truncated flag');
+  assert.equal(result.sheets[0]!.truncated, true, 'a worksheet with a region using the truncated source must be marked');
+  assert.equal(result.sheets[1]!.truncated, false, 'a worksheet that uses no truncated source must remain complete');
+  const preview = previewReportStudio(result);
+  assert.equal(preview.sheets[1]!.truncated, false, 'the preview must preserve the source-specific worksheet status');
+});
+
 test('preview omits merges that extend beyond the visible preview rows', () => {
   const report = definition();
   const sheets = (report.workbook as unknown as { sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }> }).sheets;
