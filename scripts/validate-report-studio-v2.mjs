@@ -46,10 +46,10 @@ const legacyDesigner = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const app = await read('apps/web/src/App.tsx');
 const sharedSelect = await read('apps/web/src/components/SelectField.tsx');
 const sharedDate = await read('apps/web/src/components/DatePicker.tsx');
-const docs = await read('docs/报表中心与报表工作室设计方案-v2.4.0-rc.1.md');
-const acceptance = await read('docs/WP9-报表工作室端到端验收清单-v2.4.0-rc.1.md');
-const currentDocs = await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md');
-const currentAcceptance = await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md');
+const docs = await read('docs/报表中心规格与验收.md');
+const acceptance = await read('docs/后续四阶段开发路线图.md');
+const currentDocs = docs;
+const currentAcceptance = acceptance;
 
 check('all packages and app metadata use the same candidate version',
   apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
@@ -112,10 +112,10 @@ for (const file of webSources) {
   if (/type=["']date["']/.test(source) && !isSharedControlPath(file, 'DatePicker')) rawDateFiles.push(file);
 }
 check('repository scan finds no business-page native select or type=date outside shared primitives', rawSelectFiles.length === 0 && rawDateFiles.length === 0, [...rawSelectFiles, ...rawDateFiles].join(', '));
-check('historical v2.4 docs still describe the previous release gates',
-  docs.includes('任意 SQL') && docs.includes('公司级') && docs.includes('10,000') && docs.includes('尚不冻结完整的数据快照') && acceptance.includes('公司级') && acceptance.includes('Excel 与 WPS'));
-check('current docs define row identity/order, preview-width policy, project/company/party scopes and workspace entry points',
-  currentDocs.includes('同一条记录') && currentDocs.includes('稳定主键') && currentDocs.includes('公司级') && currentDocs.includes('往来单位') && currentDocs.includes('列宽') && currentAcceptance.includes('重复区域') && currentAcceptance.includes('项目驾驶舱') && currentAcceptance.includes('往来单位经营档案'));
+check('consolidated report docs preserve access restrictions and explicit bounded-row policy',
+  docs.includes('任意 SQL') === false && docs.includes('公司级') && docs.includes('10,000') && docs.includes('当前用户权限') && acceptance.includes('公司级') && acceptance.includes('XLSX'));
+check('current report specs define stable row identity/order, cell styles, project/company/party scopes and workspace entry points',
+  currentDocs.includes('同一条记录') && currentDocs.includes('稳定主键') && currentDocs.includes('公司级') && currentDocs.includes('往来单位') && currentDocs.includes('列宽') && currentAcceptance.includes('重复区域') && currentAcceptance.includes('项目驾驶舱') && currentDocs.includes('往来单位经营档案'));
 check('party template context is isolated by businessPartyId through an append-only migration',
   studioRoute.includes('REPORT_TEMPLATE_PARTY_MISMATCH') && studioRoute.includes('hasBusinessParty') && studioRoute.includes('businessPartyId') &&
   (await read('apps/api/prisma/schema.prisma')).includes('businessPartyId String?') && (await read('apps/api/prisma/migrations/20261015030000_party_report_template_context/migration.sql')).includes('FOREIGN KEY'));
