@@ -121,6 +121,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       if (records.length > region.maxRows) {
         warnings.push(`工作表“${sourceSheet.name ?? sheetId}”的区域 ${region.id} 超出 ${region.maxRows} 行上限，已截断。`);
         allTruncated = true;
+        sheetTruncated = true;
       }
       regionExpansions.set(region.templateRow, records.slice(0, region.maxRows));
     }
