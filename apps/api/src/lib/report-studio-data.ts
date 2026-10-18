@@ -149,24 +149,24 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   if (!party) throw Object.assign(new Error('往来单位档案不存在'), { statusCode: 404, code: 'BUSINESS_PARTY_NOT_FOUND' });
   const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const projectScope = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) };
+  const ownedProjectScope = { ...projectScope, ownerPartyId: businessPartyId };
   const [visibleProjectCount, ownedProjects, downstreamContractsFetched, standaloneCosts, standaloneCostTotals] = await Promise.all([
     prisma.project.count({ where: projectScope }),
-    prisma.project.findMany({ where: { ...projectScope, ownerPartyId: businessPartyId }, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] }),
+    prisma.project.findMany({ where: ownedProjectScope, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] }),
     prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.costEntry.findMany({ where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
     prisma.costEntry.groupBy({ by: ['projectId'], where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, _sum: { amount: true }, _count: { _all: true } }),
   ]);
-  const ownedProjectIds = ownedProjects.map((project) => project.id);
-  const [progressBillMetrics, changeMetrics, progressPaymentMetrics] = ownedProjectIds.length ? await Promise.all([
+  const [progressBillMetrics, changeMetrics, progressPaymentMetrics] = await Promise.all([
     prisma.progressBill.groupBy({
       by: ['projectId'],
-      where: { projectId: { in: ownedProjectIds }, deletedAt: null },
+      where: { deletedAt: null, project: ownedProjectScope },
       _count: { _all: true },
       _sum: { approvedAmount: true },
     }),
     prisma.change.groupBy({
       by: ['projectId'],
-      where: { projectId: { in: ownedProjectIds }, deletedAt: null },
+      where: { deletedAt: null, project: ownedProjectScope },
       _count: { _all: true },
     }),
     prisma.$queryRaw<Array<{ projectId: string; paidAmount: string }>>(Prisma.sql`
@@ -174,11 +174,19 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
              COALESCE(SUM(pp."amount"), 0)::text AS "paidAmount"
       FROM "ProgressPayment" AS pp
       INNER JOIN "ProgressBill" AS pb ON pb."id" = pp."progressBillId"
+      INNER JOIN "Project" AS p ON p."id" = pb."projectId"
       WHERE pb."deletedAt" IS NULL
-        AND pb."projectId" IN (${Prisma.join(ownedProjectIds)})
+        AND p."deletedAt" IS NULL
+        AND p."ownerPartyId" = ${businessPartyId}
+        AND ${canReadAllProjects
+          ? Prisma.sql`TRUE`
+          : Prisma.sql`EXISTS (
+              SELECT 1 FROM "ProjectMember" AS pm
+              WHERE pm."projectId" = p."id" AND pm."userId" = ${user.sub}
+            )`}
       GROUP BY pb."projectId"
     `),
-  ]) : [[], [], []];
+  ]);
   const progressBillMetricsByProject = new Map(progressBillMetrics.map((row) => [row.projectId, {
     count: row._count._all,
     approvedAmount: moneyValue(row._sum.approvedAmount),
