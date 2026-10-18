@@ -62,7 +62,8 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   // Keep the calendar month and roving keyboard focus aligned with that external value;
   // do not run this on month navigation itself, which intentionally leaves selectedValue unchanged.
   useEffect(() => {
-    const focusValue = normalizeIsoDateWithinBounds(selectedValue, min == null ? null : String(min), max == null ? null : String(max));
+    const focusValue = normalizeIsoDateWithinBounds(selectedValue, min == null ? null : String(min), max == null ? null : String(max))
+      ?? normalizeIsoDateWithinBounds(todayValue, min == null ? null : String(min), max == null ? null : String(max));
     if (!focusValue) {
       setFocusedDate('');
       return;
