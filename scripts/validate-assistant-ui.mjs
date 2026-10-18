@@ -34,6 +34,7 @@ check(thread.includes('ThreadPrimitive.Messages') && thread.includes('ComposerPr
 check(thread.includes('MarkdownTextPrimitive') && thread.includes('remarkGfm'), 'message rendering must support safe Markdown and tables');
 check(thread.includes('native.isComposing') && thread.includes('native.keyCode === 229'), 'CJK IME composition guard must prevent accidental Enter submit');
 check(thread.includes('submitAssistantMessage') && thread.includes('cancelAssistantRun'), 'send/cancel must call MoHeng APIs, not mock responses');
+check(thread.includes('分供资金核对') && thread.includes('已登记应付的差异') && page.includes("DownstreamContractPayment: '分供付款/退款流水'"), 'AI read-only cash flow evidence must be discoverable and visibly labeled in Chinese');
 check(!thread.includes('Hello, world!') && !thread.includes('setTimeout(resolve'), 'production UI must not contain demo reply behavior');
 check(apiClient.includes("'/assistant-poc'") && apiClient.includes('listAssistantConversations') && apiClient.includes('archiveAssistantConversation'), 'custom client must use existing MoHeng conversation APIs');
 check(apiClient.includes("'Last-Event-ID'") && apiClient.includes("headers.set('Authorization'") && apiClient.includes('api.refreshSession()'), 'SSE must support auth and durable cursor resume');

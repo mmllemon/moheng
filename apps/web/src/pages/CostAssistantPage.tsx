@@ -26,7 +26,7 @@ const TOOL_LABELS: Record<string, string> = {
   change_evidence_completeness: '变更资料完整性检查',
 };
 const ENTITY_LABELS: Record<string, string> = {
-  Project: '项目档案', Change: '变更签证', BudgetItem: '目标成本明细', CostEntry: '实际成本台账', ProgressBill: '业主进度款',
+  Project: '项目档案', Change: '变更签证', BudgetItem: '目标成本明细', CostEntry: '实际成本台账', ProgressBill: '业主进度款', DownstreamContractPayment: '分供付款/退款流水', DownstreamContract: '分供合同',
 };
 
 export default function CostAssistantPage() {
