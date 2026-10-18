@@ -188,7 +188,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       {...otherProps}
       type="date"
       ref={handleProxyRef}
-      id={id}
+      id={id ? `${id}-native` : undefined}
       name={name}
       defaultValue={defaultValue as string | undefined}
       min={min}
@@ -205,7 +205,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     <button
       ref={triggerRef}
       type="button"
-      id={id ? `${id}-trigger` : undefined}
+      id={id}
       className={`date-picker-trigger ${ariaInvalid ? 'is-invalid' : ''}`}
       role="combobox"
       aria-label={props['aria-label']}
