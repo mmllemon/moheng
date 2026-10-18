@@ -132,9 +132,16 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       if (region && repetitions > allowedRepetitions) { allTruncated = true; warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行上限。`); }
       for (let repeat = 0; repeat < allowedRepetitions; repeat += 1) {
         const outputRow: ReportStudioRenderedCell[] = [];
-        for (const [columnKey, rawCell] of Object.entries(rowCells)) {
+        // A binding is authoritative even if the spreadsheet adapter omitted an otherwise-empty cell from cellData.
+        // Render the union so a valid binding never silently disappears from preview/export.
+        const boundColumns = [...bindingByCoordinate.entries()]
+          .filter(([coordinate]) => Number(coordinate.split(':')[0]) === sourceRow)
+          .map(([coordinate]) => coordinate.split(':')[1]!);
+        const columnsToRender = new Set([...Object.keys(rowCells), ...boundColumns]);
+        for (const columnKey of columnsToRender) {
           const column = Number(columnKey);
           if (!Number.isInteger(column) || column < 0 || column >= Number(sourceSheet.columnCount ?? 40)) continue;
+          const rawCell = rowCells[columnKey] ?? {};
           const binding = bindingByCoordinate.get(`${sourceRow}:${column}`);
           let value = primitive((rawCell as StudioCellData).v);
           let format: string | undefined;
