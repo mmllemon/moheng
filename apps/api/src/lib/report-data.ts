@@ -150,7 +150,7 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
 }
 
 function significantDecimalDigits(raw: string): number {
-  const match = /^[+-]?(\\d+)(?:\\.(\\d+))?$/.exec(raw.trim());
+  const match = /^[+-]?(\d+)(?:\.(\d+))?$/.exec(raw.trim());
   if (!match) return Number.POSITIVE_INFINITY;
   const digits = `${match[1] ?? ''}${match[2] ?? ''}`.replace(/^0+/, '').replace(/0+$/, '');
   return digits.length;
