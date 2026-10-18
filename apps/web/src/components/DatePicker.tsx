@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type ForwardedRef, type FocusEvent as ReactFocusEvent, type KeyboardEvent as ReactKeyboardEvent, type InputHTMLAttributes } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useMemo, useRef, useState, type ForwardedRef, type FocusEvent as ReactFocusEvent, type KeyboardEvent as ReactKeyboardEvent, type InputHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { currentDateInputValue } from './Ui';
@@ -28,6 +28,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     value, defaultValue, onChange, onBlur, disabled = false, name, id, min, max, required, title, className = '',
     autoFocus, placeholder, ...otherProps
   } = props;
+  const controlId = useId();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const proxyRef = useRef<HTMLInputElement | null>(null);
@@ -40,6 +41,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   const [focusedDate, setFocusedDate] = useState(String(value ?? defaultValue ?? currentDateInputValue()));
   const [invalid, setInvalid] = useState(false);
   const presence = useAnimatedPresence(open, 190);
+  const ariaInvalid = invalid || props['aria-invalid'] === true || props['aria-invalid'] === 'true';
   const selectedDate = parseIsoDate(selectedValue);
   const monthYear = `${viewDate.getFullYear()} 年 ${String(viewDate.getMonth() + 1).padStart(2, '0')} 月`;
   const todayValue = currentDateInputValue();
@@ -204,9 +206,14 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       ref={triggerRef}
       type="button"
       id={id ? `${id}-trigger` : undefined}
-      className={`date-picker-trigger ${invalid || props['aria-invalid'] ? 'is-invalid' : ''}`}
+      className={`date-picker-trigger ${ariaInvalid ? 'is-invalid' : ''}`}
       role="combobox"
-      aria-label={props['aria-label'] ?? '选择日期'}
+      aria-label={props['aria-label'] ?? (props['aria-labelledby'] ? undefined : '选择日期')}
+      aria-labelledby={props['aria-labelledby']}
+      aria-describedby={props['aria-describedby']}
+      aria-errormessage={props['aria-errormessage']}
+      aria-invalid={ariaInvalid ? 'true' : undefined}
+      aria-controls={open ? `date-picker-dialog-${controlId}` : undefined}
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-required={required}
@@ -247,6 +254,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     </button>
     {presence.mounted && createPortal(<section
       ref={popupRef}
+      id={`date-picker-dialog-${controlId}`}
       className={`date-picker-popover ${presence.visible ? 'is-visible' : 'is-closing'}`}
       role="dialog"
       aria-label="日期选择器"
@@ -260,8 +268,8 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
           <button type="button" aria-label="下个月" onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
         </div>
       </header>
-      <div className="date-picker-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
-      <div className="date-picker-days">
+      <div className="date-picker-weekdays" aria-hidden="true">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
+      <div className="date-picker-days" role="group" aria-label="日期网格">
         {cells.map((cell) => {
           const selected = selectedValue === cell.value;
           const today = todayValue === cell.value;
@@ -276,6 +284,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
             className={`date-picker-day ${cell.inMonth ? '' : 'is-outside'} ${selected ? 'is-selected' : ''} ${today ? 'is-today' : ''}`}
             disabled={unavailable}
             aria-pressed={selected}
+            aria-current={today ? "date" : undefined}
             aria-label={`${cell.date.getFullYear()}年${cell.date.getMonth() + 1}月${cell.date.getDate()}日`}
             onClick={() => chooseDate(cell.value)}
           >{cell.date.getDate()}</button>;
