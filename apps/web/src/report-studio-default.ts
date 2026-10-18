@@ -29,6 +29,17 @@ function addBindingPlaceholders(workbookInput: unknown, bindings: ReportStudioBi
   }
 }
 
+const dateFieldIds = new Set([
+  'applyDate', 'date', 'dueAt', 'effectiveAt', 'guaranteeEndAt', 'measureDate',
+  'occurredAt', 'paidAt', 'plannedEndDate', 'postedAt', 'receivedAt', 'signedAt',
+  'startDate', 'updatedAt',
+]);
+
+function defaultRegionFieldFormat(fieldId: string, isMoney: boolean): ReportStudioBinding['format'] {
+  if (dateFieldIds.has(fieldId)) return 'DATE';
+  return isMoney ? 'MONEY' : 'AUTO';
+}
+
 function defaultProjectData() {
   const cellData = rowsFrom([
     ['项目综合经营报告'],
@@ -79,7 +90,7 @@ function defaultProjectData() {
     [23, 'downstreamPayments', ['contractNo','type','amount','paidAt','referenceNo','originalReferenceNo']],
   ];
   const regions: ReportStudioRegion[] = regionBindingSet.map(([templateRow, sourceId], index) => ({ id: `region-${index+1}`, sheetId: 'sheet1', sourceId, templateRow, startColumn: 0, endColumn: 5, maxRows: 10000 }));
-  for (const [row, sourceId, fields] of regionBindingSet) fields.forEach((fieldId, c) => bindings.push({ id: `binding-region-${row}-${c}`, sheetId: 'sheet1', cell: `${String.fromCharCode(65 + c)}${row + 1}`, sourceId, fieldId, format: /Amount|amount/i.test(fieldId) ? 'MONEY' : 'AUTO' }));
+  for (const [row, sourceId, fields] of regionBindingSet) fields.forEach((fieldId, c) => bindings.push({ id: `binding-region-${row}-${c}`, sheetId: 'sheet1', cell: `${String.fromCharCode(65 + c)}${row + 1}`, sourceId, fieldId, format: defaultRegionFieldFormat(fieldId, /Amount|amount/i.test(fieldId)) }));
   addBindingPlaceholders(workbook, bindings);
   return { workbook, bindings, regions };
 }
@@ -114,11 +125,11 @@ function defaultCompanyData() {
   ];
   fields.forEach((fieldId,c) => bindings.push({id:`project-row-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}8`,sourceId:'companyProjects',fieldId,format:/Amount|Receipts|Cost/i.test(fieldId)?'MONEY':'AUTO'}));
   const contractFields = ['projectCode','projectName','contractNo','name','type','counterpartyName','status','signedAt','originalAmount','effectiveAmount'];
-  contractFields.forEach((fieldId,c) => bindings.push({id:`company-downstream-contract-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}12`,sourceId:'companyDownstreamContracts',fieldId,format:['originalAmount','effectiveAmount'].includes(fieldId) ? 'MONEY' : 'AUTO'}));
+  contractFields.forEach((fieldId,c) => bindings.push({id:`company-downstream-contract-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}12`,sourceId:'companyDownstreamContracts',fieldId,format:defaultRegionFieldFormat(fieldId, ['originalAmount','effectiveAmount'].includes(fieldId))}));
   const ownerReceiptFields = ['projectCode','projectName','receiptNo','type','amount','receivedAt','referenceNo','originalReceiptNo'];
-  ownerReceiptFields.forEach((fieldId,c) => bindings.push({id:`company-owner-receipt-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}16`,sourceId:'companyOwnerReceipts',fieldId,format:fieldId === 'amount' ? 'MONEY' : 'AUTO'}));
+  ownerReceiptFields.forEach((fieldId,c) => bindings.push({id:`company-owner-receipt-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}16`,sourceId:'companyOwnerReceipts',fieldId,format:defaultRegionFieldFormat(fieldId, fieldId === 'amount')}));
   const paymentFields = ['projectCode','projectName','contractNo','type','amount','paidAt','referenceNo','originalReferenceNo'];
-  paymentFields.forEach((fieldId,c) => bindings.push({id:`company-downstream-payment-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}20`,sourceId:'companyDownstreamPayments',fieldId,format:fieldId === 'amount' ? 'MONEY' : 'AUTO'}));
+  paymentFields.forEach((fieldId,c) => bindings.push({id:`company-downstream-payment-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}20`,sourceId:'companyDownstreamPayments',fieldId,format:defaultRegionFieldFormat(fieldId, fieldId === 'amount')}));
   addBindingPlaceholders(workbook, bindings);
   return { workbook, bindings, regions };
 }
@@ -179,7 +190,7 @@ function defaultPartyData() {
     [21,'partyStandaloneCosts',['projectCode','projectName','date','description','type','amount','vendorName']],
   ];
   const regions: ReportStudioRegion[] = regionSets.map(([templateRow,sourceId,fields],index)=>({id:`party-region-${index+1}`,sheetId:'sheet1',sourceId,templateRow,startColumn:0,endColumn:fields.length-1,maxRows:10000}));
-  for (const [row,sourceId,fields] of regionSets) fields.forEach((fieldId,c)=>bindings.push({id:`party-region-binding-${row}-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}${row+1}`,sourceId,fieldId,format:/Amount|amount|Paid|paid|Payable|settled|Cost/i.test(fieldId)?'MONEY':'AUTO'}));
+  for (const [row,sourceId,fields] of regionSets) fields.forEach((fieldId,c)=>bindings.push({id:`party-region-binding-${row}-${c}`,sheetId:'sheet1',cell:`${String.fromCharCode(65+c)}${row+1}`,sourceId,fieldId,format:defaultRegionFieldFormat(fieldId, /Amount|amount|Paid|paid|Payable|settled|Cost/i.test(fieldId))}));
   addBindingPlaceholders(workbook,bindings);
   return {workbook,bindings,regions};
 }
