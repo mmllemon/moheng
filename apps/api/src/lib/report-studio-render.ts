@@ -87,7 +87,11 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
   const workbook = definition.workbook as unknown as StudioWorkbookData;
   const warnings = [...dataset.warnings];
   const renderedSheets: ReportStudioRenderedSheet[] = [];
-  let allTruncated = dataset.truncated === true;
+  const truncatedSourceIds = new Set(dataset.truncatedSources ?? []);
+  // Prefer source-scoped truncation when the loader identifies the affected sources.
+  // Keep the legacy global fallback for older datasets without a usable source map.
+  const hasScopedTruncation = dataset.truncated === true && truncatedSourceIds.size > 0;
+  let allTruncated = dataset.truncated === true && !hasScopedTruncation;
   let totalRenderedCells = 0;
   for (const sheetId of workbook.sheetOrder) {
     const sourceSheet = workbook.sheets[sheetId];
@@ -117,15 +121,14 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const regionMaxRow = Math.max(-1, ...sheetRegions.map((region) => region.templateRow));
     const bindingMaxRow = Math.max(-1, ...sheetBindings.map((binding) => parseCell(binding.cell).row));
     const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow, bindingMaxRow);
-    const hasSourceTruncationMap = Array.isArray(dataset.truncatedSources);
-    const truncatedSourceIds = new Set(dataset.truncatedSources ?? []);
-    let sheetTruncated = dataset.truncated === true && !hasSourceTruncationMap;
-    if (dataset.truncated && hasSourceTruncationMap) {
+    let sheetTruncated = dataset.truncated === true && !hasScopedTruncation;
+    if (hasScopedTruncation) {
       // A source cap only makes sheets that actually consume that source incomplete.
       // Collections are detected through regions as well as cell bindings.
       sheetTruncated = sheetBindings.some((binding) => truncatedSourceIds.has(binding.sourceId))
         || sheetRegions.some((region) => truncatedSourceIds.has(region.sourceId));
     }
+    if (sheetTruncated) allTruncated = true;
     const regionExpansions = new Map<number, unknown[]>();
     for (const region of sheetRegions) {
       const collection = dataset.sources[region.sourceId];
