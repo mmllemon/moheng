@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFile(join(root, path), 'utf8');
-const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, routes, serverRoutes, toolAdapter, css, changelog, readme, designDoc, listRoutes] = await Promise.all([
+const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, routes, serverRoutes, toolAdapter, css, changelog, readme, designDoc, listRoutes, assistantConfig] = await Promise.all([
   read('package.json').then(JSON.parse),
   read('apps/api/package.json').then(JSON.parse),
   read('apps/web/package.json').then(JSON.parse),
@@ -21,6 +21,7 @@ const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, 
   read('README.md'),
   read('docs/AI助手实施与准入.md'),
   read('apps/api/src/routes/assistant-conversations.ts'),
+  read('apps/api/src/lib/assistant-config.ts'),
 ]);
 let assertions = 0;
 const check = (condition, message) => { assert.ok(condition, message); assertions += 1; };
@@ -47,7 +48,7 @@ check(page.includes('source.fields.join') && page.includes('tool.limitations'), 
 check(workspace.includes("api.get<{ enabled: boolean }>('/assistant-poc/status')") && workspace.includes('{assistantEnabled &&'), 'assistant navigation must stay hidden unless enabled');
 check(routes.includes("const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'))") && routes.includes('path="assistant"'), 'assistant page must be lazy-loaded under /cost/assistant');
 check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('preHandler: [authRequired]'), 'status endpoint must require an authenticated user');
-check(serverRoutes.includes('configurationReady') && serverRoutes.includes('providerConfigured') && serverRoutes.includes('checkpointConfigured') && serverRoutes.includes('getAssistantRuntimeConfigurationStatus'), 'assistant readiness must expose configuration-presence booleans only');
+check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('getAssistantRuntimeConfigurationStatus') && assistantConfig.includes('configurationReady: providerConfigured && modelConfigured && checkpointConfigured') && assistantConfig.includes('providerConfigured') && assistantConfig.includes('modelConfigured') && assistantConfig.includes('checkpointConfigured'), 'assistant readiness must expose configuration-presence booleans only');
 check(page.includes('成本助手运行环境未就绪') && page.includes('configurationIssues') && page.includes('模型服务凭据尚未配置'), 'assistant UI must explain missing runtime configuration before accepting questions');
 check(!serverRoutes.includes("app.get('/status', { preHandler: [featureGate, authRequired]"), 'disabled state probe must work without exposing gated tools');
 check(toolAdapter.includes('sources: result.sources.map') && toolAdapter.includes('limitations: result.limitations'), 'backend tool event must persist compact structured source metadata');
