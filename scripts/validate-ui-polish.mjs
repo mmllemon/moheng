@@ -98,6 +98,12 @@ check('date picker keyboard movement skips disabled dates and preserves focusabl
   datePicker.includes('while (isDisabled(asIsoDate(next)) && attempts < 3660)') &&
   datePicker.includes('if (isDisabled(asIsoDate(next))) return;') &&
   datePicker.includes('setFocusedDate(nextValue)'));
+check('controlled date picker follows externally changed values across months without resetting on month navigation',
+  datePicker.includes('const selected = parseIsoDate(selectedValue)') &&
+  datePicker.includes('if (!selected || isDisabled(selectedValue)) return;') &&
+  datePicker.includes('setViewDate((current) =>') &&
+  datePicker.includes('setFocusedDate((current) => current === selectedValue ? current : selectedValue)') &&
+  datePicker.includes('[selectedValue, min, max]'));
 check('design docs enforce neutral professional visual language and record navigation/report cleanup',
   design.includes('色彩不是装饰品') && design.includes('150ms ~ 350ms') &&
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
