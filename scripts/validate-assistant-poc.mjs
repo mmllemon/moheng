@@ -62,6 +62,9 @@ assert.match(workflow, /npm ci --prefix experiments\/pi-durable-poc/, 'CI must u
 assert.match(workflow, /package-lock\.json/, 'CI must fail clearly if the standalone PoC lockfile is absent');
 assert.match(packageJsonText, /node scripts\/validate-assistant-runtime-decision\.mjs/, 'runtime/storage decision invariants must run in the release-candidate chain');
 assert.match(decision, /采用 \*\*LangGraph\.js \+ PostgreSQL `PostgresSaver`\*\*/, 'runtime decision must be explicit');
+assert.match(decision, /默认每次模型请求最多生成 1,800 tokens/);
+assert.match(decision, /超时为 45 秒/);
+assert.match(decision, /最多进行 1 次 SDK 重试/);
 assert.match(decision, /不构成生产启用批准/, 'runtime decision must not imply production approval');
 assert.match(decision, /ASSISTANT_POC_ENABLED=true/, 'decision must explicitly keep the PoC switch out of production');
 
