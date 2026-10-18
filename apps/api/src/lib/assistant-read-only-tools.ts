@@ -5,6 +5,7 @@ import { prisma } from './prisma.js';
 import { calculateEffectiveContractAmount, centsToMoney, moneyToCents } from './contract-amount-math.js';
 import { ASSISTANT_LIMITATION_COPY as LIMITATION } from './assistant-safe-copy.js';
 import { summarizeDownstreamPaymentTotals } from './report-studio-payment-summary.js';
+import { calculateAssistantCostVarianceSummary } from './assistant-cost-variance.js';
 
 export const ASSISTANT_READ_ONLY_TOOL_IDS = [
   'project_operating_overview',
@@ -227,26 +228,17 @@ async function costVariance(projectId: string, project: Awaited<ReturnType<typeo
     getLeafTargetCost(projectId),
     prisma.costEntry.aggregate({ where: { projectId, deletedAt: null }, _sum: { amount: true }, _count: { _all: true } }),
   ]);
-  const targetCents = target.truncated ? null : moneyToCents(target.amount);
-  const actualCents = moneyToCents(actual._sum.amount ?? 0);
-  const varianceCents = targetCents === null ? null : actualCents - targetCents;
-  // Keep the ratio calculation in integer arithmetic; converting max-precision DECIMALs to Number can lose cents.
-  const scaledPercent = targetCents === null || targetCents <= 0n || varianceCents === null
-    ? null
-    : (varianceCents >= 0n
-      ? (varianceCents * 10000n + targetCents / 2n) / targetCents
-      : (varianceCents * 10000n - targetCents / 2n) / targetCents);
-  const variancePercent = scaledPercent === null ? null : Number(scaledPercent) / 100;
+  const variance = calculateAssistantCostVarianceSummary({
+    targetAmount: target.amount,
+    actualAmount: actual._sum.amount ?? 0,
+    targetTruncated: target.truncated,
+  });
   return {
     toolId: 'cost_variance',
     generatedAt: new Date().toISOString(),
     project: projectStub(project),
     metric: {
-      targetCostByLeafBudgetItems: target.amount,
-      actualCostRecorded: centsToMoney(actualCents),
-      varianceActualMinusTarget: varianceCents === null ? null : centsToMoney(varianceCents),
-      variancePercent: variancePercent === null ? null : Number(variancePercent.toFixed(2)),
-      direction: varianceCents === null ? 'INDETERMINATE' : varianceCents > 0n ? 'OVER_TARGET' : varianceCents < 0n ? 'UNDER_TARGET' : 'ON_TARGET',
+      ...variance,
       targetCostLeafItemCount: target.itemCount,
       actualCostRecordCount: actual._count._all,
       targetCostScanTruncated: target.truncated,
@@ -260,7 +252,7 @@ async function costVariance(projectId: string, project: Awaited<ReturnType<typeo
       LIMITATION.varianceBasis,
       LIMITATION.varianceCompleteness,
       ...(target.truncated ? ['预算项超过 10000 行，目标成本结果被截断，不应据此形成财务结论。'] : []),
-      ...(targetCents <= 0n ? [LIMITATION.nonPositiveTarget] : []),
+      ...(!target.truncated && target.amount !== null && moneyToCents(target.amount) <= 0n ? [LIMITATION.nonPositiveTarget] : []),
     ],
   };
 }
