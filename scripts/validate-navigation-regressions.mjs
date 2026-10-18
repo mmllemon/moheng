@@ -49,8 +49,11 @@ check('system management has independent landing/member routes and legacy worksp
   layout.includes("to: '/system', label: '系统管理'") && layout.includes("to: '/system', label: '概览'") && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system/accounts', label: '账号管理'") && layout.includes("to: '/system/security', label: '登录安全'") && layout.includes("to: '/audit-logs', label: '操作追溯'") && layout.includes("'经营中心', '工作台', '项目管理', '系统管理'") && systemManagement.includes('系统管理概览') && systemManagement.includes('系统管理扩展入口') && app.includes('path="projects/members"') && app.includes('path="system/members" element={<Navigate to="/projects/members" replace />}') && app.includes('path="system/accounts"') && app.includes('path="system/security"') && app.includes('path="account/security"') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') && app.includes("pathname: '/system/accounts'") && app.includes('path="workspace" element={<LegacyWorkspaceRedirect />}') && app.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') && app.includes("suffix === '/members' ? '/projects/members'") && layout.includes('/account/security'));
 check('canonical cost workbench route and source identifiers use cost terminology',
   app.includes('path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}') && layout.includes("to: '/cost', label: '成本工作台'") && workspace.includes('cost-workspace-tab') && launch.includes("source: 'cost-workspace'") && !layout.includes("label: '项目工作台'"));
-check('regression design and acceptance docs record safe return navigation, chart labels and font typing',
-  (await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md')).includes('autoPreview=1') && (await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md')).includes('Y 轴标签完整可读'));
+check('consolidated report design records preview/export consistency, workspace and print/export constraints',
+  (await read('docs/报表中心规格与验收.md')).includes('预览') &&
+  (await read('docs/报表中心规格与验收.md')).includes('XLSX') &&
+  (await read('docs/报表中心规格与验收.md')).includes('列宽') &&
+  (await read('docs/后续四阶段开发路线图.md')).includes('项目驾驶舱'));
 
 console.log(`\n${passed}/${passed + failures.length} navigation/UI/XLSX regression checks passed.`);
 if (failures.length) process.exitCode = 1;
