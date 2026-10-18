@@ -75,12 +75,13 @@ check('party report collection outputs enforce row caps and source-specific comp
   data.includes('partyProjects: projectRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
   data.includes('partyMainContracts: mainContractRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
   data.includes("sourceIds: ['partyProjects']") &&
-  data.includes("sourceIds: ['partyMainContracts']"));
+  data.includes("sourceIds: ['partyMainContracts']") &&
+  data.includes('projectCount: downstreamContractsTruncated ? null : projectRows.length'));
 check('financial summaries never present partial capped source data as complete totals',
   data.includes('依赖该数据源的相关汇总字段将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
 check('report truncation flags and warnings follow bound collections and exact summary fields',
   data.includes('truncationNotices') &&
-  data.includes("sourceIds: ['partyDownstreamContracts']") &&
+  data.includes("sourceIds: ['partyDownstreamContracts', 'partyProjects']") &&
   data.includes("sourceId: 'financialSummary', fieldIds: ['actualCostTotal']") &&
   renderer.includes('notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))') &&
   renderer.includes('(notice.fields ?? [])') &&
