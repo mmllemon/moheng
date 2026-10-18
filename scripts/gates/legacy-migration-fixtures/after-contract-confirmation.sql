@@ -6,11 +6,11 @@ VALUES
   ('upgrade-submitter', 'Legacy Submitter', 'upgrade-submitter@moheng.invalid', 'ci-fixture-not-a-real-password-hash', 'USER', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO "Project"
-  ("id", "name", "code", "type", "ownerName", "contractAmount", "startDate", "status", "createdAt", "updatedAt")
+  ("id", "name", "code", "type", "ownerName", "contractAmount", "originalContractAmount", "startDate", "status", "createdAt", "updatedAt")
 VALUES
-  ('upgrade-project-01', 'Legacy Contract Reconciliation Project', 'UPGRADE-01', 'POWER', 'North River Power Co.', 12580000.00, '2025-01-01T00:00:00Z', 'CONSTRUCTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('upgrade-project-02', 'Legacy Distinct Counterparty Project', 'UPGRADE-02', 'POWER', 'North River Power Construction Ltd.', 5000000.00, '2025-02-01T00:00:00Z', 'CONSTRUCTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-  ('upgrade-project-03', 'Legacy Normalized Name Project', 'UPGRADE-03', 'POWER', ' North   River Power Co. ', 8000000.00, '2025-03-01T00:00:00Z', 'CONSTRUCTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+  ('upgrade-project-01', 'Legacy Contract Reconciliation Project', 'UPGRADE-01', 'POWER', 'North River Power Co.', 12580000.00, 12580000.00, '2025-01-01T00:00:00Z', 'CONSTRUCTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('upgrade-project-02', 'Legacy Distinct Counterparty Project', 'UPGRADE-02', 'POWER', 'North River Power Construction Ltd.', 5000000.00, 5000000.00, '2025-02-01T00:00:00Z', 'CONSTRUCTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('upgrade-project-03', 'Legacy Normalized Name Project', 'UPGRADE-03', 'POWER', ' North   River Power Co. ', 8000000.00, 8000000.00, '2025-03-01T00:00:00Z', 'CONSTRUCTION', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO "MainContract" ("id", "projectId", "contractNo", "name", "amount", "updatedAt")
 VALUES
