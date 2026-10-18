@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { asIsoDate, isIsoDateWithinBounds, normalizeIsoDateWithinBounds, parseIsoDate } from './date-picker-utils.js';
+import { asIsoDate, isIsoDateWithinBounds, monthIntersectsIsoDateBounds, normalizeIsoDateWithinBounds, parseIsoDate } from './date-picker-utils.js';
 
 test('date picker parses only real ISO calendar dates', () => {
   assert.equal(asIsoDate(new Date(2024, 1, 29)), '2024-02-29');
@@ -22,4 +22,12 @@ test('disabled dates and contradictory bounds never become a keyboard focus targ
   assert.equal(isIsoDateWithinBounds('2026-02-01', '2026-02-01', '2026-03-31'), true);
   assert.equal(normalizeIsoDateWithinBounds('2026-02-14', '2026-03-31', '2026-02-01'), null);
   assert.equal(isIsoDateWithinBounds('2026-02-14', '2026-03-31', '2026-02-01'), false);
+});
+
+test('calendar navigation cannot move into a month with no enabled date', () => {
+  assert.equal(monthIntersectsIsoDateBounds(2026, 1, '2026-02-01', '2026-02-28'), true);
+  assert.equal(monthIntersectsIsoDateBounds(2026, 0, '2026-02-01', '2026-02-28'), false);
+  assert.equal(monthIntersectsIsoDateBounds(2026, 2, '2026-02-01', '2026-02-28'), false);
+  assert.equal(monthIntersectsIsoDateBounds(2026, 2, null, null), true);
+  assert.equal(monthIntersectsIsoDateBounds(2026, 1, '2026-03-31', '2026-02-01'), false);
 });
