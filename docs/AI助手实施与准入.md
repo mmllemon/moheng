@@ -2,9 +2,9 @@
 
 ## 1. 当前实现状态
 
-运行时必须保持可替换：LangGraph 和 PostgreSQL checkpoint 通过墨衡自己的 `AssistantRuntime` 适配层接入；业务工具只调用墨衡自有只读服务。Pi Durable/SQLite 的实验探针不证明 Pi Durable 自带 PostgreSQL adapter，也不作为当前 API 的生产存储基座。助手 UI 不绑定 LangGraph 内部协议。
+运行时必须保持可替换：LangGraph/provider SDKs are isolated behind 墨衡自己的 `AssistantRuntime` 适配层；LangGraph 和 PostgreSQL checkpoint 通过该层接入，业务工具只调用墨衡自有只读服务。Pi Durable/SQLite 的实验探针不证明 Pi Durable 自带 PostgreSQL adapter，也不作为当前 API 的生产存储基座。助手 UI 不绑定 LangGraph 内部协议。
 
-交互参考只借鉴一般的会话导航、中文输入法与滚动体验；不复制其他产品的商标、品牌文案或专有视觉资产。
+交互参考只借鉴一般的会话导航、中文输入法与滚动体验；open-claude-ui 仅作为交互研究参考，不复制 Claude 商标/品牌文案、专有二进制或视觉资产。
 
 当前选型采用 **LangGraph.js + PostgreSQL `PostgresSaver`**，运行时封装在墨衡自己的适配层后；这一技术决定不构成生产启用批准。
 
