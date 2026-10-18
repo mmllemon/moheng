@@ -82,11 +82,14 @@ check('party contract finance metrics aggregate child histories in PostgreSQL wh
   !data.includes('supplierInvoices: { select: { amount: true, taxAmount: true, status: true } }') &&
   data.includes('take: MAX_ROWS_PER_SOURCE + 1') &&
   data.includes('invoiceCount: invoices.count'));
-check('party report owner metrics aggregate progress bills, signed payments, and changes in PostgreSQL instead of loading nested histories',
+check('party report owner metrics aggregate progress bills, signed payments, and changes in PostgreSQL within project scope',
   data.includes('prisma.progressBill.groupBy') &&
   data.includes('prisma.change.groupBy') &&
   data.includes('prisma.$queryRaw<Array<{ projectId: string; paidAmount: string }>>') &&
   data.includes('COALESCE(SUM(pp."amount"), 0)::text') &&
+  data.includes('project: ownedProjectScope') &&
+  data.includes('p."ownerPartyId" = ${businessPartyId}') &&
+  data.includes('FROM "ProjectMember" AS pm') &&
   !data.includes('include: { mainContract: true, progressBills:') &&
   data.includes('const progressPaidByProject = new Map') &&
   (await read('apps/api/src/routes/owner-finance.ts')).includes('amount: amountString(-allocation.amount)'));
