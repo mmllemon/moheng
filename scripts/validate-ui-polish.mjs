@@ -14,6 +14,8 @@ function check(label, condition) {
 const center = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const styles = await read('apps/web/src/styles.css');
 const layout = await read('apps/web/src/components/Layout.tsx');
+const datePicker = await read('apps/web/src/components/DatePicker.tsx');
+const selectField = await read('apps/web/src/components/SelectField.tsx');
 const workspace = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
@@ -42,6 +44,14 @@ check('project members navigation is absent from cost workspace tabs and the tab
   !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && workspace.includes('aria-label="成本工作台业务导航"') && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system', label: '系统管理'") && layout.includes("to: '/system', label: '概览'") && layout.includes("'经营中心', '工作台', '项目管理', '系统管理'"));
 check('sidebar health indicator without data semantics is removed and replaced by a functioning dashboard link',
   !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
+check('shared date and select controls expose popup relationships, labels, and validation state',
+  datePicker.includes('aria-controls={open ? `date-picker-dialog-') &&
+  datePicker.includes("aria-labelledby={props['aria-labelledby']}") &&
+  datePicker.includes('aria-current={today ?') &&
+  selectField.includes("aria-labelledby={props['aria-labelledby']}") &&
+  selectField.includes("aria-errormessage={props['aria-errormessage']}") &&
+  datePicker.includes("props['aria-invalid'] === 'true'") &&
+  selectField.includes("props['aria-invalid'] === 'true'"));
 check('design docs enforce neutral professional visual language and record navigation/report cleanup',
   design.includes('色彩不是装饰品') && design.includes('150ms ~ 350ms') &&
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
