@@ -11,11 +11,23 @@ import type { ReportStudioBinding, ReportStudioDefinition, ReportStudioDomain, R
 import UniverPresetSheetsCoreZhCN from '@univerjs/preset-sheets-core/locales/zh-CN';
 import '@univerjs/preset-sheets-core/lib/index.css';
 
-interface UniverRangeLike { setValue?: (value: unknown) => unknown }
+interface UniverRangeLike { setValue?: (value: unknown) => unknown; getValue?: () => unknown }
 interface UniverSheetLike { getSheetId?: () => string; getId?: () => string; getSelection?: () => { getActiveRange?: () => { getA1Notation?: () => string } }; getRange?: (address: string) => UniverRangeLike }
 interface UniverApiLike {
   createWorkbook: (data: unknown) => unknown;
-  getActiveWorkbook: () => { save: () => unknown; getActiveSheet?: () => UniverSheetLike | null; getActiveRange?: () => { getA1Notation?: () => string } | null } | null;
+  getActiveWorkbook: () => { save: () => unknown; getActiveSheet?: () => UniverSheetLike | null; getSheetBySheetId?: (sheetId: string) => UniverSheetLike | null; getActiveRange?: () => { getA1Notation?: () => string } | null } | null;
+}
+function clearBindingPlaceholder(api: UniverApiLike | undefined, binding: ReportStudioBinding) {
+  if (!api) return;
+  const workbook = api.getActiveWorkbook();
+  const activeSheet = workbook?.getActiveSheet?.() ?? null;
+  const activeSheetId = activeSheet?.getSheetId?.() ?? activeSheet?.getId?.();
+  const sheet = workbook?.getSheetBySheetId?.(binding.sheetId)
+    ?? (activeSheetId === binding.sheetId ? activeSheet : null);
+  const range = sheet?.getRange?.(binding.cell);
+  const expectedPlaceholder = `{{${binding.sourceId}.${binding.fieldId}}}`;
+  // Preserve any user-edited value; only clear the inert marker inserted by the binding action.
+  if (range?.getValue && range.getValue() === expectedPlaceholder) range.setValue('');
 }
 interface UniverInstanceLike { dispose: () => void }
 interface StudioCatalogResult { domain: ReportStudioDomain; sources: ReportStudioSource[] }
@@ -320,7 +332,24 @@ export default function ReportStudioPage() {
       if (start.column > end.column) throw new Error('选区起止列不正确。');
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       const region: ReportStudioRegion = { id: newId('region'), sheetId, sourceId, templateRow: start.row, startColumn: start.column, endColumn: end.column, maxRows: 10000 };
-      setDefinition((current) => ({ ...current, regions: [...current.regions.filter((item) => !(item.sheetId === sheetId && item.templateRow === start.row)), region] }));
+      const previousRegion = definition.regions.find((item) => item.sheetId === sheetId && item.templateRow === start.row);
+      const bindingsToRemove = previousRegion
+        ? definition.bindings.filter((binding) => {
+            if (binding.sheetId !== sheetId || binding.sourceId !== previousRegion.sourceId) return false;
+            try {
+              const coordinate = parseA1(binding.cell);
+              if (coordinate.row !== previousRegion.templateRow || coordinate.column < previousRegion.startColumn || coordinate.column > previousRegion.endColumn) return false;
+              return binding.sourceId !== sourceId || coordinate.column < start.column || coordinate.column > end.column;
+            } catch { return false; }
+          })
+        : [];
+      bindingsToRemove.forEach((binding) => clearBindingPlaceholder(instanceRef.current?.api, binding));
+      const removedBindingIds = new Set(bindingsToRemove.map((binding) => binding.id));
+      setDefinition((current) => ({
+        ...current,
+        regions: [...current.regions.filter((item) => !(item.sheetId === sheetId && item.templateRow === start.row)), region],
+        bindings: current.bindings.filter((binding) => !removedBindingIds.has(binding.id)),
+      }));
       setNotice(`已将 ${selectedRange} 设置为 ${selectedSource.label} 的自动延伸行。请为样板行中的每个单元格绑定字段。`); setError('');
     } catch (cause) { setError(cause instanceof Error ? cause.message : '创建重复区域失败。'); }
   }
@@ -328,6 +357,8 @@ export default function ReportStudioPage() {
   function removeBinding() {
     const address = selectedCell.trim().toUpperCase();
     const sheetId = selectedSheetId || sheetIdFromDefinition;
+    const removed = definition.bindings.find((binding) => binding.sheetId === sheetId && binding.cell === address);
+    if (removed) clearBindingPlaceholder(instanceRef.current?.api, removed);
     setDefinition((current) => ({ ...current, bindings: current.bindings.filter((binding) => binding.sheetId !== sheetId || binding.cell !== address) }));
     setNotice(`已移除 ${address} 的字段绑定。`);
   }
@@ -338,7 +369,20 @@ export default function ReportStudioPage() {
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       const removed = definition.regions.find((region) => region.sheetId === sheetId && region.templateRow === start.row);
       if (!removed) throw new Error('当前行没有重复区域。');
-      setDefinition((current) => ({ ...current, regions: current.regions.filter((region) => region.id !== removed.id), bindings: current.bindings.filter((binding) => !(binding.sheetId === removed.sheetId && binding.sourceId === removed.sourceId && (() => { try { const c = parseA1(binding.cell); return c.row === removed.templateRow && c.column >= removed.startColumn && c.column <= removed.endColumn; } catch { return false; } })())) }));
+      const bindingsToRemove = definition.bindings.filter((binding) => {
+        if (binding.sheetId !== removed.sheetId || binding.sourceId !== removed.sourceId) return false;
+        try {
+          const coordinate = parseA1(binding.cell);
+          return coordinate.row === removed.templateRow && coordinate.column >= removed.startColumn && coordinate.column <= removed.endColumn;
+        } catch { return false; }
+      });
+      bindingsToRemove.forEach((binding) => clearBindingPlaceholder(instanceRef.current?.api, binding));
+      const removedBindingIds = new Set(bindingsToRemove.map((binding) => binding.id));
+      setDefinition((current) => ({
+        ...current,
+        regions: current.regions.filter((region) => region.id !== removed.id),
+        bindings: current.bindings.filter((binding) => !removedBindingIds.has(binding.id)),
+      }));
       setNotice(`已移除重复区域 ${removed.id}，并清除区域内的绑定。`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : '移除重复区域失败。'); }
   }
