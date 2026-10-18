@@ -27,7 +27,7 @@ function clearBindingPlaceholder(api: UniverApiLike | undefined, binding: Report
   const range = sheet?.getRange?.(binding.cell);
   const expectedPlaceholder = `{{${binding.sourceId}.${binding.fieldId}}}`;
   // Preserve any user-edited value; only clear the inert marker inserted by the binding action.
-  if (range?.getValue && range.getValue() === expectedPlaceholder) range.setValue('');
+  if (range?.getValue && range.getValue() === expectedPlaceholder) range.setValue?.('');
 }
 interface UniverInstanceLike { dispose: () => void }
 interface StudioCatalogResult { domain: ReportStudioDomain; sources: ReportStudioSource[] }
