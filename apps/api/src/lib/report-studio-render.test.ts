@@ -184,16 +184,21 @@ test('XLSX overview prints truncation warnings when a repeating region reaches i
 test('XLSX overview sheet remains available when the optional metadata sheet is disabled', async () => {
   const report = definition();
   report.page.includeMetadata = false;
+  const generationWarning = '业主收退款流水超过 10,000 条，明细已截断；请缩小范围后重新生成。';
   const buffer = await buildReportStudioWorkbook({
     definition: report,
-    dataset,
+    dataset: { ...dataset, warnings: [generationWarning], truncated: true },
     templateName: '最小元数据模板',
     templateVersion: 1,
   });
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '测试表']);
-  assert.equal(workbook.getWorksheet('报表预览')!.getCell('B6').value, '测试项目');
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('B6').value, '测试项目');
+  assert.equal(overview.getCell('B7').value, '存在截断，详见生成提示');
+  assert.ok((overview.getColumn(1).values as unknown[]).some((value) => String(value ?? '').includes(generationWarning)), 'generation warnings must remain visible when the optional metadata sheet is disabled');
+  assert.match(String(overview.pageSetup.printArea), /^A1:D\\d+$/);
 });
 
 test('renders downstream payment and refund collections into independent report regions', () => {
