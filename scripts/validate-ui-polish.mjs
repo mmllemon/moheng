@@ -83,7 +83,8 @@ check('project members navigation is absent from cost workspace tabs and the tab
 check('sidebar health indicator without data semantics is removed and replaced by a functioning dashboard link',
   !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
 check('core business pages use shared date/select controls instead of unstyled native controls',
-  corePageSources.every((source) => !/<select\\b/i.test(source) && !/type\\s*=\\s*["']date["']/i.test(source)));\ncheck('shared date and select controls expose popup relationships, labels, and validation state',
+  corePageSources.every((source) => !/<select\b/i.test(source) && !/type\s*=\s*["']date["']/i.test(source)));
+check('shared date and select controls expose popup relationships, labels, and validation state',
   datePicker.includes('date-picker-dialog-') &&
   datePicker.includes('id={id ? `${id}-native` : undefined}') && datePicker.includes('id={id}') &&
   selectField.includes('id={id ? `${id}-native` : undefined}') && selectField.includes('id={id}') &&
