@@ -170,6 +170,7 @@ test('XLSX overview prints truncation warnings when a repeating region reaches i
 
   const overview = workbook.getWorksheet('报表预览')!;
   assert.equal(overview.getCell('B7').value, '存在截断，详见生成提示');
+  assert.equal(overview.getCell('D12').value, '数据不完整，详见生成提示');
   assert.match(String(overview.pageSetup.printArea), /^A1:D\d+$/);
   assert.equal(overview.pageSetup.fitToHeight, 0, 'long warning text must not be compressed onto a single printed page');
   const printEndRow = Number(String(overview.pageSetup.printArea).match(/D(\d+)$/)?.[1]);
