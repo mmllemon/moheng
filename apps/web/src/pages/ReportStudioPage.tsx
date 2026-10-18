@@ -26,11 +26,15 @@ function getWorkbookSheet(api: UniverApiLike | undefined, sheetId: string): Univ
     ?? (activeSheetId === sheetId ? activeSheet : null);
 }
 function clearBindingPlaceholder(api: UniverApiLike | undefined, binding: ReportStudioBinding) {
-  const sheet = getWorkbookSheet(api, binding.sheetId);
-  const range = sheet?.getRange?.(binding.cell);
-  const expectedPlaceholder = `{{${binding.sourceId}.${binding.fieldId}}}`;
-  // Preserve any user-edited value; only clear the inert marker inserted by the binding action.
-  if (range?.getValue && range.getValue() === expectedPlaceholder) range.setValue?.('');
+  try {
+    const sheet = getWorkbookSheet(api, binding.sheetId);
+    const range = sheet?.getRange?.(binding.cell);
+    const expectedPlaceholder = `{{${binding.sourceId}.${binding.fieldId}}}`;
+    // Preserve any user-edited value; only clear the inert marker inserted by the binding action.
+    if (range?.getValue && range.getValue() === expectedPlaceholder) range.setValue?.('');
+  } catch {
+    // UI cleanup is best-effort; unavailable editor APIs must not block binding metadata changes.
+  }
 }
 interface UniverInstanceLike { dispose: () => void }
 interface StudioCatalogResult { domain: ReportStudioDomain; sources: ReportStudioSource[] }
