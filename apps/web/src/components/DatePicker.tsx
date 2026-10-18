@@ -118,7 +118,16 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
 
   function moveFocusBy(days: number) {
     const base = parseIsoDate(focusedDate) ?? selectedDate ?? new Date();
-    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+    let next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+    // Never move the roving tab stop onto a disabled date: disabled buttons cannot receive
+    // focus, which otherwise leaves keyboard users stranded after an Arrow/Home/End action.
+    const direction = days < 0 ? -1 : 1;
+    let attempts = 0;
+    while (isDisabled(asIsoDate(next)) && attempts < 3660) {
+      next = new Date(next.getFullYear(), next.getMonth(), next.getDate() + direction);
+      attempts += 1;
+    }
+    if (isDisabled(asIsoDate(next))) return;
     const nextValue = asIsoDate(next);
     setFocusedDate(nextValue);
     if (next.getMonth() !== viewDate.getMonth() || next.getFullYear() !== viewDate.getFullYear()) setViewDate(new Date(next.getFullYear(), next.getMonth(), 1));
