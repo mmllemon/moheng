@@ -113,7 +113,15 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const regionMaxRow = Math.max(-1, ...sheetRegions.map((region) => region.templateRow));
     const bindingMaxRow = Math.max(-1, ...sheetBindings.map((binding) => parseCell(binding.cell).row));
     const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow, bindingMaxRow);
-    let sheetTruncated = dataset.truncated === true;
+    const hasSourceTruncationMap = Array.isArray(dataset.truncatedSources);
+    const truncatedSourceIds = new Set(dataset.truncatedSources ?? []);
+    let sheetTruncated = dataset.truncated === true && !hasSourceTruncationMap;
+    if (dataset.truncated && hasSourceTruncationMap) {
+      // A source cap only makes sheets that actually consume that source incomplete.
+      // Collections are detected through regions as well as cell bindings.
+      sheetTruncated = sheetBindings.some((binding) => truncatedSourceIds.has(binding.sourceId))
+        || sheetRegions.some((region) => truncatedSourceIds.has(region.sourceId));
+    }
     const regionExpansions = new Map<number, unknown[]>();
     for (const region of sheetRegions) {
       const collection = dataset.sources[region.sourceId];
