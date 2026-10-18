@@ -275,6 +275,22 @@ test('marks truncation on the affected worksheet without mislabeling other works
 });
 
 
+test('bounds malformed internal worksheet columns before expanding rendered rows', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { columnCount: number; cellData: Record<string, Record<string, { v?: unknown }>> }>;
+  };
+  workbook.sheets.main!.columnCount = 1_000_000;
+  workbook.sheets.main!.cellData['0']!['39'] = { v: '最后一个允许的列' };
+  workbook.sheets.main!.cellData['0']!['500000'] = { v: '必须跳过的超范围列' };
+
+  const result = renderReportStudio(report, dataset);
+  const firstRow = result.sheets[0]!.rows[0]!;
+  assert.equal(firstRow.length, 40, 'rendering must never expand beyond 40 columns');
+  assert.equal(firstRow[39]!.value, '最后一个允许的列');
+  assert.equal(firstRow.some((cell) => cell.value === '必须跳过的超范围列'), false);
+});
+
 test('dataset truncation only marks worksheets that consume an affected source', () => {
   const report = definition();
   const workbook = report.workbook as unknown as {
