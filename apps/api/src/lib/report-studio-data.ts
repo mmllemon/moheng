@@ -1,3 +1,4 @@
+import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from './prisma.js';
 import { calculateEffectiveContractAmount, centsToMoney, moneyToCents } from './contract-amount-math.js';
 import { calculateDownstreamCurrentAmount } from './downstream-contract-math.js';
@@ -148,15 +149,42 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   if (!party) throw Object.assign(new Error('往来单位档案不存在'), { statusCode: 404, code: 'BUSINESS_PARTY_NOT_FOUND' });
   const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'REPORT_EXPORT');
   const projectScope = { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) };
-  const visibleProjects = await prisma.project.findMany({ where: projectScope, select: { id: true, code: true, name: true, status: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] });
-  const visibleIds = visibleProjects.map((project) => project.id);
-  const projectFilter = { projectId: { in: visibleIds } };
-  const [ownedProjects, downstreamContractsFetched, standaloneCosts, standaloneCostTotals] = await Promise.all([
-    prisma.project.findMany({ where: { ...projectScope, ownerPartyId: businessPartyId }, include: { mainContract: true, progressBills: { where: { deletedAt: null }, include: { payments: true }, orderBy: [{ periodNo: 'asc' }, { id: 'asc' }] }, changes: { where: { deletedAt: null }, select: { externalConfirmationStatus: true, externalConfirmedAmount: true } } }, orderBy: [{ code: 'asc' }, { id: 'asc' }] }),
-    prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, ...projectFilter, deletedAt: null }, include: { project: { select: { id: true, name: true, code: true, status: true } }, adjustments: { select: { direction: true, amount: true } }, settlements: { where: { status: 'POSTED' }, include: { posting: { select: { deltaAmount: true, cumulativeAfter: true, postedAt: true } } } }, payments: { select: { type: true, amount: true, paidAt: true } }, payables: { include: { paymentAllocations: { select: { amount: true } } } }, costEntries: { where: { deletedAt: null }, select: { amount: true } }, supplierInvoices: { select: { amount: true, taxAmount: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+  const [visibleProjectCount, ownedProjects, downstreamContractsFetched, standaloneCosts, standaloneCostTotals] = await Promise.all([
+    prisma.project.count({ where: projectScope }),
+    prisma.project.findMany({ where: { ...projectScope, ownerPartyId: businessPartyId }, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] }),
+    prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } }, adjustments: { select: { direction: true, amount: true } }, settlements: { where: { status: 'POSTED' }, include: { posting: { select: { deltaAmount: true, cumulativeAfter: true, postedAt: true } } } }, payments: { select: { type: true, amount: true, paidAt: true } }, payables: { include: { paymentAllocations: { select: { amount: true } } } }, costEntries: { where: { deletedAt: null }, select: { amount: true } }, supplierInvoices: { select: { amount: true, taxAmount: true, status: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.costEntry.findMany({ where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
     prisma.costEntry.groupBy({ by: ['projectId'], where: { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope }, _sum: { amount: true }, _count: { _all: true } }),
   ]);
+  const ownedProjectIds = ownedProjects.map((project) => project.id);
+  const [progressBillMetrics, changeMetrics, progressPaymentMetrics] = ownedProjectIds.length ? await Promise.all([
+    prisma.progressBill.groupBy({
+      by: ['projectId'],
+      where: { projectId: { in: ownedProjectIds }, deletedAt: null },
+      _count: { _all: true },
+      _sum: { approvedAmount: true },
+    }),
+    prisma.change.groupBy({
+      by: ['projectId'],
+      where: { projectId: { in: ownedProjectIds }, deletedAt: null },
+      _count: { _all: true },
+    }),
+    prisma.$queryRaw<Array<{ projectId: string; paidAmount: string }>>(Prisma.sql`
+      SELECT pb."projectId" AS "projectId",
+             COALESCE(SUM(pp."amount"), 0)::text AS "paidAmount"
+      FROM "ProgressPayment" AS pp
+      INNER JOIN "ProgressBill" AS pb ON pb."id" = pp."progressBillId"
+      WHERE pb."deletedAt" IS NULL
+        AND pb."projectId" IN (${Prisma.join(ownedProjectIds)})
+      GROUP BY pb."projectId"
+    `),
+  ]) : [[], [], []];
+  const progressBillMetricsByProject = new Map(progressBillMetrics.map((row) => [row.projectId, {
+    count: row._count._all,
+    approvedAmount: moneyValue(row._sum.approvedAmount),
+  }] as const));
+  const changeCountByProject = new Map(changeMetrics.map((row) => [row.projectId, row._count._all] as const));
+  const progressPaidByProject = new Map(progressPaymentMetrics.map((row) => [row.projectId, moneyValue(row.paidAmount)] as const));
   const downstreamContractsTruncated = downstreamContractsFetched.length > MAX_ROWS_PER_SOURCE;
   const downstreamContracts = downstreamContractsFetched.slice(0, MAX_ROWS_PER_SOURCE);
   if (user.role !== 'ADMIN' && !ownedProjects.length && !downstreamContracts.length && !standaloneCostTotals.length) {
@@ -164,8 +192,15 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   }
   const projectMap = new Map<string, Record<string, unknown>>();
   for (const project of ownedProjects) {
-    const paid = sumPartyMoney(project.progressBills.flatMap((bill) => bill.payments.map((payment) => payment.amount)));
-    projectMap.set(project.id, { id: project.id, code: project.code, name: project.name, status: project.status, role: 'OWNER', incomeContractAmount: moneyValue(project.contractAmount), downstreamContractAmount: '0.00', incomePaidAmount: paid, downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00', downstreamContractCount: 0, incomeBillCount: project.progressBills.length });
+    const billMetrics = progressBillMetricsByProject.get(project.id);
+    projectMap.set(project.id, {
+      id: project.id, code: project.code, name: project.name, status: project.status, role: 'OWNER',
+      incomeContractAmount: moneyValue(project.contractAmount),
+      downstreamContractAmount: '0.00',
+      incomePaidAmount: progressPaidByProject.get(project.id) ?? '0.00',
+      downstreamPaidAmount: '0.00', downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00',
+      downstreamContractCount: 0, incomeBillCount: billMetrics?.count ?? 0,
+    });
   }
   const downstreamRows = downstreamContracts.map((contract) => {
     const currentAmount = centsToMoney(contract.adjustments.reduce<bigint>((total, adjustment) => total + (adjustment.direction === 'DECREASE' ? -1n : 1n) * moneyToCents(adjustment.amount), moneyToCents(contract.originalAmount)));
@@ -206,7 +241,18 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
       project.downstreamContractCount = null;
     }
   }
-  const mainContractRows = ownedProjects.filter((project) => project.mainContract).map((project) => ({ projectCode: project.code, projectName: project.name, contractNo: project.mainContract!.contractNo, name: project.mainContract!.name, status: project.status, originalAmount: moneyValue(project.originalContractAmount), currentAmount: moneyValue(project.contractAmount), approvedAmount: sumPartyMoney(project.progressBills.map((bill) => bill.approvedAmount)), paidAmount: sumPartyMoney(project.progressBills.flatMap((bill) => bill.payments.map((payment) => payment.amount))), progressBillCount: project.progressBills.length, changeCount: project.changes.length }));
+  const mainContractRows = ownedProjects.filter((project) => project.mainContract).map((project) => {
+    const billMetrics = progressBillMetricsByProject.get(project.id);
+    return {
+      projectCode: project.code, projectName: project.name, contractNo: project.mainContract!.contractNo,
+      name: project.mainContract!.name, status: project.status,
+      originalAmount: moneyValue(project.originalContractAmount), currentAmount: moneyValue(project.contractAmount),
+      approvedAmount: billMetrics?.approvedAmount ?? '0.00',
+      paidAmount: progressPaidByProject.get(project.id) ?? '0.00',
+      progressBillCount: billMetrics?.count ?? 0,
+      changeCount: changeCountByProject.get(project.id) ?? 0,
+    };
+  });
   const partyProjectsListTruncated = projectRows.length > MAX_ROWS_PER_SOURCE;
   const partyMainContractsTruncated = mainContractRows.length > MAX_ROWS_PER_SOURCE;
   const standaloneCostAmount = sumPartyMoney(standaloneCostTotals.map((row) => row._sum.amount));
@@ -261,7 +307,7 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   ];
   return {
     domain: 'PARTY', generatedAt: new Date().toISOString(), projectId: null, businessPartyId,
-    accessibleProjectCount: visibleProjects.length, sources: partyRows, warnings,
+    accessibleProjectCount: visibleProjectCount, sources: partyRows, warnings,
     truncated: truncatedSources.length > 0 || partyTruncatedFields.length > 0,
     truncatedSources, truncatedFields: partyTruncatedFields, truncationNotices,
   };
