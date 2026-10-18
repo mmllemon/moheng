@@ -157,6 +157,32 @@ test('XLSX export starts with a styled overview sheet and preserves the report w
   assert.equal(workbook.getWorksheet('报表说明')!.getCell('B1').value, '区域渲染测试');
 });
 
+test('XLSX overview ignores truncation notices for sources unused by the template', async () => {
+  const unrelatedWarning = '实际成本明细超过 10,000 条，明细已截断。';
+  const buffer = await buildReportStudioWorkbook({
+    definition: definition(),
+    dataset: {
+      ...dataset,
+      warnings: [unrelatedWarning],
+      truncated: true,
+      truncatedSources: ['actualCosts'],
+      truncationNotices: [{ sourceIds: ['actualCosts'], message: unrelatedWarning }],
+    },
+    templateName: '无关数据源截断模板',
+    templateVersion: 1,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('B7').value, '当前报表未截断');
+  assert.equal(overview.getCell('D7').value, 0, 'the overview warning count must exclude unrelated source caps');
+  assert.equal(overview.getCell('D12').value, '已生成');
+  const columnValues: unknown[] = [];
+  overview.getColumn(1).eachCell({ includeEmpty: false }, (cell) => columnValues.push(cell.value));
+  assert.equal(columnValues.some((value) => String(value ?? '').includes(unrelatedWarning)), false);
+});
+
 test('XLSX overview prints truncation warnings when a repeating region reaches its configured cap', async () => {
   const report = definition();
   report.regions[0]!.maxRows = 1;
