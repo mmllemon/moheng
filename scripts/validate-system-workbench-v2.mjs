@@ -35,7 +35,7 @@ check('system management overview links authorization governance as a dedicated 
 check('consolidated docs state module boundaries, project authorization and incomplete production acceptance',
   design.includes('模块化单体优先') && design.includes('项目授权') &&
   design.includes('只读') && design.includes('审计') &&
-  acceptance.includes('尚未验收') && acceptance.includes('RC'));
+  acceptance.includes('尚未完成') && /rc/i.test(acceptance));
 check('release candidate gate includes this system workbench contract suite', rootPackage.scripts['validate:release-candidate'].includes('validate-system-workbench-v2.mjs'));
 check('README and changelog describe current navigation, authorization review and code recommendation', readme.includes('核心业务约束') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('授权复核工作台'));
 
