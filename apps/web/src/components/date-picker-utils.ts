@@ -3,17 +3,17 @@ export function asIsoDate(date: Date): string {
 }
 
 export function parseIsoDate(value?: string | null): Date | null {
-  if (!value || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return null;
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const [year, month, day] = value.split('-').map(Number);
   const date = new Date(year, month - 1, day);
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
 }
 
-function parsedBound(value?: string | null): Date | null {
-  return value ? parseIsoDate(value) : null;
+function parsedBound(value?: string | number | null): Date | null {
+  return value == null || value === '' ? null : parseIsoDate(String(value));
 }
 
-export function isIsoDateWithinBounds(value: string, min?: string | null, max?: string | null): boolean {
+export function isIsoDateWithinBounds(value: string, min?: string | number | null, max?: string | number | null): boolean {
   const date = parseIsoDate(value);
   if (!date) return false;
   const minimum = parsedBound(min);
