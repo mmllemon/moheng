@@ -20,7 +20,7 @@ const regressionTest = await read('apps/api/src/lib/auth-prehandler-regression.t
 const server = await read('apps/api/src/server.ts');
 const policiesPage = await read('apps/web/src/pages/SystemPoliciesPage.tsx');
 const uiComponents = await read('apps/web/src/components/Ui.tsx');
-const ciGateDoc = await read('docs/assistant-runtime-ci-gates-v1.0.md');
+const ciGateDoc = await read('docs/发布与迁移验收.md');
 
 verify('JWT plugin patched version', () => assert.equal(apiPackage.dependencies['@fastify/jwt'], '10.2.4'));
 verify('static plugin patched version', () => assert.equal(apiPackage.dependencies['@fastify/static'], '10.1.6'));
@@ -71,7 +71,7 @@ verify('release-candidate command runs R7 static contract', () => assert.match(r
 verify('API test command includes auth preHandler regression test', () => assert.match(apiPackage.scripts.test, /auth-prehandler-regression\.test\.ts/));
 verify('auth regression test asserts handler is not called after denial', () => assert.match(regressionTest, /handlerCalls, 0/));
 verify('POC-off regression test covers 404 gate', () => assert.match(regressionTest, /ASSISTANT_POC_ENABLED=false sends ROUTE_NOT_FOUND/));
-verify('CI documentation marks old lock SHA historical and expects regeneration', () => assert.match(ciGateDoc, /旧基线锁文件 SHA-256 `F31A4B2E…` 仅作为升级前的历史证据[\s\S]*?新锁文件 SHA 预期会变化/));
+verify('release documentation requires lockfile-driven install and honest RC boundaries', () => { assert.match(ciGateDoc, /锁文件/); assert.match(ciGateDoc, /Node\.js/); assert.match(ciGateDoc, /发布候选/); });
 
 console.log(JSON.stringify({
   gate: 'R7_SECURITY_REMEDIATION_STATIC_CONTRACT',
