@@ -144,6 +144,30 @@ test('XLSX export starts with a styled overview sheet and preserves the report w
   assert.equal(workbook.getWorksheet('报表说明')!.getCell('B1').value, '区域渲染测试');
 });
 
+test('XLSX overview prints truncation warnings when a repeating region reaches its configured cap', async () => {
+  const report = definition();
+  report.regions[0]!.maxRows = 1;
+  const buffer = await buildReportStudioWorkbook({
+    definition: report,
+    dataset,
+    templateName: '受限明细模板',
+    templateVersion: 4,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('B7').value, '存在截断，详见生成提示');
+  assert.match(String(overview.pageSetup.printArea), /^A1:D\\d+$/);
+  const printEndRow = Number(String(overview.pageSetup.printArea).match(/D(\\d+)$/)?.[1]);
+  const truncationRow = overview.getColumn(1).values.findIndex((value) => String(value ?? '').includes('存在明细截断'));
+  assert.ok(truncationRow > 0 && truncationRow <= printEndRow, 'truncation warning must be inside the overview print area');
+
+  const metadata = workbook.getWorksheet('报表说明')!;
+  assert.equal(metadata.getCell('A8').value, '截断提示');
+  assert.match(String(metadata.getCell('B8').value), /达到上限/);
+});
+
 test('XLSX overview sheet remains available when the optional metadata sheet is disabled', async () => {
   const report = definition();
   report.page.includeMetadata = false;
