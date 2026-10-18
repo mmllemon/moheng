@@ -86,6 +86,7 @@ check('project and party report loaders select only fields used by summaries, av
   data.includes('originalContractAmount: true, contractAmount: true') &&
   data.includes('mainContract: {\n              select: {') &&
   data.includes('guaranteeEndAt: true') &&
+  data.includes('.then((projects) => projects.map((project) => ({ ...project, mainContract: null })))') &&
   !data.includes('include: { mainContract: true }'));
 check('party contract finance metrics aggregate child histories in PostgreSQL while capping contract detail rows',
   data.includes('prisma.downstreamContractAdjustment.groupBy') &&
