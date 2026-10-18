@@ -303,7 +303,6 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
       id: project.id, code: project.code, name: project.name, status: project.status,
       role: isOwner ? 'OWNER' : fallbackRole,
       incomeContractAmount: isOwner ? moneyValue(project.contractAmount) : '0.00',
-      incomeOriginalAmount: isOwner ? moneyValue(project.originalContractAmount) : '0.00',
       incomePaidAmount: isOwner ? (progressPaidByProject.get(project.id) ?? '0.00') : '0.00',
       downstreamContractAmount: '0.00', downstreamPaidAmount: '0.00',
       downstreamActualCostAmount: '0.00', standaloneCostAmount: '0.00',
