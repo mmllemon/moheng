@@ -1,7 +1,0 @@
-package-lock.json SHA-256
-
-install #1 (warm cache) : F31A4B2EB8325F3C4A85AC0CEB991896FAC79F8DEE70ABEA580E4A7BE4B92ADB
-install #2 (cold cache) : F31A4B2EB8325F3C4A85AC0CEB991896FAC79F8DEE70ABEA580E4A7BE4B92ADB
-identical               : True
-
-verification: 第二次安装前已 Remove-Item node_modules -Recurse -Force 并 npm cache clean --force
