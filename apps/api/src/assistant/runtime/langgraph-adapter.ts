@@ -11,6 +11,8 @@ const allowedToolIds: readonly AssistantReadOnlyToolId[] = [
   'project_operating_overview', 'cost_variance', 'change_evidence_completeness',
 ];
 const checkpointSchema = 'moheng_assistant';
+// Per-turn limits bound latency and provider spend for the read-only assistant.
+export const ASSISTANT_MODEL_POLICY = Object.freeze({ maxTokens: 1800, timeoutMs: 45_000, maxRetries: 1 });
 // Schema/table setup is an explicit deployment step; request-time execution must never perform DDL.
 
 type AgentConfig = Parameters<typeof createAgent>[0];
@@ -28,6 +30,9 @@ const productionDependencies: AssistantRuntimeTestDependencies = {
   createSaver: (checkpointUrl, options) => PostgresSaver.fromConnString(checkpointUrl, options),
   createModel: ({ apiKey, modelId, baseURL }) => new ChatOpenAI({
     apiKey, model: modelId, temperature: 0,
+    maxTokens: ASSISTANT_MODEL_POLICY.maxTokens,
+    timeout: ASSISTANT_MODEL_POLICY.timeoutMs,
+    maxRetries: ASSISTANT_MODEL_POLICY.maxRetries,
     ...(baseURL ? { configuration: { baseURL } } : {}),
   }),
   createAgent,

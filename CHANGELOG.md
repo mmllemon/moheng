@@ -1,5 +1,21 @@
 ## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
 
+### Draft: v2.20.0 product completion (not released)
+
+> Draft notes for PR `feat/v2.20.0-product-completion`. This is not a release announcement; package versions remain `2.19.0-rc.2` and the PR is not merged.
+
+- Consolidated repository documentation into one current index and four-phase roadmap; archived the historical defect review and summarized old RC acceptance records rather than keeping repeated versioned design documents.
+- Added styled `报表预览` overview sheets to both standard XLSX exports and Report Studio XLSX exports, including report scope, filters/template version, worksheet directory, row limit and truncation warnings.
+- Added project/company report sources and default-template sections for downstream cash payments and refunds, separated from posted payables and actual costs; added exact-cent aggregation and truncated-data safeguards.
+- Improved shared date/select control label targets and accessibility metadata; added static coverage for core business pages to prevent native date/select controls from returning.
+- Added safe AI configuration-readiness diagnostics, bounded model-call defaults (1,800 tokens, 45-second timeout, one SDK retry), downstream cash-flow evidence in the read-only project overview, and `INDETERMINATE` cost variance when target-cost rows are truncated.
+- Added/expanded XLSX, payment summary, AI configuration, cost-variance and runtime-policy tests.
+- Consolidated system configuration and authorization governance into dedicated workbenches, including dictionary/parameter revision controls and the authorization review workbench; production acceptance remains subject to the documented RC gates. Current-head CI is required; this draft does not claim real-model E2E, real browser visual sign-off, sanitized user-staging reconciliation or production rollout approval.
+
+---
+
+## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
+
 - 创建独立分支 `feat/v2.19.0-rc.2-prisma7`，从 `ceb0f335624209178e37e1279fb9c845d5f7b924` 开始；不改写 `main`，不自动合并。
 - 将 `prisma` 与 `@prisma/client` 固定升级到 `7.10.1`，并增加同版本 `@prisma/adapter-pg`、`pg@8.23.1` 与 `@types/pg@8.23.1`。
 - 切换 `prisma-client` 生成器，显式生成到 `apps/api/src/generated/prisma`，并将数据库连接 URL 移入 `apps/api/prisma.config.ts`。

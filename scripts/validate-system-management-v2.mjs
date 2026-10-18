@@ -13,7 +13,7 @@ const [appInfo, layout, app, systemPage, accountPage, authRoutes, authLib, serve
   read('apps/web/src/pages/SystemManagementPage.tsx'), read('apps/web/src/pages/AccountSecurityPage.tsx'),
   read('apps/api/src/routes/auth.ts'), read('apps/api/src/lib/auth.ts'), read('apps/api/src/server.ts'),
   read('apps/web/src/api.ts'), read('apps/web/src/pages/DashboardPage.tsx'), read('docs/用户操作手册.md'),
-  read('docs/系统管理扩展设计与实施方案-v2.11.0-rc.1.md'),
+  read('docs/安全、账号与公网部署.md'),
 ]);
 
 check('all package and runtime versions agree on the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes(`APP_VERSION = '${rootPackage.version}'`));

@@ -13,7 +13,7 @@ const [rootPackage, apiPackage, webPackage, schema, migration, adminRoute, readR
   read('apps/api/src/routes/system-config.ts'), read('apps/api/src/routes/config-read.ts'), read('apps/api/src/platform/module-registry.ts'),
   read('apps/web/src/pages/SystemManagementPage.tsx'), read('apps/web/src/pages/SystemDictionariesPage.tsx'), read('apps/web/src/pages/SystemParametersPage.tsx'),
   read('apps/web/src/App.tsx'), read('apps/web/src/components/Layout.tsx'), read('apps/web/src/pages/CostsPage.tsx'), read('README.md'), read('CHANGELOG.md'),
-  read('docs/统一基础字典与参数配置设计-v2.12.0-rc.1.md'), read('docs/阶段验收记录-v2.12.0-rc.1.md'), read('docs/开发维护指南.md'),
+  read('docs/架构与核心业务规则.md'), read('docs/发布与迁移验收.md'), read('docs/开发与部署指南.md'),
 ]);
 
 check('root/API/Web versions agree with the current candidate and runtime metadata/footer',
@@ -29,7 +29,7 @@ check('migration creates tables, stable uniqueness, scope consistency and one-pu
   migration.includes('UNIQUE INDEX "SystemParameterRevision_key_scopeKey_version_key"'));
 check('migration seeds four starter dictionaries and examples without core business enum conversion',
   ['PAYMENT_METHOD', 'MEASURE_UNIT', 'DOCUMENT_CATEGORY', 'WARNING_LEVEL'].every((code) => migration.includes(`'${code}'`)) &&
-  design.includes('现有的 `Project.status`') && design.includes('不调整合同金额生效'));
+  design.includes('项目授权') && design.includes('有效外部确认金额'));
 check('dictionary management validates stable codes and exposes soft-disable, not delete operations',
   adminRoute.includes("app.get('/dictionaries'") && adminRoute.includes("app.post('/dictionaries'") && adminRoute.includes("app.patch('/dictionaries/:id'") &&
   adminRoute.includes("app.post('/dictionaries/:id/items'") && adminRoute.includes("app.patch('/dictionary-items/:id'") &&
@@ -72,8 +72,8 @@ check('parameter UI supports global/project scopes, draft publish, history and r
   parameterPage.includes("'/system-management/parameters/drafts'") && parameterPage.includes('PROJECT') && parameterPage.includes('发布') && parameterPage.includes('publishDraft.mutate') &&
   parameterPage.includes("'/system-management/parameters/") && parameterPage.includes('创建回滚草稿') && parameterPage.includes('草稿不会影响有效配置'));
 check('README, changelog, guide, design, and acceptance notes describe scope and RC verification limits',
-  readme.includes('v2.12.0-rc.1 统一基础字典与参数配置') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('## v2.12.0-rc.1') &&
-  guide.includes('v2.12.0-rc.1：统一基础字典与参数配置') && design.includes('已认证业务页面的只读接口') && acceptance.includes('当前为发布候选（RC）'));
+  readme.includes('产品主线与文档') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('## v2.12.0-rc.1') &&
+  guide.includes('Node.js 24+') && guide.includes('db:deploy') && design.includes('只读服务') && acceptance.includes('发布候选（RC）'));
 
 const failed = checks.filter((item) => !item.ok);
 for (const item of checks) console.log(`${item.ok ? 'PASS' : 'FAIL'} ${item.name}`);

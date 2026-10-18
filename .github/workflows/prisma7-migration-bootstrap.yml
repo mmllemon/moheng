@@ -55,8 +55,33 @@ jobs:
         run: |
           npm run db:validate
           npm run db:deploy
+      - name: Seed disposable fixtures and rehearse PostgreSQL backup/restore
+        shell: bash
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          BACKUP_RESTORE_REPORT_PATH: gate-artifacts/postgres-backup-restore.txt
+        run: |
+          set -euo pipefail
+          mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR" gate-artifacts
+          npm run db:generate
+          SMOKE_ADMIN_PASSWORD="$(node --input-type=module -e "import { randomBytes } from 'node:crypto'; process.stdout.write(randomBytes(32).toString('base64url'))")"
+          echo "::add-mask::$SMOKE_ADMIN_PASSWORD"
+          echo "SMOKE_ADMIN_PASSWORD=$SMOKE_ADMIN_PASSWORD" >> "$GITHUB_ENV"
+          NODE_ENV=test SEED_DEMO_DATA=true SEED_ADMIN_EMAIL=gate.admin@moheng.invalid SEED_ADMIN_PASSWORD="$SMOKE_ADMIN_PASSWORD" SEED_ADMIN_NAME="CI Backup Restore Gate" npm run seed -w @cms/api
+          bash scripts/verify-postgres-backup-restore.sh
       - name: Build
         run: npm run build
+      - name: Live API smoke tests against isolated PostgreSQL
+        shell: bash
+        env:
+          API_SMOKE_PORT: '3181'
+          SMOKE_ADMIN_EMAIL: gate.admin@moheng.invalid
+        run: |
+          set -euo pipefail
+          node scripts/verify-api-smoke.mjs
       - name: API unit tests
         run: npm test
       - name: Assistant contracts and PostgreSQL recovery
@@ -64,6 +89,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR"
+          printf 'SECRET-乙项目成本-999999\ntest-only-no-provider-call\nhttps://provider.example.invalid/v1\n' > "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-forbidden-markers.txt"
           npm run test:assistant-runtime-contracts
           npx tsx --test apps/api/src/lib/assistant-event-safety.test.ts apps/api/src/assistant/runtime/langgraph-adapter.test.ts
           npm run test:assistant-recovery:postgres -w @cms/api 2>&1 | tee "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-runtime.log"
@@ -95,3 +121,60 @@ jobs:
             lockfile-sha256.txt
             npm-audit.json
             .assistant-gate-artifacts/
+            gate-artifacts/postgres-backup-restore.txt
+
+  legacy-data-migration-upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: moheng_upgrade_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moheng_upgrade_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/moheng_upgrade_test?schema=public
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      LEGACY_MIGRATION_REPORT_PATH: .assistant-gate-artifacts/legacy-migration-upgrade.txt
+      ASSISTANT_GATE_ARTIFACT_DIR: ${{ github.workspace }}/.assistant-gate-artifacts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies reproducibly
+        run: npm ci --no-audit --no-fund
+      - name: Rehearse migrations with populated legacy-shaped data
+        run: |
+          set -euo pipefail
+          mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR"
+          node scripts/rehearse-legacy-data-migration.mjs
+      - name: Rehearse STG-shaped reconciliation in a guarded isolated schema
+        shell: bash
+        env:
+          STAGING_RECONCILIATION_ALLOW_RESET: 'YES'
+          STAGING_RECONCILIATION_REPORT_PATH: .assistant-gate-artifacts/staging-data-migration-reconciliation-ci.txt
+        run: |
+          set -euo pipefail
+          mkdir -p "$ASSISTANT_GATE_ARTIFACT_DIR"
+          node scripts/gates/staging-fixtures/rehearse.mjs --reset-isolated-schema
+      - name: Upload legacy migration upgrade evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prisma7-legacy-upgrade-evidence
+          if-no-files-found: warn
+          path: |
+            .assistant-gate-artifacts/legacy-migration-upgrade.txt
+            .assistant-gate-artifacts/staging-data-migration-reconciliation-ci.txt

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFile(join(root, path), 'utf8');
-const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, routes, serverRoutes, toolAdapter, css, changelog, readme, designDoc, listRoutes] = await Promise.all([
+const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, routes, serverRoutes, toolAdapter, css, changelog, readme, designDoc, listRoutes, assistantConfig] = await Promise.all([
   read('package.json').then(JSON.parse),
   read('apps/api/package.json').then(JSON.parse),
   read('apps/web/package.json').then(JSON.parse),
@@ -19,8 +19,9 @@ const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, 
   read('apps/web/src/styles.css'),
   read('CHANGELOG.md'),
   read('README.md'),
-  read('docs/assistant-ui-integration-v1.0.md'),
+  read('docs/AI助手实施与准入.md'),
   read('apps/api/src/routes/assistant-conversations.ts'),
+  read('apps/api/src/lib/assistant-config.ts'),
 ]);
 let assertions = 0;
 const check = (condition, message) => { assert.ok(condition, message); assertions += 1; };
@@ -34,6 +35,7 @@ check(thread.includes('ThreadPrimitive.Messages') && thread.includes('ComposerPr
 check(thread.includes('MarkdownTextPrimitive') && thread.includes('remarkGfm'), 'message rendering must support safe Markdown and tables');
 check(thread.includes('native.isComposing') && thread.includes('native.keyCode === 229'), 'CJK IME composition guard must prevent accidental Enter submit');
 check(thread.includes('submitAssistantMessage') && thread.includes('cancelAssistantRun'), 'send/cancel must call MoHeng APIs, not mock responses');
+check(thread.includes('分供资金核对') && thread.includes('已登记应付的差异') && page.includes("DownstreamContractPayment: '分供付款/退款流水'"), 'AI read-only cash flow evidence must be discoverable and visibly labeled in Chinese');
 check(!thread.includes('Hello, world!') && !thread.includes('setTimeout(resolve'), 'production UI must not contain demo reply behavior');
 check(apiClient.includes("'/assistant-poc'") && apiClient.includes('listAssistantConversations') && apiClient.includes('archiveAssistantConversation'), 'custom client must use existing MoHeng conversation APIs');
 check(apiClient.includes("'Last-Event-ID'") && apiClient.includes("headers.set('Authorization'") && apiClient.includes('api.refreshSession()'), 'SSE must support auth and durable cursor resume');
@@ -46,6 +48,8 @@ check(page.includes('source.fields.join') && page.includes('tool.limitations'), 
 check(workspace.includes("api.get<{ enabled: boolean }>('/assistant-poc/status')") && workspace.includes('{assistantEnabled &&'), 'assistant navigation must stay hidden unless enabled');
 check(routes.includes("const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'))") && routes.includes('path="assistant"'), 'assistant page must be lazy-loaded under /cost/assistant');
 check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('preHandler: [authRequired]'), 'status endpoint must require an authenticated user');
+check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('getAssistantRuntimeConfigurationStatus') && assistantConfig.includes('configurationReady: providerConfigured && modelConfigured && checkpointConfigured') && assistantConfig.includes('providerConfigured') && assistantConfig.includes('modelConfigured') && assistantConfig.includes('checkpointConfigured'), 'assistant readiness must expose configuration-presence booleans only');
+check(page.includes('成本助手运行环境未就绪') && page.includes('configurationIssues') && page.includes('模型服务凭据尚未配置'), 'assistant UI must explain missing runtime configuration before accepting questions');
 check(!serverRoutes.includes("app.get('/status', { preHandler: [featureGate, authRequired]"), 'disabled state probe must work without exposing gated tools');
 check(toolAdapter.includes('sources: result.sources.map') && toolAdapter.includes('limitations: result.limitations'), 'backend tool event must persist compact structured source metadata');
 check(listRoutes.includes('async (request, reply)') && listRoutes.includes('parsedQuery.data.projectId ? { projectId: parsedQuery.data.projectId }'), 'conversation list validation must return a safe error and filter by server query project scope');

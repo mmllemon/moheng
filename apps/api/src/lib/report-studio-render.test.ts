@@ -1,4 +1,6 @@
 import test from 'node:test';
+import ExcelJS from 'exceljs';
+import { buildReportStudioWorkbook } from './report-studio-xlsx.js';
 import assert from 'node:assert/strict';
 import { renderReportStudio, previewReportStudio } from './report-studio-render.js';
 import type { ReportStudioDefinition } from './report-studio-definition.js';
@@ -16,7 +18,7 @@ function definition(): ReportStudioDefinition {
         main: {
           id: 'main', name: '测试表', rowCount: 8, columnCount: 4,
           cellData: {
-            '0': { '0': { v: '项目名称' }, '1': { v: '' } },
+            '0': { '0': { v: '项目名称' }, '1': { v: '', s: { vt: 1, bl: 1, cl: '#123456', bg: '#AABBCC', bd: { b: { s: 1, cl: '#112233' } } } } },
             '1': { '0': { v: '合同编号' }, '1': { v: '合同额' } },
             '2': { '0': { v: '' }, '1': { v: '' } },
             '3': { '0': { v: '固定结尾' } },
@@ -106,4 +108,90 @@ test("keeps amounts beyond Excel's 15-significant-digit limit as text", () => {
   const input = { ...dataset, sources: { ...dataset.sources, project: { amount: '10000000000000.01' } } };
   const result = renderReportStudio(report, input);
   assert.equal(result.sheets[0]?.rows[0]?.[1]?.value, '10000000000000.01');
+});
+
+
+test('XLSX export starts with a styled overview sheet and preserves the report worksheets', async () => {
+  const buffer = await buildReportStudioWorkbook({
+    definition: definition(),
+    dataset,
+    templateName: '项目经营摘要模板',
+    templateVersion: 3,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+
+  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '测试表', '报表说明']);
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('A1').value, '区域渲染测试');
+  assert.equal(overview.getCell('A4').value, '报表类型');
+  assert.equal(overview.getCell('B4').value, '项目级综合报表');
+  assert.equal(overview.getCell('B5').value, '项目经营摘要模板');
+  assert.equal(overview.getCell('D5').value, 'v3');
+  assert.equal(overview.getCell('B6').value, '测试项目');
+  assert.equal(overview.getCell('B12').value, '测试表');
+  assert.equal(overview.getCell('D12').value, '已生成');
+  assert.equal(overview.getCell('A1').fill && (overview.getCell('A1').fill as { fgColor?: { argb?: string } }).fgColor?.argb, 'FF17324D');
+  assert.equal(overview.pageSetup.fitToPage, true);
+
+  // The export still contains the original user-designed sheet and values.
+  const designedSheet = workbook.getWorksheet('测试表')!;
+  assert.equal(designedSheet.getCell('B1').value, '测试项目');
+  assert.equal(designedSheet.getCell('B1').alignment?.vertical, 'top');
+  assert.equal(designedSheet.getCell('B1').font.color && (designedSheet.getCell('B1').font.color as { argb?: string }).argb, 'FF123456');
+  assert.equal(designedSheet.getCell('B1').fill && (designedSheet.getCell('B1').fill as { fgColor?: { argb?: string } }).fgColor?.argb, 'FFAABBCC');
+  assert.equal(designedSheet.getCell('B1').border.bottom?.style, 'thin');
+  assert.equal(workbook.getWorksheet('报表说明')!.getCell('B1').value, '区域渲染测试');
+});
+
+test('XLSX overview sheet remains available when the optional metadata sheet is disabled', async () => {
+  const report = definition();
+  report.page.includeMetadata = false;
+  const buffer = await buildReportStudioWorkbook({
+    definition: report,
+    dataset,
+    templateName: '最小元数据模板',
+    templateVersion: 1,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '测试表']);
+  assert.equal(workbook.getWorksheet('报表预览')!.getCell('B6').value, '测试项目');
+});
+
+test('renders downstream payment and refund collections into independent report regions', () => {
+  const report = definition();
+  const workbook = report.workbook as {
+    sheets: Record<string, {
+      rowCount: number;
+      cellData: Record<string, Record<string, { v?: unknown; s?: unknown }>>;
+    }>;
+  };
+  const main = workbook.sheets.main!;
+  main.rowCount = 10;
+  main.cellData['7'] = { '0': { v: '分供付款流水' } };
+  main.cellData['8'] = { '0': { v: '分供合同编号' }, '1': { v: '支付/退款金额' } };
+  main.cellData['9'] = { '0': { v: '' }, '1': { v: '' } };
+  report.bindings.push(
+    { id: 'payment-contract', sheetId: 'main', cell: 'A10', sourceId: 'downstreamPayments', fieldId: 'contractNo', format: 'TEXT' },
+    { id: 'payment-amount', sheetId: 'main', cell: 'B10', sourceId: 'downstreamPayments', fieldId: 'amount', format: 'MONEY' },
+  );
+  report.regions.push({ id: 'payment-region', sheetId: 'main', sourceId: 'downstreamPayments', templateRow: 9, startColumn: 0, endColumn: 1, maxRows: 100 });
+  const result = renderReportStudio(report, {
+    ...dataset,
+    sources: {
+      ...dataset.sources,
+      downstreamPayments: [
+        { id: 'dp-1', contractNo: 'SC-001', amount: '10.50', type: 'PROGRESS' },
+        { id: 'dp-2', contractNo: 'SC-002', amount: '3.25', type: 'REFUND' },
+      ],
+    },
+  });
+  const rows = result.sheets[0]!.rows;
+  const section = rows.findIndex((row) => row[0]?.value === '分供付款流水');
+  assert.ok(section >= 0);
+  assert.equal(rows[section + 2]![0]!.value, 'SC-001');
+  assert.equal(rows[section + 2]![1]!.value, 10.5);
+  assert.equal(rows[section + 3]![0]!.value, 'SC-002');
+  assert.equal(rows[section + 3]![1]!.value, 3.25);
 });
