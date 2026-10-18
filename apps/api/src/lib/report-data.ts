@@ -2,6 +2,7 @@ import { prisma } from './prisma.js';
 import { calculateDownstreamCurrentAmount } from './downstream-contract-math.js';
 import type { AuthUser } from './auth.js';
 import { hasCrossProjectReadScope } from './project-data-scope.js';
+import { centsToMoney, moneyToCents } from './contract-amount-math.js';
 
 export const reportCatalog = [
   { key: 'target-cost', label: '目标成本清单', description: '项目清单编号、父级、工程量、单价、目标合价与最近更新时间。', dateField: '更新时间', rowLimit: 10000 },
@@ -125,8 +126,8 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
     truncated = data.length > 10000;
     rows = data.slice(0, 10000).map(r => {
       const currentAmount = calculateDownstreamCurrentAmount(r.originalAmount, r.adjustments);
-      const netAdjustCents = Math.round((Number(currentAmount) - Number(r.originalAmount)) * 100);
-      return [r.project.name, r.project.code, r.contractNo, r.name, r.type, r.counterpartyName, r.scope, r.originalAmount, (netAdjustCents / 100).toFixed(2), currentAmount, r.status, r.signedAt, r.startDate, r.plannedEndDate, r.paymentTerms, r.notes];
+      const netAdjustCents = moneyToCents(currentAmount) - moneyToCents(r.originalAmount);
+      return [r.project.name, r.project.code, r.contractNo, r.name, r.type, r.counterpartyName, r.scope, r.originalAmount, centsToMoney(netAdjustCents), currentAmount, r.status, r.signedAt, r.startDate, r.plannedEndDate, r.paymentTerms, r.notes];
     });
   } else {
     const data = await prisma.downstreamPayable.findMany({ where: { downstreamContract: { project: selectedProjectScope, deletedAt: null }, ...dateRange('postedAt') }, include: { downstreamContract: { include: { project: { select: { name: true, code: true } }, counterpartyParty: { select: { name: true } } } }, settlement: { select: { settlementNo: true, type: true, status: true } }, schedules: { select: { dueAt: true, amount: true } } }, orderBy: [{ postedAt: 'desc' }, { payableNo: 'asc' }], take: 10001 });
