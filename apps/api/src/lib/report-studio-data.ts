@@ -377,13 +377,30 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
   if (!party.identityVerified) warnings.push('单位主体尚未核验；跨项目经营汇总仅供参考，不应直接作为最终对账依据。');
   const partyTruncatedFields: NonNullable<ReportStudioDataset['truncatedFields']> = [];
-  if (partyProjectsListTruncated) {
-    const message = `该往来单位关联项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，项目明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；汇总指标仍基于完整可计算的数据统计。`;
+  if (ownedProjectsTruncated) {
+    const affectedFields = [{
+      sourceId: 'partySummary',
+      fieldIds: ['projectCount', 'mainContractCount', 'ownerCurrentContractAmount', 'ownerApprovedBillAmount', 'ownerReceivedAmount'],
+    }];
+    partyTruncatedFields.push(...affectedFields);
+    const message = `该往来单位关联建设单位项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；业主项目/主合同明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，关联项目数及业主侧合同、核定进度款、回款汇总已置空，避免将部分项目算作全量结果。`;
+    warnings.push(message);
+    truncationNotices.push({ sourceIds: ['partyProjects', 'partyMainContracts'], fields: affectedFields, message });
+  }
+  if (standaloneCostProjectGroupsTruncated) {
+    const affectedFields = [{ sourceId: 'partySummary', fieldIds: ['projectCount'] }];
+    partyTruncatedFields.push(...affectedFields);
+    const message = `该往来单位的独立成本分布超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 个项目；项目关联清单仅反映有界范围，关联项目总数已置空。独立成本金额和记录数仍基于完整数据库聚合。`;
+    warnings.push(message);
+    truncationNotices.push({ sourceIds: ['partyProjects'], fields: affectedFields, message });
+  }
+  if (partyProjectsListTruncated && !ownedProjectsTruncated && !standaloneCostProjectGroupsTruncated) {
+    const message = `该往来单位关联项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，项目明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；请结合其他来源截断提示判断关联范围是否完整。`;
     warnings.push(message);
     truncationNotices.push({ sourceIds: ['partyProjects'], message });
   }
-  if (partyMainContractsTruncated) {
-    const message = `该往来单位关联业主主合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，主合同明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；合同汇总仍使用完整主合同记录计算。`;
+  if (partyMainContractsTruncated && !ownedProjectsTruncated) {
+    const message = `该往来单位关联业主主合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，主合同明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条。`;
     warnings.push(message);
     truncationNotices.push({ sourceIds: ['partyMainContracts'], message });
   }
