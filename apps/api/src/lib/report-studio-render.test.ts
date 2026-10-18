@@ -157,18 +157,32 @@ test('XLSX export starts with a styled overview sheet and preserves the report w
   assert.equal(workbook.getWorksheet('报表说明')!.getCell('B1').value, '区域渲染测试');
 });
 
-test('XLSX overview ignores truncation notices for sources unused by the template', async () => {
-  const unrelatedWarning = '实际成本明细超过 10,000 条，明细已截断。';
+test('XLSX overview ignores truncation of an unbound field in a used summary source', async () => {
+  const unrelatedWarning = '实际成本明细超过 10,000 条，明细已截断；仅影响实际成本合计。';
+  const report = definition();
+  report.bindings.push({
+    id: 'summary-receipt-total',
+    sheetId: 'main',
+    cell: 'C1',
+    sourceId: 'financialSummary',
+    fieldId: 'receiptTotal',
+    format: 'MONEY',
+  });
   const buffer = await buildReportStudioWorkbook({
-    definition: definition(),
+    definition: report,
     dataset: {
       ...dataset,
       warnings: [unrelatedWarning],
       truncated: true,
       truncatedSources: ['actualCosts'],
-      truncationNotices: [{ sourceIds: ['actualCosts'], message: unrelatedWarning }],
+      truncatedFields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+      truncationNotices: [{
+        sourceIds: ['actualCosts'],
+        fields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+        message: unrelatedWarning,
+      }],
     },
-    templateName: '无关数据源截断模板',
+    templateName: '字段级截断验证模板',
     templateVersion: 1,
   });
   const workbook = new ExcelJS.Workbook();
@@ -314,12 +328,18 @@ test('marks a report incomplete when a scalar-bound summary source is truncated'
     format: 'MONEY',
   });
 
+  const message = '实际成本数据源达到上限，财务汇总中的实际成本合计不完整。';
   const result = renderReportStudio(report, {
     ...dataset,
     truncated: true,
-    truncatedSources: ['financialSummary'],
-    warnings: ['依赖财务汇总的数据源明细已截断。'],
-    truncationNotices: [{ sourceIds: ['financialSummary'], message: '依赖财务汇总的数据源明细已截断。' }],
+    truncatedSources: ['actualCosts'],
+    truncatedFields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+    warnings: [message],
+    truncationNotices: [{
+      sourceIds: ['actualCosts'],
+      fields: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+      message,
+    }],
   });
 
   assert.equal(result.truncated, true);
@@ -327,7 +347,7 @@ test('marks a report incomplete when a scalar-bound summary source is truncated'
   assert.ok(result.warnings.includes('依赖财务汇总的数据源明细已截断。'), 'notices for bound summary sources must remain visible');
 });
 
-test('does not label a report incomplete when only an unused source was truncated', () => {
+test('does not label a report incomplete when a bound summary uses an unaffected field', () => {
   const result = renderReportStudio(definition(), {
     ...dataset,
     truncated: true,
