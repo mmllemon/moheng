@@ -23,6 +23,8 @@ const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
 const design = await read('docs/设计系统规范-Pro-Tier-Suite-v4.2.0.md');
 const acceptance = await read('docs/后续四阶段开发路线图.md');
+const datePickerUtils = await read('apps/web/src/components/date-picker-utils.ts');
+const datePickerUtilsTests = await read('apps/web/src/components/date-picker-utils.test.ts');
 const corePagePaths = [
   "apps/web/src/pages/AccountSecurityPage.tsx",
   "apps/web/src/pages/AccountSecurityStepPage.tsx",
@@ -98,12 +100,17 @@ check('date picker keyboard movement skips disabled dates and preserves focusabl
   datePicker.includes('while (isDisabled(asIsoDate(next)) && attempts < 3660)') &&
   datePicker.includes('if (isDisabled(asIsoDate(next))) return;') &&
   datePicker.includes('setFocusedDate(nextValue)'));
-check('controlled date picker follows externally changed values across months without resetting on month navigation',
-  datePicker.includes('const selected = parseIsoDate(selectedValue)') &&
-  datePicker.includes('if (!selected || isDisabled(selectedValue)) return;') &&
+check('controlled date picker keeps focus inside externally updated bounds without resetting on month navigation',
+  datePicker.includes('normalizeIsoDateWithinBounds(selectedValue, min == null ? null : String(min), max == null ? null : String(max))') &&
+  datePicker.includes('if (!focusValue)') &&
   datePicker.includes('setViewDate((current) =>') &&
-  datePicker.includes('setFocusedDate((current) => current === selectedValue ? current : selectedValue)') &&
-  datePicker.includes('[selectedValue, min, max]'));
+  datePicker.includes('setFocusedDate((current) => current === focusValue ? current : focusValue)') &&
+  datePicker.includes('[selectedValue, min, max]') &&
+  datePicker.includes('openCalendar()') &&
+  datePickerUtils.includes('normalizeIsoDateWithinBounds') &&
+  datePickerUtils.includes('isIsoDateWithinBounds') &&
+  datePickerUtilsTests.includes('controlled values normalize to the nearest valid min/max boundary') &&
+  datePickerUtilsTests.includes('contradictory bounds never become a keyboard focus target'));
 check('design docs enforce neutral professional visual language and record navigation/report cleanup',
   design.includes('色彩不是装饰品') && design.includes('150ms ~ 350ms') &&
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
