@@ -212,7 +212,7 @@ export function previewReportStudio(result: ReportStudioRenderResult, maxRowsPer
       id: sheet.id, name: sheet.name, rowCount: sheet.rowCount, previewRowCount: Math.min(maxRowsPerSheet, sheet.rows.length),
       truncated: sheet.truncated || sheet.rows.length > maxRowsPerSheet,
       rows: sheet.rows.slice(0, maxRowsPerSheet).map((row) => row.map((cell) => ({ value: cell.value, style: cell.style ?? null, format: cell.format ?? null }))),
-      rowHeights: sheet.rowHeights, columnWidths: sheet.columnWidths, merges: sheet.merges.filter((merge) => merge.startRow < maxRowsPerSheet),
+      rowHeights: sheet.rowHeights, columnWidths: sheet.columnWidths, merges: sheet.merges.filter((merge) => merge.startRow < maxRowsPerSheet && merge.endRow < maxRowsPerSheet),
     })),
   };
 }
