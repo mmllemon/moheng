@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { runLangGraphAssistantTurn, type LangGraphAssistantTurn } from './langgraph-adapter.js';
+import { ASSISTANT_MODEL_POLICY, runLangGraphAssistantTurn, type LangGraphAssistantTurn } from './langgraph-adapter.js';
 import { assertSafeAssistantEventPayload } from '../../lib/assistant-run-events.js';
 import type { AuthUser } from '../../lib/auth.js';
 import type { AssistantReadOnlyToolInput } from '../../lib/assistant-read-only-tools.js';
 import { createFakeRuntimeDependencies, FAKE_PROVIDER_PRIVATE_MARKER } from '../../../test-support/fake-assistant-provider.js';
+
+test('assistant model policy bounds response size, timeout and retries', () => {
+  assert.deepEqual(ASSISTANT_MODEL_POLICY, { maxTokens: 1800, timeoutMs: 45_000, maxRetries: 1 });
+});
 
 const actor: AuthUser = { sub: 'test-user', email: 'test@example.invalid', role: 'ADMIN', sid: 'test-session' };
 
