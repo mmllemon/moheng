@@ -98,7 +98,13 @@ check('party report collection outputs enforce row caps and source-specific comp
   data.includes('partyMainContracts: mainContractRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
   data.includes("sourceIds: ['partyProjects']") &&
   data.includes("sourceIds: ['partyMainContracts']") &&
-  data.includes('projectCount: downstreamContractsTruncated ? null : projectRows.length'));
+  data.includes('take: MAX_ROWS_PER_SOURCE + 1') &&
+  data.includes('const ownedProjectsTruncated = ownedProjectsFetched.length > MAX_ROWS_PER_SOURCE') &&
+  data.includes('const standaloneCostProjectGroupsTruncated = standaloneCostTotalsFetched.length > MAX_ROWS_PER_SOURCE') &&
+  data.includes('prisma.costEntry.aggregate({ where: standaloneCostScope') &&
+  data.includes("fieldIds: ['projectCount', 'mainContractCount', 'ownerCurrentContractAmount', 'ownerApprovedBillAmount', 'ownerReceivedAmount']") &&
+  data.includes('const standaloneCostCount = standaloneCostAggregate._count._all') &&
+  data.includes('const projectListIncomplete = downstreamContractsTruncated || ownedProjectsTruncated || standaloneCostProjectGroupsTruncated'));
 check('financial summaries never present partial capped source data as complete totals',
   data.includes('依赖该数据源的相关汇总字段将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
 check('report truncation flags and warnings follow bound collections and exact summary fields',
