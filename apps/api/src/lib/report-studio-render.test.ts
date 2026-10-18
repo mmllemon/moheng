@@ -77,6 +77,15 @@ test('renders exact single-value cells and expands independent repeating regions
   assert.equal(result.sheets[0]!.frozenRows, 2);
 });
 
+test('renders a field binding when the workbook adapter omits its blank cell from cellData', () => {
+  const report = definition();
+  const sheets = (report.workbook as unknown as { sheets: Record<string, { cellData: Record<string, Record<string, unknown>> }> }).sheets;
+  // Simulate spreadsheet adapters that serialize non-empty cells only. The binding must still be authoritative.
+  sheets.main!.cellData['0'] = { '0': { v: '项目名称' } };
+  const result = renderReportStudio(report, dataset);
+  assert.equal(result.sheets[0]!.rows[0]![1]!.value, '测试项目');
+});
+
 test('preview is bounded and marks truncation without changing the render source', () => {
   const result = renderReportStudio(definition(), dataset);
   const preview = previewReportStudio(result, 4);
