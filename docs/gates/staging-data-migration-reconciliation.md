@@ -141,27 +141,21 @@ reason 字段准确区分了「主合同优先」与「重算生效外部确认�
 
 ---
 
-## 四、复现方式
+## 四、可重复复现方式
+
+原始报告生成时使用的 `stage1-legacy.mjs` 与 `sq.mjs` 是本地辅助脚本，没有随原提交入库；那组命令仅作为历史操作记录保留，不能从干净 checkout 完整复现。
+
+仓库现已提供阶段化 runner 和分阶段 SQL 夹具。必须在一次性、隔离的 PostgreSQL 测试环境运行：
 
 ```powershell
-# 阶段1：旧版结构 + 遗留数据
-node stage1-legacy.mjs
-node sq.mjs scripts/gates/staging-fixtures/seed-legacy-before-migration.sql
-
-# 阶段2：完整迁移
-$env:DATABASE_URL = 'postgresql://cms_user:<pw>@127.0.0.1:5432/cost_management?schema=moheng_staging_test'
-node node_modules/prisma/build/index.js migrate deploy   # cwd: apps/api
-
-# 阶段3：往来单位与后续数据
-node sq.mjs scripts/gates/staging-fixtures/seed-business-parties.sql
-
-# 核对
-node sq.mjs scripts/gates/staging-fixtures/_v1.sql   # 合同额
-node sq.mjs scripts/gates/staging-fixtures/_v3.sql   # 对账留痕
-node sq.mjs scripts/gates/staging-fixtures/_v4.sql   # 责任人
-node sq.mjs scripts/gates/staging-fixtures/_v8.sql   # 单位重复
+$env:STAGING_RECONCILIATION_ALLOW_RESET = 'YES'
+node scripts/gates/staging-fixtures/rehearse.mjs --reset-isolated-schema
 ```
 
+runner 会检查 loopback host、允许的测试数据库名、端口和固定的 `moheng_staging_test` schema；还要求命令行标志与环境变量双重确认。它只重建这个具名 schema，按真实迁移前缀插入旧版字段、执行变更责任人回填与合同额对账，再执行往来单位迁移并输出只读核对结果。不要在包含不可丢失数据的数据库执行；在本仓库的 GitHub Actions 中，此 runner 使用专用临时 PostgreSQL 服务。
+
+报告对应的只读查询已入库：`_v1.sql`（合同金额）、`_v3.sql`（对账留痕）、`_v4.sql`（责任人回填）和 `_v8.sql`（同名单位重复）。runner 会自动执行并将结果写入 CI artifact。此自动化复现是后续可重复证据，不追溯性证明最初的本地脚本执行过程。
+ 
 ---
 
 ## 五、结论
@@ -169,3 +163,19 @@ node sq.mjs scripts/gates/staging-fixtures/_v8.sql   # 单位重复
 迁移对真实历史台账的影响**符合设计预期**：金额重算准确、对账留痕完整、未发生法人错误合并、未丢失数据。
 
 有 4 项需人工介入，其中 2 项（legacy 单位重复、责任人缺失）是**数据质量**问题而非迁移缺陷——系统按设计生成了待复核标记，没有擅自合并或猜测。
+
+
+---
+
+## 可重复核对补充（2026-10-18）
+
+原始运行使用的本地辅助命令（`stage1-legacy.mjs`、`sq.mjs`）未全部入库。仓库现新增阶段化复现入口：
+
+```powershell
+$env:STAGING_RECONCILIATION_ALLOW_RESET = 'YES'
+node scripts/gates/staging-fixtures/rehearse.mjs --reset-isolated-schema
+```
+
+该入口只允许 loopback PostgreSQL、明确的测试数据库名和固定的 `moheng_staging_test` schema；必须同时提供命令行重置标志和环境变量确认。它按真实迁移前缀分阶段写入遗留字段、执行迁移、运行只读核对，并生成独立验收证据。**不得对非一次性测试数据库执行该命令**，因为它会重建命名的测试 schema。
+
+该自动化复现覆盖同一 STG 业务场景，不会追溯性证明此前未提交的本地 helper 如何运行，也不能代替脱敏暂存快照核验。

@@ -1,4 +1,4 @@
--- Read-only: unresolved or partially attributable change records and the audit evidence available.
+-- Read-only: legacy creator/submitter backfill coverage plus all actor fields for review.
 SET search_path TO moheng_staging_test;
 
 SELECT
@@ -13,7 +13,8 @@ SELECT
   COUNT(a.id) FILTER (WHERE a.action = 'CREATE') AS migration_recognized_create_events,
   COUNT(a.id) FILTER (
     WHERE a.action = 'STATUS_CHANGE' AND a.changes->>'to' = 'SUBMITTED'
-  ) AS migration_recognized_submit_events
+  ) AS migration_recognized_submit_events,
+  (c."createdById" IS NULL OR c."submittedById" IS NULL) AS creator_or_submitter_unresolved
 FROM "Change" c
 LEFT JOIN "AuditLog" a
   ON a.entity = 'Change'
@@ -21,9 +22,4 @@ LEFT JOIN "AuditLog" a
 WHERE c.code LIKE 'STG%'
 GROUP BY c.id, c.code, c.name, c.status, c."createdById", c."submittedById",
          c."internalApprovedById", c."externalRecordedById"
-HAVING c."createdById" IS NULL
-    OR c."submittedById" IS NULL
-    OR c."internalApprovedById" IS NULL
-    OR c."externalRecordedById" IS NULL
-    OR COUNT(a.id) = 0
 ORDER BY c.code;

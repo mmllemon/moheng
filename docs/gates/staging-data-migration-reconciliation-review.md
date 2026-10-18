@@ -12,14 +12,14 @@ This review does **not** allege that the author touched `public`; that cannot be
 
 ## Reproducibility gaps found in the checked-in tree
 
-1. The report's reproduction commands reference `stage1-legacy.mjs`, `sq.mjs`, and `_v1.sql` / `_v3.sql` / `_v4.sql` / `_v8.sql`. The first two and the four query files were not present in the repository tree at the reviewed commit. The read-only query files are now checked in alongside this review; the local helper scripts are still not part of the repository.
+1. The report's original reproduction commands referenced local helpers `stage1-legacy.mjs` and `sq.mjs`, which are not tracked. The four read-only query files are now checked in, and a self-contained guarded runner `scripts/gates/staging-fixtures/rehearse.mjs` supersedes those local helpers for a repeatable CI/local-test path.
 2. `seed-legacy-before-migration.sql` is not valid as a fixture for the schema immediately before `20261013020000_contract_change_external_confirmation`: it references fields introduced by that migration (`originalContractAmount`, `direction`, external-confirmation fields and change actor columns) and also inserts `BusinessParty` records before the migration that creates that table.
 3. The same fixture inserts `CostEntry.category` / `CostEntry.occurredOn`, whereas the committed initial migration defines `CostEntry.type` / `CostEntry.date`.
 4. That fixture uses `BusinessPartyRole` values such as `CONTRACTOR`; the committed enum instead allows `OWNER`, `MATERIAL_SUPPLIER`, `LABOR_SUBCONTRACTOR`, `PROFESSIONAL_SUBCONTRACTOR`, `EQUIPMENT_LESSOR`, `SERVICE_PROVIDER`, and `OTHER`.
 5. The actor-backfill migration only reads matching `AuditLog` events with `action = 'CREATE'` for `createdById`, and `action = 'STATUS_CHANGE'` plus `changes->>'to' = 'SUBMITTED'` for `submittedById`. The staging fixtures currently use `CHANGE_CREATED`, `CHANGE_INTERNAL_APPROVED`, and `CHANGE_EXTERNAL_CONFIRMED`; those actions do not exercise these backfill predicates. Several fixture rows also populate actor columns directly. The separate CI upgrade gate does test `CREATE` / `STATUS_CHANGE` backfill correctly, but that is a different fixture and does not independently prove the STG report's local run.
 6. `seed-legacy-before-migration.sql` and `seed-business-parties.sql` both insert the same audit-log IDs (and costs). Running both exactly as the report's command sequence states would conflict on primary keys unless a non-committed helper alters or filters one of the scripts.
 
-The current CI gate at `scripts/rehearse-legacy-data-migration.mjs` remains the reproducible proof for its own `UPGRADE-01` fixture. It should not be represented as an independent reproduction of the report's STG fixture set.
+The separate gate at `scripts/rehearse-legacy-data-migration.mjs` remains the reproducible proof for its own `UPGRADE-01` fixture. The new `scripts/gates/staging-fixtures/rehearse.mjs` gate reproduces the STG-01/STG-02/STG-03 shape using phase-correct fixtures; its result must pass in GitHub Actions before being reported as verified.
 
 ## Classification of the four report findings
 
