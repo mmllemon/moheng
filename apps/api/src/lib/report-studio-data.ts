@@ -209,9 +209,18 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     downstreamCurrentContractAmount: downstreamContractsTruncated ? null : sumPartyMoney(downstreamRows.filter((row) => row.status !== 'TERMINATED').map((row) => row.currentAmount)), downstreamSettledAmount: downstreamContractsTruncated ? null : sum('settledAmount'), downstreamPaidAmount: downstreamContractsTruncated ? null : sum('paidAmount'), downstreamOpenPayableAmount: downstreamContractsTruncated ? null : sum('openPayableAmount'), downstreamSupplierCreditAmount: downstreamContractsTruncated ? null : sum('supplierCreditAmount'), downstreamActualCostAmount: downstreamContractsTruncated ? null : sum('actualCostAmount'), downstreamInvoiceAmount: downstreamContractsTruncated ? null : sum('invoiceAmount'), downstreamVerifiedInvoiceAmount: downstreamContractsTruncated ? null : sum('verifiedInvoiceAmount'), downstreamInvoiceCount: downstreamContractsTruncated ? null : sumNumbers(downstreamRows.map((row) => row.invoiceCount)), standaloneCostAmount, standaloneCostCount: standaloneCostTotals.reduce((total, row) => total + row._count._all, 0), downstreamTotalCostAmount: downstreamContractsTruncated ? null : plusPartyMoney(sum('actualCostAmount'), standaloneCostAmount),
   };
   const warnings: string[] = [];
+  const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
   if (!party.identityVerified) warnings.push('单位主体尚未核验；跨项目经营汇总仅供参考，不应直接作为最终对账依据。');
-  if (downstreamContractsTruncated) warnings.push(`该往来单位关联分供合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；依赖分供合同集合的合同、应付、成本和发票金额汇总已停用，避免将部分数据冒充完整总额。`);
-  if (standaloneCosts.length > 200) warnings.push('独立关联成本明细仅显示最近 200 条；汇总金额使用完整分组统计。');
+  if (downstreamContractsTruncated) {
+    const message = `该往来单位关联分供合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；依赖分供合同集合的合同、应付、成本和发票金额汇总已停用，避免将部分数据冒充完整总额。`;
+    warnings.push(message);
+    truncationNotices.push({ sourceIds: ['partyDownstreamContracts', 'partyProjects', 'partySummary'], message });
+  }
+  if (standaloneCosts.length > 200) {
+    const message = '独立关联成本明细仅显示最近 200 条；汇总金额使用完整分组统计。';
+    warnings.push(message);
+    truncationNotices.push({ sourceIds: ['partyStandaloneCosts'], message });
+  }
   const partyRows = {
     businessParty: { id: party.id, name: party.name, creditCode: party.creditCode ?? '', roles: party.roles.join('、'), status: party.status, identityVerified: party.identityVerified ? '已核验' : '待核验', formerNames: party.formerNames.join('、'), legalRepresentative: party.legalRepresentative ?? '', address: party.address ?? '', contactName: party.contactName ?? '', phone: party.phone ?? '', email: party.email ?? '', taxNo: party.taxNo ?? '', invoiceTitle: party.invoiceTitle ?? '', notes: party.notes ?? '', updatedAt: dateText(party.updatedAt) },
     partySummary: summary,
@@ -227,7 +236,7 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   return {
     domain: 'PARTY', generatedAt: new Date().toISOString(), projectId: null, businessPartyId,
     accessibleProjectCount: visibleProjects.length, sources: partyRows, warnings,
-    truncated: truncatedSources.length > 0, truncatedSources,
+    truncated: truncatedSources.length > 0, truncatedSources, truncationNotices,
   };
 }
 
