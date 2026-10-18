@@ -19,8 +19,8 @@ const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
 const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
-const design = await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md');
-const acceptance = await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md');
+const design = await read('docs/设计系统规范-Pro-Tier-Suite-v4.2.0.md');
+const acceptance = await read('docs/后续四阶段开发路线图.md');
 
 const expectedVersion = rootPackage.version;
 const validReleaseVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(expectedVersion);
@@ -42,8 +42,10 @@ check('project members navigation is absent from cost workspace tabs and the tab
   !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && workspace.includes('aria-label="成本工作台业务导航"') && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system', label: '系统管理'") && layout.includes("to: '/system', label: '概览'") && layout.includes("'经营中心', '工作台', '项目管理', '系统管理'"));
 check('sidebar health indicator without data semantics is removed and replaced by a functioning dashboard link',
   !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
-check('documentation discusses the health indicator as non-metric and records navigation/report layout changes',
-  design.includes('经营健康度') && design.includes('没有真实数据') && design.includes('项目成员与权限') && acceptance.includes('报表中心') && acceptance.includes('经营健康度'));
+check('design docs enforce neutral professional visual language and record navigation/report cleanup',
+  design.includes('色彩不是装饰品') && design.includes('150ms ~ 350ms') &&
+  acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
+  acceptance.includes('经营健康度') && acceptance.includes('项目驾驶舱'));
 
 console.log(`\n${passed}/${passed + failures.length} UI polish checks passed.`);
 if (failures.length) process.exitCode = 1;
