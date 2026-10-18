@@ -41,3 +41,8 @@ The script hard-fails unless the source URL and PostgreSQL connection environmen
 ## Next release gate
 
 After this CI gate passes, run a controlled staging rehearsal on sanitized representative data. Capture: source snapshot identifier, migration revision, backup artifact identifier and SHA-256, restore target, table/data integrity verification, application smoke-test evidence, measured RPO/RTO, operator, and rollback/forward-fix decision. Keep credentials, connection strings, and unredacted business data out of GitHub artifacts.
+
+
+## Additional automated HTTP smoke gate
+
+The migration workflow also starts the compiled API against the disposable PostgreSQL database and checks readiness, unauthenticated access rejection, API module metadata, administrator login, project/main-contract read, standard report catalog, and company-level report-studio data sources. It uses a random one-run seed password masked from GitHub Actions logs. This validates a local CI runtime path; it is not a substitute for staging/browser smoke tests.
