@@ -92,6 +92,7 @@ jobs:
           printf 'SECRET-乙项目成本-999999\ntest-only-no-provider-call\nhttps://provider.example.invalid/v1\n' > "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-forbidden-markers.txt"
           npm run test:assistant-runtime-contracts
           npx tsx --test apps/api/src/lib/assistant-event-safety.test.ts apps/api/src/assistant/runtime/langgraph-adapter.test.ts
+          REPORT_STUDIO_DATA_TESTS=true npm run test:report-studio-data:postgres -w @cms/api
           npm run test:assistant-recovery:postgres -w @cms/api 2>&1 | tee "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-runtime.log"
           node scripts/validate-assistant-leaks.mjs \
             --logs "$ASSISTANT_GATE_ARTIFACT_DIR/assistant-runtime.log" \
