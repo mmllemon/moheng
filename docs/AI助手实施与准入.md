@@ -46,7 +46,7 @@ checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKP
 - [ ] SSE 重连/事件回放：断线后从持久化序号恢复，不重复消息、不覆盖新会话。
 - [ ] 可解释来源：工具、字段/实体、范围、生成时间及口径/局限。
 - [ ] 体验打磨：空白会话、建议问题、中文输入法、长消息滚动、窄屏、键盘导航、错误重试。
-- [ ] fake provider E2E、真实 provider 的受控 E2E；验证并发、重启恢复、越权/提示注入和业务表零变更。
+- [ ] fake provider E2E、真实 provider 的受控 E2E；验证并发、重启恢复、越权/提示注入，并确认 `MainContract`、`Change`、`CostEntry`、`DownstreamContract`、`ProgressBill`、`OwnerReceivable` 六张业务表零变化。
 - [ ] 明确 token/成本上限、请求/项目限流、超时、数据保留/删除和告警。
 - [ ] 造价/成本人员只读试点并记录回答口径问题；完成独立生产准入评审。
 
