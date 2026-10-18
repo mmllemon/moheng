@@ -6,47 +6,54 @@ Source report: `docs/gates/staging-data-migration-reconciliation.md`
 
 ## Conclusion
 
-The report is useful as a record of the claimed isolated-schema rehearsal and it identifies four concrete data-quality questions. However, the repository snapshot does not yet contain a fully reproducible path for that exact rehearsal. Treat the recorded STG-01/STG-02/STG-03 values as report evidence supplied by the run author, not as independently reproduced results, until the fixture sequence below is corrected and rerun from a clean checkout.
+The original report records an isolated-schema rehearsal with synthetic legacy-ledger fixtures and identifies four concrete data-quality questions. At the original report commit, its local reproduction commands were not self-contained and parts of the seed order did not match the historical schemas.
 
-This review does **not** allege that the author touched `public`; that cannot be verified from repository contents alone. No database was accessed or changed during this review.
+**Follow-up status:** the current RC.2 head `bd4793af5e8d26497ed8a3556d180cb80a000527` now includes the phase-correct runner at `scripts/gates/staging-fixtures/rehearse.mjs` and the required staged SQL fixtures. GitHub Actions run [#40 — Prisma 7 migration gates](https://github.com/mmllemon/moheng/actions/runs/39091162665) passed both the main migration job and the populated-legacy/STG-shaped reconciliation job. The current tree therefore closes the *synthetic fixture reproducibility* gap; it does not turn synthetic data into evidence from the user's actual staging database.
 
-## Reproducibility gaps found in the checked-in tree
+The original review did not access or change any database. The automated rehearsal runs in GitHub Actions against a disposable PostgreSQL 16 service. No evidence in this review establishes that a real user staging or production database was accessed.
 
-1. The report's original reproduction commands referenced local helpers `stage1-legacy.mjs` and `sq.mjs`, which are not tracked. The four read-only query files are now checked in, and a self-contained guarded runner `scripts/gates/staging-fixtures/rehearse.mjs` supersedes those local helpers for a repeatable CI/local-test path.
-2. `seed-legacy-before-migration.sql` is not valid as a fixture for the schema immediately before `20261013020000_contract_change_external_confirmation`: it references fields introduced by that migration (`originalContractAmount`, `direction`, external-confirmation fields and change actor columns) and also inserts `BusinessParty` records before the migration that creates that table.
-3. The same fixture inserts `CostEntry.category` / `CostEntry.occurredOn`, whereas the committed initial migration defines `CostEntry.type` / `CostEntry.date`.
-4. That fixture uses `BusinessPartyRole` values such as `CONTRACTOR`; the committed enum instead allows `OWNER`, `MATERIAL_SUPPLIER`, `LABOR_SUBCONTRACTOR`, `PROFESSIONAL_SUBCONTRACTOR`, `EQUIPMENT_LESSOR`, `SERVICE_PROVIDER`, and `OTHER`.
-5. The actor-backfill migration only reads matching `AuditLog` events with `action = 'CREATE'` for `createdById`, and `action = 'STATUS_CHANGE'` plus `changes->>'to' = 'SUBMITTED'` for `submittedById`. The staging fixtures currently use `CHANGE_CREATED`, `CHANGE_INTERNAL_APPROVED`, and `CHANGE_EXTERNAL_CONFIRMED`; those actions do not exercise these backfill predicates. Several fixture rows also populate actor columns directly. The separate CI upgrade gate does test `CREATE` / `STATUS_CHANGE` backfill correctly, but that is a different fixture and does not independently prove the STG report's local run.
-6. `seed-legacy-before-migration.sql` and `seed-business-parties.sql` both insert the same audit-log IDs (and costs). Running both exactly as the report's command sequence states would conflict on primary keys unless a non-committed helper alters or filters one of the scripts.
+## Reproducibility gaps found at the originally reviewed report commit
 
-The separate gate at `scripts/rehearse-legacy-data-migration.mjs` remains the reproducible proof for its own `UPGRADE-01` fixture. The new `scripts/gates/staging-fixtures/rehearse.mjs` gate reproduces the STG-01/STG-02/STG-03 shape using phase-correct fixtures; its result must pass in GitHub Actions before being reported as verified.
+These items describe the tree and reproduction sequence at report commit `83cb10702efdf0129047feeaee6993a4aa9c8ca8`; they should not be read as unresolved defects in the current runner.
+
+1. The report's original reproduction commands referenced local helpers `stage1-legacy.mjs` and `sq.mjs`, which were not tracked. The current self-contained `scripts/gates/staging-fixtures/rehearse.mjs` supersedes those helpers for a repeatable CI/local synthetic rehearsal.
+2. The old seed sequence was not valid for the schema immediately before `20261013020000_contract_change_external_confirmation`: it attempted to use post-migration fields and create party records before the migration that creates `BusinessParty`. The current runner separates those operations into migration-phase-specific fixtures.
+3. The earlier `CostEntry` fixture used column names that did not match the committed initial migration. The phase-correct fixture now uses the historical schema's columns.
+4. The earlier fixture used unsupported `BusinessPartyRole` values. The current formal-party fixture uses values supported by the committed enum.
+5. The earlier fixture did not exercise the precise audit predicates for creator and submitter backfill. The current populated-legacy gate seeds audit events before the relevant migration and asserts that matching events recover the creator/submitter, while records without evidence remain unresolved.
+6. The old command sequence could insert duplicate audit-log IDs and costs from two seed files. The current runner stages those fixtures in order and the corresponding reconciliation job passes.
 
 ## Classification of the four report findings
 
 | Finding | Current treatment |
 |---|---|
 | A legacy unverified party and a formal party share the same normalized name | Keep both records until source contracts / credit codes are compared and an approved merge map is recorded. Never merge solely by normalized name. |
-| `STG02-BG-0002` has no actor fields and no audit events | Keep the attribution unresolved. Do not infer or auto-fill a person; record a manual exception until primary evidence exists. |
-| `approvedAmount = 1,500,000` and `externalConfirmedAmount = 1,200,000` differ by 300,000 | This difference must remain visible for follow-up, but the effective-contract calculation follows the already selected rule: externally confirmed amount is the adjustment basis. Do not substitute internal approved amount into the effective contract total. |
-| Projects point to unverified legacy parties instead of formal party records | Conservative behaviour. Match by verified registration/credit code and source contract before updating any relationship; an alias/name-only match is not enough. |
+| `STG02-BG-0002` has no actor fields and no audit events | Keep attribution unresolved. Do not infer or auto-fill a person; record a manual exception until primary evidence exists. |
+| `approvedAmount = 1,500,000` and `externalConfirmedAmount = 1,200,000` differ by 300,000 | Keep the difference visible for follow-up. The effective-contract calculation follows the selected rule: externally confirmed amount is the adjustment basis. Do not substitute the internal approved amount into the effective contract total. |
+| Projects point to unverified legacy parties instead of formal party records | Conservative behaviour. Match by verified registration/credit code and source contract before updating any relationship; a name-only match is insufficient. |
 
 ## Read-only inspection queries
 
-The missing query files named by the report are now committed in this folder:
+The committed query files are in `scripts/gates/staging-fixtures/`:
 
-- `_v1.sql`: project/main-contract amount and recomputed effective amount.
+- `_v1.sql`: project/main-contract amount and recalculated effective amount.
 - `_v3.sql`: reconciliation journal, including before/after values and reason codes.
 - `_v4.sql`: change actor fields and matching audit-event counts.
 - `_v8.sql`: normalized-name duplicates and auto-created unverified parties.
 
-They target only `moheng_staging_test` using session-level `search_path` and contain SELECT statements only. Do not run fixture seeding or schema reset commands against any non-disposable database.
+The queries set the test schema as their session `search_path` and contain SELECT statements only. Fixture seeding and schema reset must only run on a disposable test database; never run them against a non-disposable database.
 
-## Gate required before treating this report as release evidence
+## Current gate status (verified 2026-10-18)
 
-- [ ] Commit a self-contained runner and staged fixtures that apply the true historical migration prefixes in order; keep old-schema seed columns limited to the fields that existed at that migration point.
-- [ ] From a clean checkout, run the runner against an explicitly isolated loopback PostgreSQL schema and archive the exact commit SHA, command log, schema name, migration checksums, row counts, reconciliation rows and query outputs.
-- [ ] Capture before/after fingerprints for the protected `public` schema (not counts alone) if the assertion is that it was untouched.
-- [ ] Obtain a reviewer-approved reconciliation of the party duplicate and missing actor, or preserve them as explicit unresolved exceptions.
-- [ ] Keep the 300,000 internal/external amount discrepancy visible in the exception report; the effective amount remains based on external confirmation under the chosen business rule.
+- [x] Self-contained runner applies real migration prefixes in historical order and inserts legacy-shaped rows before the relevant backfills.
+- [x] Current-head GitHub Actions run [#40](https://github.com/mmllemon/moheng/actions/runs/39091162665) passed the main migration job (including build, API smoke, tests, backup/restore rehearsal and dependency audit) and the populated-legacy/STG-shaped reconciliation job.
+- [x] The run published the `prisma7-pr-gates` and `prisma7-legacy-upgrade-evidence` artifacts. These contain test evidence, not a user staging dump.
+- [x] Synthetic acceptance cases verify that STG-01 uses the externally confirmed 1,200,000 amount rather than the 1,500,000 internal-approved amount; STG-02 follows the signed main-contract baseline then the effective decrease; and STG-03 remains at its baseline.
+- [ ] Run the migration/reconciliation review against a sanitized, representative **user staging snapshot** and compare every project's before/after contract amounts and reconciliation reasons. Synthetic fixtures are not a substitute.
+- [ ] Have an authorized reviewer resolve or formally accept as exceptions the duplicate same-name party, missing historical actor evidence, and any unrecoverable `internalApprovedById` / `externalRecordedById` values.
+- [ ] Execute login, authorization, report preview/XLSX export, background-job, backup and restore smoke checks on the actual deployment topology, and document the forward-fix/restore procedure.
+- [ ] If claiming that the protected `public` schema was untouched in a particular rehearsal, capture before/after fingerprints for that schema; row counts alone are insufficient.
 
-No production or user staging data should be modified as part of this review.
+## Release boundary
+
+The RC.2 CI gates passing does **not** authorize production rollout. The synthetic runner uses disposable PostgreSQL 16 and does not prove production-shaped data recovery, encrypted off-host backups, production roles/privileges, disaster-recovery cutover, or operational RPO/RTO. Do not upload credentials, connection strings, raw staging dumps, or unredacted business data to GitHub artifacts.
