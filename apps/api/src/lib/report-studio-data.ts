@@ -268,9 +268,12 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   const projectFilter = { projectId: { in: projectIds } };
   const warnings: string[] = [];
   const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
+  const truncatedSources = new Set<string>();
+  const truncatedFieldsBySource = new Map<string, Set<string>>();
   if (domain === 'COMPANY' && scopedProjects.length > MAX_ROWS_PER_SOURCE) {
     const message = `当前账号可访问项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 个，公司项目明细列表会截断；公司汇总范围仍依据权限内项目计算。`;
     warnings.push(message);
+    truncatedSources.add('companyProjects');
     truncationNotices.push({ sourceIds: ['companyProjects'], message });
   }
   if (projectIds.length === 0) warnings.push('当前账号没有可访问项目，因此仅能生成空数据模板。');
@@ -305,7 +308,7 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     downstreamPayments: downstreamPayments.length > MAX_ROWS_PER_SOURCE,
     budgetItems: budgetItems.length > MAX_ROWS_PER_SOURCE * 10,
   };
-  const directSourceIds: Record<keyof typeof truncation, string> = domain === 'PROJECT'
+  const directSourceIds: Record<keyof typeof truncation, string | null> = domain === 'PROJECT'
     ? {
         changes: 'changes',
         downstreamContracts: 'downstreamContracts',
@@ -315,7 +318,7 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
         progressBills: 'progressBills',
         downstreamPayables: 'downstreamPayables',
         downstreamPayments: 'downstreamPayments',
-        budgetItems: 'financialSummary',
+        budgetItems: null,
       }
     : {
         changes: 'companyChanges',
@@ -326,7 +329,57 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
         progressBills: 'companyProgressBills',
         downstreamPayables: 'companyDownstreamPayables',
         downstreamPayments: 'companyDownstreamPayments',
-        budgetItems: 'companySummary',
+        budgetItems: null,
+      };
+  const affectedFieldsByKey: Record<keyof typeof truncation, Array<{ sourceId: string; fieldIds: string[] }>> = domain === 'PROJECT'
+    ? {
+        changes: [
+          { sourceId: 'project', fieldIds: ['effectiveContractAmount'] },
+          { sourceId: 'financialSummary', fieldIds: ['effectiveContractAmount', 'activeChangeCount'] },
+        ],
+        downstreamContracts: [{ sourceId: 'financialSummary', fieldIds: ['downstreamContractTotal', 'downstreamContractCount'] }],
+        ownerReceivables: [{ sourceId: 'financialSummary', fieldIds: ['issuedReceivableNetAmount'] }],
+        ownerReceipts: [{ sourceId: 'financialSummary', fieldIds: ['receiptTotal', 'refundTotal', 'netReceipts', 'ownerReceiptCount'] }],
+        actualCosts: [{ sourceId: 'financialSummary', fieldIds: ['actualCostTotal'] }],
+        progressBills: [],
+        downstreamPayables: [{ sourceId: 'financialSummary', fieldIds: ['postedPayableTotal'] }],
+        downstreamPayments: [{ sourceId: 'financialSummary', fieldIds: ['downstreamPaymentTotal', 'downstreamRefundTotal', 'downstreamNetPaymentTotal'] }],
+        budgetItems: [{ sourceId: 'financialSummary', fieldIds: ['targetCostTotal'] }],
+      }
+    : {
+        changes: [
+          { sourceId: 'companySummary', fieldIds: ['effectiveContractAmount'] },
+          { sourceId: 'companyProjects', fieldIds: ['effectiveContractAmount'] },
+        ],
+        downstreamContracts: [
+          { sourceId: 'companySummary', fieldIds: ['downstreamContractTotal'] },
+          { sourceId: 'companyProjects', fieldIds: ['downstreamContractTotal'] },
+        ],
+        ownerReceivables: [
+          { sourceId: 'companySummary', fieldIds: ['issuedReceivableNetAmount'] },
+          { sourceId: 'companyProjects', fieldIds: ['issuedReceivableNetAmount'] },
+        ],
+        ownerReceipts: [
+          { sourceId: 'companySummary', fieldIds: ['receiptTotal', 'refundTotal', 'netReceipts'] },
+          { sourceId: 'companyProjects', fieldIds: ['netReceipts'] },
+        ],
+        actualCosts: [
+          { sourceId: 'companySummary', fieldIds: ['actualCostTotal'] },
+          { sourceId: 'companyProjects', fieldIds: ['actualCostTotal'] },
+        ],
+        progressBills: [],
+        downstreamPayables: [
+          { sourceId: 'companySummary', fieldIds: ['postedPayableTotal'] },
+          { sourceId: 'companyProjects', fieldIds: ['postedPayableTotal'] },
+        ],
+        downstreamPayments: [
+          { sourceId: 'companySummary', fieldIds: ['downstreamPaymentTotal', 'downstreamRefundTotal', 'downstreamNetPaymentTotal'] },
+          { sourceId: 'companyProjects', fieldIds: ['downstreamPaymentTotal', 'downstreamRefundTotal', 'downstreamNetPaymentTotal'] },
+        ],
+        budgetItems: [
+          { sourceId: 'companySummary', fieldIds: ['targetCostTotal'] },
+          { sourceId: 'companyProjects', fieldIds: ['targetCostTotal'] },
+        ],
       };
   const safeChanges = changes.slice(0, MAX_ROWS_PER_SOURCE);
   const safeDownstreamContracts = downstreamContracts.slice(0, MAX_ROWS_PER_SOURCE);
@@ -346,13 +399,21 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   ];
   for (const [key, label, limit] of labels) {
     if (!truncation[key]) continue;
-    const message = `${label}超过 ${limit.toLocaleString('zh-CN')} 条，明细已截断；依赖该数据源的金额汇总将显示为空，不会把部分数据伪装为完整财务总额。请缩小项目范围或查询条件后重新生成。`;
+    const message = `${label}超过 ${limit.toLocaleString('zh-CN')} 条，明细已截断；依赖该数据源的相关汇总字段将显示为空，不会把部分数据伪装为完整财务总额。请缩小项目范围或查询条件后重新生成。`;
     warnings.push(message);
-    const affectedSourceIds = new Set<string>([
-      directSourceIds[key],
-      ...(domain === 'PROJECT' ? ['financialSummary', ...(key === 'changes' ? ['project'] : [])] : ['companySummary', 'companyProjects']),
-    ]);
-    truncationNotices.push({ sourceIds: [...affectedSourceIds], message });
+    const directSourceId = directSourceIds[key];
+    if (directSourceId) truncatedSources.add(directSourceId);
+    const affectedFields = affectedFieldsByKey[key];
+    for (const { sourceId, fieldIds } of affectedFields) {
+      const fields = truncatedFieldsBySource.get(sourceId) ?? new Set<string>();
+      fieldIds.forEach((fieldId) => fields.add(fieldId));
+      truncatedFieldsBySource.set(sourceId, fields);
+    }
+    truncationNotices.push({
+      sourceIds: directSourceId ? [directSourceId] : [],
+      fields: affectedFields,
+      message,
+    });
   }
   const parentIds = new Set(safeBudgetItems.map((item) => item.parentId).filter((id): id is string => Boolean(id)));
   const leafBudgetByProject = new Map<string, string>();
@@ -436,24 +497,12 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     }));
   }
 
-  const truncatedSources = new Set<string>();
-  for (const key of Object.keys(truncation) as Array<keyof typeof truncation>) {
-    if (truncation[key]) truncatedSources.add(directSourceIds[key]);
-  }
-  const sourceDataTruncated = Object.values(truncation).some(Boolean);
-  if (domain === 'PROJECT') {
-    if (sourceDataTruncated) truncatedSources.add('financialSummary');
-    if (truncation.changes) truncatedSources.add('project');
-  } else if (sourceDataTruncated) {
-    // Per-project and company totals may contain unknown values when one of their
-    // constituent sources is capped, even if their project list itself is complete.
-    truncatedSources.add('companySummary');
-    truncatedSources.add('companyProjects');
-  }
-  if (domain === 'COMPANY' && scopedProjects.length > MAX_ROWS_PER_SOURCE) truncatedSources.add('companyProjects');
+  const truncatedFields = [...truncatedFieldsBySource.entries()].map(([sourceId, fieldIds]) => ({ sourceId, fieldIds: [...fieldIds] }));
 
   return {
     domain, generatedAt: new Date().toISOString(), projectId: projectId ?? null, accessibleProjectCount: accessibleProjects.length,
-    sources: singleSourceData, warnings, truncated: truncatedSources.size > 0, truncatedSources: [...truncatedSources], truncationNotices,
+    sources: singleSourceData, warnings,
+    truncated: truncatedSources.size > 0 || truncatedFields.length > 0,
+    truncatedSources: [...truncatedSources], truncatedFields, truncationNotices,
   };
 }
