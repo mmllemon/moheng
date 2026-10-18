@@ -97,6 +97,13 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       const coordinate = parseCell(binding.cell);
       return [`${coordinate.row}:${coordinate.column}`, binding] as const;
     }));
+    const bindingColumnsByRow = new Map<number, string[]>();
+    for (const binding of sheetBindings) {
+      const coordinate = parseCell(binding.cell);
+      const columns = bindingColumnsByRow.get(coordinate.row) ?? [];
+      columns.push(String(coordinate.column));
+      bindingColumnsByRow.set(coordinate.row, columns);
+    }
     const sheetRegions = definition.regions.filter((region) => region.sheetId === sheetId).sort((a, b) => a.templateRow - b.templateRow);
     const regionByRow = new Map(sheetRegions.map((region) => [region.templateRow, region] as const));
     const sourceRows = sourceSheet.cellData ?? {};
@@ -104,7 +111,8 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const rowStyleKeys = Object.keys(sourceSheet.rowData ?? {}).map(Number).filter(Number.isInteger);
     const mergeEndRow = Math.max(-1, ...(sourceSheet.mergeData ?? []).map((merge) => merge.endRow));
     const regionMaxRow = Math.max(-1, ...sheetRegions.map((region) => region.templateRow));
-    const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow);
+    const bindingMaxRow = Math.max(-1, ...sheetBindings.map((binding) => parseCell(binding.cell).row));
+    const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow, bindingMaxRow);
     const regionExpansions = new Map<number, unknown[]>();
     for (const region of sheetRegions) {
       const collection = dataset.sources[region.sourceId];
@@ -134,9 +142,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
         const outputRow: ReportStudioRenderedCell[] = [];
         // A binding is authoritative even if the spreadsheet adapter omitted an otherwise-empty cell from cellData.
         // Render the union so a valid binding never silently disappears from preview/export.
-        const boundColumns = [...bindingByCoordinate.entries()]
-          .filter(([coordinate]) => Number(coordinate.split(':')[0]) === sourceRow)
-          .map(([coordinate]) => coordinate.split(':')[1]!);
+        const boundColumns = bindingColumnsByRow.get(sourceRow) ?? [];
         const columnsToRender = new Set([...Object.keys(rowCells), ...boundColumns]);
         for (const columnKey of columnsToRender) {
           const column = Number(columnKey);
