@@ -344,7 +344,7 @@ test('marks a report incomplete when a scalar-bound summary source is truncated'
 
   assert.equal(result.truncated, true);
   assert.equal(result.sheets[0]!.truncated, true, 'single-value bindings must participate in source dependency detection');
-  assert.ok(result.warnings.includes('依赖财务汇总的数据源明细已截断。'), 'notices for bound summary sources must remain visible');
+  assert.ok(result.warnings.includes(message), 'notices for bound summary fields must remain visible');
 });
 
 test('does not label a report incomplete when a bound summary uses an unaffected field', () => {
