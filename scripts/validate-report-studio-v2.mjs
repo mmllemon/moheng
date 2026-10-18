@@ -104,7 +104,9 @@ check('party report collection outputs enforce row caps and source-specific comp
   data.includes('prisma.costEntry.aggregate({ where: standaloneCostScope') &&
   data.includes("fieldIds: ['projectCount', 'mainContractCount', 'ownerCurrentContractAmount', 'ownerApprovedBillAmount', 'ownerReceivedAmount']") &&
   data.includes('const standaloneCostCount = standaloneCostAggregate._count._all') &&
-  data.includes('const projectListIncomplete = downstreamContractsTruncated || ownedProjectsTruncated || standaloneCostProjectGroupsTruncated'));
+  data.includes('const projectListIncomplete = downstreamContractsTruncated || ownedProjectsTruncated || standaloneCostProjectGroupsTruncated') &&
+  docs.includes('往来单位关联项目与独立成本项目分布各自有 10,000 条输出上限') &&
+  docs.includes('不能用截断后的分组结果累加'));
 check('financial summaries never present partial capped source data as complete totals',
   data.includes('依赖该数据源的相关汇总字段将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
 check('report truncation flags and warnings follow bound collections and exact summary fields',
