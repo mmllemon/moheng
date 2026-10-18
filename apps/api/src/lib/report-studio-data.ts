@@ -254,7 +254,6 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   const projectIds = scopedProjects.map((project) => project.id);
   const projectFilter = { projectId: { in: projectIds } };
   const warnings: string[] = [];
-  const warnings: string[] = [];
   const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
   if (domain === 'COMPANY' && scopedProjects.length > MAX_ROWS_PER_SOURCE) {
     const message = `当前账号可访问项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 个，公司项目明细列表会截断；公司汇总范围仍依据权限内项目计算。`;
@@ -332,7 +331,6 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     ['downstreamPayables', '分供应付', MAX_ROWS_PER_SOURCE], ['downstreamPayments', '分供付款/退款流水', MAX_ROWS_PER_SOURCE],
     ['budgetItems', '目标成本清单', MAX_ROWS_PER_SOURCE * 10],
   ];
-  const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
   for (const [key, label, limit] of labels) {
     if (!truncation[key]) continue;
     const message = `${label}超过 ${limit.toLocaleString('zh-CN')} 条，明细已截断；依赖该数据源的金额汇总将显示为空，不会把部分数据伪装为完整财务总额。请缩小项目范围或查询条件后重新生成。`;
