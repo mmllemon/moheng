@@ -1,4 +1,6 @@
 import test from 'node:test';
+import ExcelJS from 'exceljs';
+import { buildReportStudioWorkbook } from './report-studio-xlsx.js';
 import assert from 'node:assert/strict';
 import { renderReportStudio, previewReportStudio } from './report-studio-render.js';
 import type { ReportStudioDefinition } from './report-studio-definition.js';
@@ -106,4 +108,48 @@ test("keeps amounts beyond Excel's 15-significant-digit limit as text", () => {
   const input = { ...dataset, sources: { ...dataset.sources, project: { amount: '10000000000000.01' } } };
   const result = renderReportStudio(report, input);
   assert.equal(result.sheets[0]?.rows[0]?.[1]?.value, '10000000000000.01');
+});
+
+
+test('XLSX export starts with a styled overview sheet and preserves the report worksheets', async () => {
+  const buffer = await buildReportStudioWorkbook({
+    definition: definition(),
+    dataset,
+    templateName: '项目经营摘要模板',
+    templateVersion: 3,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+
+  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '测试表', '报表说明']);
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('A1').value, '区域渲染测试');
+  assert.equal(overview.getCell('A4').value, '报表类型');
+  assert.equal(overview.getCell('B4').value, '项目级综合报表');
+  assert.equal(overview.getCell('B5').value, '项目经营摘要模板');
+  assert.equal(overview.getCell('D5').value, 'v3');
+  assert.equal(overview.getCell('B6').value, '测试项目');
+  assert.equal(overview.getCell('B12').value, '测试表');
+  assert.equal(overview.getCell('D12').value, '已生成');
+  assert.equal(overview.getCell('A1').fill && (overview.getCell('A1').fill as { fgColor?: { argb?: string } }).fgColor?.argb, 'FF17324D');
+  assert.equal(overview.pageSetup.fitToPage, true);
+
+  // The export still contains the original user-designed sheet and values.
+  assert.equal(workbook.getWorksheet('测试表')!.getCell('B1').value, '测试项目');
+  assert.equal(workbook.getWorksheet('报表说明')!.getCell('B1').value, '区域渲染测试');
+});
+
+test('XLSX overview sheet remains available when the optional metadata sheet is disabled', async () => {
+  const report = definition();
+  report.page.includeMetadata = false;
+  const buffer = await buildReportStudioWorkbook({
+    definition: report,
+    dataset,
+    templateName: '最小元数据模板',
+    templateVersion: 1,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '测试表']);
+  assert.equal(workbook.getWorksheet('报表预览')!.getCell('B6').value, '测试项目');
 });
