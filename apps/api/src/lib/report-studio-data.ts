@@ -399,11 +399,14 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   ];
   for (const [key, label, limit] of labels) {
     if (!truncation[key]) continue;
-    const message = `${label}超过 ${limit.toLocaleString('zh-CN')} 条，明细已截断；依赖该数据源的相关汇总字段将显示为空，不会把部分数据伪装为完整财务总额。请缩小项目范围或查询条件后重新生成。`;
+    const affectedFields = affectedFieldsByKey[key];
+    const impactText = affectedFields.length > 0
+      ? '依赖该数据源的相关汇总字段将显示为空，不会把部分数据伪装为完整财务总额。'
+      : '对应明细仅显示已读取的前置记录。';
+    const message = `${label}超过 ${limit.toLocaleString('zh-CN')} 条，明细已截断；${impactText}请缩小项目范围或查询条件后重新生成。`;
     warnings.push(message);
     const directSourceId = directSourceIds[key];
     if (directSourceId) truncatedSources.add(directSourceId);
-    const affectedFields = affectedFieldsByKey[key];
     for (const { sourceId, fieldIds } of affectedFields) {
       const fields = truncatedFieldsBySource.get(sourceId) ?? new Set<string>();
       fieldIds.forEach((fieldId) => fields.add(fieldId));
