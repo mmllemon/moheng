@@ -4,6 +4,7 @@ import test from 'node:test';
 import type { AuthUser } from './auth.js';
 import { prisma } from './prisma.js';
 import { loadReportStudioDataset } from './report-studio-data.js';
+import { loadReportSnapshot } from './report-data.js';
 
 const enabled = process.env.REPORT_STUDIO_DATA_TESTS === 'true';
 
@@ -121,6 +122,22 @@ test('Report Studio scopes company rows, financial totals, and project previews 
         'code' in error && error.code === 'PROJECT_ACCESS_DENIED',
       'a project-level report must reject a project outside the user’s membership scope',
     );
+
+    for (const reportKey of ['actual-cost', 'downstream-contracts', 'downstream-payables'] as const) {
+      const companySnapshot = await loadReportSnapshot(reportKey, actor, {});
+      assert.equal(companySnapshot.ok, true, `authorized-company scope should load ${reportKey}`);
+      if (companySnapshot.ok) {
+        assert.equal(companySnapshot.snapshot.rows.length, 0, `unauthorized project rows must not leak into ${reportKey}`);
+        assert.equal(companySnapshot.snapshot.projectScope, '全部可访问项目');
+      }
+
+      const deniedSnapshot = await loadReportSnapshot(reportKey, actor, { projectId: projectB.id });
+      assert.equal(deniedSnapshot.ok, false, `direct export of an unauthorized project must fail for ${reportKey}`);
+      if (!deniedSnapshot.ok) {
+        assert.equal(deniedSnapshot.status, 403);
+        assert.equal(deniedSnapshot.code, 'PROJECT_ACCESS_DENIED');
+      }
+    }
   } finally {
     if (downstreamContractIds.length) {
       await prisma.downstreamContractPayment.deleteMany({ where: { downstreamContractId: { in: downstreamContractIds } } });
