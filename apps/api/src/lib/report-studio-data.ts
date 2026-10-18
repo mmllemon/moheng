@@ -630,28 +630,48 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   const leafBudgetByProject = new Map<string, string>();
   for (const item of safeBudgetItems) if (!parentIds.has(item.id)) leafBudgetByProject.set(item.projectId, plusMoney(leafBudgetByProject.get(item.projectId) ?? '0.00', item.totalPrice));
 
+  const groupByProject = <T,>(rows: T[], projectIdOf: (row: T) => string): Map<string, T[]> => {
+    const grouped = new Map<string, T[]>();
+    for (const row of rows) {
+      const projectId = projectIdOf(row);
+      const bucket = grouped.get(projectId) ?? [];
+      bucket.push(row);
+      grouped.set(projectId, bucket);
+    }
+    return grouped;
+  };
+  const changesByProject = groupByProject(safeChanges, (item) => item.projectId);
+  const downstreamContractsByProject = groupByProject(safeDownstreamContracts, (item) => item.projectId);
+  const ownerReceivablesByProject = groupByProject(safeOwnerReceivables, (item) => item.projectId);
+  const ownerReceiptsByProject = groupByProject(safeOwnerReceipts, (item) => item.projectId);
+  const actualCostsByProject = groupByProject(safeActualCosts, (item) => item.projectId);
+  const downstreamPayablesByProject = groupByProject(safeDownstreamPayables, (item) => item.downstreamContract.projectId);
+  const downstreamPaymentsByProject = groupByProject(safeDownstreamPayments, (item) => item.downstreamContract.projectId);
   const summaryByProject = new Map<string, Record<string, unknown>>();
   const downstreamEffectiveByProject = new Map<string, string | null>();
   for (const project of scopedProjects) {
-    const projectChanges = safeChanges.filter((item) => item.projectId === project.id);
+    const projectChanges = changesByProject.get(project.id) ?? [];
     const missingEffectiveAmounts = projectChanges.some((item) => item.externalConfirmedAmount === null);
     let effectiveAmount: string | null = truncation.changes || missingEffectiveAmounts ? null : moneyValue(project.originalContractAmount);
     if (missingEffectiveAmounts) warnings.push(`项目 ${project.code} 存在外部状态已生效但未记录确认金额的变更，当前有效合同额未计算。`);
     if (!truncation.changes && !missingEffectiveAmounts) { try { effectiveAmount = calculateEffectiveContractAmount(project.originalContractAmount, projectChanges.map((item) => ({ direction: item.direction, amount: item.externalConfirmedAmount! }))); } catch { effectiveAmount = null; warnings.push(`项目 ${project.code} 的有效合同额计算失败，请核对已生效外部确认调整。`); } }
-    const projectDownstream = safeDownstreamContracts.filter((item) => item.projectId === project.id);
+    const projectDownstream = downstreamContractsByProject.get(project.id) ?? [];
     for (const item of projectDownstream) {
       try { downstreamEffectiveByProject.set(item.id, calculateDownstreamCurrentAmount(item.originalAmount, item.adjustments)); }
       catch { downstreamEffectiveByProject.set(item.id, null); warnings.push(`分供合同 ${item.contractNo} 的当前合同额计算失败。`); }
     }
     const downstreamValues = projectDownstream.map((item) => downstreamEffectiveByProject.get(item.id) ?? null);
     const downstreamAmount = truncation.downstreamContracts || downstreamValues.some((value) => value === null) ? null : sumMoney(downstreamValues);
-    const receipts = safeOwnerReceipts.filter((item) => item.projectId === project.id);
+    const receipts = ownerReceiptsByProject.get(project.id) ?? [];
     const receiptTotal = truncation.ownerReceipts ? null : sumMoney(receipts.filter((item) => item.type === 'RECEIPT').map((item) => item.amount));
     const refundTotal = truncation.ownerReceipts ? null : sumMoney(receipts.filter((item) => item.type === 'REFUND').map((item) => item.amount));
-    const actualCostTotal = truncation.actualCosts ? null : sumMoney(safeActualCosts.filter((item) => item.projectId === project.id).map((item) => item.amount));
-    const issuedReceivableNetAmount = truncation.ownerReceivables ? null : sumMoney(safeOwnerReceivables.filter((item) => item.projectId === project.id).map((item) => item.netAmount));
-    const postedPayableTotal = truncation.downstreamPayables ? null : sumMoney(safeDownstreamPayables.filter((item) => item.downstreamContract.projectId === project.id).map((item) => item.netAmount));
-    const projectPayments = safeDownstreamPayments.filter((item) => item.downstreamContract.projectId === project.id);
+    const projectCosts = actualCostsByProject.get(project.id) ?? [];
+    const actualCostTotal = truncation.actualCosts ? null : sumMoney(projectCosts.map((item) => item.amount));
+    const projectReceivables = ownerReceivablesByProject.get(project.id) ?? [];
+    const issuedReceivableNetAmount = truncation.ownerReceivables ? null : sumMoney(projectReceivables.map((item) => item.netAmount));
+    const projectPayables = downstreamPayablesByProject.get(project.id) ?? [];
+    const postedPayableTotal = truncation.downstreamPayables ? null : sumMoney(projectPayables.map((item) => item.netAmount));
+    const projectPayments = downstreamPaymentsByProject.get(project.id) ?? [];
     const paymentTotals = summarizeDownstreamPaymentTotals(projectPayments, truncation.downstreamPayments);
     const { downstreamPaymentTotal, downstreamRefundTotal, downstreamNetPaymentTotal } = paymentTotals;
     summaryByProject.set(project.id, {
