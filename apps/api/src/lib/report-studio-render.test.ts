@@ -18,7 +18,7 @@ function definition(): ReportStudioDefinition {
         main: {
           id: 'main', name: '测试表', rowCount: 8, columnCount: 4,
           cellData: {
-            '0': { '0': { v: '项目名称' }, '1': { v: '' } },
+            '0': { '0': { v: '项目名称' }, '1': { v: '', s: { vt: 1, bl: 1, cl: '#123456', bg: '#AABBCC', bd: { b: { s: 1, cl: '#112233' } } } } },
             '1': { '0': { v: '合同编号' }, '1': { v: '合同额' } },
             '2': { '0': { v: '' }, '1': { v: '' } },
             '3': { '0': { v: '固定结尾' } },
@@ -135,7 +135,12 @@ test('XLSX export starts with a styled overview sheet and preserves the report w
   assert.equal(overview.pageSetup.fitToPage, true);
 
   // The export still contains the original user-designed sheet and values.
-  assert.equal(workbook.getWorksheet('测试表')!.getCell('B1').value, '测试项目');
+  const designedSheet = workbook.getWorksheet('测试表')!;
+  assert.equal(designedSheet.getCell('B1').value, '测试项目');
+  assert.equal(designedSheet.getCell('B1').alignment?.vertical, 'top');
+  assert.equal(designedSheet.getCell('B1').font.color && (designedSheet.getCell('B1').font.color as { argb?: string }).argb, 'FF123456');
+  assert.equal(designedSheet.getCell('B1').fill && (designedSheet.getCell('B1').fill as { fgColor?: { argb?: string } }).fgColor?.argb, 'FFAABBCC');
+  assert.equal(designedSheet.getCell('B1').border.bottom?.style, 'thin');
   assert.equal(workbook.getWorksheet('报表说明')!.getCell('B1').value, '区域渲染测试');
 });
 

@@ -37,7 +37,7 @@ function styleToExcel(style?: Record<string, unknown>): Partial<ExcelJS.Style> |
   const fillColor = colorArgb(style.bg);
   if (fillColor) result.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillColor } };
   const horizontalMap: Record<string, ExcelJS.Alignment['horizontal']> = { 1: 'left', 2: 'center', 3: 'right', left: 'left', center: 'center', right: 'right' };
-  const verticalMap: Record<string, ExcelJS.Alignment['vertical']> = { 1: 'middle', 2: 'top', 3: 'bottom', middle: 'middle', top: 'top', bottom: 'bottom' };
+  const verticalMap: Record<string, ExcelJS.Alignment['vertical']> = { 1: 'top', 2: 'middle', 3: 'bottom', middle: 'middle', top: 'top', bottom: 'bottom' };
   const alignment: Partial<ExcelJS.Alignment> = {};
   if (style.ht !== undefined && horizontalMap[String(style.ht)]) alignment.horizontal = horizontalMap[String(style.ht)];
   if (style.vt !== undefined && verticalMap[String(style.vt)]) alignment.vertical = verticalMap[String(style.vt)];
