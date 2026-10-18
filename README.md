@@ -2,7 +2,7 @@
 
 墨衡面向施工单位的项目经营与经济成本管理，覆盖项目、合同、变更签证、目标成本、实际成本、结算、应收应付、收付款、往来单位、经营分析、报表与只读 AI 助手。
 
-> **当前源码基线：** `2.19.0-rc.2`，Prisma 7 迁移候选分支为 `feat/v2.19.0-rc.2-prisma7`。当前仍是 RC，不代表正式发布或生产启用。核心模块已有实现，但产品完整度、UI 验收及 AI 真实模型端到端仍需按路线图逐项完成。
+> **包版本与集成候选：** 根/API/Web 的包版本仍为 `2.19.0-rc.2`；报表与产品完善的集成候选位于 [`feat/v2.20.0-product-completion-squashed`](https://github.com/mmllemon/moheng/pull/4)，当前仍为 Draft，尚未合并发布。Prisma 7 迁移已整合进该候选；若选择 PR #4，不应再独立合并历史迁移 PR。当前头提交的自动化状态以 [PR #4 Checks](https://github.com/mmllemon/moheng/pull/4/checks) 为准。系统仍处于 RC，产品完整度、UI/浏览器验收及 AI 真实模型端到端须按路线图逐项完成。
 
 ## 技术栈
 
