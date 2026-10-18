@@ -118,13 +118,18 @@ check('consolidated report docs preserve access restrictions and explicit bounde
   docs.includes('任意 SQL') === false && docs.includes('公司级') && docs.includes('10,000') && docs.includes('当前用户权限') && acceptance.includes('公司级') && acceptance.includes('XLSX'));
 check('current report specs define stable row identity/order, cell styles, project/company/party scopes and workspace entry points',
   currentDocs.includes('同一条记录') && currentDocs.includes('稳定主键') && currentDocs.includes('公司级') && currentDocs.includes('往来单位') && currentDocs.includes('列宽') && currentAcceptance.includes('重复区域') && currentAcceptance.includes('项目驾驶舱') && currentDocs.includes('往来单位经营档案'));
-check('project/company report templates expose downstream payment and refund ledger separately from posted payables',
+check('project/company report templates expose owner receipts and downstream payment/refund ledgers as separate traceable regions',
   reportData.includes("id: 'downstreamPayments'") &&
   reportData.includes("id: 'companyDownstreamPayments'") &&
+  reportData.includes("id: 'companyOwnerReceipts'") &&
+  reportData.includes("txt('originalReceiptNo', '原始收款编号')") &&
   reportData.includes('prisma.downstreamContractPayment.findMany') &&
-  reportData.includes('originalReferenceNo') &&
   defaultStudio.includes("[23, 'downstreamPayments'") &&
+  defaultStudio.includes("sourceId:'companyOwnerReceipts'") &&
   defaultStudio.includes("sourceId:'companyDownstreamPayments'") &&
+  defaultStudio.includes("const ownerReceiptFields = ['projectCode','projectName','receiptNo','type','amount','receivedAt','referenceNo','originalReceiptNo']") &&
+  defaultStudio.includes("cell:`${String.fromCharCode(65+c)}16`") &&
+  docs.includes('公司级业主收款/退款流水') &&
   docs.includes('不得与应付台账或实际成本混算'));
 check('party template context is isolated by businessPartyId through an append-only migration',
   studioRoute.includes('REPORT_TEMPLATE_PARTY_MISMATCH') && studioRoute.includes('hasBusinessParty') && studioRoute.includes('businessPartyId') &&
