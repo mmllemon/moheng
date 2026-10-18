@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { currentDateInputValue } from './Ui';
 import { useAnimatedPresence } from './useAnimatedPresence';
-import { asIsoDate, isIsoDateWithinBounds, normalizeIsoDateWithinBounds, parseIsoDate } from './date-picker-utils.js';
+import { asIsoDate, isIsoDateWithinBounds, monthIntersectsIsoDateBounds, normalizeIsoDateWithinBounds, parseIsoDate } from './date-picker-utils.js';
 
 function formatDateLabel(value: string) {
   const date = parseIsoDate(value);
@@ -197,8 +197,17 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   };
 
   function changeMonth(delta: number) {
-    setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + delta, 1));
-    setFocusedDate((current) => { const date = parseIsoDate(current) ?? selectedDate ?? new Date(); const next = new Date(date.getFullYear(), date.getMonth() + delta, Math.min(date.getDate(), new Date(date.getFullYear(), date.getMonth() + delta + 1, 0).getDate())); return asIsoDate(next); });
+    const targetMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
+    const dateMin = min == null ? null : String(min);
+    const dateMax = max == null ? null : String(max);
+    if (!monthIntersectsIsoDateBounds(targetMonth.getFullYear(), targetMonth.getMonth(), dateMin, dateMax)) return;
+    setViewDate(targetMonth);
+    setFocusedDate((current) => {
+      const base = parseIsoDate(current) ?? selectedDate ?? new Date();
+      const lastDay = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+      const next = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), Math.min(base.getDate(), lastDay));
+      return normalizeIsoDateWithinBounds(asIsoDate(next), dateMin, dateMax) ?? current;
+    });
   }
 
   function openCalendar() {
@@ -296,8 +305,8 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       <header className="date-picker-header">
         <div className="date-picker-month-copy"><span className="date-picker-year">{viewDate.getFullYear()}</span><strong>{monthYear}</strong></div>
         <div className="date-picker-month-actions">
-          <button type="button" aria-label="上个月" onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
-          <button type="button" aria-label="下个月" onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
+          <button type="button" aria-label="上个月" disabled={!monthIntersectsIsoDateBounds(viewDate.getFullYear(), viewDate.getMonth() - 1, min == null ? null : String(min), max == null ? null : String(max))} onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
+          <button type="button" aria-label="下个月" disabled={!monthIntersectsIsoDateBounds(viewDate.getFullYear(), viewDate.getMonth() + 1, min == null ? null : String(min), max == null ? null : String(max))} onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
         </div>
       </header>
       <div className="date-picker-weekdays" aria-hidden="true">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
