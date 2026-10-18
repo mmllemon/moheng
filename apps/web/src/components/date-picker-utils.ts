@@ -18,10 +18,19 @@ export function isIsoDateWithinBounds(value: string, min?: string | number | nul
   if (!date) return false;
   const minimum = parsedBound(min);
   const maximum = parsedBound(max);
-  if (minimum && maximum && minimum > maximum) return false;
-  if (minimum && date < minimum) return false;
-  if (maximum && date > maximum) return false;
+  if (minimum && maximum && minimum.getTime() > maximum.getTime()) return false;
+  if (minimum && date.getTime() < minimum.getTime()) return false;
+  if (maximum && date.getTime() > maximum.getTime()) return false;
   return true;
+}
+
+export function monthIntersectsIsoDateBounds(year: number, monthIndex: number, min?: string | number | null, max?: string | number | null): boolean {
+  const minimum = parsedBound(min);
+  const maximum = parsedBound(max);
+  if (minimum && maximum && minimum.getTime() > maximum.getTime()) return false;
+  const monthStart = new Date(year, monthIndex, 1).getTime();
+  const monthEnd = new Date(year, monthIndex + 1, 0).getTime();
+  return !(maximum && maximum.getTime() < monthStart) && !(minimum && minimum.getTime() > monthEnd);
 }
 
 /**
@@ -33,8 +42,8 @@ export function normalizeIsoDateWithinBounds(value: string, min?: string | numbe
   if (!date) return null;
   const minimum = parsedBound(min);
   const maximum = parsedBound(max);
-  if (minimum && maximum && minimum > maximum) return null;
-  if (minimum && date < minimum) return asIsoDate(minimum);
-  if (maximum && date > maximum) return asIsoDate(maximum);
+  if (minimum && maximum && minimum.getTime() > maximum.getTime()) return null;
+  if (minimum && date.getTime() < minimum.getTime()) return asIsoDate(minimum);
+  if (maximum && date.getTime() > maximum.getTime()) return asIsoDate(maximum);
   return asIsoDate(date);
 }
