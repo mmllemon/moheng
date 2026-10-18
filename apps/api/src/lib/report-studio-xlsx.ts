@@ -182,7 +182,7 @@ function addOverviewSheet(
       index + 1,
       item.name,
       item.rowCount,
-      item.truncated ? '达到工作表预览/渲染上限' : '已生成',
+      item.truncated ? '数据不完整，详见生成提示' : '已生成',
     ]);
     row.eachCell({ includeEmpty: true }, (cell) => {
       cell.font = { name: 'Microsoft YaHei', size: 10, color: { argb: 'FF253746' } };
