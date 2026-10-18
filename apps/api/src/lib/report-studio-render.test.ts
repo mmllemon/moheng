@@ -276,6 +276,28 @@ test('marks truncation on the affected worksheet without mislabeling other works
 });
 
 
+test('marks a report incomplete when a scalar-bound summary source is truncated', () => {
+  const report = definition();
+  report.bindings.push({
+    id: 'financial-summary-binding',
+    sheetId: 'main',
+    cell: 'C1',
+    sourceId: 'financialSummary',
+    fieldId: 'actualCostTotal',
+    format: 'MONEY',
+  });
+
+  const result = renderReportStudio(report, {
+    ...dataset,
+    truncated: true,
+    truncatedSources: ['financialSummary'],
+    warnings: ['依赖财务汇总的数据源明细已截断。'],
+  });
+
+  assert.equal(result.truncated, true);
+  assert.equal(result.sheets[0]!.truncated, true, 'single-value bindings must participate in source dependency detection');
+});
+
 test('does not label a report incomplete when only an unused source was truncated', () => {
   const result = renderReportStudio(definition(), {
     ...dataset,
