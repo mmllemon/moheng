@@ -116,6 +116,18 @@ check('party report collection outputs enforce row caps and source-specific comp
   data.includes('const projectListIncomplete = downstreamContractsTruncated || ownedProjectsTruncated || standaloneCostProjectGroupsTruncated') &&
   docs.includes('往来单位关联项目与独立成本项目分布各自有 10,000 条输出上限') &&
   docs.includes('不能用截断后的分组结果累加'));
+check('company report summarizes capped details with one-pass per-project grouping instead of rescanning every source for every project',
+  data.includes('const groupByProject = <T,>') &&
+  data.includes('const changesByProject = groupByProject(safeChanges') &&
+  data.includes('const downstreamContractsByProject = groupByProject(safeDownstreamContracts') &&
+  data.includes('const ownerReceivablesByProject = groupByProject(safeOwnerReceivables') &&
+  data.includes('const ownerReceiptsByProject = groupByProject(safeOwnerReceipts') &&
+  data.includes('const actualCostsByProject = groupByProject(safeActualCosts') &&
+  data.includes('const downstreamPayablesByProject = groupByProject(safeDownstreamPayables') &&
+  data.includes('const downstreamPaymentsByProject = groupByProject(safeDownstreamPayments') &&
+  !data.includes('safeChanges.filter((item) => item.projectId === project.id)') &&
+  !data.includes('safeOwnerReceipts.filter((item) => item.projectId === project.id)') &&
+  !data.includes('safeActualCosts.filter((item) => item.projectId === project.id)'));
 check('financial summaries never present partial capped source data as complete totals',
   data.includes('依赖该数据源的相关汇总字段将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
 check('report truncation flags and warnings follow bound collections and exact summary fields',
