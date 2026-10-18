@@ -30,7 +30,7 @@ function asToolFailure(reply: FastifyReply, error: unknown) {
  */
 export async function assistantPocRoutes(app: FastifyInstance) {
   // Availability is intentionally distinct from the gated tool/run APIs so the UI can hide the entry point when disabled.
-  // This reports only the feature switch; it never exposes provider credentials or runtime configuration.
+  // This reports the feature switch and configuration-presence booleans only; it never returns secrets, raw model IDs, URLs, or database connection strings. It does not probe provider reachability.
   app.get('/status', { preHandler: [authRequired], config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async () =>
     success(getAssistantRuntimeConfigurationStatus()),
   );

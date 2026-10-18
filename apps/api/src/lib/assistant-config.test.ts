@@ -49,7 +49,7 @@ test('assistant checkpoint readiness falls back to the business DATABASE_URL', (
   assert.equal(result.configuration.checkpointConfigured, true);
 });
 
-test('assistant readiness does not treat a model credential as a ready network connection', () => {
+test('assistant readiness reports configuration presence without claiming network reachability', () => {
   const result = getAssistantRuntimeConfigurationStatus({
     OPENAI_API_KEY: 'test',
     ASSISTANT_POC_MODEL_ID: 'test',
