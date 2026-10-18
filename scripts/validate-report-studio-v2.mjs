@@ -73,12 +73,15 @@ check('company sources include project identifiers so cross-project rows remain 
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
 check('financial summaries never present partial capped source data as complete totals',
   data.includes('依赖该数据源的金额汇总将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
-check('report truncation flags and warnings follow the sources actually referenced by a template',
+check('report truncation flags and warnings follow bound collections and exact summary fields',
   data.includes('truncationNotices') &&
-  data.includes("sourceIds: ['partyDownstreamContracts', 'partyProjects', 'partySummary']") &&
+  data.includes("sourceIds: ['partyDownstreamContracts']") &&
+  data.includes("sourceId: 'financialSummary', fieldIds: ['actualCostTotal']") &&
   renderer.includes('notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))') &&
-  rendererTests.includes('unused source was truncated') &&
-  rendererTests.includes('bound summary sources must remain visible'));
+  renderer.includes('(notice.fields ?? [])') &&
+  renderer.includes('truncatedFieldKeys.has(`${binding.sourceId}:${binding.fieldId}`)') &&
+  rendererTests.includes('an unaffected field in a used summary source') &&
+  rendererTests.includes('bound summary fields must remain visible'));
 check('renderer binds every repeated-row cell from the same source record and keeps independent regions separate',
   renderer.includes('region.sourceId === binding.sourceId ? (regionRecords?.[repeat] ?? null) : null') && renderer.includes('regionExpansions') && renderer.includes('allowedRepetitions') && renderer.includes('const merges: ReportStudioRenderedMerge[]') &&
   renderTests.includes('expands independent repeating regions') && renderTests.includes('empty repeating regions') && renderTests.includes('rows[2]![1]!.value, 100') && renderTests.includes('rows[6]![1]!.value, 20'));
