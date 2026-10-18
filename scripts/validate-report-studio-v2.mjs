@@ -123,7 +123,7 @@ check('project/company report templates expose downstream payment and refund led
   reportData.includes("id: 'companyDownstreamPayments'") &&
   reportData.includes('prisma.downstreamContractPayment.findMany') &&
   reportData.includes('originalReferenceNo') &&
-  defaultStudio.includes("sourceId: 'downstreamPayments'") &&
+  defaultStudio.includes("[23, 'downstreamPayments'") &&
   defaultStudio.includes("sourceId:'companyDownstreamPayments'") &&
   docs.includes('不得与应付台账或实际成本混算'));
 check('party template context is isolated by businessPartyId through an append-only migration',
