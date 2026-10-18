@@ -52,8 +52,14 @@ check('release command combines original regression contracts, new WP checks and
 check('eight standard CSV report types are declared and routed behind authenticated API',
   ['target-cost','actual-cost','progress-bills','changes','owner-receivables','owner-receipts','downstream-contracts','downstream-payables'].every((key) => reportData.includes(`'${key}'`)) &&
   reportRoute.includes('preHandler: authRequired') && moduleRegistry.includes("mountPrefix: '/api/reports'"));
-check('report export filters project IDs on the server and rejects inaccessible explicit project scope',
-  reportData.includes("members: { some: { userId: user.sub } }") && reportData.includes('availableIds.includes(filters.projectId)') && reportData.includes('PROJECT_ACCESS_DENIED'));
+check('standard report exports enforce project scope through relational filters without expanding every project ID',
+  reportData.includes("members: { some: { userId: user.sub } }") &&
+  reportData.includes("const selectedProjectScope = { ...projectScope, ...(filters.projectId ? { id: filters.projectId } : {}) }") &&
+  reportData.includes("const projectFilter = { project: selectedProjectScope }") &&
+  reportData.includes("downstreamContract: { project: selectedProjectScope, deletedAt: null }") &&
+  !reportData.includes('const projectIds = filters.projectId ? [filters.projectId] : availableIds') &&
+  !reportData.includes('projectId: { in: projectIds }') &&
+  reportData.includes('PROJECT_ACCESS_DENIED'));
 check('CSV export applies BOM, quoting, formula neutralization and unit test coverage',
   csv.includes('\\uFEFF') && csv.includes('replace(/"/g,') && csv.includes("text = `'${text}`") &&
   csvTests.includes('formula cells') && csvTests.includes('quotes'));
