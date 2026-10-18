@@ -63,7 +63,10 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   // do not run this on month navigation itself, which intentionally leaves selectedValue unchanged.
   useEffect(() => {
     const focusValue = normalizeIsoDateWithinBounds(selectedValue, min == null ? null : String(min), max == null ? null : String(max));
-    if (!focusValue) return;
+    if (!focusValue) {
+      setFocusedDate('');
+      return;
+    }
     const selected = parseIsoDate(focusValue);
     if (!selected) return;
     setViewDate((current) => (
