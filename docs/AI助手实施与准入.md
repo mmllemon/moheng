@@ -12,6 +12,7 @@
 - LangGraph.js + PostgreSQL `PostgresSaver` 运行时适配，位于 `apps/api/src/assistant/runtime/langgraph-adapter.ts`。
 - 会话、消息、运行记录、持久化事件、SSE 重放/心跳、取消请求和 requestId 幂等 API。
 - 持久化后台任务处理与陈旧 run 收敛。
+- 长时间运行的助手任务必须进入 PostgreSQL 持久化 `BackgroundJob` 队列，由后台 worker 处理；不得把模型执行放在 HTTP 请求生命周期内。助手 `AssistantRun` 状态与队列任务状态分别记录，并通过幂等终态转换、取消检查和陈旧任务收敛保持一致。
 - `/cost/assistant` 第一版工作台，包含会话列表、消息流、工具状态、来源摘要与局限说明。
 - 三个只读业务工具：`project_operating_overview`、`cost_variance`、`change_evidence_completeness`。
 - `project_operating_overview` 包含分供付款/退款合计和最近流水样本，且与应付、实际成本分开；当流水扫描超过 10,000 条时，付款/退款合计返回不可用并说明限制。
