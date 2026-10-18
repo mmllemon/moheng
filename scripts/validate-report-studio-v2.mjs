@@ -80,7 +80,7 @@ check('report truncation flags and warnings follow bound collections and exact s
   renderer.includes('notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))') &&
   renderer.includes('(notice.fields ?? [])') &&
   renderer.includes('truncatedFieldKeys.has(`${binding.sourceId}:${binding.fieldId}`)') &&
-  rendererTests.includes('an unaffected field in a used summary source') &&
+  rendererTests.includes('unbound field in a used summary source') &&
   rendererTests.includes('bound summary fields must remain visible'));
 check('renderer binds every repeated-row cell from the same source record and keeps independent regions separate',
   renderer.includes('region.sourceId === binding.sourceId ? (regionRecords?.[repeat] ?? null) : null') && renderer.includes('regionExpansions') && renderer.includes('allowedRepetitions') && renderer.includes('const merges: ReportStudioRenderedMerge[]') &&
