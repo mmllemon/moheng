@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import { z } from 'zod';
 import { authRequired, authUser } from '../lib/auth.js';
+import { getAssistantRuntimeConfigurationStatus } from '../lib/assistant-config.js';
 import { failure, success } from '../lib/http.js';
 import { ASSISTANT_READ_ONLY_TOOL_IDS, AssistantReadOnlyToolError, runAssistantReadOnlyTool } from '../lib/assistant-read-only-tools.js';
 import { assistantConversationRoutes } from './assistant-conversations.js';
