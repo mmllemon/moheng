@@ -153,7 +153,15 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const standaloneCostScope = { businessPartyId, downstreamContractId: null, deletedAt: null, project: projectScope };
   const [visibleProjectCount, ownedProjectsFetched, downstreamContractsFetched, standaloneCosts, standaloneCostTotalsFetched, standaloneCostAggregate] = await Promise.all([
     prisma.project.count({ where: projectScope }),
-    prisma.project.findMany({ where: ownedProjectScope, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.project.findMany({
+      where: ownedProjectScope,
+      select: {
+        id: true, code: true, name: true, status: true, contractAmount: true, originalContractAmount: true,
+        mainContract: { select: { contractNo: true, name: true } },
+      },
+      orderBy: [{ code: 'asc' }, { id: 'asc' }],
+      take: MAX_ROWS_PER_SOURCE + 1,
+    }),
     prisma.downstreamContract.findMany({ where: { counterpartyPartyId: businessPartyId, deletedAt: null, project: projectScope }, include: { project: { select: { id: true, name: true, code: true, status: true, ownerPartyId: true, contractAmount: true, originalContractAmount: true } } }, orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.costEntry.findMany({ where: standaloneCostScope, include: { project: { select: { id: true, name: true, code: true, status: true } } }, orderBy: [{ date: 'desc' }, { id: 'asc' }], take: 201 }),
     prisma.costEntry.groupBy({ by: ['projectId'], where: standaloneCostScope, _sum: { amount: true }, _count: { _all: true }, orderBy: { projectId: 'asc' }, take: MAX_ROWS_PER_SOURCE + 1 }),
