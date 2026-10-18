@@ -286,6 +286,36 @@ test('XLSX overview sheet remains available when the optional metadata sheet is 
   assert.match(String(overview.pageSetup.printArea), /^A1:D\d+$/);
 });
 
+test('repeats horizontal merges beside an expanded collection row instead of merging records vertically', async () => {
+  const report = definition();
+  const workbookData = report.workbook as unknown as {
+    sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
+  };
+  // The contract collection occupies A:B on row 3; C:D is a valid adjacent horizontal merge.
+  workbookData.sheets.main!.mergeData.push({ startRow: 2, startColumn: 2, endRow: 2, endColumn: 3 });
+
+  const result = renderReportStudio(report, dataset);
+  assert.deepEqual(
+    result.sheets[0]!.merges.filter((merge) => merge.startColumn === 2 && merge.endColumn === 3),
+    [
+      { startRow: 2, startColumn: 2, endRow: 2, endColumn: 3 },
+      { startRow: 3, startColumn: 2, endRow: 3, endColumn: 3 },
+    ],
+  );
+
+  const buffer = await buildReportStudioWorkbook({
+    definition: report,
+    dataset,
+    templateName: '相邻单元格合并验证',
+    templateVersion: 1,
+  });
+  const exported = new ExcelJS.Workbook();
+  await exported.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof exported.xlsx.load>[0]);
+  const sheet = exported.getWorksheet('测试表')!;
+  assert.equal(sheet.getCell('C3').master.address, 'C3');
+  assert.equal(sheet.getCell('C4').master.address, 'C4');
+});
+
 test('renders downstream payment and refund collections into independent report regions', () => {
   const report = definition();
   const workbook = report.workbook as {

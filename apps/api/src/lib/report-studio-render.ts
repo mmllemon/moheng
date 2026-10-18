@@ -155,7 +155,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       regionExpansions.set(region.templateRow, records.slice(0, region.maxRows));
     }
 
-    const rowOutputStart = new Map<number, number>();
+    const outputRowsBySourceRow = new Map<number, number[]>();
     const renderedRows: ReportStudioRenderedCell[][] = [];
     const rowHeights: Record<number, number> = {};
     let outputIndex = 0;
@@ -166,7 +166,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
         warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行渲染上限，后续行已省略。`);
         break;
       }
-      rowOutputStart.set(sourceRow, outputIndex);
+      outputRowsBySourceRow.set(sourceRow, []);
       const rowCells = sourceRows[String(sourceRow)] ?? {};
       const rowStyles = sourceSheet.rowData?.[String(sourceRow)];
       const region = regionByRow.get(sourceRow);
@@ -175,6 +175,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       const allowedRepetitions = Math.min(repetitions, MAX_RENDERED_ROWS_PER_SHEET - outputIndex);
       if (region && repetitions > allowedRepetitions) { allTruncated = true; sheetTruncated = true; warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行上限。`); }
       for (let repeat = 0; repeat < allowedRepetitions; repeat += 1) {
+        outputRowsBySourceRow.get(sourceRow)!.push(outputIndex);
         const outputRow: ReportStudioRenderedCell[] = [];
         // A binding is authoritative even if the spreadsheet adapter omitted an otherwise-empty cell from cellData.
         // Render the union so a valid binding never silently disappears from preview/export.
@@ -206,6 +207,16 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     }
     const merges: ReportStudioRenderedMerge[] = [];
     for (const merge of sourceSheet.mergeData ?? []) {
+      // A horizontal merge on a repeated template row must be reproduced once per rendered
+      // record. Stretching its end row would merge adjacent records together and hide cells.
+      if (merge.startRow === merge.endRow && regionByRow.has(merge.startRow)) {
+        for (const outputRow of outputRowsBySourceRow.get(merge.startRow) ?? []) {
+          if (outputRow < MAX_RENDERED_ROWS_PER_SHEET) {
+            merges.push({ startRow: outputRow, startColumn: merge.startColumn, endRow: outputRow, endColumn: merge.endColumn });
+          }
+        }
+        continue;
+      }
       let startShift = 0;
       let endShift = 0;
       for (const region of sheetRegions) {
