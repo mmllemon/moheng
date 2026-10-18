@@ -72,7 +72,7 @@ check('project and company source registry includes multiple independent busines
 check('company sources include project identifiers so cross-project rows remain traceable',
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
 check('financial summaries never present partial capped source data as complete totals',
-  data.includes('依赖该数据源的金额汇总将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
+  data.includes('依赖该数据源的相关汇总字段将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
 check('report truncation flags and warnings follow bound collections and exact summary fields',
   data.includes('truncationNotices') &&
   data.includes("sourceIds: ['partyDownstreamContracts']") &&
