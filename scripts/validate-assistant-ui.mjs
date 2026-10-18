@@ -19,7 +19,7 @@ const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, 
   read('apps/web/src/styles.css'),
   read('CHANGELOG.md'),
   read('README.md'),
-  read('docs/assistant-ui-integration-v1.0.md'),
+  read('docs/AI助手实施与准入.md'),
   read('apps/api/src/routes/assistant-conversations.ts'),
 ]);
 let assertions = 0;
