@@ -470,7 +470,10 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   if (projectId && !accessibleIds.includes(projectId)) throw Object.assign(new Error('你没有访问该项目报表的权限'), { statusCode: 403, code: 'PROJECT_ACCESS_DENIED' });
   const scopedProjects = domain === 'PROJECT' ? accessibleProjects.filter((project) => project.id === projectId) : accessibleProjects;
   const projectIds = scopedProjects.map((project) => project.id);
-  const projectFilter = { projectId: { in: projectIds } };
+  // Apply project authorization and report scope through relational filters instead of
+  // expanding every accessible project ID into each query's bind parameters.
+  const selectedProjectScope = { ...projectScope, ...(domain === 'PROJECT' && projectId ? { id: projectId } : {}) };
+  const projectFilter = { project: selectedProjectScope };
   const warnings: string[] = [];
   const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
   const truncatedSources = new Set<string>();
@@ -490,9 +493,9 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     prisma.ownerReceipt.findMany({ where: projectFilter, include: { project: { select: { code: true, name: true } }, originalReceipt: { select: { receiptNo: true } } }, orderBy: [{ project: { code: 'asc' } }, { receivedAt: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.costEntry.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } }, budgetItem: { select: { code: true } }, downstreamContract: { select: { contractNo: true } } }, orderBy: [{ project: { code: 'asc' } }, { date: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.progressBill.findMany({ where: { ...projectFilter, deletedAt: null }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ project: { code: 'asc' } }, { periodNo: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
-    prisma.downstreamPayable.findMany({ where: { downstreamContract: { projectId: { in: projectIds }, deletedAt: null } }, include: { downstreamContract: { select: { projectId: true, contractNo: true, name: true, counterpartyName: true, project: { select: { code: true, name: true } } } } }, orderBy: [{ downstreamContract: { project: { code: 'asc' } } }, { downstreamContract: { contractNo: 'asc' } }, { postedAt: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
+    prisma.downstreamPayable.findMany({ where: { downstreamContract: { project: selectedProjectScope, deletedAt: null } }, include: { downstreamContract: { select: { projectId: true, contractNo: true, name: true, counterpartyName: true, project: { select: { code: true, name: true } } } } }, orderBy: [{ downstreamContract: { project: { code: 'asc' } } }, { downstreamContract: { contractNo: 'asc' } }, { postedAt: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
     prisma.downstreamContractPayment.findMany({
-      where: { downstreamContract: { projectId: { in: projectIds }, deletedAt: null } },
+      where: { downstreamContract: { project: selectedProjectScope, deletedAt: null } },
       include: {
         downstreamContract: { select: { projectId: true, contractNo: true, project: { select: { code: true, name: true } } } },
         refundOfPayment: { select: { referenceNo: true, paidAt: true, type: true } },
