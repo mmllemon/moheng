@@ -18,3 +18,6 @@ GATE-*.txt
 r3-injection.mjs
 r4-cancel-race.mjs
 r6-ops-drill.mjs
+gg.mjs
+g.mjs
+
