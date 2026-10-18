@@ -81,6 +81,12 @@ check('project/company report data queries apply authorized project scopes relat
   data.includes("prisma.project.findFirst({ where: { ...projectScope, id: projectId }") &&
   data.includes("domain === 'COMPANY'") &&
   !data.includes('projectId: { in: projectIds }'));
+check('project and party report loaders select only fields used by summaries, avoiding complete main-contract records',
+  data.includes('mainContract: { select: { contractNo: true, name: true } }') &&
+  data.includes('originalContractAmount: true, contractAmount: true') &&
+  data.includes('mainContract: {\n              select: {') &&
+  data.includes('guaranteeEndAt: true') &&
+  !data.includes('include: { mainContract: true }'));
 check('party contract finance metrics aggregate child histories in PostgreSQL while capping contract detail rows',
   data.includes('prisma.downstreamContractAdjustment.groupBy') &&
   data.includes('prisma.downstreamSettlementPosting.groupBy') &&
