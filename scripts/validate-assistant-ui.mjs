@@ -46,6 +46,8 @@ check(page.includes('source.fields.join') && page.includes('tool.limitations'), 
 check(workspace.includes("api.get<{ enabled: boolean }>('/assistant-poc/status')") && workspace.includes('{assistantEnabled &&'), 'assistant navigation must stay hidden unless enabled');
 check(routes.includes("const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'))") && routes.includes('path="assistant"'), 'assistant page must be lazy-loaded under /cost/assistant');
 check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('preHandler: [authRequired]'), 'status endpoint must require an authenticated user');
+check(serverRoutes.includes('configurationReady') && serverRoutes.includes('providerConfigured') && serverRoutes.includes('checkpointConfigured') && serverRoutes.includes('getAssistantRuntimeConfigurationStatus'), 'assistant readiness must expose configuration-presence booleans only');
+check(page.includes('成本助手运行环境未就绪') && page.includes('configurationIssues') && page.includes('模型服务凭据尚未配置'), 'assistant UI must explain missing runtime configuration before accepting questions');
 check(!serverRoutes.includes("app.get('/status', { preHandler: [featureGate, authRequired]"), 'disabled state probe must work without exposing gated tools');
 check(toolAdapter.includes('sources: result.sources.map') && toolAdapter.includes('limitations: result.limitations'), 'backend tool event must persist compact structured source metadata');
 check(listRoutes.includes('async (request, reply)') && listRoutes.includes('parsedQuery.data.projectId ? { projectId: parsedQuery.data.projectId }'), 'conversation list validation must return a safe error and filter by server query project scope');
