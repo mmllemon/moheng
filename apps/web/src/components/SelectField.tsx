@@ -144,7 +144,10 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
   function openDropdown() {
     if (disabled) return;
     setFilterText('');
-    const index = Math.max(0, options.findIndex((option) => option.value === selectedValue));
+    const selectedIndex = options.findIndex((option) => option.value === selectedValue);
+    const index = selectedIndex >= 0 && !options[selectedIndex]!.disabled
+      ? selectedIndex
+      : nextEnabledOptionIndex(options, selectedIndex >= 0 ? selectedIndex : -1, 1);
     setActiveIndex(index);
     setOpen(true);
     requestAnimationFrame(syncPosition);
@@ -159,12 +162,12 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       setActiveIndex((index) => nextEnabledOptionIndex(visibleOptions, index, event.key === 'ArrowDown' ? 1 : -1));
-    } else if (event.key === 'Home') { event.preventDefault(); setActiveIndex(0); }
-    else if (event.key === 'End') { event.preventDefault(); setActiveIndex(Math.max(0, visibleOptions.length - 1)); }
+    } else if (event.key === 'Home') { event.preventDefault(); setActiveIndex(visibleOptions.findIndex((option) => !option.disabled) < 0 ? 0 : visibleOptions.findIndex((option) => !option.disabled)); }
+    else if (event.key === 'End') { event.preventDefault(); const lastEnabled = visibleOptions.map((option, index) => ({ option, index })).filter(({ option }) => !option.disabled).at(-1)?.index; setActiveIndex(lastEnabled ?? 0); }
     else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); const option = visibleOptions[activeIndex]; if (option) choose(option); }
     else if (event.key === 'Escape') { event.preventDefault(); setOpen(false); triggerRef.current?.focus(); }
     else if (event.key.length === 1 && /[\p{L}\p{N}]/u.test(event.key)) {
-      const found = visibleOptions.findIndex((option) => option.label.toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()));
+      const found = visibleOptions.findIndex((option) => !option.disabled && option.label.toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()));
       if (found >= 0) setActiveIndex(found);
     }
   }
