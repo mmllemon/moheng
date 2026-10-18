@@ -158,3 +158,40 @@ test('XLSX overview sheet remains available when the optional metadata sheet is 
   assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '测试表']);
   assert.equal(workbook.getWorksheet('报表预览')!.getCell('B6').value, '测试项目');
 });
+
+test('renders downstream payment and refund collections into independent report regions', () => {
+  const report = definition();
+  const workbook = report.workbook as {
+    sheets: Record<string, {
+      rowCount: number;
+      cellData: Record<string, Record<string, { v?: unknown; s?: unknown }>>;
+    }>;
+  };
+  const main = workbook.sheets.main!;
+  main.rowCount = 10;
+  main.cellData['7'] = { '0': { v: '分供付款流水' } };
+  main.cellData['8'] = { '0': { v: '分供合同编号' }, '1': { v: '支付/退款金额' } };
+  main.cellData['9'] = { '0': { v: '' }, '1': { v: '' } };
+  report.bindings.push(
+    { id: 'payment-contract', sheetId: 'main', cell: 'A10', sourceId: 'downstreamPayments', fieldId: 'contractNo', format: 'TEXT' },
+    { id: 'payment-amount', sheetId: 'main', cell: 'B10', sourceId: 'downstreamPayments', fieldId: 'amount', format: 'MONEY' },
+  );
+  report.regions.push({ id: 'payment-region', sheetId: 'main', sourceId: 'downstreamPayments', templateRow: 9, startColumn: 0, endColumn: 1, maxRows: 100 });
+  const result = renderReportStudio(report, {
+    ...dataset,
+    sources: {
+      ...dataset.sources,
+      downstreamPayments: [
+        { id: 'dp-1', contractNo: 'SC-001', amount: '10.50', type: 'PROGRESS' },
+        { id: 'dp-2', contractNo: 'SC-002', amount: '3.25', type: 'REFUND' },
+      ],
+    },
+  });
+  const rows = result.sheets[0]!.rows;
+  const section = rows.findIndex((row) => row[0]?.value === '分供付款流水');
+  assert.ok(section >= 0);
+  assert.equal(rows[section + 2]![0]!.value, 'SC-001');
+  assert.equal(rows[section + 2]![1]!.value, 10.5);
+  assert.equal(rows[section + 3]![0]!.value, 'SC-002');
+  assert.equal(rows[section + 3]![1]!.value, 3.25);
+});
