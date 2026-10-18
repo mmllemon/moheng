@@ -46,6 +46,8 @@ check('sidebar health indicator without data semantics is removed and replaced b
   !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
 check('shared date and select controls expose popup relationships, labels, and validation state',
   datePicker.includes('date-picker-dialog-') &&
+  datePicker.includes('id={id ? `${id}-native` : undefined}') && datePicker.includes('id={id}') &&
+  selectField.includes('id={id ? `${id}-native` : undefined}') && selectField.includes('id={id}') &&
   datePicker.includes("aria-labelledby={props['aria-labelledby']}") &&
   datePicker.includes('aria-current={today ?') &&
   selectField.includes("aria-labelledby={props['aria-labelledby']}") &&
