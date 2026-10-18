@@ -72,7 +72,8 @@ function addStandardReportOverview(workbook: ExcelJS.Workbook, options: ReportWo
     orientation: 'portrait',
     fitToPage: true,
     fitToWidth: 1,
-    fitToHeight: 1,
+    // Keep row-limit warnings readable; never force the overview and warnings onto one page.
+    fitToHeight: 0,
     margins: { left: 0.35, right: 0.35, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
   };
   sheet.headerFooter.oddFooter = '墨衡 · 报表导出摘要　&P/&N';
