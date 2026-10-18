@@ -138,6 +138,7 @@ test('XLSX export starts with a styled overview sheet and preserves the report w
   assert.equal(overview.getCell('A1').value, '区域渲染测试');
   assert.equal(overview.getCell('A4').value, '报表类型');
   assert.equal(overview.getCell('B4').value, '项目级综合报表');
+  assert.equal(overview.getCell('B7').value, '当前报表未截断');
   assert.equal(overview.getCell('B5').value, '项目经营摘要模板');
   assert.equal(overview.getCell('D5').value, 'v3');
   assert.equal(overview.getCell('B6').value, '测试项目');
