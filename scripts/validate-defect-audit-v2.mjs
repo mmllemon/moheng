@@ -13,7 +13,7 @@ const [rootPackage, apiPackage, webPackage, gov, ui, ops, sec, dict, config, sys
   read('apps/web/src/pages/SystemSecurityPage.tsx'), read('apps/web/src/pages/SystemDictionariesPage.tsx'), read('apps/api/src/routes/system-config.ts'),
   read('apps/api/src/routes/system-management.ts'), read('apps/api/src/lib/auth.ts'), read('apps/api/src/routes/auth.ts'),
   read('apps/api/src/lib/background-job-worker.ts'), read('apps/api/src/server.ts'), read('apps/api/src/lib/auth-security.test.ts'),
-  read('docs/源码缺陷审计与修复记录-v2.12.1-rc.1.md'),
+  read('docs/archive/源码缺陷审计与修复记录-v2.12.1-rc.1.md'),
 ]);
 
 check('all version metadata advanced coherently to the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
