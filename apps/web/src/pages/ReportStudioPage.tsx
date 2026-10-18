@@ -17,13 +17,16 @@ interface UniverApiLike {
   createWorkbook: (data: unknown) => unknown;
   getActiveWorkbook: () => { save: () => unknown; getActiveSheet?: () => UniverSheetLike | null; getSheetBySheetId?: (sheetId: string) => UniverSheetLike | null; getActiveRange?: () => { getA1Notation?: () => string } | null } | null;
 }
-function clearBindingPlaceholder(api: UniverApiLike | undefined, binding: ReportStudioBinding) {
-  if (!api) return;
+function getWorkbookSheet(api: UniverApiLike | undefined, sheetId: string): UniverSheetLike | null {
+  if (!api) return null;
   const workbook = api.getActiveWorkbook();
   const activeSheet = workbook?.getActiveSheet?.() ?? null;
   const activeSheetId = activeSheet?.getSheetId?.() ?? activeSheet?.getId?.();
-  const sheet = workbook?.getSheetBySheetId?.(binding.sheetId)
-    ?? (activeSheetId === binding.sheetId ? activeSheet : null);
+  return workbook?.getSheetBySheetId?.(sheetId)
+    ?? (activeSheetId === sheetId ? activeSheet : null);
+}
+function clearBindingPlaceholder(api: UniverApiLike | undefined, binding: ReportStudioBinding) {
+  const sheet = getWorkbookSheet(api, binding.sheetId);
   const range = sheet?.getRange?.(binding.cell);
   const expectedPlaceholder = `{{${binding.sourceId}.${binding.fieldId}}}`;
   // Preserve any user-edited value; only clear the inert marker inserted by the binding action.
@@ -306,7 +309,7 @@ export default function ReportStudioPage() {
 
   function addBinding() {
     try {
-      const address = selectedCell.trim().toUpperCase();
+      const address = selectedCell.trim().replace(/\$/g, '').toUpperCase();
       const coordinate = parseA1(address);
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       if (!selectedSource || !selectedField) throw new Error('请先选择有效的数据源和字段。');
@@ -318,7 +321,7 @@ export default function ReportStudioPage() {
       }
       const binding: ReportStudioBinding = { id: newId('binding'), sheetId, cell: address, sourceId, fieldId, format: selectedField.type === 'MONEY' ? 'MONEY' : selectedField.type === 'DATE' ? 'DATE' : selectedField.type === 'NUMBER' ? 'NUMBER' : 'AUTO' };
       const placeholder = `{{${selectedSource.id}.${selectedField.id}}}`;
-      const sheet = instanceRef.current?.api.getActiveWorkbook()?.getActiveSheet?.();
+      const sheet = getWorkbookSheet(instanceRef.current?.api, sheetId);
       // Keep the binding visible while editing; the renderer replaces this inert placeholder with real data.
       try { sheet?.getRange?.(address)?.setValue?.(placeholder); } catch { /* editor selection APIs can be unavailable until the first workbook activation */ }
       setDefinition((current) => ({ ...current, bindings: [...current.bindings.filter((item) => !(item.sheetId === sheetId && item.cell === address)), binding] }));
@@ -361,7 +364,7 @@ export default function ReportStudioPage() {
   }
 
   function removeBinding() {
-    const address = selectedCell.trim().toUpperCase();
+    const address = selectedCell.trim().replace(/\$/g, '').toUpperCase();
     const sheetId = selectedSheetId || sheetIdFromDefinition;
     const removed = definition.bindings.find((binding) => binding.sheetId === sheetId && binding.cell === address);
     if (removed) clearBindingPlaceholder(instanceRef.current?.api, removed);
