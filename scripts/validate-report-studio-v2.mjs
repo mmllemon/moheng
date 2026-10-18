@@ -48,6 +48,8 @@ const sharedSelect = await read('apps/web/src/components/SelectField.tsx');
 const sharedDate = await read('apps/web/src/components/DatePicker.tsx');
 const docs = await read('docs/报表中心规格与验收.md');
 const acceptance = await read('docs/后续四阶段开发路线图.md');
+const reportData = await read('apps/api/src/lib/report-studio-data.ts');
+const defaultStudio = await read('apps/web/src/report-studio-default.ts');
 const currentDocs = docs;
 const currentAcceptance = acceptance;
 
@@ -116,6 +118,14 @@ check('consolidated report docs preserve access restrictions and explicit bounde
   docs.includes('任意 SQL') === false && docs.includes('公司级') && docs.includes('10,000') && docs.includes('当前用户权限') && acceptance.includes('公司级') && acceptance.includes('XLSX'));
 check('current report specs define stable row identity/order, cell styles, project/company/party scopes and workspace entry points',
   currentDocs.includes('同一条记录') && currentDocs.includes('稳定主键') && currentDocs.includes('公司级') && currentDocs.includes('往来单位') && currentDocs.includes('列宽') && currentAcceptance.includes('重复区域') && currentAcceptance.includes('项目驾驶舱') && currentDocs.includes('往来单位经营档案'));
+check('project/company report templates expose downstream payment and refund ledger separately from posted payables',
+  reportData.includes("id: 'downstreamPayments'") &&
+  reportData.includes("id: 'companyDownstreamPayments'") &&
+  reportData.includes('prisma.downstreamContractPayment.findMany') &&
+  reportData.includes('originalReferenceNo') &&
+  defaultStudio.includes("sourceId: 'downstreamPayments'") &&
+  defaultStudio.includes("sourceId:'companyDownstreamPayments'") &&
+  docs.includes('不得与应付台账或实际成本混算'));
 check('party template context is isolated by businessPartyId through an append-only migration',
   studioRoute.includes('REPORT_TEMPLATE_PARTY_MISMATCH') && studioRoute.includes('hasBusinessParty') && studioRoute.includes('businessPartyId') &&
   (await read('apps/api/prisma/schema.prisma')).includes('businessPartyId String?') && (await read('apps/api/prisma/migrations/20261015030000_party_report_template_context/migration.sql')).includes('FOREIGN KEY'));
