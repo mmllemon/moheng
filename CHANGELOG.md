@@ -1,4 +1,6 @@
-## Draft: v2.20.0 product completion (not released)
+## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
+
+### Draft: v2.20.0 product completion (not released)
 
 > Draft notes for PR `feat/v2.20.0-product-completion`. This is not a release announcement; package versions remain `2.19.0-rc.2` and the PR is not merged.
 
