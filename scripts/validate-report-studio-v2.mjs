@@ -76,6 +76,10 @@ check('project/company report data queries apply authorized project scopes relat
   data.includes("domain === 'PROJECT' && projectId ? { id: projectId } : {}") &&
   data.includes('const projectFilter = { project: selectedProjectScope }') &&
   data.includes('downstreamContract: { project: selectedProjectScope, deletedAt: null }') &&
+  data.includes("if (domain === 'PROJECT' && !projectId) throw") &&
+  data.includes('prisma.project.count({ where: projectScope })') &&
+  data.includes("prisma.project.findFirst({ where: { ...projectScope, id: projectId }") &&
+  data.includes("domain === 'COMPANY'") &&
   !data.includes('projectId: { in: projectIds }'));
 check('party contract finance metrics aggregate child histories in PostgreSQL while capping contract detail rows',
   data.includes('prisma.downstreamContractAdjustment.groupBy') &&
