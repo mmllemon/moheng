@@ -201,7 +201,7 @@ test('XLSX overview sheet remains available when the optional metadata sheet is 
   const overviewFirstColumnValues: unknown[] = [];
   overview.getColumn(1).eachCell({ includeEmpty: false }, (cell) => overviewFirstColumnValues.push(cell.value));
   assert.ok(overviewFirstColumnValues.some((value) => String(value ?? '').includes(generationWarning)), 'generation warnings must remain visible when the optional metadata sheet is disabled');
-  assert.match(String(overview.pageSetup.printArea), /^A1:D\\d+$/);
+  assert.match(String(overview.pageSetup.printArea), /^A1:D\d+$/);
 });
 
 test('renders downstream payment and refund collections into independent report regions', () => {
