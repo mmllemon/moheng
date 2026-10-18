@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import ExcelJS from 'exceljs';
 import { buildReportWorkbook } from './report-xlsx.js';
 import { createDefaultDefinition } from './report-template.js';
-import { makeReportFields, reportCatalog, type ReportSnapshot } from './report-data.js';
+import { makeReportFields, reportCatalog, valueForJson, type ReportSnapshot } from './report-data.js';
 
 test('standard XLSX begins with a styled overview sheet and preserves typed data and description sheets', async () => {
   const generatedAt = new Date('2026-10-15T02:00:00.000Z');
@@ -41,6 +41,56 @@ test('standard XLSX begins with a styled overview sheet and preserves typed data
   assert.equal(sheet.getCell('C5').value, '000123');
   assert.equal(sheet.views[0]?.state, 'frozen');
   assert.equal(workbook.getWorksheet('导出说明')!.getCell('B10').value, '1');
+});
+
+function decimalLike(raw: string) {
+  return {
+    constructor: { name: 'Decimal' },
+    toString: () => raw,
+    valueOf: () => Number(raw),
+  };
+}
+
+test('standard report JSON and XLSX preserve Decimal values beyond Excel precision as exact text', async () => {
+  const generatedAt = new Date('2026-10-15T02:00:00.000Z');
+  const exactUnitPrice = '90071992547409.93';
+  const exactTotalPrice = '9999999999999999.99';
+  const row = [
+    '大额项目', 'P-LARGE', 'L-001', '大额金额记录', null, null, '元', 1,
+    decimalLike(exactUnitPrice), decimalLike(exactTotalPrice), 1, 1, generatedAt,
+  ];
+  const snapshot: ReportSnapshot = {
+    report: reportCatalog.find((item) => item.key === 'target-cost')!,
+    fields: makeReportFields('target-cost', row),
+    rows: [row],
+    rowCount: 1,
+    truncated: false,
+    generatedAt,
+    projectScope: '大额项目',
+    filters: {},
+  };
+
+  assert.equal(valueForJson(decimalLike(exactUnitPrice)), exactUnitPrice);
+  assert.equal(valueForJson(decimalLike('1234.56')), 1234.56);
+
+  const buffer = await buildReportWorkbook({
+    snapshot,
+    definition: createDefaultDefinition('target-cost'),
+    templateName: '大额精度测试',
+    templateVersion: 1,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  const dataSheet = workbook.getWorksheet('数据')!;
+  let dataRow = 0;
+  dataSheet.eachRow((sheetRow, rowNumber) => {
+    if (sheetRow.getCell(4).value === '大额金额记录') dataRow = rowNumber;
+  });
+  assert.ok(dataRow > 0, 'the precision fixture row must be present');
+  assert.equal(dataSheet.getCell(dataRow, 9).value, exactUnitPrice);
+  assert.equal(dataSheet.getCell(dataRow, 9).type, ExcelJS.ValueType.String);
+  assert.equal(dataSheet.getCell(dataRow, 10).value, exactTotalPrice);
+  assert.equal(dataSheet.getCell(dataRow, 10).type, ExcelJS.ValueType.String);
 });
 
 test('standard XLSX overview explicitly warns when the standard report row limit truncates results', async () => {
