@@ -28,6 +28,15 @@ function collectOptions(children: ReactNode): SelectOption[] {
   return options;
 }
 
+function nextEnabledOptionIndex(options: SelectOption[], currentIndex: number, delta: 1 | -1): number {
+  if (!options.length || !options.some((option) => !option.disabled)) return 0;
+  for (let step = 1; step <= options.length; step += 1) {
+    const index = ((currentIndex + delta * step) % options.length + options.length) % options.length;
+    if (!options[index]!.disabled) return index;
+  }
+  return currentIndex;
+}
+
 function setRefValue(ref: ForwardedRef<HTMLSelectElement>, value: HTMLSelectElement | null) {
   if (typeof ref === 'function') ref(value);
   else if (ref) ref.current = value;
@@ -149,11 +158,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
     if (!open) return;
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
-      setActiveIndex((index) => {
-        if (!visibleOptions.length) return 0;
-        const next = (index + (event.key === 'ArrowDown' ? 1 : -1) + visibleOptions.length) % visibleOptions.length;
-        return next;
-      });
+      setActiveIndex((index) => nextEnabledOptionIndex(visibleOptions, index, event.key === 'ArrowDown' ? 1 : -1));
     } else if (event.key === 'Home') { event.preventDefault(); setActiveIndex(0); }
     else if (event.key === 'End') { event.preventDefault(); setActiveIndex(Math.max(0, visibleOptions.length - 1)); }
     else if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); const option = visibleOptions[activeIndex]; if (option) choose(option); }
@@ -224,7 +229,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
       style={{ top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight }}
       onMouseDown={(event) => event.preventDefault()}
     >
-      {options.length > 7 && <div className="select-popover-search"><Search size={14} /><input aria-label="筛选下拉选项" role="combobox" aria-autocomplete="list" aria-controls={`select-options-${controlId}`} aria-expanded={open} aria-activedescendant={visibleOptions[activeIndex] ? `select-option-${controlId}-${activeIndex}` : undefined} value={filterText} onChange={(event) => { setFilterText(event.target.value); setActiveIndex(0); }} onKeyDown={(event) => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex((index) => visibleOptions.length ? (index + (event.key === 'ArrowDown' ? 1 : -1) + visibleOptions.length) % visibleOptions.length : 0); } else if (event.key === 'Enter') { event.preventDefault(); const option = visibleOptions[activeIndex]; if (option) choose(option); } }} placeholder="筛选选项…" autoFocus /></div>}
+      {options.length > 7 && <div className="select-popover-search"><Search size={14} /><input aria-label="筛选下拉选项" role="combobox" aria-autocomplete="list" aria-controls={`select-options-${controlId}`} aria-expanded={open} aria-activedescendant={visibleOptions[activeIndex] ? `select-option-${controlId}-${activeIndex}` : undefined} value={filterText} onChange={(event) => { setFilterText(event.target.value); setActiveIndex(0); }} onKeyDown={(event) => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex((index) => nextEnabledOptionIndex(visibleOptions, index, event.key === 'ArrowDown' ? 1 : -1)); } else if (event.key === 'Enter') { event.preventDefault(); const option = visibleOptions[activeIndex]; if (option) choose(option); } }} placeholder="筛选选项…" autoFocus /></div>}
       <div className="select-option-list">
         {visibleOptions.length ? visibleOptions.map((option, index) => <button
           type="button"
