@@ -16,7 +16,7 @@ The job performs these steps in order:
 4. Create a PostgreSQL custom-format logical dump with \`pg_dump\`.
 5. Restore the dump into a fresh database named \`moheng_restore\` using \`pg_restore --single-transaction\`.
 6. Compare the public base-table manifests and canonical JSONB content hashes for every table, then assert that the representative business fixture and successful Prisma migration ledger survive restoration.
-7. Emit a non-sensitive text report to \`.assistant-gate-artifacts/postgres-backup-restore.txt\`. The dump itself is temporary and is not uploaded as an artifact.
+7. Emit a non-sensitive text report to \`gate-artifacts/postgres-backup-restore.txt\`. The dump itself is temporary and is not uploaded as an artifact.
 
 The script hard-fails unless the source URL and PostgreSQL connection environment identify the disposable loopback database \`moheng_test\` on port 5432. It will not target an external host or another named database.
 
