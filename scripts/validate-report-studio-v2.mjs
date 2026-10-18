@@ -98,6 +98,12 @@ check('Univer component is lazy-loaded, disposed on unmount/domain-template swit
   studioPage.includes("import('@univerjs/presets')") && studioPage.includes('created.univerAPI.createWorkbook') && studioPage.includes('instance.univer.dispose()') && studioPage.includes('snapshotDefinition') && studioPage.includes('[ready, editorGeneration]'));
 check('cell binding UI adds visible inert placeholders and region binding constraints',
   studioPage.includes('{{${selectedSource.id}.${selectedField.id}}}') && studioPage.includes('集合字段需要先创建重复区域') && studioPage.includes('设置为自动延伸区域'));
+check('report binding removal clears only generated placeholders and region edits preserve validator cardinality rules',
+  studioPage.includes('function clearBindingPlaceholder') &&
+  studioPage.includes('range.getValue() === expectedPlaceholder') &&
+  studioPage.includes('clearBindingPlaceholder(instanceRef.current?.api, removed)') &&
+  studioPage.includes('单条记录字段不能放在重复区域样板行中') &&
+  studioPage.includes('bindings: current.bindings.filter((binding) => !removedBindingIds.has(binding.id))'));
 check('preview resolves the saved template on the server, enforces project template scope, and does not expose unpublished draft snapshots',
   studioRoute.includes('templateId: z.string().trim().min(1)') && studioRoute.includes('REPORT_TEMPLATE_PROJECT_MISMATCH') && !/publishedDefinition:\s*template\.publishedDefinition/.test(studioRoute) && !/publishedDefinition\s*:\s*ReportStudioDefinition/.test(await read('apps/web/src/report-studio-types.ts')));
 check('all regular native dropdown/date UI use shared controls',
