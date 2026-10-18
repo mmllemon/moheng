@@ -104,6 +104,9 @@ check('party report collection outputs enforce row caps and source-specific comp
   data.includes('prisma.costEntry.aggregate({ where: standaloneCostScope') &&
   data.includes("fieldIds: ['projectCount', 'mainContractCount', 'ownerCurrentContractAmount', 'ownerApprovedBillAmount', 'ownerReceivedAmount']") &&
   data.includes('const standaloneCostCount = standaloneCostAggregate._count._all') &&
+  data.includes('const emptyProjectSummary = (project: {') &&
+  data.includes("role: isOwner ? 'OWNER' : fallbackRole") &&
+  data.includes('ownerPartyId: true, contractAmount: true, originalContractAmount: true') &&
   data.includes('const projectListIncomplete = downstreamContractsTruncated || ownedProjectsTruncated || standaloneCostProjectGroupsTruncated') &&
   docs.includes('往来单位关联项目与独立成本项目分布各自有 10,000 条输出上限') &&
   docs.includes('不能用截断后的分组结果累加'));
