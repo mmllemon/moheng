@@ -17,6 +17,7 @@ test('Report Studio scopes company rows, financial totals, and project previews 
 
   const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
   const projectIds: string[] = [];
+  const downstreamContractIds: string[] = [];
   let userId: string | undefined;
 
   try {
@@ -66,18 +67,53 @@ test('Report Studio scopes company rows, financial totals, and project previews 
         createdById: user.id,
       },
     });
+    const downstreamContract = await prisma.downstreamContract.create({
+      data: {
+        projectId: projectB.id,
+        contractNo: `RSG-C-${suffix}`,
+        name: 'must not leak into company downstream contract report',
+        type: 'MATERIAL_PURCHASE',
+        counterpartyName: 'Scope Gate Supplier',
+        originalAmount: '4321.00',
+        createdById: user.id,
+      },
+    });
+    downstreamContractIds.push(downstreamContract.id);
+    await prisma.downstreamContractPayment.create({
+      data: {
+        downstreamContractId: downstreamContract.id,
+        type: 'PROGRESS',
+        amount: '1234.56',
+        paidAt: new Date('2026-03-01T00:00:00.000Z'),
+        referenceNo: `RSG-P-${suffix}`,
+        createdById: user.id,
+      },
+    });
 
     const actor: AuthUser = { sub: user.id, email: user.email, role: 'USER', sid: `report-scope-${suffix}` };
     const company = await loadReportStudioDataset(actor, 'COMPANY');
     const companyProjects = company.sources.companyProjects as Array<{ code: string; name: string }>;
-    const companySummary = company.sources.companySummary as { projectCount: number; actualCostTotal: string | null };
+    const companySummary = company.sources.companySummary as {
+      projectCount: number;
+      actualCostTotal: string | null;
+      downstreamContractTotal: string | null;
+      downstreamPaymentTotal: string | null;
+      downstreamNetPaymentTotal: string | null;
+    };
     const companyActualCosts = company.sources.companyActualCosts as Array<{ amount: string; projectCode: string }>;
+    const companyDownstreamContracts = company.sources.companyDownstreamContracts as Array<{ contractNo: string; projectCode: string }>;
+    const companyDownstreamPayments = company.sources.companyDownstreamPayments as Array<{ referenceNo: string; projectCode: string }>;
 
     assert.equal(company.accessibleProjectCount, 1);
     assert.equal(companySummary.projectCount, 1);
     assert.deepEqual(companyProjects.map((row) => row.code), [projectA.code]);
     assert.deepEqual(companyActualCosts, []);
+    assert.deepEqual(companyDownstreamContracts, [], 'another project’s downstream contract must not leak into company report details');
+    assert.deepEqual(companyDownstreamPayments, [], 'payments attached to an unauthorized downstream contract must not leak into company report details');
     assert.equal(companySummary.actualCostTotal, '0.00', 'another project’s cost must not affect a company summary outside the user’s project scope');
+    assert.equal(companySummary.downstreamContractTotal, '0.00', 'another project’s contract must not affect company contract totals');
+    assert.equal(companySummary.downstreamPaymentTotal, '0.00', 'another project’s payment must not affect company payment totals');
+    assert.equal(companySummary.downstreamNetPaymentTotal, '0.00', 'another project’s payment must not affect company net cash flow');
 
     await assert.rejects(
       () => loadReportStudioDataset(actor, 'PROJECT', projectB.id),
@@ -86,6 +122,10 @@ test('Report Studio scopes company rows, financial totals, and project previews 
       'a project-level report must reject a project outside the user’s membership scope',
     );
   } finally {
+    if (downstreamContractIds.length) {
+      await prisma.downstreamContractPayment.deleteMany({ where: { downstreamContractId: { in: downstreamContractIds } } });
+      await prisma.downstreamContract.deleteMany({ where: { id: { in: downstreamContractIds } } });
+    }
     if (projectIds.length) {
       await prisma.costEntry.deleteMany({ where: { projectId: { in: projectIds } } });
       await prisma.projectMember.deleteMany({ where: { projectId: { in: projectIds } } });
