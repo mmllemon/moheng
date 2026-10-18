@@ -23,6 +23,44 @@ const webPackage = JSON.parse(await read('apps/web/package.json'));
 const appInfo = await read('apps/api/src/platform/app-info.ts');
 const design = await read('docs/设计系统规范-Pro-Tier-Suite-v4.2.0.md');
 const acceptance = await read('docs/后续四阶段开发路线图.md');
+const corePagePaths = [
+  "apps/web/src/pages/AccountSecurityPage.tsx",
+  "apps/web/src/pages/AccountSecurityStepPage.tsx",
+  "apps/web/src/pages/AnalysisPage.tsx",
+  "apps/web/src/pages/AuditLogsPage.tsx",
+  "apps/web/src/pages/BudgetPage.tsx",
+  "apps/web/src/pages/BusinessPartiesPage.tsx",
+  "apps/web/src/pages/BusinessPartyDetailPage.tsx",
+  "apps/web/src/pages/ChangesPage.tsx",
+  "apps/web/src/pages/ContractsPage.tsx",
+  "apps/web/src/pages/CostsPage.tsx",
+  "apps/web/src/pages/CostAssistantPage.tsx",
+  "apps/web/src/pages/DashboardPage.tsx",
+  "apps/web/src/pages/DownstreamContractsPage.tsx",
+  "apps/web/src/pages/DownstreamFinancePage.tsx",
+  "apps/web/src/pages/DownstreamWorkspacePage.tsx",
+  "apps/web/src/pages/LoginPage.tsx",
+  "apps/web/src/pages/NotificationsPage.tsx",
+  "apps/web/src/pages/OwnerFinancePage.tsx",
+  "apps/web/src/pages/ProgressBillsPage.tsx",
+  "apps/web/src/pages/ProjectMembersPage.tsx",
+  "apps/web/src/pages/ProjectOverviewPage.tsx",
+  "apps/web/src/pages/ProjectsPage.tsx",
+  "apps/web/src/pages/ReportCenterPage.tsx",
+  "apps/web/src/pages/ReportDesignerPage.tsx",
+  "apps/web/src/pages/ReportPreviewPage.tsx",
+  "apps/web/src/pages/ReportStudioPage.tsx",
+  "apps/web/src/pages/SystemAuthorizationPage.tsx",
+  "apps/web/src/pages/SystemDictionariesPage.tsx",
+  "apps/web/src/pages/SystemGovernancePage.tsx",
+  "apps/web/src/pages/SystemManagementPage.tsx",
+  "apps/web/src/pages/SystemOperationsPage.tsx",
+  "apps/web/src/pages/SystemParametersPage.tsx",
+  "apps/web/src/pages/SystemPoliciesPage.tsx",
+  "apps/web/src/pages/SystemSecurityPage.tsx",
+  "apps/web/src/pages/UserManagementPage.tsx"
+];
+const corePageSources = await Promise.all(corePagePaths.map(read));
 
 const expectedVersion = rootPackage.version;
 const validReleaseVersion = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(expectedVersion);
@@ -44,7 +82,8 @@ check('project members navigation is absent from cost workspace tabs and the tab
   !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && workspace.includes('aria-label="成本工作台业务导航"') && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system', label: '系统管理'") && layout.includes("to: '/system', label: '概览'") && layout.includes("'经营中心', '工作台', '项目管理', '系统管理'"));
 check('sidebar health indicator without data semantics is removed and replaced by a functioning dashboard link',
   !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
-check('shared date and select controls expose popup relationships, labels, and validation state',
+check('core business pages use shared date/select controls instead of unstyled native controls',
+  corePageSources.every((source) => !/<select\\b/i.test(source) && !/type\\s*=\\s*["']date["']/i.test(source)));\ncheck('shared date and select controls expose popup relationships, labels, and validation state',
   datePicker.includes('date-picker-dialog-') &&
   datePicker.includes('id={id ? `${id}-native` : undefined}') && datePicker.includes('id={id}') &&
   selectField.includes('id={id ? `${id}-native` : undefined}') && selectField.includes('id={id}') &&
