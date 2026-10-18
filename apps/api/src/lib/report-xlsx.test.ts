@@ -5,7 +5,7 @@ import { buildReportWorkbook } from './report-xlsx.js';
 import { createDefaultDefinition } from './report-template.js';
 import { makeReportFields, reportCatalog, type ReportSnapshot } from './report-data.js';
 
-test('native XLSX contains typed data sheet, template rows, frozen header, and description sheet', async () => {
+test('standard XLSX begins with a styled overview sheet and preserves typed data and description sheets', async () => {
   const generatedAt = new Date('2026-10-15T02:00:00.000Z');
   const snapshot: ReportSnapshot = {
     report: reportCatalog.find((item) => item.key === 'target-cost')!,
@@ -20,7 +20,17 @@ test('native XLSX contains typed data sheet, template rows, frozen header, and d
   const buffer = await buildReportWorkbook({ snapshot, definition, templateName: '测试模板', templateVersion: 3 });
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
-  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['数据', '导出说明']);
+  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '数据', '导出说明']);
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('A1').value, definition.title);
+  assert.equal(overview.getCell('A4').value, '报表类型');
+  assert.equal(overview.getCell('B4').value, '目标成本清单');
+  assert.equal(overview.getCell('B5').value, '测试模板');
+  assert.equal(overview.getCell('D5').value, 'v3');
+  assert.equal(overview.getCell('B8').value, 1);
+  assert.equal(overview.getCell('D8').value, 10000);
+  assert.equal(overview.getCell('B15').value, '数据');
+  assert.equal(overview.getCell('A1').fill && (overview.getCell('A1').fill as { fgColor?: { argb?: string } }).fgColor?.argb, 'FF17324D');
   const sheet = workbook.getWorksheet('数据')!;
   assert.equal(sheet.getCell('A1').value, definition.title);
   assert.equal(sheet.getCell('A3').value, '编制人：');
@@ -43,7 +53,8 @@ test('native XLSX can omit description sheet and rejects no-visible-column defin
   definition.page.includeDescription = false;
   const buffer = await buildReportWorkbook({ snapshot, definition, templateName: 'T', templateVersion: 1 });
   const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
-  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['数据']);
+  assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '数据']);
+  assert.equal(workbook.getWorksheet('报表预览')!.getCell('D8').value, 10000);
   definition.columns.forEach((column) => { column.visible = false; });
   await assert.rejects(() => buildReportWorkbook({ snapshot, definition, templateName: 'T', templateVersion: 1 }), /REPORT_TEMPLATE_NO_VISIBLE_COLUMNS/);
 });
