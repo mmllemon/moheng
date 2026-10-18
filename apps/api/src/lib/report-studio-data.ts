@@ -1,6 +1,7 @@
 import { prisma } from './prisma.js';
 import { calculateEffectiveContractAmount, centsToMoney, moneyToCents } from './contract-amount-math.js';
 import { calculateDownstreamCurrentAmount } from './downstream-contract-math.js';
+import { summarizeDownstreamPaymentTotals } from './report-studio-payment-summary.js';
 import type { AuthUser } from './auth.js';
 import { hasCrossProjectReadScope } from './project-data-scope.js';
 
@@ -308,9 +309,8 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     const issuedReceivableNetAmount = truncation.ownerReceivables ? null : sumMoney(safeOwnerReceivables.filter((item) => item.projectId === project.id).map((item) => item.netAmount));
     const postedPayableTotal = truncation.downstreamPayables ? null : sumMoney(safeDownstreamPayables.filter((item) => item.downstreamContract.projectId === project.id).map((item) => item.netAmount));
     const projectPayments = safeDownstreamPayments.filter((item) => item.downstreamContract.projectId === project.id);
-    const downstreamPaymentTotal = truncation.downstreamPayments ? null : sumMoney(projectPayments.filter((item) => item.type !== 'REFUND').map((item) => item.amount));
-    const downstreamRefundTotal = truncation.downstreamPayments ? null : sumMoney(projectPayments.filter((item) => item.type === 'REFUND').map((item) => item.amount));
-    const downstreamNetPaymentTotal = downstreamPaymentTotal === null || downstreamRefundTotal === null ? null : subtractMoney(downstreamPaymentTotal, downstreamRefundTotal);
+    const paymentTotals = summarizeDownstreamPaymentTotals(projectPayments, truncation.downstreamPayments);
+    const { downstreamPaymentTotal, downstreamRefundTotal, downstreamNetPaymentTotal } = paymentTotals;
     summaryByProject.set(project.id, {
       id: project.id, code: project.code, name: project.name, type: project.type, ownerName: project.ownerName, managerName: project.managerName ?? '', status: project.status, address: project.address ?? '', startDate: dateText(project.startDate), plannedEndDate: dateText(project.plannedEndDate),
       originalContractAmount: moneyValue(project.originalContractAmount), effectiveContractAmount: effectiveAmount,
