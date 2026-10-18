@@ -135,7 +135,6 @@ export async function loadReportSnapshot(reportKey: ReportKey, user: AuthUser, f
     rows = data.slice(0, 10000).map(r => [r.downstreamContract.project.name, r.downstreamContract.project.code, r.downstreamContract.contractNo, r.downstreamContract.name, r.downstreamContract.counterpartyParty?.name ?? r.downstreamContract.counterpartyName, r.payableNo, r.type, r.settlement?.settlementNo, r.settlement?.type, r.settlement?.status, r.grossAmount, r.advanceRecoveryAmount, r.retentionAmount, r.otherDeductionAmount, r.netAmount, r.dueAt, r.schedules.length, r.notes]);
   }
 
-  const projectNames = accessibleProjects.filter((p) => projectIds.includes(p.id)).map((p) => p.name);
   const labels = REPORT_FIELD_LABELS[reportKey];
   if (rows.some((row) => row.length !== labels.length)) throw new Error(`REPORT_SCHEMA_MISMATCH:${reportKey}`);
   return {
