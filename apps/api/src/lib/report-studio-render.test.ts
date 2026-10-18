@@ -275,6 +275,16 @@ test('marks truncation on the affected worksheet without mislabeling other works
 });
 
 
+test('preview omits merges that extend beyond the visible preview rows', () => {
+  const report = definition();
+  const sheets = (report.workbook as unknown as { sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }> }).sheets;
+  sheets.main!.mergeData.push({ startRow: 0, startColumn: 3, endRow: 5, endColumn: 3 });
+  const result = renderReportStudio(report, dataset);
+  const preview = previewReportStudio(result, 4);
+  assert.equal(preview.sheets[0]!.rows.length, 4);
+  assert.deepEqual(preview.sheets[0]!.merges, []);
+});
+
 test('extends vertical merges when a repeated region expands inside the merged row span', () => {
   const report = definition();
   const sheets = (report.workbook as unknown as { sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }> }).sheets;
