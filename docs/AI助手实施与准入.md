@@ -14,6 +14,8 @@
 - 持久化后台任务处理与陈旧 run 收敛。
 - `/cost/assistant` 第一版工作台，包含会话列表、消息流、工具状态、来源摘要与局限说明。
 - 三个只读业务工具：`project_operating_overview`、`cost_variance`、`change_evidence_completeness`。
+- `project_operating_overview` 包含分供付款/退款合计和最近流水样本，且与应付、实际成本分开；当流水扫描超过 10,000 条时，付款/退款合计返回不可用并说明限制。
+- `cost_variance` 在目标成本项扫描超过 10,000 条时返回 `INDETERMINATE`，偏差额与偏差百分比为空；不得用部分目标成本计算一个看似完整的偏差。
 
 这些实现不能被表述为完整生产 AI 已交付。当前功能开关 `ASSISTANT_POC_ENABLED` 必须保持关闭，直到真实模型 E2E、浏览器交互、权限/安全、成本控制、恢复与只读内测完成并独立批准。
 
