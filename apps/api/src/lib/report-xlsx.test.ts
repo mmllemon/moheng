@@ -29,7 +29,7 @@ test('standard XLSX begins with a styled overview sheet and preserves typed data
   assert.equal(overview.getCell('D5').value, 'v3');
   assert.equal(overview.getCell('B8').value, 1);
   assert.equal(overview.getCell('D8').value, 10000);
-  assert.equal(overview.getCell('B15').value, '数据');
+  assert.equal(overview.getCell('B14').value, '数据');
   assert.equal(overview.getCell('A1').fill && (overview.getCell('A1').fill as { fgColor?: { argb?: string } }).fgColor?.argb, 'FF17324D');
   const sheet = workbook.getWorksheet('数据')!;
   assert.equal(sheet.getCell('A1').value, definition.title);
