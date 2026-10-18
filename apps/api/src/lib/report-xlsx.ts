@@ -9,8 +9,7 @@ function safeCellValue(value: unknown): ExcelJS.CellValue {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
   if (typeof value === 'bigint') return value.toString();
   if (typeof value === 'object' && value.constructor?.name === 'Decimal') {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : String(value);
+    return valueForJson(value) as ExcelJS.CellValue;
   }
   return String(value);
 }
