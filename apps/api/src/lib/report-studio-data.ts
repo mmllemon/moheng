@@ -465,10 +465,37 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   const [accessibleProjectCount, accessibleProjects, selectedProject] = await Promise.all([
     prisma.project.count({ where: projectScope }),
     domain === 'COMPANY'
-      ? prisma.project.findMany({ where: projectScope, include: { mainContract: true }, orderBy: [{ code: 'asc' }, { id: 'asc' }] })
+      ? prisma.project.findMany({
+          where: projectScope,
+          select: {
+            id: true, name: true, code: true, type: true, ownerName: true, managerName: true,
+            status: true, address: true, startDate: true, plannedEndDate: true,
+            originalContractAmount: true, contractAmount: true,
+            mainContract: {
+              select: {
+                contractNo: true, name: true, signedAt: true, amount: true, taxIncluded: true,
+                retentionRate: true, advanceDeductionRate: true, paymentTerms: true, guaranteeEndAt: true,
+              },
+            },
+          },
+          orderBy: [{ code: 'asc' }, { id: 'asc' }],
+        })
       : Promise.resolve([]),
     projectId
-      ? prisma.project.findFirst({ where: { ...projectScope, id: projectId }, include: { mainContract: true } })
+      ? prisma.project.findFirst({
+          where: { ...projectScope, id: projectId },
+          select: {
+            id: true, name: true, code: true, type: true, ownerName: true, managerName: true,
+            status: true, address: true, startDate: true, plannedEndDate: true,
+            originalContractAmount: true, contractAmount: true,
+            mainContract: {
+              select: {
+                contractNo: true, name: true, signedAt: true, amount: true, taxIncluded: true,
+                retentionRate: true, advanceDeductionRate: true, paymentTerms: true, guaranteeEndAt: true,
+              },
+            },
+          },
+        })
       : Promise.resolve(null),
   ]);
   if (projectId && !selectedProject) throw Object.assign(new Error('你没有访问该项目报表的权限'), { statusCode: 403, code: 'PROJECT_ACCESS_DENIED' });
