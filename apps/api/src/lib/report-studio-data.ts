@@ -207,6 +207,8 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     }
   }
   const mainContractRows = ownedProjects.filter((project) => project.mainContract).map((project) => ({ projectCode: project.code, projectName: project.name, contractNo: project.mainContract!.contractNo, name: project.mainContract!.name, status: project.status, originalAmount: moneyValue(project.originalContractAmount), currentAmount: moneyValue(project.contractAmount), approvedAmount: sumPartyMoney(project.progressBills.map((bill) => bill.approvedAmount)), paidAmount: sumPartyMoney(project.progressBills.flatMap((bill) => bill.payments.map((payment) => payment.amount))), progressBillCount: project.progressBills.length, changeCount: project.changes.length }));
+  const partyProjectsListTruncated = projectRows.length > MAX_ROWS_PER_SOURCE;
+  const partyMainContractsTruncated = mainContractRows.length > MAX_ROWS_PER_SOURCE;
   const standaloneCostAmount = sumPartyMoney(standaloneCostTotals.map((row) => row._sum.amount));
   const sum = (key: string, source = downstreamRows) => sumPartyMoney(source.map((row) => (row as Record<string, unknown>)[key]));
   const summary = {
@@ -218,6 +220,16 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
   if (!party.identityVerified) warnings.push('单位主体尚未核验；跨项目经营汇总仅供参考，不应直接作为最终对账依据。');
   const partyTruncatedFields: NonNullable<ReportStudioDataset['truncatedFields']> = [];
+  if (partyProjectsListTruncated) {
+    const message = `该往来单位关联项目超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，项目明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；汇总指标仍基于完整可计算的数据统计。`;
+    warnings.push(message);
+    truncationNotices.push({ sourceIds: ['partyProjects'], message });
+  }
+  if (partyMainContractsTruncated) {
+    const message = `该往来单位关联业主主合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，主合同明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；合同汇总仍使用完整主合同记录计算。`;
+    warnings.push(message);
+    truncationNotices.push({ sourceIds: ['partyMainContracts'], message });
+  }
   if (downstreamContractsTruncated) {
     const message = `该往来单位关联分供合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；依赖分供合同集合的合同、应付、成本和发票金额汇总已停用，避免将部分数据冒充完整总额。`;
     const affectedFields = [
@@ -236,12 +248,14 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const partyRows = {
     businessParty: { id: party.id, name: party.name, creditCode: party.creditCode ?? '', roles: party.roles.join('、'), status: party.status, identityVerified: party.identityVerified ? '已核验' : '待核验', formerNames: party.formerNames.join('、'), legalRepresentative: party.legalRepresentative ?? '', address: party.address ?? '', contactName: party.contactName ?? '', phone: party.phone ?? '', email: party.email ?? '', taxNo: party.taxNo ?? '', invoiceTitle: party.invoiceTitle ?? '', notes: party.notes ?? '', updatedAt: dateText(party.updatedAt) },
     partySummary: summary,
-    partyProjects: projectRows,
-    partyMainContracts: mainContractRows,
+    partyProjects: projectRows.slice(0, MAX_ROWS_PER_SOURCE),
+    partyMainContracts: mainContractRows.slice(0, MAX_ROWS_PER_SOURCE),
     partyDownstreamContracts: downstreamRows,
     partyStandaloneCosts: standaloneCosts.slice(0, 200).map((cost) => ({ projectCode: cost.project.code, projectName: cost.project.name, date: dateText(cost.date), description: cost.description, type: cost.type, amount: moneyValue(cost.amount), vendorName: cost.vendorName ?? '' })),
   };
   const truncatedSources = [
+    ...(partyProjectsListTruncated ? ['partyProjects'] : []),
+    ...(partyMainContractsTruncated ? ['partyMainContracts'] : []),
     ...(downstreamContractsTruncated ? ['partyDownstreamContracts'] : []),
     ...(standaloneCosts.length > 200 ? ['partyStandaloneCosts'] : []),
   ];
