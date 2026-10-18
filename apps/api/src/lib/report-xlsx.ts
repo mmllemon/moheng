@@ -129,7 +129,7 @@ function addStandardReportOverview(workbook: ExcelJS.Workbook, options: ReportWo
   });
   const directory = [
     ['数据', snapshot.rows.length, snapshot.truncated ? '部分数据受导出上限约束' : '业务数据明细'],
-    ...(definition.page.includeDescription ? [['导出说明', 12, '范围、口径与生成元数据']] : []),
+    ...(definition.page.includeDescription ? [['导出说明', 13, '范围、口径与生成元数据']] : []),
   ] as Array<[string, number, string]>;
   directory.forEach(([name, count, note], index) => {
     const row = sheet.addRow([index + 1, name, count, note]);
@@ -270,7 +270,7 @@ export async function buildReportWorkbook(options: ReportWorkbookOptions): Promi
   applyBorders(sheet, headerRow, Math.max(headerRow, nextRow - 1), columns.length);
   sheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: Math.max(headerRow, nextRow - 1), column: columns.length } };
   sheet.views = [{ state: 'frozen', ySplit: headerRow, xSplit: 0 }];
-  sheet.pageSetup.printArea = `A1:${sheet.getColumn(columns.length).letter}${Math.max(headerRow, nextRow - 1)}`;
+  sheet.pageSetup.printArea = `A1:${sheet.getColumn(columns.length).letter}${snapshot.truncated ? nextRow + 1 : Math.max(headerRow, nextRow - 1)}`;
   if (snapshot.truncated) {
     const note = sheet.getCell(nextRow + 1, 1);
     note.value = '提示：本次数据达到导出上限，文件可能未包含全部符合条件的记录。请缩小筛选范围后分批导出。';

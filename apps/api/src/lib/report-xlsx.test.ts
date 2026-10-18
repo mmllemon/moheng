@@ -66,6 +66,7 @@ test('standard XLSX overview explicitly warns when the standard report row limit
   assert.match(String(overview.getCell('A21').value), /达到导出上限|分批导出/);
   const dataSheet = workbook.getWorksheet('数据')!;
   assert.match(String(dataSheet.getCell(dataSheet.rowCount, 1).value), /达到导出上限/);
+  assert.match(String(dataSheet.pageSetup.printArea), /A1:M7$/);
 });
 
 test('native XLSX can omit description sheet and rejects no-visible-column definitions', async () => {
