@@ -212,7 +212,7 @@ function addOverviewSheet(
     cell.border = { bottom: { style: 'hair', color: { argb: 'FFE0E6ED' } } };
     sheet.getRow(rowNumber).height = 28;
   });
-  sheet.printArea = `A1:D${noteTitleRow + notes.length}`;
+  sheet.pageSetup.printArea = `A1:D${noteTitleRow + notes.length}`;
 }
 
 export async function buildReportStudioWorkbook(input: { definition: ReportStudioDefinition; dataset: ReportStudioDataset; templateName: string; templateVersion: number }): Promise<Buffer> {
