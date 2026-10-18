@@ -66,6 +66,20 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, value]);
 
+  // A controlled form may change the selected date without unmounting this picker.
+  // Keep the calendar month and roving keyboard focus aligned with that external value;
+  // do not run this on month navigation itself, which intentionally leaves selectedValue unchanged.
+  useEffect(() => {
+    const selected = parseIsoDate(selectedValue);
+    if (!selected || isDisabled(selectedValue)) return;
+    setViewDate((current) => (
+      current.getFullYear() === selected.getFullYear() && current.getMonth() === selected.getMonth()
+        ? current
+        : new Date(selected.getFullYear(), selected.getMonth(), 1)
+    ));
+    setFocusedDate((current) => current === selectedValue ? current : selectedValue);
+  }, [selectedValue, min, max]);
+
   const syncPosition = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
     if (!rect) return;
