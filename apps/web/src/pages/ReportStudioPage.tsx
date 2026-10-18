@@ -313,6 +313,8 @@ export default function ReportStudioPage() {
       if (selectedSource.cardinality === 'MANY') {
         const matchingRegion = definition.regions.some((region) => region.sheetId === sheetId && region.sourceId === sourceId && region.templateRow === coordinate.row && coordinate.column >= region.startColumn && coordinate.column <= region.endColumn);
         if (!matchingRegion) throw new Error('集合字段需要先创建重复区域：选中该明细样板行的整个列范围，点击“设置为自动延伸区域”，再绑定其中的单元格。');
+      } else if (definition.regions.some((region) => region.sheetId === sheetId && region.templateRow === coordinate.row)) {
+        throw new Error('单条记录字段不能放在重复区域样板行中，请先移除该行重复区域或选择其他行。');
       }
       const binding: ReportStudioBinding = { id: newId('binding'), sheetId, cell: address, sourceId, fieldId, format: selectedField.type === 'MONEY' ? 'MONEY' : selectedField.type === 'DATE' ? 'DATE' : selectedField.type === 'NUMBER' ? 'NUMBER' : 'AUTO' };
       const placeholder = `{{${selectedSource.id}.${selectedField.id}}}`;
@@ -333,16 +335,20 @@ export default function ReportStudioPage() {
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       const region: ReportStudioRegion = { id: newId('region'), sheetId, sourceId, templateRow: start.row, startColumn: start.column, endColumn: end.column, maxRows: 10000 };
       const previousRegion = definition.regions.find((item) => item.sheetId === sheetId && item.templateRow === start.row);
-      const bindingsToRemove = previousRegion
-        ? definition.bindings.filter((binding) => {
-            if (binding.sheetId !== sheetId || binding.sourceId !== previousRegion.sourceId) return false;
-            try {
-              const coordinate = parseA1(binding.cell);
-              if (coordinate.row !== previousRegion.templateRow || coordinate.column < previousRegion.startColumn || coordinate.column > previousRegion.endColumn) return false;
-              return binding.sourceId !== sourceId || coordinate.column < start.column || coordinate.column > end.column;
-            } catch { return false; }
-          })
-        : [];
+      const sourceCardinalityById = new Map(sources.map((item) => [item.id, item.cardinality] as const));
+      const bindingsToRemove = definition.bindings.filter((binding) => {
+        if (binding.sheetId !== sheetId) return false;
+        try {
+          const coordinate = parseA1(binding.cell);
+          if (coordinate.row !== start.row) return false;
+          // The validator forbids single-record bindings anywhere on a repeating row,
+          // even outside the selected region's columns.
+          if (sourceCardinalityById.get(binding.sourceId) === 'ONE') return true;
+          if (!previousRegion || binding.sourceId !== previousRegion.sourceId) return false;
+          if (coordinate.row !== previousRegion.templateRow || coordinate.column < previousRegion.startColumn || coordinate.column > previousRegion.endColumn) return false;
+          return binding.sourceId !== sourceId || coordinate.column < start.column || coordinate.column > end.column;
+        } catch { return false; }
+      });
       bindingsToRemove.forEach((binding) => clearBindingPlaceholder(instanceRef.current?.api, binding));
       const removedBindingIds = new Set(bindingsToRemove.map((binding) => binding.id));
       setDefinition((current) => ({
