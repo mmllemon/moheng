@@ -175,15 +175,18 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     }
     const merges: ReportStudioRenderedMerge[] = [];
     for (const merge of sourceSheet.mergeData ?? []) {
-      let shift = 0;
+      let startShift = 0;
+      let endShift = 0;
       for (const region of sheetRegions) {
-        if (region.templateRow < merge.startRow) {
-          const count = (regionExpansions.get(region.templateRow)?.length ?? 0);
-          shift += Math.max(count, 1) - 1;
-        }
+        const count = regionExpansions.get(region.templateRow)?.length ?? 0;
+        const expansion = Math.max(count, 1) - 1;
+        if (region.templateRow < merge.startRow) startShift += expansion;
+        // A vertical merge that spans a repeated row must extend over the expanded rows,
+        // even when the merge is in columns outside the repeated region.
+        if (region.templateRow <= merge.endRow) endShift += expansion;
       }
-      const startRow = merge.startRow + shift;
-      const endRow = merge.endRow + shift;
+      const startRow = merge.startRow + startShift;
+      const endRow = merge.endRow + endShift;
       if (startRow < MAX_RENDERED_ROWS_PER_SHEET && endRow < MAX_RENDERED_ROWS_PER_SHEET) merges.push({ startRow, startColumn: merge.startColumn, endRow, endColumn: merge.endColumn });
     }
     const columnWidths: Record<number, number> = {};
