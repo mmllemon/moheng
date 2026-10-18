@@ -63,7 +63,7 @@ test('standard XLSX overview explicitly warns when the standard report row limit
   const overview = workbook.getWorksheet('报表预览')!;
   assert.equal(overview.getCell('B9').value, '达到导出上限，详见提示');
   assert.equal(overview.getCell('D7').value, '2026-10-15');
-  assert.match(String(overview.getCell('A20').value), /达到导出上限|分批导出/);
+  assert.match(String(overview.getCell('A21').value), /达到导出上限|分批导出/);
   const dataSheet = workbook.getWorksheet('数据')!;
   assert.match(String(dataSheet.getCell(dataSheet.rowCount, 1).value), /达到导出上限/);
 });

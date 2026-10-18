@@ -64,7 +64,8 @@ check('template validation has unit tests for unknown fields, visibility, duplic
 check('standard XLSX tests verify first-sheet overview, metadata, truncation and preserved data sheets',
   xlsxTests.includes("'=1+1'") && xlsxTests.includes("'000123'") && xlsxTests.includes('isMerged') &&
   xlsxTests.includes("['报表预览', '数据', '导出说明']") && xlsxTests.includes("getCell('B14').value, '数据'") &&
-  xlsxTests.includes("getCell('D8').value, 10000") && xlsxTests.includes("'导出说明'"));
+  xlsxTests.includes("getCell('D8').value, 10000") && xlsxTests.includes("standard XLSX overview explicitly warns") &&
+  xlsxTests.includes("getCell('A21').value") && xlsxTests.includes("'导出说明'"));
 check('product documentation describes design boundary, scopes, APIs, security, acceptance and open release gates',
   designDoc.includes('PERSONAL') && designDoc.includes('PROJECT') && designDoc.includes('SYSTEM') && designDoc.includes('ExcelJS') && designDoc.includes('XLSX') && designDoc.includes('Node.js 24+'));
 check('responsive and print styles exist for the report designer and print surfaces',
