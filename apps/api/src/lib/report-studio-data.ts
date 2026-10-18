@@ -115,6 +115,8 @@ export interface ReportStudioDataset {
   truncated?: boolean;
   /** Stable source IDs whose detail rows or derived metrics are incomplete. */
   truncatedSources?: string[];
+  /** Human-readable truncation warnings tied to the report sources they affect. */
+  truncationNotices?: Array<{ sourceIds: string[]; message: string }>;
 }
 
 function dateText(value: Date | null | undefined): string | null { return value ? value.toISOString().slice(0, 10) : null; }
