@@ -102,21 +102,27 @@ async function main() {
   const tempRoot = await mkdtemp(join(apiDir, '.legacy-migration-rehearsal-'));
 
   try {
+    const stageZeroPath = join(tempRoot, 'migrations-before-contract-confirmation');
     const stageOnePath = join(tempRoot, 'migrations-through-contract-confirmation');
     const stageTwoPath = join(tempRoot, 'migrations-through-settlement-ledgers');
     const configPath = join(tempRoot, 'prisma.config.ts');
 
-    // Phase 1: install the historic schema, then add rows before contract and actor reconciliation.
+    // Phase 1: seed the actual pre-migration schema, including audit events, before actor backfill runs.
+    await createMigrationPrefix('20261013010000', stageZeroPath, entries);
+    await deployWithConfig(configPath, stageZeroPath);
+    executeSqlFile(join(root, 'scripts', 'gates', 'legacy-migration-fixtures', 'before-contract-confirmation.sql'));
+
+    // Phase 2: run the migration under test; it adds originalContractAmount and backfills actors.
     await createMigrationPrefix('20261013020000', stageOnePath, entries);
     await deployWithConfig(configPath, stageOnePath);
     executeSqlFile(join(root, 'scripts', 'gates', 'legacy-migration-fixtures', 'after-contract-confirmation.sql'));
 
-    // Phase 2: add downstream contracts/costs after those tables and links exist, before party matching.
+    // Phase 3: create downstream contracts/costs after their tables exist, before party matching.
     await createMigrationPrefix('20261014010000', stageTwoPath, entries);
     await deployWithConfig(configPath, stageTwoPath);
     executeSqlFile(join(root, 'scripts', 'gates', 'legacy-migration-fixtures', 'before-business-party-master.sql'));
 
-    // Phase 3: run the remaining real migration files against populated legacy-shaped data.
+    // Phase 4: run the remaining real migration files against populated legacy-shaped data.
     await deployWithConfig(configPath, migrationDir);
 
     assertEqual(

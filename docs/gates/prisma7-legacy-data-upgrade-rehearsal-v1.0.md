@@ -6,11 +6,12 @@ Exercise high-risk data backfills with rows already present before the relevant 
 
 ## Three-stage upgrade
 
-1. Apply migrations through `20261013020000_contract_change_external_confirmation`, then insert legacy-shaped project, main-contract, change, and audit-log rows.
-2. Apply migrations through `20261014010000_settlement_payables_invoice_retention`, then insert a downstream supplier contract plus linked and unlinked cost entries.
-3. Deploy all remaining committed migrations, including contract-baseline reconciliation and business-party backfills; then assert the resulting business values and traceability.
+1. Apply migrations only through `20261013010000_add_refresh_tokens`, then insert legacy-shaped project, main-contract, change, and audit-log rows in the actual pre-confirmation schema.
+2. Apply `20261013020000_contract_change_external_confirmation` with those rows already present, testing its original-contract baseline and historical creator/submitter backfills.
+3. Apply migrations through `20261014010000_settlement_payables_invoice_retention`, then insert a downstream supplier contract plus linked and unlinked cost entries.
+4. Deploy all remaining committed migrations, including contract-baseline reconciliation and business-party backfills; then assert the resulting business values and traceability.
 
-The gate copies each historical migration directory byte-for-byte into temporary prefix directories, preserving real migration names and checksums. A temporary Prisma config points at each prefix, then the normal full migration directory is used for the final phase.
+The gate copies each historical migration directory byte-for-byte into temporary prefix directories, preserving real migration names and checksums. A temporary Prisma config points at each prefix, then the normal full migration directory is used for the final phase. Audit fixtures are inserted before the actor-backfill migration, not afterward.
 
 ## Mechanical acceptance criteria
 
