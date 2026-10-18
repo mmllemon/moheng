@@ -78,7 +78,7 @@ check('project/company report data queries apply authorized project scopes relat
   data.includes('downstreamContract: { project: selectedProjectScope, deletedAt: null }') &&
   data.includes("if (domain === 'PROJECT' && !projectId) throw") &&
   data.includes('prisma.project.count({ where: projectScope })') &&
-  data.includes("prisma.project.findFirst({ where: { ...projectScope, id: projectId }") &&
+  /prisma\.project\.findFirst\(\s*\{\s*where:\s*\{\s*\.\.\.projectScope,\s*id:\s*projectId\s*\}/.test(data) &&
   data.includes("domain === 'COMPANY'") &&
   !data.includes('const projectIds = scopedProjects.map((project) => project.id)') &&
   !data.includes('projectId: { in: projectIds }'));
