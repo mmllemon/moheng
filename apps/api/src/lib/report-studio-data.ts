@@ -502,7 +502,6 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
   ]);
   if (projectId && !selectedProject) throw Object.assign(new Error('你没有访问该项目报表的权限'), { statusCode: 403, code: 'PROJECT_ACCESS_DENIED' });
   const scopedProjects = domain === 'PROJECT' ? (selectedProject ? [selectedProject] : []) : accessibleProjects;
-  const projectIds = scopedProjects.map((project) => project.id);
   // Apply project authorization and report scope through relational filters instead of
   // expanding every accessible project ID into each query's bind parameters.
   const selectedProjectScope = { ...projectScope, ...(domain === 'PROJECT' && projectId ? { id: projectId } : {}) };
@@ -517,7 +516,7 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     truncatedSources.add('companyProjects');
     truncationNotices.push({ sourceIds: ['companyProjects'], message });
   }
-  if (projectIds.length === 0) warnings.push('当前账号没有可访问项目，因此仅能生成空数据模板。');
+  if (scopedProjects.length === 0) warnings.push('当前账号没有可访问项目，因此仅能生成空数据模板。');
 
   const [changes, downstreamContracts, ownerReceivables, ownerReceipts, actualCosts, progressBills, downstreamPayables, downstreamPayments, budgetItems] = await Promise.all([
     prisma.change.findMany({ where: { ...projectFilter, deletedAt: null, externalConfirmationStatus: 'EFFECTIVE' }, include: { project: { select: { code: true, name: true } } }, orderBy: [{ occurredAt: 'asc' }, { code: 'asc' }, { id: 'asc' }], take: MAX_ROWS_PER_SOURCE + 1 }),
