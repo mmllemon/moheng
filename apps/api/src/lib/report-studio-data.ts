@@ -236,9 +236,11 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
                  ), 0)::text AS "supplierCreditAmount"
           FROM "DownstreamPayable" AS payable
           LEFT JOIN (
-            SELECT "payableId", SUM("amount") AS "allocatedAmount"
-            FROM "DownstreamPaymentAllocation"
-            GROUP BY "payableId"
+            SELECT allocation."payableId", SUM(allocation."amount") AS "allocatedAmount"
+            FROM "DownstreamPaymentAllocation" AS allocation
+            INNER JOIN "DownstreamPayable" AS scoped_payable ON scoped_payable."id" = allocation."payableId"
+            WHERE scoped_payable."downstreamContractId" IN (${Prisma.join(downstreamContractIds)})
+            GROUP BY allocation."payableId"
           ) AS allocation_totals ON allocation_totals."payableId" = payable."id"
           WHERE payable."downstreamContractId" IN (${Prisma.join(downstreamContractIds)})
           GROUP BY payable."downstreamContractId"
