@@ -3,16 +3,8 @@ import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { currentDateInputValue } from './Ui';
 import { useAnimatedPresence } from './useAnimatedPresence';
+import { asIsoDate, isIsoDateWithinBounds, normalizeIsoDateWithinBounds, parseIsoDate } from './date-picker-utils.js';
 
-function asIsoDate(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-function parseIsoDate(value?: string | null) {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
-}
 function formatDateLabel(value: string) {
   const date = parseIsoDate(value);
   return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '';
@@ -70,14 +62,16 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   // Keep the calendar month and roving keyboard focus aligned with that external value;
   // do not run this on month navigation itself, which intentionally leaves selectedValue unchanged.
   useEffect(() => {
-    const selected = parseIsoDate(selectedValue);
-    if (!selected || isDisabled(selectedValue)) return;
+    const focusValue = normalizeIsoDateWithinBounds(selectedValue, min == null ? null : String(min), max == null ? null : String(max));
+    if (!focusValue) return;
+    const selected = parseIsoDate(focusValue);
+    if (!selected) return;
     setViewDate((current) => (
       current.getFullYear() === selected.getFullYear() && current.getMonth() === selected.getMonth()
         ? current
         : new Date(selected.getFullYear(), selected.getMonth(), 1)
     ));
-    setFocusedDate((current) => current === selectedValue ? current : selectedValue);
+    setFocusedDate((current) => current === focusValue ? current : focusValue);
   }, [selectedValue, min, max]);
 
   const syncPosition = useCallback(() => {
@@ -163,9 +157,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   }
 
   function isDisabled(valueToCheck: string) {
-    const minimum = min == null ? '' : String(min);
-    const maximum = max == null ? '' : String(max);
-    return Boolean((minimum && valueToCheck < minimum) || (maximum && valueToCheck > maximum));
+    return !isIsoDateWithinBounds(valueToCheck, min == null ? null : String(min), max == null ? null : String(max));
   }
 
   function chooseDate(nextValue: string) {
@@ -204,6 +196,28 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   function changeMonth(delta: number) {
     setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + delta, 1));
     setFocusedDate((current) => { const date = parseIsoDate(current) ?? selectedDate ?? new Date(); const next = new Date(date.getFullYear(), date.getMonth() + delta, Math.min(date.getDate(), new Date(date.getFullYear(), date.getMonth() + delta + 1, 0).getDate())); return asIsoDate(next); });
+  }
+
+  function openCalendar() {
+    const dateMin = min == null ? null : String(min);
+    const dateMax = max == null ? null : String(max);
+    const initial = normalizeIsoDateWithinBounds(selectedValue, dateMin, dateMax)
+      ?? normalizeIsoDateWithinBounds(todayValue, dateMin, dateMax);
+    if (initial) {
+      const date = parseIsoDate(initial);
+      if (date) {
+        setFocusedDate(initial);
+        setViewDate(new Date(date.getFullYear(), date.getMonth(), 1));
+      }
+    } else {
+      // An invalid/contradictory range has no enabled day to focus; keep focus on the trigger.
+      setFocusedDate('');
+      const fallback = selectedDate ?? new Date();
+      setViewDate(new Date(fallback.getFullYear(), fallback.getMonth(), 1));
+    }
+    setInvalid(false);
+    setOpen(true);
+    requestAnimationFrame(syncPosition);
   }
 
   return <div ref={wrapperRef} className={`date-picker-control ${className}`.trim()} data-open={open ? 'true' : 'false'}>
@@ -245,22 +259,14 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       title={title}
       onClick={() => {
         if (disabled) return;
-        const initial = selectedDate ?? new Date();
-        setFocusedDate(asIsoDate(initial));
-        setInvalid(false);
-        setViewDate(new Date(initial.getFullYear(), initial.getMonth(), 1));
-        setOpen((current) => !current);
-        requestAnimationFrame(syncPosition);
+        if (open) setOpen(false);
+        else openCalendar();
       }}
       onKeyDown={(event) => {
         if (disabled) return;
         if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
           event.preventDefault();
-          const initial = selectedDate ?? new Date();
-          setFocusedDate(asIsoDate(initial));
-          setViewDate(new Date(initial.getFullYear(), initial.getMonth(), 1));
-          setOpen(true);
-          requestAnimationFrame(syncPosition);
+          openCalendar();
         } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
           if (!selectedDate) return;
           event.preventDefault();
