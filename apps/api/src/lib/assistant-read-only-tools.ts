@@ -122,7 +122,7 @@ async function getDownstreamCashSummary(projectId: string) {
     recentMovements: bounded.slice(0, 10).map((row) => ({
       contractNo: safeText(row.downstreamContract.contractNo, 100),
       type: row.type,
-      amount: String(row.amount),
+      amount: centsToMoney(moneyToCents(row.amount)),
       paidAt: row.paidAt.toISOString(),
       referenceNo: safeText(row.referenceNo, 100),
       originalPaymentReferenceNo: safeText(row.refundOfPayment?.referenceNo, 100),
@@ -209,7 +209,7 @@ async function projectOperatingOverview(projectId: string, project: Awaited<Retu
       { entity: 'BudgetItem', fields: ['totalPrice', 'children'], rowCount: targetCost.itemCount, scope: 'deletedAt = null; leaf items only' },
       { entity: 'CostEntry', fields: ['amount'], rowCount: costs._count._all, scope: 'deletedAt = null; projectId = requested project' },
       { entity: 'ProgressBill', fields: ['amount', 'approvedAmount', 'paidAmount'], rowCount: progressBills._count._all, scope: 'deletedAt = null; projectId = requested project' },
-      { entity: 'DownstreamContractPayment', fields: ['type', 'amount', 'paidAt', 'referenceNo', 'refundOfPayment'], rowCount: downstreamCash.paymentRecordCount, scope: 'downstreamContract.projectId = requested authorized project; downstream contract deletedAt = null' },
+      { entity: 'DownstreamContractPayment', fields: ['type', 'amount', 'paidAt', 'referenceNo', 'refundOfPayment'], rowCount: downstreamCash.paymentRecordCount, scope: 'downstreamContract.projectId = requested authorized project; downstream contract deletedAt = null; scan capped at 10000 rows' },
     ],
     limitations: [
       LIMITATION.leafCostAggregation,
