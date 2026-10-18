@@ -73,6 +73,7 @@ check('company sources include project identifiers so cross-project rows remain 
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
 check('project/company report data queries apply authorized project scopes relationally instead of binding all project IDs',
   data.includes('const selectedProjectScope = { ...projectScope') &&
+  data.includes("domain === 'PROJECT' && projectId ? { id: projectId } : {}") &&
   data.includes('const projectFilter = { project: selectedProjectScope }') &&
   data.includes('downstreamContract: { project: selectedProjectScope, deletedAt: null }') &&
   !data.includes('projectId: { in: projectIds }'));
