@@ -144,7 +144,7 @@ function addOverviewSheet(
   sheet.getRow(4).values = ['报表类型', domainLabel, '生成时间', input.dataset.generatedAt];
   sheet.getRow(5).values = ['模板名称', input.templateName, '模板版本', `v${input.templateVersion}`];
   sheet.getRow(6).values = ['数据范围', dataScope, '工作表数量', rendered.sheets.length];
-  sheet.getRow(7).values = ['数据完整性', rendered.truncated ? '存在截断，详见生成提示' : '未触发行数截断', '生成提示', rendered.warnings.length];
+  sheet.getRow(7).values = ['数据完整性', rendered.truncated ? '存在截断，详见生成提示' : '当前报表未截断', '生成提示', rendered.warnings.length];
   sheet.getRow(8).values = ['文件用途', '只读数据快照', '业务写入', '不会回写业务台账'];
   for (let rowIndex = 4; rowIndex <= 8; rowIndex += 1) {
     const row = sheet.getRow(rowIndex);
