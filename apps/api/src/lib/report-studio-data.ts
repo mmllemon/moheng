@@ -217,10 +217,16 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
   const warnings: string[] = [];
   const truncationNotices: NonNullable<ReportStudioDataset['truncationNotices']> = [];
   if (!party.identityVerified) warnings.push('单位主体尚未核验；跨项目经营汇总仅供参考，不应直接作为最终对账依据。');
+  const partyTruncatedFields: NonNullable<ReportStudioDataset['truncatedFields']> = [];
   if (downstreamContractsTruncated) {
     const message = `该往来单位关联分供合同超过 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条，明细仅显示前 ${MAX_ROWS_PER_SOURCE.toLocaleString('zh-CN')} 条；依赖分供合同集合的合同、应付、成本和发票金额汇总已停用，避免将部分数据冒充完整总额。`;
+    const affectedFields = [
+      { sourceId: 'partyProjects', fieldIds: ['downstreamContractAmount', 'downstreamPaidAmount', 'downstreamActualCostAmount', 'downstreamContractCount'] },
+      { sourceId: 'partySummary', fieldIds: ['downstreamContractCount', 'downstreamCurrentContractAmount', 'downstreamSettledAmount', 'downstreamPaidAmount', 'downstreamOpenPayableAmount', 'downstreamSupplierCreditAmount', 'downstreamActualCostAmount', 'downstreamInvoiceAmount', 'downstreamVerifiedInvoiceAmount', 'downstreamInvoiceCount', 'downstreamTotalCostAmount'] },
+    ];
     warnings.push(message);
-    truncationNotices.push({ sourceIds: ['partyDownstreamContracts', 'partyProjects', 'partySummary'], message });
+    partyTruncatedFields.push(...affectedFields);
+    truncationNotices.push({ sourceIds: ['partyDownstreamContracts'], fields: affectedFields, message });
   }
   if (standaloneCosts.length > 200) {
     const message = '独立关联成本明细仅显示最近 200 条；汇总金额使用完整分组统计。';
@@ -236,13 +242,14 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     partyStandaloneCosts: standaloneCosts.slice(0, 200).map((cost) => ({ projectCode: cost.project.code, projectName: cost.project.name, date: dateText(cost.date), description: cost.description, type: cost.type, amount: moneyValue(cost.amount), vendorName: cost.vendorName ?? '' })),
   };
   const truncatedSources = [
-    ...(downstreamContractsTruncated ? ['partyDownstreamContracts', 'partyProjects', 'partySummary'] : []),
+    ...(downstreamContractsTruncated ? ['partyDownstreamContracts'] : []),
     ...(standaloneCosts.length > 200 ? ['partyStandaloneCosts'] : []),
   ];
   return {
     domain: 'PARTY', generatedAt: new Date().toISOString(), projectId: null, businessPartyId,
     accessibleProjectCount: visibleProjects.length, sources: partyRows, warnings,
-    truncated: truncatedSources.length > 0, truncatedSources, truncationNotices,
+    truncated: truncatedSources.length > 0 || partyTruncatedFields.length > 0,
+    truncatedSources, truncatedFields: partyTruncatedFields, truncationNotices,
   };
 }
 
