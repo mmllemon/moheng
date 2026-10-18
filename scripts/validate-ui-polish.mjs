@@ -94,6 +94,10 @@ check('shared date and select controls expose popup relationships, labels, and v
   selectField.includes("aria-errormessage={props['aria-errormessage']}") &&
   datePicker.includes("props['aria-invalid'] === 'true'") &&
   selectField.includes("props['aria-invalid'] === 'true'"));
+check('date picker keyboard movement skips disabled dates and preserves focusable range boundaries',
+  datePicker.includes('while (isDisabled(asIsoDate(next)) && attempts < 3660)') &&
+  datePicker.includes('if (isDisabled(asIsoDate(next))) return;') &&
+  datePicker.includes('setFocusedDate(nextValue)'));
 check('design docs enforce neutral professional visual language and record navigation/report cleanup',
   design.includes('色彩不是装饰品') && design.includes('150ms ~ 350ms') &&
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
