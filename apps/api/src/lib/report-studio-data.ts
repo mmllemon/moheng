@@ -113,6 +113,8 @@ export interface ReportStudioDataset {
   sources: Record<string, unknown>;
   warnings: string[];
   truncated?: boolean;
+  /** Stable source IDs whose detail rows or derived metrics are incomplete. */
+  truncatedSources?: string[];
 }
 
 function dateText(value: Date | null | undefined): string | null { return value ? value.toISOString().slice(0, 10) : null; }
@@ -216,7 +218,15 @@ async function loadBusinessPartyReportDataset(user: AuthUser, businessPartyId?: 
     partyDownstreamContracts: downstreamRows,
     partyStandaloneCosts: standaloneCosts.slice(0, 200).map((cost) => ({ projectCode: cost.project.code, projectName: cost.project.name, date: dateText(cost.date), description: cost.description, type: cost.type, amount: moneyValue(cost.amount), vendorName: cost.vendorName ?? '' })),
   };
-  return { domain: 'PARTY', generatedAt: new Date().toISOString(), projectId: null, businessPartyId, accessibleProjectCount: visibleProjects.length, sources: partyRows, warnings, truncated: downstreamContractsTruncated || standaloneCosts.length > 200 };
+  const truncatedSources = [
+    ...(downstreamContractsTruncated ? ['partyDownstreamContracts', 'partyProjects', 'partySummary'] : []),
+    ...(standaloneCosts.length > 200 ? ['partyStandaloneCosts'] : []),
+  ];
+  return {
+    domain: 'PARTY', generatedAt: new Date().toISOString(), projectId: null, businessPartyId,
+    accessibleProjectCount: visibleProjects.length, sources: partyRows, warnings,
+    truncated: truncatedSources.length > 0, truncatedSources,
+  };
 }
 
 export async function loadReportStudioDataset(user: AuthUser, domain: ReportStudioDomain, projectId?: string, businessPartyId?: string): Promise<ReportStudioDataset> {
@@ -365,8 +375,47 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
     }));
   }
 
+  const truncatedSources = new Set<string>();
+  const directSourceIds: Record<keyof typeof truncation, string> = domain === 'PROJECT'
+    ? {
+        changes: 'changes',
+        downstreamContracts: 'downstreamContracts',
+        ownerReceivables: 'ownerReceivables',
+        ownerReceipts: 'ownerReceipts',
+        actualCosts: 'actualCosts',
+        progressBills: 'progressBills',
+        downstreamPayables: 'downstreamPayables',
+        downstreamPayments: 'downstreamPayments',
+        budgetItems: 'financialSummary',
+      }
+    : {
+        changes: 'companyChanges',
+        downstreamContracts: 'companyDownstreamContracts',
+        ownerReceivables: 'companyOwnerReceivables',
+        ownerReceipts: 'companyOwnerReceipts',
+        actualCosts: 'companyActualCosts',
+        progressBills: 'companyProgressBills',
+        downstreamPayables: 'companyDownstreamPayables',
+        downstreamPayments: 'companyDownstreamPayments',
+        budgetItems: 'companySummary',
+      };
+  for (const key of Object.keys(truncation) as Array<keyof typeof truncation>) {
+    if (truncation[key]) truncatedSources.add(directSourceIds[key]);
+  }
+  const sourceDataTruncated = Object.values(truncation).some(Boolean);
+  if (domain === 'PROJECT') {
+    if (sourceDataTruncated) truncatedSources.add('financialSummary');
+    if (truncation.changes) truncatedSources.add('project');
+  } else if (sourceDataTruncated) {
+    // Per-project and company totals may contain unknown values when one of their
+    // constituent sources is capped, even if their project list itself is complete.
+    truncatedSources.add('companySummary');
+    truncatedSources.add('companyProjects');
+  }
+  if (domain === 'COMPANY' && scopedProjects.length > MAX_ROWS_PER_SOURCE) truncatedSources.add('companyProjects');
+
   return {
     domain, generatedAt: new Date().toISOString(), projectId: projectId ?? null, accessibleProjectCount: accessibleProjects.length,
-    sources: singleSourceData, warnings, truncated: Object.values(truncation).some(Boolean) || (domain === 'COMPANY' && scopedProjects.length > MAX_ROWS_PER_SOURCE),
+    sources: singleSourceData, warnings, truncated: truncatedSources.size > 0, truncatedSources: [...truncatedSources],
   };
 }
