@@ -11,7 +11,9 @@ test('Report Studio scopes company rows, financial totals, and project previews 
   const testDatabaseUrl = process.env.DATABASE_URL;
   assert.ok(testDatabaseUrl, 'DATABASE_URL must point to an isolated PostgreSQL test database');
   assert.notEqual(testDatabaseUrl, process.env.PRODUCTION_DATABASE_URL, 'refusing to run against PRODUCTION_DATABASE_URL');
-  assert.match(testDatabaseUrl, /localhost|127\\.0\\.0\\.1|postgres(?:ql)?:\\/\\/.*(?:test|ci)/i, 'refusing a URL that does not look isolated');
+  const looksIsolated = testDatabaseUrl.includes('localhost') || testDatabaseUrl.includes('127.0.0.1') ||
+    ((testDatabaseUrl.startsWith('postgres://') || testDatabaseUrl.startsWith('postgresql://')) && /(?:test|ci)/i.test(testDatabaseUrl));
+  assert.ok(looksIsolated, 'refusing a URL that does not look isolated');
 
   const suffix = randomUUID().replaceAll('-', '').slice(0, 12);
   const projectIds: string[] = [];
