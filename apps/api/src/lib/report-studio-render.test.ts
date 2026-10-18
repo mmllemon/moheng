@@ -82,8 +82,11 @@ test('renders a field binding when the workbook adapter omits its blank cell fro
   const sheets = (report.workbook as unknown as { sheets: Record<string, { cellData: Record<string, Record<string, unknown>> }> }).sheets;
   // Simulate spreadsheet adapters that serialize non-empty cells only. The binding must still be authoritative.
   sheets.main!.cellData['0'] = { '0': { v: '项目名称' } };
+  report.bindings.push({ id: 'sparse-row-binding', sheetId: 'main', cell: 'D8', sourceId: 'project', fieldId: 'name', format: 'TEXT' });
   const result = renderReportStudio(report, dataset);
   assert.equal(result.sheets[0]!.rows[0]![1]!.value, '测试项目');
+  // A binding alone must extend the render range even if its entire source row is absent.
+  assert.equal(result.sheets[0]!.rows[10]![3]!.value, '测试项目');
 });
 
 test('preview is bounded and marks truncation without changing the render source', () => {
