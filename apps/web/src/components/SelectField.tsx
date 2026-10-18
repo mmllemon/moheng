@@ -52,6 +52,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
   const [invalid, setInvalid] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0, width: 220, maxHeight: 280 });
   const presence = useAnimatedPresence(open, 180);
+  const ariaInvalid = invalid || props['aria-invalid'] === true || props['aria-invalid'] === 'true';
   const visibleOptions = options.filter((option) => !filterText || option.label.toLocaleLowerCase().includes(filterText.toLocaleLowerCase()));
   const selectedOption = options.find((option) => option.value === selectedValue);
 
@@ -190,9 +191,13 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
       ref={triggerRef}
       type="button"
       id={id ? `${id}-trigger` : undefined}
-      className={`select-control-trigger ${invalid || props['aria-invalid'] ? 'is-invalid' : ''}`}
+      className={`select-control-trigger ${ariaInvalid ? 'is-invalid' : ''}`}
       role="combobox"
-      aria-label={props['aria-label']}
+      aria-label={props['aria-label'] ?? (props['aria-labelledby'] ? undefined : title ?? '请选择')}
+      aria-labelledby={props['aria-labelledby']}
+      aria-describedby={props['aria-describedby']}
+      aria-errormessage={props['aria-errormessage']}
+      aria-invalid={ariaInvalid ? 'true' : undefined}
       aria-haspopup="listbox"
       aria-expanded={open}
       aria-controls={open ? `select-options-${controlId}` : undefined}
