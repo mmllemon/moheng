@@ -479,15 +479,9 @@ export async function loadReportStudioDataset(user: AuthUser, domain: ReportStud
             id: true, name: true, code: true, type: true, ownerName: true, managerName: true,
             status: true, address: true, startDate: true, plannedEndDate: true,
             originalContractAmount: true, contractAmount: true,
-            mainContract: {
-              select: {
-                contractNo: true, name: true, signedAt: true, amount: true, taxIncluded: true,
-                retentionRate: true, advanceDeductionRate: true, paymentTerms: true, guaranteeEndAt: true,
-              },
-            },
           },
           orderBy: [{ code: 'asc' }, { id: 'asc' }],
-        })
+        }).then((projects) => projects.map((project) => ({ ...project, mainContract: null })))
       : Promise.resolve([]),
     projectId
       ? prisma.project.findFirst({
