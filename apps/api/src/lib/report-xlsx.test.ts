@@ -43,6 +43,31 @@ test('standard XLSX begins with a styled overview sheet and preserves typed data
   assert.equal(workbook.getWorksheet('导出说明')!.getCell('B10').value, '1');
 });
 
+test('standard XLSX overview explicitly warns when the standard report row limit truncates results', async () => {
+  const generatedAt = new Date('2026-10-15T02:00:00.000Z');
+  const snapshot: ReportSnapshot = {
+    report: reportCatalog.find((item) => item.key === 'target-cost')!,
+    fields: makeReportFields('target-cost'),
+    rows: [['P-001']],
+    rowCount: 1,
+    truncated: true,
+    generatedAt,
+    projectScope: '测试项目',
+    filters: { from: '2026-01-01', to: '2026-10-15' },
+  };
+  const definition = createDefaultDefinition('target-cost');
+  const buffer = await buildReportWorkbook({ snapshot, definition, templateName: '限额测试', templateVersion: 1 });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+
+  const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.getCell('B9').value, '达到导出上限，详见提示');
+  assert.equal(overview.getCell('D7').value, '2026-10-15');
+  assert.match(String(overview.getCell('A20').value), /达到导出上限|分批导出/);
+  const dataSheet = workbook.getWorksheet('数据')!;
+  assert.match(String(dataSheet.getCell(dataSheet.rowCount, 1).value), /达到导出上限/);
+});
+
 test('native XLSX can omit description sheet and rejects no-visible-column definitions', async () => {
   const generatedAt = new Date('2026-10-15T02:00:00.000Z');
   const snapshot: ReportSnapshot = {
