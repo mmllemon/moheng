@@ -276,7 +276,7 @@ export default function ReportPreviewPage() {
     setExportBusy(true); setError(''); setNotice('');
     try {
       const submitted = isStudio
-        ? await api.post<{ id: string }> (`/reports/studio/templates/${studioTemplateId}/xlsx/jobs`, { ...(domain === 'PROJECT' ? { projectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: partyId } : {}) }, { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `report-${Date.now()}` })
+        ? await api.post<{ id: string }> (`/reports/studio/templates/${studioTemplateId}/xlsx/jobs`, { ...(domain === 'PROJECT' ? { projectId: studioProjectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: studioPartyId } : {}) }, { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `report-${Date.now()}` })
         : await api.post<{ id: string }>(`/reports/${encodeURIComponent(reportKey)}.xlsx/jobs`, { projectId: projectId || undefined, from: from || undefined, to: to || undefined, templateId: templateId || undefined }, { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `report-${Date.now()}` });
       setJobId(submitted.id); setNotice(`已提交后台生成任务：${submitted.id}。页面会等待短时间，完成后自动下载；你也可以稍后查询任务。`);
       let downloaded = false;

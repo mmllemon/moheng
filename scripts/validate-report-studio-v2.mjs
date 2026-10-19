@@ -41,6 +41,7 @@ const xlsx = await read('apps/api/src/lib/report-studio-xlsx.ts');
 const renderTests = await read('apps/api/src/lib/report-studio-render.test.ts');
 const studioPage = await read('apps/web/src/pages/ReportStudioPage.tsx');
 const previewPage = await read('apps/web/src/pages/ReportPreviewPage.tsx');
+const studioExportCode = previewPage.slice(previewPage.indexOf('async function exportXlsx()'), previewPage.indexOf('const standardColumns'));
 const reportPrint = await read('apps/web/src/report-print.ts');
 const reportPrintTests = await read('apps/web/src/report-print.test.ts');
 const reportPreviewLayout = await read('apps/web/src/report-preview-layout.ts');
@@ -260,6 +261,7 @@ check('studio preview honors template-bound project and party scopes for both sc
   previewPage.includes('studioTemplateQuery.data?.businessPartyId') &&
   previewPage.includes('projectId: studioProjectId') &&
   previewPage.includes('businessPartyId: studioPartyId') &&
+  studioExportCode.includes('projectId: studioProjectId') && studioExportCode.includes('businessPartyId: studioPartyId') &&
   previewPage.includes('!studioProjectId') && previewPage.includes('!studioPartyId') &&
   previewPage.includes("searchParams.get('allProjects') === '1' ? '' : selectedProjectId || ''"));
 check('standard preview values resolve through bound field keys and print behavior follows template page settings',
