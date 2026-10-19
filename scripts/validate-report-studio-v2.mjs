@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
 let passed = 0;
-const read = (path) => readFile(join(root, path), 'utf8');
+const read = async (path) => (await readFile(join(root, path), 'utf8')).replace(/\r\n/g, '\n');
 function check(label, condition) {
   if (condition) { passed += 1; console.log(`PASS ${label}`); }
   else { failures.push(label); console.log(`FAIL ${label}`); }
