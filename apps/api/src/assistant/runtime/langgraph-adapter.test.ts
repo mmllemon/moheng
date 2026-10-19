@@ -109,3 +109,33 @@ test('LangGraph invocation receives the run cancellation signal and aborts in-fl
   await assert.rejects(pending, /ASSISTANT_CANCEL_REQUESTED/);
   assert.deepEqual(toolCalls, []);
 });
+
+
+test('tool cancellation during a read-only query does not emit false completion or failure events', async () => {
+  const toolCalls: AssistantReadOnlyToolInput[] = [];
+  const emitted: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  let cancellationChecks = 0;
+  const dependencies = {
+    ...createFakeRuntimeDependencies(toolCalls),
+    runReadOnlyTool: (async (input: AssistantReadOnlyToolInput) => {
+      toolCalls.push(input);
+      return (await import('../../../test-support/fake-assistant-provider.js')).fakeToolResult(input) as never;
+    }) as unknown as AssistantRuntimeTestDependencies['runReadOnlyTool'],
+    createAgent: ((config: { tools?: Array<{ invoke: (input: unknown) => Promise<unknown> }> }) => ({
+      invoke: async () => {
+        await config.tools?.[0]?.invoke({});
+        return { messages: [{ type: 'ai', content: '这条答复不应产生。' }] };
+      },
+    })) as unknown as AssistantRuntimeTestDependencies['createAgent'],
+  };
+  const input = {
+    ...turn('请分析当前项目。', emitted),
+    isCancellationRequested: async () => {
+      cancellationChecks += 1;
+      return cancellationChecks > 1;
+    },
+  };
+  await assert.rejects(runLangGraphAssistantTurn(input, dependencies), /ASSISTANT_CANCEL_REQUESTED/);
+  assert.equal(toolCalls.length, 1);
+  assert.deepEqual(emitted.map((event) => event.type), ['tool.started']);
+});

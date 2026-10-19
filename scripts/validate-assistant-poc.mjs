@@ -71,6 +71,8 @@ assert.match(assistantJob, /isCancellationRequested\(runId\)[\s\S]*?cancellation
 assert.match(assistantJob, /signal: cancellationController\.signal/, 'worker must pass cooperative cancellation through to the runtime');
 assert.match(assistantAdapter, /\.\.\.\(input\.signal \? \{ signal: input\.signal \} : \{\}\)/, 'LangGraph invoke must receive AbortSignal when a run is cancelled');
 assert.match(assistantAdapterTests, /LangGraph invocation receives the run cancellation signal and aborts in-flight work/);
+assert.match(assistantAdapter, /input\.signal\?\.aborted \|\| await input\.isCancellationRequested\(\)\) throw new Error\('ASSISTANT_CANCEL_REQUESTED'\)/, 'tools must re-check cancellation after read-only queries before writing completion events');
+assert.match(assistantAdapterTests, /tool cancellation during a read-only query does not emit false completion or failure events/);
 assert.match(assistantRecoveryIntegration, /S3-CANCEL-provider-abort[\s\S]*?abortObserved, true[\s\S]*?cancelledEvents\.map\(\(event\) => event\.type\), \['run\.queued', 'run\.started', 'run\.cancelled'\]/, 'isolated PostgreSQL recovery gate must exercise persisted cancellation through the worker to AbortSignal');
 assert.match(JSON.parse(apiPackageText).scripts.test, /src\/lib\/assistant-context-budget\.test\.ts/);
 assert.match(decision, /查询参数或片段/, 'assistant configuration docs must define unsafe URL components');
