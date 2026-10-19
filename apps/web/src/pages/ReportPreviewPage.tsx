@@ -11,6 +11,7 @@ import type { ReportStudioPreview, ReportStudioTemplate } from '../report-studio
 import { roundFixedDecimal, formatIsoDateWithExcelPattern } from '../report-preview-format';
 import { classifyReportExportJob } from '../report-export-job.js';
 import { buildStandardReportPrintUrl, buildStudioReportPrintRequest } from '../report-print.js';
+import { buildCustomRowMergeLayout } from '../report-preview-layout.js';
 
 function colorValue(input: unknown): string | undefined {
   if (typeof input !== 'string') {
@@ -297,6 +298,13 @@ export default function ReportPreviewPage() {
     const visible = standardPreview.template.definition.columns.map((column, sourceIndex) => ({ column, sourceIndex })).filter(({ column }) => column.visible);
     return visible.map(({ column, sourceIndex }) => ({ column, sourceIndex }));
   }, [standardPreview]);
+  const standardCustomRowLayout = standardPreview
+    ? buildCustomRowMergeLayout(
+        standardPreview.template.definition.merges,
+        standardColumns.map(({ sourceIndex }) => sourceIndex),
+        standardPreview.template.definition.customRows.length,
+      )
+    : { mergeByStart: new Map<string, { rowSpan: number; colSpan: number }>(), covered: new Set<string>() };
 
   if (!isStudio && !reportKey) return <div className="page-wrap"><ErrorBlock message="缺少报表类型或综合报表模板编号。请从报表中心重新进入预览。" retry={() => navigate('/reports')} /></div>;
   return <div className="page-wrap report-export-preview-page">
@@ -347,7 +355,14 @@ export default function ReportPreviewPage() {
       {!isStudio && standardPreview && <section className="report-preview-standard-surface panel">
         <div className="report-preview-standard-title"><h2>{standardPreview.template.definition.title}</h2>{standardPreview.template.definition.subtitle && <p>{standardPreview.template.definition.subtitle.replaceAll('{project}',standardPreview.projectScope).replaceAll('{generatedAt}',new Date(standardPreview.generatedAt).toLocaleString('zh-CN')).replaceAll('{rowCount}',String(standardPreview.rowCount))}</p>}</div>
         <div className="report-preview-workbook-scroll"><table className="report-preview-table" style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}><colgroup>{standardColumns.map(({ column }) => <col key={column.id} style={{ width: `${Math.max(6, Math.min(72, column.width))}ch` }} />)}</colgroup><thead>
-          {standardPreview.template.definition.customRows.map((row,index)=><tr key={`custom-${row.id}`}><th colSpan={Math.max(1,standardColumns.length)}>{row.cells.filter((_,i)=>standardPreview.template.definition.columns[i]?.visible).join('　')}</th></tr>)}
+          {standardPreview.template.definition.customRows.map((row,rowIndex)=><tr key={`custom-${row.id}`} style={{ height: row.height }}>
+            {standardColumns.map(({ column, sourceIndex }, outputIndex) => {
+              const key = `${rowIndex}:${outputIndex}`;
+              if (standardCustomRowLayout.covered.has(key)) return null;
+              const merge = standardCustomRowLayout.mergeByStart.get(key);
+              return <td key={column.id} colSpan={merge?.colSpan ?? 1} rowSpan={merge?.rowSpan ?? 1} style={{ textAlign: column.align, verticalAlign: 'middle' }}>{row.cells[sourceIndex] ?? ''}</td>;
+            })}
+          </tr>)}
           <tr>{standardColumns.map(({column})=><th key={column.id} style={{textAlign:column.align}}>{column.label}</th>)}</tr>
         </thead><tbody>{standardPreview.rows.map((row,index)=><tr key={index}>{standardColumns.map(({column,sourceIndex})=>{
           const field = standardPreview.fields[sourceIndex];
