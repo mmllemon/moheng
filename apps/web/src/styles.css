@@ -1148,7 +1148,7 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 :root[data-theme-name="obsidian"] .app-footer { border-top-color: #283347; }
 :root[data-theme-name="obsidian"] .owner-finance-contract-chip { border-color: #274638; color: #83cfad; background: #152a25; }
 :root[data-theme-name="obsidian"] .owner-metric::before { opacity: .85; }
-:root[data-theme-name="obsidian"] .ui-segmented button.active { background: #24314b; color: #e0e6ff; }
+:root[data-theme-name="obsidian"] .ui-segmented button.active { border-color: color-mix(in srgb, var(--accent-500) 42%, var(--card-border)); background: color-mix(in srgb, var(--accent-500) 18%, var(--card-bg)); color: var(--accent-700); }
 :root[data-density="compact"] .content-area { padding-top: 18px; padding-bottom: 24px; }
 :root[data-density="compact"] .page-header { margin-bottom: 16px; }
 :root[data-density="compact"] .cost-workspace-tabs { margin-bottom: 12px; padding: 4px; }

@@ -182,6 +182,10 @@ check('theme rendering uses one canonical attribute to prevent stale dark surfac
   styles.includes(':root[data-theme-name="obsidian"] .app-shell') &&
   !/root\.dataset\.theme\s*=/.test((await read('apps/web/src/components/UiPreferencesBar.tsx'))) &&
   (await read('apps/web/src/components/UiPreferencesBar.tsx')).includes('root.dataset.themeName = resolved'));
+check('Obsidian selected segmented controls use the selected accent instead of fixed indigo colors',
+  styles.includes(':root[data-theme-name="obsidian"] .ui-segmented button.active { border-color: color-mix(in srgb, var(--accent-500) 42%, var(--card-border)); background: color-mix(in srgb, var(--accent-500) 18%, var(--card-bg)); color: var(--accent-700); }') &&
+  !styles.includes(':root[data-theme-name="obsidian"] .ui-segmented button.active { background: #24314b; color: #e0e6ff; }'));
+
 check('business-party summary, profile, metrics and identity details use shared theme tokens',
   styles.includes('.business-party-summary-strip { display: flex; align-items: center; gap: 22px; padding: 14px 17px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }') &&
   styles.includes('.business-party-profile-title h2 { margin: 0; color: var(--neutral-800);') &&
