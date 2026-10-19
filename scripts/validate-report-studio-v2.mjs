@@ -253,6 +253,13 @@ check('standard preview custom rows preserve per-cell values, row heights, visib
   reportPreviewLayout.includes('covered.add') &&
   reportPreviewLayoutTests.includes('mapped to visible preview columns like XLSX export') &&
   rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-preview-layout.test.ts'));
+check('studio preview honors template-bound project and party scopes for both screen preview and print',
+  previewPage.includes('studioTemplateQuery.data?.projectId') &&
+  previewPage.includes('studioTemplateQuery.data?.businessPartyId') &&
+  previewPage.includes('projectId: studioProjectId') &&
+  previewPage.includes('businessPartyId: studioPartyId') &&
+  previewPage.includes('!studioProjectId') && previewPage.includes('!studioPartyId') &&
+  previewPage.includes("searchParams.get('allProjects') === '1' ? '' : selectedProjectId || ''"));
 check('standard preview values resolve through bound field keys and print behavior follows template page settings',
   previewPage.includes('resolveStandardPreviewCell(column, standardPreview.fields, row)') &&
   previewPage.includes("standardPreview.template.definition.page.repeatHeader ? 'repeat-header' : 'no-repeat-header'") &&
