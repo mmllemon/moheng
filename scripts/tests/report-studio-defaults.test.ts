@@ -50,7 +50,7 @@ test('project template keeps the downstream payment region aligned to its header
   assert.equal(region.templateRow, 22, 'the repeated-row template is the zero-based 23rd spreadsheet row');
 
   const workbook = definition.workbook as {
-    sheets: Record<string, { cellData: Record<string, Record<string, { v?: unknown }>> };
+    sheets: Record<string, { cellData: Record<string, Record<string, { v?: unknown }>> }>;
   };
   const cellData = workbook.sheets.sheet1?.cellData;
   assert.ok(cellData, 'the project template sheet should have cell data');
