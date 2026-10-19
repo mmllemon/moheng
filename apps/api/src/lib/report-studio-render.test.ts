@@ -2,7 +2,7 @@ import test from 'node:test';
 import ExcelJS from 'exceljs';
 import { buildReportStudioWorkbook } from './report-studio-xlsx.js';
 import assert from 'node:assert/strict';
-import { renderReportStudio, previewReportStudio } from './report-studio-render.js';
+import { ReportStudioRenderLimitError, renderReportStudio, previewReportStudio } from './report-studio-render.js';
 import type { ReportStudioDefinition } from './report-studio-definition.js';
 import type { ReportStudioDataset } from './report-studio-data.js';
 
@@ -542,4 +542,11 @@ test('marks a worksheet truncated when defensive row rendering limit stops sourc
   assert.equal(result.sheets[0]!.rows.length, 10000);
   assert.equal(result.sheets[0]!.truncated, true);
   assert.ok(result.warnings.some((warning) => warning.includes('已达到 10000 行渲染上限')));
+});
+
+test('report cell-limit failures expose an actionable non-retryable error contract', () => {
+  const error = new ReportStudioRenderLimitError();
+  assert.equal(error.statusCode, 422);
+  assert.equal(error.code, 'REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED');
+  assert.match(error.message, /减少工作表数量、列数或明细范围后重试/);
 });

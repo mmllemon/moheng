@@ -32,6 +32,16 @@ export interface ReportStudioRenderResult {
 const MAX_RENDERED_ROWS_PER_SHEET = 10000;
 const MAX_RENDERED_CELLS = 1_000_000;
 
+export class ReportStudioRenderLimitError extends Error {
+  readonly statusCode = 422;
+  readonly code = 'REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED';
+
+  constructor() {
+    super('当前报表超过单次渲染的 1,000,000 个单元格上限。请减少工作表数量、列数或明细范围后重试。');
+    this.name = 'ReportStudioRenderLimitError';
+  }
+}
+
 function parseCell(cell: string): { row: number; column: number } {
   const match = /^([A-Z]{1,3})([1-9]\d{0,3})$/.exec(cell);
   if (!match) throw new Error(`REPORT_STUDIO_CELL_INVALID:${cell}`);
@@ -198,7 +208,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
           while (outputRow.length <= column) outputRow.push({ value: null });
           outputRow[column] = { value: formatValue(value, format), style: workbookStyle(workbook, rawCell as StudioCellData), ...(format ? { format } : {}) };
         }
-        if (totalRenderedCells + outputRow.length > MAX_RENDERED_CELLS) throw new Error('REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED');
+        if (totalRenderedCells + outputRow.length > MAX_RENDERED_CELLS) throw new ReportStudioRenderLimitError();
         totalRenderedCells += outputRow.length;
         renderedRows.push(outputRow);
         if (typeof rowStyles?.h === 'number' && Number.isFinite(rowStyles.h)) rowHeights[outputIndex] = Math.min(400, Math.max(8, rowStyles.h));

@@ -456,7 +456,10 @@ export async function reportRoutes(app: FastifyInstance) {
       createdAt: job.createdAt, startedAt: job.startedAt, finishedAt: job.finishedAt, result: job.resultMetadata,
       resultAvailable: fileAvailable, downloadExpiresAt: job.resultExpiresAt,
       downloadUrl: fileAvailable ? `/api/reports/jobs/${job.id}/download` : null,
-      error: job.status === 'FAILED' ? '任务处理失败，请联系管理员并提供任务编号。' : null });
+      error: job.status !== 'FAILED' ? null
+        : job.lastError === 'REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED'
+          ? '报表模板超出单次输出上限。请减少工作表数量、列数或明细范围后重新导出。'
+          : '任务处理失败，请联系管理员并提供任务编号。' });
   });
 
   app.get('/jobs/:jobId/download', { preHandler: authRequired }, async (request, reply) => {
