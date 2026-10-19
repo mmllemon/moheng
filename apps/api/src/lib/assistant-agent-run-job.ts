@@ -1,4 +1,5 @@
 import { prisma } from './prisma.js';
+import { buildAssistantHistoryWithinBudget } from './assistant-context-budget.js';
 import { isAssistantBaseUrlValid } from './assistant-config.js';
 import { canAccessProject } from './project-access.js';
 import { appendAssistantRunEvent, type AssistantEventJsonValue } from './assistant-run-events.js';
@@ -102,7 +103,7 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
   const [user, promptMessage, historyDesc] = await Promise.all([
     prisma.user.findUnique({ where: { id: job.ownerUserId }, select: { id: true, email: true, role: true, isActive: true } }),
     prisma.assistantMessage.findFirst({ where: { conversationId, requestId, role: 'USER' }, select: { id: true, content: true, createdAt: true } }),
-    prisma.assistantMessage.findMany({ where: { conversationId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_CONTEXT_MESSAGES, select: { role: true, content: true, createdAt: true, id: true } }),
+    prisma.assistantMessage.findMany({ where: { conversationId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_CONTEXT_MESSAGES + 1, select: { role: true, content: true, createdAt: true, id: true } }),
   ]);
   if (!user?.isActive || !promptMessage) {
     await failRun(conversationId, runId, 'ASSISTANT_ACTOR_OR_PROMPT_MISSING');
@@ -126,11 +127,11 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
   const priorMessages = historyDesc
     .filter((message) => message.id !== promptMessage.id && message.createdAt <= promptMessage.createdAt)
     .slice(0, MAX_CONTEXT_MESSAGES - 1)
-    .reverse();
-  const history: Array<{ role: 'user' | 'assistant'; content: string }> = [
-    ...priorMessages.map((message) => ({ role: message.role === 'USER' ? 'user' as const : 'assistant' as const, content: message.content })),
-    { role: 'user', content: promptMessage.content },
-  ];
+    .reverse()
+    .map((message) => ({ role: message.role === 'USER' ? 'user' as const : 'assistant' as const, content: message.content }));
+  const boundedHistory = buildAssistantHistoryWithinBudget(priorMessages, promptMessage.content);
+  const history = boundedHistory.messages;
+  const contextTruncated = boundedHistory.truncated || historyDesc.length > MAX_CONTEXT_MESSAGES;
   const actor: AuthUser = { sub: user.id, email: user.email, role: user.role, sid: 'assistant-background-job' };
   try {
     // Loading provider/runtime packages only at execution time keeps ordinary API startup independent of Agent code paths.
@@ -138,7 +139,7 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
     const runAssistantTurn = overrides.runAssistantTurn ?? runtime.runLangGraphAssistantTurn;
     const responseText = await runAssistantTurn({
       apiKey, modelId, baseURL, checkpointUrl, conversationId, runId, projectId: run.projectId,
-      actor, messages: history,
+      actor, messages: history, contextTruncated,
       isCancellationRequested: () => isCancellationRequested(runId),
       emit: (type, payload) => appendEvent(conversationId, runId, type, payload),
     });
