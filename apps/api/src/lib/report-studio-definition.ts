@@ -153,6 +153,15 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
         && merge.endColumn >= existing.startColumn
       );
       if (overlaps) return { success: false, message: '合并区域不能重叠' };
+      for (let row = merge.startRow; row <= merge.endRow; row += 1) {
+        for (let column = merge.startColumn; column <= merge.endColumn; column += 1) {
+          if (row === merge.startRow && column === merge.startColumn) continue;
+          const coveredCell = sheet.cellData?.[String(row)]?.[String(column)];
+          if (coveredCell && Object.hasOwn(coveredCell, 'v') && coveredCell.v !== null && coveredCell.v !== '') {
+            return { success: false, message: '合并区域非左上角单元格不能包含静态值' };
+          }
+        }
+      }
       validatedMerges.push(merge);
     }
   }

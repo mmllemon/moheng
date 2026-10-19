@@ -91,14 +91,49 @@ test('allows adjacent merge regions with no shared cells', () => {
 
 test('rejects bindings that target a non-anchor cell inside a merged range', () => {
   const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { columnCount: number; mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
+  };
+  workbook.sheets.sheet1!.columnCount = 4;
+  workbook.sheets.sheet1!.mergeData = [
+    { startRow: 0, startColumn: 2, endRow: 0, endColumn: 3 },
+  ];
   report.bindings.push({
     id: 'binding-merged-non-anchor',
     sheetId: 'sheet1',
-    cell: 'B1',
+    cell: 'D1',
     sourceId: 'project',
     fieldId: 'name',
     format: 'TEXT',
   });
+  const result = validateReportStudioDefinition(report);
+  assert.equal(result.success, false);
+  if (!result.success) assert.match(result.message, /合并单元格绑定必须指向合并区域左上角/);
+});
+
+test('accepts a binding at the top-left anchor of a merged range', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { columnCount: number; mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
+  };
+  workbook.sheets.sheet1!.columnCount = 4;
+  workbook.sheets.sheet1!.mergeData = [
+    { startRow: 0, startColumn: 2, endRow: 0, endColumn: 3 },
+  ];
+  report.bindings.push({
+    id: 'binding-merged-anchor',
+    sheetId: 'sheet1',
+    cell: 'C1',
+    sourceId: 'project',
+    fieldId: 'name',
+    format: 'TEXT',
+  });
+  const result = validateReportStudioDefinition(report);
+  assert.equal(result.success, true);
+});
+
+test('rejects static values in non-anchor cells of a merged range', () => {
+  const report = definition();
   const workbook = report.workbook as unknown as {
     sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
   };
@@ -107,25 +142,5 @@ test('rejects bindings that target a non-anchor cell inside a merged range', () 
   ];
   const result = validateReportStudioDefinition(report);
   assert.equal(result.success, false);
-  if (!result.success) assert.match(result.message, /合并单元格绑定必须指向合并区域左上角/);
-});
-
-test('accepts a binding at the top-left anchor of a merged range', () => {
-  const report = definition();
-  report.bindings.push({
-    id: 'binding-merged-anchor',
-    sheetId: 'sheet1',
-    cell: 'A1',
-    sourceId: 'project',
-    fieldId: 'name',
-    format: 'TEXT',
-  });
-  const workbook = report.workbook as unknown as {
-    sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
-  };
-  workbook.sheets.sheet1!.mergeData = [
-    { startRow: 0, startColumn: 0, endRow: 0, endColumn: 1 },
-  ];
-  const result = validateReportStudioDefinition(report);
-  assert.equal(result.success, true);
+  if (!result.success) assert.match(result.message, /合并区域非左上角单元格不能包含静态值/);
 });
