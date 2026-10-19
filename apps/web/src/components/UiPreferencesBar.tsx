@@ -31,7 +31,8 @@ export default function UiPreferencesBar() {
     const media = window.matchMedia?.('(prefers-color-scheme: dark)');
     const applyTheme = () => {
       const resolved = theme === 'system' ? (media?.matches ? 'obsidian' : 'ivory') : theme;
-      root.dataset.theme = resolved === 'obsidian' ? 'dark' : 'light';
+      // Theme rendering uses one canonical attribute; legacy data-theme selectors
+      // created competing CSS cascades and could leave stale backgrounds after switches.
       root.dataset.themeName = resolved;
       root.dataset.themePreference = theme;
       root.dataset.density = density;
