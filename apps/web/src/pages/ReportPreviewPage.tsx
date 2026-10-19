@@ -160,10 +160,16 @@ export default function ReportPreviewPage() {
     queryFn: () => api.get<ReportStudioTemplate>(`/reports/studio/templates/${studioTemplateId}`),
     enabled: isStudio,
   });
+  const studioProjectId = domain === 'PROJECT'
+    ? searchParams.get('projectId') || studioTemplateQuery.data?.projectId || (searchParams.get('allProjects') === '1' ? '' : selectedProjectId || '')
+    : '';
+  const studioPartyId = domain === 'PARTY'
+    ? partyId || studioTemplateQuery.data?.businessPartyId || ''
+    : '';
   const studioPreviewQuery = useQuery({
-    queryKey: ['report-studio-preview', studioTemplateId, domain, projectId, partyId],
-    queryFn: () => api.post<ReportStudioPreview>('/reports/studio/preview', { templateId: studioTemplateId, ...(domain === 'PROJECT' ? { projectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: partyId } : {}) }),
-    enabled: isStudio && Boolean(studioTemplateQuery.data) && (domain === 'COMPANY' || (domain === 'PROJECT' ? Boolean(projectId) : Boolean(partyId))),
+    queryKey: ['report-studio-preview', studioTemplateId, domain, studioProjectId, studioPartyId],
+    queryFn: () => api.post<ReportStudioPreview>('/reports/studio/preview', { templateId: studioTemplateId, ...(domain === 'PROJECT' ? { projectId: studioProjectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: studioPartyId } : {}) }),
+    enabled: isStudio && Boolean(studioTemplateQuery.data) && (domain === 'COMPANY' || (domain === 'PROJECT' ? Boolean(studioProjectId) : Boolean(studioPartyId))),
   });
   const standardPreviewQuery = useQuery({
     queryKey: ['report-export-preview', reportKey, projectId, from, to, templateId],
@@ -185,8 +191,8 @@ export default function ReportPreviewPage() {
   const printPageConfig = isStudio ? studioTemplateQuery.data?.definition.page : standardPreview?.template.definition.page;
   const printPaper = printPageConfig?.paper ?? 'A4';
   const printOrientation = printPageConfig?.orientation ?? 'landscape';
-  const missingProjectScope = isStudio && domain === 'PROJECT' && !projectId;
-  const missingPartyScope = isStudio && domain === 'PARTY' && !partyId;
+  const missingProjectScope = isStudio && domain === 'PROJECT' && !studioProjectId;
+  const missingPartyScope = isStudio && domain === 'PARTY' && !studioPartyId;
 
   useEffect(() => {
     if (!printPending || (!printStudioPreview && !printStandardPreview)) return;
@@ -247,8 +253,8 @@ export default function ReportPreviewPage() {
         const printable = await api.post<ReportStudioPreview>('/reports/studio/preview', buildStudioReportPrintRequest({
           templateId: studioTemplateId,
           domain,
-          projectId,
-          businessPartyId: partyId,
+          projectId: studioProjectId,
+          businessPartyId: studioPartyId,
         }));
         setPrintStandardPreview(null);
         setPrintStudioPreview(printable);
@@ -322,7 +328,7 @@ export default function ReportPreviewPage() {
     {!loading && !errorQuery && <>
       <section className="report-preview-meta panel">
         <div><span>报表名称</span><strong>{title}</strong></div>
-        <div><span>报表范围</span><strong>{isStudio ? domain === 'PROJECT' ? `项目 · ${projectId || '未选择'}` : domain === 'PARTY' ? `往来单位 · ${partyId || '未选择'}` : '公司 · 当前账号可访问项目' : standardPreview?.projectScope ?? '—'}</strong></div>
+        <div><span>报表范围</span><strong>{isStudio ? domain === 'PROJECT' ? `项目 · ${studioProjectId || '未选择'}` : domain === 'PARTY' ? `往来单位 · ${studioPartyId || '未选择'}` : '公司 · 当前账号可访问项目' : standardPreview?.projectScope ?? '—'}</strong></div>
         <div><span>模板版本</span><strong>{isStudio ? `v${studioTemplateQuery.data?.version ?? '—'}` : `v${standardPreview?.template.version ?? 1}`}</strong></div>
         <div><span>生成时间</span><strong>{isStudio ? studioPreview?.generatedAt ? new Date(studioPreview.generatedAt).toLocaleString('zh-CN') : '—' : standardPreview?.generatedAt ? new Date(standardPreview.generatedAt).toLocaleString('zh-CN') : '—'}</strong></div>
       </section>
