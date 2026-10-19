@@ -13,7 +13,7 @@ const [rootPackage, apiPackage, webPackage, appInfo, schema, migration, systemRo
   read('apps/api/src/routes/system-management.ts'), read('apps/web/src/pages/SystemAuthorizationPage.tsx'), read('apps/web/src/App.tsx'), read('apps/web/src/components/Layout.tsx'),
   read('apps/web/src/styles.css'), read('apps/web/src/pages/SystemDictionariesPage.tsx'), read('apps/web/src/pages/SystemParametersPage.tsx'), read('apps/web/src/utils/code-suggestion.ts'),
   read('apps/web/src/pages/SystemGovernancePage.tsx'), read('apps/web/src/pages/SystemManagementPage.tsx'), read('README.md'), read('CHANGELOG.md'),
-  read('docs/系统管理工作台完善与导航方案-v2.13.0-rc.1.md'), read('docs/阶段验收记录-v2.13.0-rc.1.md'),
+  read('docs/架构与核心业务规则.md'), read('docs/产品范围与当前状态.md'),
 ]);
 
 check('root/API/Web/runtime version metadata agree on the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes(`APP_VERSION = '${rootPackage.version}'`));
@@ -32,9 +32,12 @@ check('parameter key is suggested from name and manual override is retained', pa
 check('code suggestion normalizes Latin/digits, has safe unknown Han fallback and enforces minimum length', helper.includes('normalize(\'NFKC\')') && helper.includes('toUpperCase()') && helper.includes('codePointAt(0)') && helper.includes('const limit = Math.max(2') && helper.includes('return result;'));
 check('data-quality action is a low-emphasis neutral control rather than primary button', governance.includes('system-quality-scan-trigger') && !governance.includes('className="button-primary" onClick={() => scanQuality.mutate()}') && css.includes('.system-quality-scan-trigger {') && css.includes('.system-quality-scan-trigger:hover:not(:disabled)'));
 check('system management overview links authorization governance as a dedicated workbench', manager.includes('/system/authorization') && manager.includes('权限治理与授权复核'));
-check('docs record navigation rationale, matrix read-only boundary, code suggestion limit and environment gates', design.includes('为什么不把所有管理项继续放在侧栏') && design.includes('矩阵是基于现有后端守卫') && design.includes('不保证完整汉语拼音转换') && design.includes('Node.js 24+') && acceptance.includes('RC'));
+check('consolidated docs state module boundaries, project authorization and incomplete production acceptance',
+  design.includes('模块化单体优先') && design.includes('项目授权') &&
+  design.includes('只读') && design.includes('审计') &&
+  acceptance.includes('尚未完成') && /rc/i.test(acceptance));
 check('release candidate gate includes this system workbench contract suite', rootPackage.scripts['validate:release-candidate'].includes('validate-system-workbench-v2.mjs'));
-check('README and changelog describe current navigation, authorization review and code recommendation', readme.includes('v2.14.0-rc.1 系统管理关键缺口闭环') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('授权复核工作台'));
+check('README and changelog describe current navigation, authorization review and code recommendation', readme.includes('核心业务约束') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('授权复核工作台'));
 
 const failed = checks.filter((item) => !item.pass);
 for (const item of checks) console.log(`${item.pass ? 'PASS' : 'FAIL'} ${item.name}`);

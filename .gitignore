@@ -18,3 +18,10 @@ GATE-*.txt
 r3-injection.mjs
 r4-cancel-race.mjs
 r6-ops-drill.mjs
+gg.mjs
+g.mjs
+
+
+# CI/local-generated reports and leak-test markers (never source inputs)
+.assistant-gate-artifacts/
+.gate-rerun-artifacts/

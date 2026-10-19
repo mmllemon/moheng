@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
 let passed = 0;
-const read = (path) => readFile(join(root, path), 'utf8');
+const read = async (path) => (await readFile(join(root, path), 'utf8')).replace(/\r\n/g, '\n');
 function check(label, condition) {
   if (condition) { passed += 1; console.log(`PASS ${label}`); }
   else { failures.push(label); console.log(`FAIL ${label}`); }
@@ -46,10 +46,12 @@ const legacyDesigner = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const app = await read('apps/web/src/App.tsx');
 const sharedSelect = await read('apps/web/src/components/SelectField.tsx');
 const sharedDate = await read('apps/web/src/components/DatePicker.tsx');
-const docs = await read('docs/报表中心与报表工作室设计方案-v2.4.0-rc.1.md');
-const acceptance = await read('docs/WP9-报表工作室端到端验收清单-v2.4.0-rc.1.md');
-const currentDocs = await read('docs/报表中心与报表工作室设计方案-v2.7.0-rc.1.md');
-const currentAcceptance = await read('docs/WP12-报表预览返回导航图表与XLSX类型修复验收清单-v2.7.0-rc.1.md');
+const docs = await read('docs/报表中心规格与验收.md');
+const acceptance = await read('docs/后续四阶段开发路线图.md');
+const reportData = await read('apps/api/src/lib/report-studio-data.ts');
+const defaultStudio = await read('apps/web/src/report-studio-default.ts');
+const currentDocs = docs;
+const currentAcceptance = acceptance;
 
 check('all packages and app metadata use the same candidate version',
   apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
@@ -69,8 +71,86 @@ check('project and company source registry includes multiple independent busines
   ['project','mainContract','financialSummary','downstreamContracts','ownerReceivables','ownerReceipts','actualCosts','changes','progressBills','downstreamPayables','companySummary','companyProjects','companyDownstreamContracts','companyOwnerReceivables','companyOwnerReceipts','companyActualCosts','companyChanges','companyProgressBills','companyDownstreamPayables','businessParty','partySummary','partyProjects','partyMainContracts','partyDownstreamContracts','partyStandaloneCosts'].every((source) => data.includes(`id: '${source}'`)));
 check('company sources include project identifiers so cross-project rows remain traceable',
   data.includes("txt('projectCode', '项目编号')") && data.includes("txt('projectName', '项目名称')") && data.includes('singleSourceData.companyDownstreamContracts') && data.includes('singleSourceData.companyDownstreamPayables'));
+check('project/company report data queries apply authorized project scopes relationally instead of binding all project IDs',
+  data.includes('const selectedProjectScope = { ...projectScope') &&
+  data.includes("domain === 'PROJECT' && projectId ? { id: projectId } : {}") &&
+  data.includes('const projectFilter = { project: selectedProjectScope }') &&
+  data.includes('downstreamContract: { project: selectedProjectScope, deletedAt: null }') &&
+  data.includes("if (domain === 'PROJECT' && !projectId) throw") &&
+  data.includes('prisma.project.count({ where: projectScope })') &&
+  /prisma\.project\.findFirst\(\s*\{\s*where:\s*\{\s*\.\.\.projectScope,\s*id:\s*projectId\s*\}/.test(data) &&
+  data.includes("domain === 'COMPANY'") &&
+  !data.includes('const projectIds = scopedProjects.map((project) => project.id)') &&
+  !data.includes('projectId: { in: projectIds }'));
+check('project and party report loaders select only fields used by summaries, avoiding complete main-contract records',
+  data.includes('mainContract: { select: { contractNo: true, name: true } }') &&
+  data.includes('originalContractAmount: true, contractAmount: true') &&
+  data.includes('mainContract: {\n              select: {') &&
+  data.includes('guaranteeEndAt: true') &&
+  data.includes('.then((projects) => projects.map((project) => ({ ...project, mainContract: null })))') &&
+  !data.includes('include: { mainContract: true }'));
+check('party contract finance metrics aggregate child histories in PostgreSQL while capping contract detail rows',
+  data.includes('prisma.downstreamContractAdjustment.groupBy') &&
+  data.includes('prisma.downstreamSettlementPosting.groupBy') &&
+  data.includes('prisma.downstreamContractPayment.groupBy') &&
+  data.includes('prisma.costEntry.groupBy') &&
+  data.includes('prisma.downstreamSupplierInvoice.groupBy') &&
+  data.includes('FROM "DownstreamPaymentAllocation"') &&
+  data.includes('scoped_payable."downstreamContractId" IN (${Prisma.join(downstreamContractIds)})') &&
+  !data.includes('supplierInvoices: { select: { amount: true, taxAmount: true, status: true } }') &&
+  data.includes('take: MAX_ROWS_PER_SOURCE + 1') &&
+  data.includes('invoiceCount: invoices.count'));
+check('party report owner metrics aggregate progress bills, signed payments, and changes in PostgreSQL within project scope',
+  data.includes('prisma.progressBill.groupBy') &&
+  data.includes('prisma.change.groupBy') &&
+  data.includes('prisma.$queryRaw<Array<{ projectId: string; paidAmount: string }>>') &&
+  data.includes('COALESCE(SUM(pp."amount"), 0)::text') &&
+  data.includes('project: ownedProjectScope') &&
+  data.includes('p."ownerPartyId" = ${businessPartyId}') &&
+  data.includes('FROM "ProjectMember" AS pm') &&
+  !data.includes('include: { mainContract: true, progressBills:') &&
+  data.includes('const progressPaidByProject = new Map') &&
+  (await read('apps/api/src/routes/owner-finance.ts')).includes('amount: amountString(-allocation.amount)'));
+check('party report collection outputs enforce row caps and source-specific completeness',
+  data.includes('partyProjects: projectRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
+  data.includes('partyMainContracts: mainContractRows.slice(0, MAX_ROWS_PER_SOURCE)') &&
+  data.includes("sourceIds: ['partyProjects']") &&
+  data.includes("sourceIds: ['partyMainContracts']") &&
+  data.includes('take: MAX_ROWS_PER_SOURCE + 1') &&
+  data.includes('const ownedProjectsTruncated = ownedProjectsFetched.length > MAX_ROWS_PER_SOURCE') &&
+  data.includes('const standaloneCostProjectGroupsTruncated = standaloneCostTotalsFetched.length > MAX_ROWS_PER_SOURCE') &&
+  data.includes('prisma.costEntry.aggregate({ where: standaloneCostScope') &&
+  data.includes("fieldIds: ['projectCount', 'mainContractCount', 'ownerCurrentContractAmount', 'ownerApprovedBillAmount', 'ownerReceivedAmount']") &&
+  data.includes('const standaloneCostCount = standaloneCostAggregate._count._all') &&
+  data.includes('const emptyProjectSummary = (project: {') &&
+  data.includes("role: isOwner ? 'OWNER' : fallbackRole") &&
+  data.includes('ownerPartyId: true, contractAmount: true, originalContractAmount: true') &&
+  data.includes('const projectListIncomplete = downstreamContractsTruncated || ownedProjectsTruncated || standaloneCostProjectGroupsTruncated') &&
+  docs.includes('往来单位关联项目与独立成本项目分布各自有 10,000 条输出上限') &&
+  docs.includes('不能用截断后的分组结果累加'));
+check('company report summarizes capped details with one-pass per-project grouping instead of rescanning every source for every project',
+  data.includes('const groupByProject = <T,>') &&
+  data.includes('const changesByProject = groupByProject(safeChanges') &&
+  data.includes('const downstreamContractsByProject = groupByProject(safeDownstreamContracts') &&
+  data.includes('const ownerReceivablesByProject = groupByProject(safeOwnerReceivables') &&
+  data.includes('const ownerReceiptsByProject = groupByProject(safeOwnerReceipts') &&
+  data.includes('const actualCostsByProject = groupByProject(safeActualCosts') &&
+  data.includes('const downstreamPayablesByProject = groupByProject(safeDownstreamPayables') &&
+  data.includes('const downstreamPaymentsByProject = groupByProject(safeDownstreamPayments') &&
+  !data.includes('safeChanges.filter((item) => item.projectId === project.id)') &&
+  !data.includes('safeOwnerReceipts.filter((item) => item.projectId === project.id)') &&
+  !data.includes('safeActualCosts.filter((item) => item.projectId === project.id)'));
 check('financial summaries never present partial capped source data as complete totals',
-  data.includes('依赖该数据源的金额汇总将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
+  data.includes('依赖该数据源的相关汇总字段将显示为空') && data.includes("truncation.changes ? null") && data.includes("truncation.ownerReceipts ? null") && data.includes('summaries.some((item) => item[key] === null'));
+check('report truncation flags and warnings follow bound collections and exact summary fields',
+  data.includes('truncationNotices') &&
+  data.includes("sourceIds: ['partyDownstreamContracts', 'partyProjects']") &&
+  data.includes("sourceId: 'financialSummary', fieldIds: ['actualCostTotal']") &&
+  renderer.includes('notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))') &&
+  renderer.includes('(notice.fields ?? [])') &&
+  renderer.includes('truncatedFieldKeys.has(`${binding.sourceId}:${binding.fieldId}`)') &&
+  rendererTests.includes('unbound field in a used summary source') &&
+  rendererTests.includes('bound summary fields must remain visible'));
 check('renderer binds every repeated-row cell from the same source record and keeps independent regions separate',
   renderer.includes('region.sourceId === binding.sourceId ? (regionRecords?.[repeat] ?? null) : null') && renderer.includes('regionExpansions') && renderer.includes('allowedRepetitions') && renderer.includes('const merges: ReportStudioRenderedMerge[]') &&
   renderTests.includes('expands independent repeating regions') && renderTests.includes('empty repeating regions') && renderTests.includes('rows[2]![1]!.value, 100') && renderTests.includes('rows[6]![1]!.value, 20'));
@@ -96,6 +176,13 @@ check('Univer component is lazy-loaded, disposed on unmount/domain-template swit
   studioPage.includes("import('@univerjs/presets')") && studioPage.includes('created.univerAPI.createWorkbook') && studioPage.includes('instance.univer.dispose()') && studioPage.includes('snapshotDefinition') && studioPage.includes('[ready, editorGeneration]'));
 check('cell binding UI adds visible inert placeholders and region binding constraints',
   studioPage.includes('{{${selectedSource.id}.${selectedField.id}}}') && studioPage.includes('集合字段需要先创建重复区域') && studioPage.includes('设置为自动延伸区域'));
+check('report binding removal clears only generated placeholders and region edits preserve validator cardinality rules',
+  studioPage.includes('function clearBindingPlaceholder') &&
+  studioPage.includes('range.getValue() === expectedPlaceholder') &&
+  studioPage.includes('UI cleanup is best-effort') &&
+  studioPage.includes('clearBindingPlaceholder(instanceRef.current?.api, removed)') &&
+  studioPage.includes('单条记录字段不能放在重复区域样板行中') &&
+  studioPage.includes('bindings: current.bindings.filter((binding) => !removedBindingIds.has(binding.id))'));
 check('preview resolves the saved template on the server, enforces project template scope, and does not expose unpublished draft snapshots',
   studioRoute.includes('templateId: z.string().trim().min(1)') && studioRoute.includes('REPORT_TEMPLATE_PROJECT_MISMATCH') && !/publishedDefinition:\s*template\.publishedDefinition/.test(studioRoute) && !/publishedDefinition\s*:\s*ReportStudioDefinition/.test(await read('apps/web/src/report-studio-types.ts')));
 check('all regular native dropdown/date UI use shared controls',
@@ -112,10 +199,26 @@ for (const file of webSources) {
   if (/type=["']date["']/.test(source) && !isSharedControlPath(file, 'DatePicker')) rawDateFiles.push(file);
 }
 check('repository scan finds no business-page native select or type=date outside shared primitives', rawSelectFiles.length === 0 && rawDateFiles.length === 0, [...rawSelectFiles, ...rawDateFiles].join(', '));
-check('historical v2.4 docs still describe the previous release gates',
-  docs.includes('任意 SQL') && docs.includes('公司级') && docs.includes('10,000') && docs.includes('尚不冻结完整的数据快照') && acceptance.includes('公司级') && acceptance.includes('Excel 与 WPS'));
-check('current docs define row identity/order, preview-width policy, project/company/party scopes and workspace entry points',
-  currentDocs.includes('同一条记录') && currentDocs.includes('稳定主键') && currentDocs.includes('公司级') && currentDocs.includes('往来单位') && currentDocs.includes('列宽') && currentAcceptance.includes('重复区域') && currentAcceptance.includes('项目驾驶舱') && currentAcceptance.includes('往来单位经营档案'));
+check('consolidated report docs preserve access restrictions and explicit bounded-row policy',
+  docs.includes('任意 SQL') === false && docs.includes('公司级') && docs.includes('10,000') && docs.includes('当前用户权限') && acceptance.includes('公司级') && acceptance.includes('XLSX'));
+check('current report specs define stable row identity/order, cell styles, project/company/party scopes and workspace entry points',
+  currentDocs.includes('同一条记录') && currentDocs.includes('稳定主键') && currentDocs.includes('公司级') && currentDocs.includes('往来单位') && currentDocs.includes('列宽') && currentAcceptance.includes('重复区域') && currentAcceptance.includes('项目驾驶舱') && currentDocs.includes('往来单位经营档案'));
+check('company template exposes project, downstream contracts, owner receipts/refunds, and downstream payment/refund regions',
+  reportData.includes("id: 'downstreamPayments'") &&
+  reportData.includes("id: 'companyDownstreamPayments'") &&
+  reportData.includes("id: 'companyDownstreamContracts'") &&
+  reportData.includes("id: 'companyOwnerReceipts'") &&
+  reportData.includes("txt('originalReceiptNo', '原始收款编号')") &&
+  reportData.includes('prisma.downstreamContractPayment.findMany') &&
+  defaultStudio.includes("id:'company-downstream-contracts'") &&
+  defaultStudio.includes("sourceId:'companyDownstreamContracts'") &&
+  defaultStudio.includes("const contractFields = ['projectCode','projectName','contractNo','name','type','counterpartyName','status','signedAt','originalAmount','effectiveAmount']") &&
+  defaultStudio.includes("sourceId:'companyOwnerReceipts'") &&
+  defaultStudio.includes("const ownerReceiptFields = ['projectCode','projectName','receiptNo','type','amount','receivedAt','referenceNo','originalReceiptNo']") &&
+  defaultStudio.includes("sourceId:'companyDownstreamPayments'") &&
+  defaultStudio.includes("cell:`${String.fromCharCode(65+c)}20`") &&
+  docs.includes('公司级业主收款/退款流水') &&
+  docs.includes('不得与应付台账或实际成本混算'));
 check('party template context is isolated by businessPartyId through an append-only migration',
   studioRoute.includes('REPORT_TEMPLATE_PARTY_MISMATCH') && studioRoute.includes('hasBusinessParty') && studioRoute.includes('businessPartyId') &&
   (await read('apps/api/prisma/schema.prisma')).includes('businessPartyId String?') && (await read('apps/api/prisma/migrations/20261015030000_party_report_template_context/migration.sql')).includes('FOREIGN KEY'));

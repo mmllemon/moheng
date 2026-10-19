@@ -17,7 +17,7 @@ const [routes, pocRoutes, jobHandler, runtime, eventService, queue, registry, sc
   read('apps/api/package.json').then(JSON.parse),
   read('apps/web/package.json').then(JSON.parse),
   read('apps/api/src/assistant/runtime/setup-checkpoint-schema.ts'),
-  read('docs/assistant-runtime-decision-v1.0.md'),
+  read('docs/AI助手实施与准入.md'),
 ]);
 let assertions = 0;
 const check = (condition, message) => { assert.ok(condition, message); assertions += 1; };

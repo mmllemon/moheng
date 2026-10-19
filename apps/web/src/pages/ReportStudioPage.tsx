@@ -11,11 +11,30 @@ import type { ReportStudioBinding, ReportStudioDefinition, ReportStudioDomain, R
 import UniverPresetSheetsCoreZhCN from '@univerjs/preset-sheets-core/locales/zh-CN';
 import '@univerjs/preset-sheets-core/lib/index.css';
 
-interface UniverRangeLike { setValue?: (value: unknown) => unknown }
+interface UniverRangeLike { setValue?: (value: unknown) => unknown; getValue?: () => unknown }
 interface UniverSheetLike { getSheetId?: () => string; getId?: () => string; getSelection?: () => { getActiveRange?: () => { getA1Notation?: () => string } }; getRange?: (address: string) => UniverRangeLike }
 interface UniverApiLike {
   createWorkbook: (data: unknown) => unknown;
-  getActiveWorkbook: () => { save: () => unknown; getActiveSheet?: () => UniverSheetLike | null; getActiveRange?: () => { getA1Notation?: () => string } | null } | null;
+  getActiveWorkbook: () => { save: () => unknown; getActiveSheet?: () => UniverSheetLike | null; getSheetBySheetId?: (sheetId: string) => UniverSheetLike | null; getActiveRange?: () => { getA1Notation?: () => string } | null } | null;
+}
+function getWorkbookSheet(api: UniverApiLike | undefined, sheetId: string): UniverSheetLike | null {
+  if (!api) return null;
+  const workbook = api.getActiveWorkbook();
+  const activeSheet = workbook?.getActiveSheet?.() ?? null;
+  const activeSheetId = activeSheet?.getSheetId?.() ?? activeSheet?.getId?.();
+  return workbook?.getSheetBySheetId?.(sheetId)
+    ?? (activeSheetId === sheetId ? activeSheet : null);
+}
+function clearBindingPlaceholder(api: UniverApiLike | undefined, binding: ReportStudioBinding) {
+  try {
+    const sheet = getWorkbookSheet(api, binding.sheetId);
+    const range = sheet?.getRange?.(binding.cell);
+    const expectedPlaceholder = `{{${binding.sourceId}.${binding.fieldId}}}`;
+    // Preserve any user-edited value; only clear the inert marker inserted by the binding action.
+    if (range?.getValue && range.getValue() === expectedPlaceholder) range.setValue?.('');
+  } catch {
+    // UI cleanup is best-effort; unavailable editor APIs must not block binding metadata changes.
+  }
 }
 interface UniverInstanceLike { dispose: () => void }
 interface StudioCatalogResult { domain: ReportStudioDomain; sources: ReportStudioSource[] }
@@ -294,17 +313,40 @@ export default function ReportStudioPage() {
 
   function addBinding() {
     try {
-      const address = selectedCell.trim().toUpperCase();
+      const address = selectedCell.trim().replace(/\$/g, '').toUpperCase();
       const coordinate = parseA1(address);
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       if (!selectedSource || !selectedField) throw new Error('请先选择有效的数据源和字段。');
+      const currentWorkbook = snapshotDefinition().workbook as {
+        sheets?: Record<string, { mergeData?: unknown }>;
+      };
+      const mergeData = currentWorkbook.sheets?.[sheetId]?.mergeData;
+      if (Array.isArray(mergeData)) {
+        const containingMerge = mergeData.find((entry) => {
+          if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return false;
+          const merge = entry as { startRow?: unknown; startColumn?: unknown; endRow?: unknown; endColumn?: unknown };
+          if (![merge.startRow, merge.startColumn, merge.endRow, merge.endColumn].every(Number.isInteger)) return false;
+          return coordinate.row >= (merge.startRow as number)
+            && coordinate.row <= (merge.endRow as number)
+            && coordinate.column >= (merge.startColumn as number)
+            && coordinate.column <= (merge.endColumn as number);
+        });
+        if (containingMerge) {
+          const merge = containingMerge as { startRow: number; startColumn: number };
+          if (coordinate.row !== merge.startRow || coordinate.column !== merge.startColumn) {
+            throw new Error(`合并单元格绑定必须指向合并区域左上角：${address}。`);
+          }
+        }
+      }
       if (selectedSource.cardinality === 'MANY') {
         const matchingRegion = definition.regions.some((region) => region.sheetId === sheetId && region.sourceId === sourceId && region.templateRow === coordinate.row && coordinate.column >= region.startColumn && coordinate.column <= region.endColumn);
         if (!matchingRegion) throw new Error('集合字段需要先创建重复区域：选中该明细样板行的整个列范围，点击“设置为自动延伸区域”，再绑定其中的单元格。');
+      } else if (definition.regions.some((region) => region.sheetId === sheetId && region.templateRow === coordinate.row)) {
+        throw new Error('单条记录字段不能放在重复区域样板行中，请先移除该行重复区域或选择其他行。');
       }
       const binding: ReportStudioBinding = { id: newId('binding'), sheetId, cell: address, sourceId, fieldId, format: selectedField.type === 'MONEY' ? 'MONEY' : selectedField.type === 'DATE' ? 'DATE' : selectedField.type === 'NUMBER' ? 'NUMBER' : 'AUTO' };
       const placeholder = `{{${selectedSource.id}.${selectedField.id}}}`;
-      const sheet = instanceRef.current?.api.getActiveWorkbook()?.getActiveSheet?.();
+      const sheet = getWorkbookSheet(instanceRef.current?.api, sheetId);
       // Keep the binding visible while editing; the renderer replaces this inert placeholder with real data.
       try { sheet?.getRange?.(address)?.setValue?.(placeholder); } catch { /* editor selection APIs can be unavailable until the first workbook activation */ }
       setDefinition((current) => ({ ...current, bindings: [...current.bindings.filter((item) => !(item.sheetId === sheetId && item.cell === address)), binding] }));
@@ -320,14 +362,37 @@ export default function ReportStudioPage() {
       if (start.column > end.column) throw new Error('选区起止列不正确。');
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       const region: ReportStudioRegion = { id: newId('region'), sheetId, sourceId, templateRow: start.row, startColumn: start.column, endColumn: end.column, maxRows: 10000 };
-      setDefinition((current) => ({ ...current, regions: [...current.regions.filter((item) => !(item.sheetId === sheetId && item.templateRow === start.row)), region] }));
+      const previousRegion = definition.regions.find((item) => item.sheetId === sheetId && item.templateRow === start.row);
+      const sourceCardinalityById = new Map(sources.map((item) => [item.id, item.cardinality] as const));
+      const bindingsToRemove = definition.bindings.filter((binding) => {
+        if (binding.sheetId !== sheetId) return false;
+        try {
+          const coordinate = parseA1(binding.cell);
+          if (coordinate.row !== start.row) return false;
+          // The validator forbids single-record bindings anywhere on a repeating row,
+          // even outside the selected region's columns.
+          if (sourceCardinalityById.get(binding.sourceId) === 'ONE') return true;
+          if (!previousRegion || binding.sourceId !== previousRegion.sourceId) return false;
+          if (coordinate.row !== previousRegion.templateRow || coordinate.column < previousRegion.startColumn || coordinate.column > previousRegion.endColumn) return false;
+          return binding.sourceId !== sourceId || coordinate.column < start.column || coordinate.column > end.column;
+        } catch { return false; }
+      });
+      bindingsToRemove.forEach((binding) => clearBindingPlaceholder(instanceRef.current?.api, binding));
+      const removedBindingIds = new Set(bindingsToRemove.map((binding) => binding.id));
+      setDefinition((current) => ({
+        ...current,
+        regions: [...current.regions.filter((item) => !(item.sheetId === sheetId && item.templateRow === start.row)), region],
+        bindings: current.bindings.filter((binding) => !removedBindingIds.has(binding.id)),
+      }));
       setNotice(`已将 ${selectedRange} 设置为 ${selectedSource.label} 的自动延伸行。请为样板行中的每个单元格绑定字段。`); setError('');
     } catch (cause) { setError(cause instanceof Error ? cause.message : '创建重复区域失败。'); }
   }
 
   function removeBinding() {
-    const address = selectedCell.trim().toUpperCase();
+    const address = selectedCell.trim().replace(/\$/g, '').toUpperCase();
     const sheetId = selectedSheetId || sheetIdFromDefinition;
+    const removed = definition.bindings.find((binding) => binding.sheetId === sheetId && binding.cell === address);
+    if (removed) clearBindingPlaceholder(instanceRef.current?.api, removed);
     setDefinition((current) => ({ ...current, bindings: current.bindings.filter((binding) => binding.sheetId !== sheetId || binding.cell !== address) }));
     setNotice(`已移除 ${address} 的字段绑定。`);
   }
@@ -338,7 +403,20 @@ export default function ReportStudioPage() {
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       const removed = definition.regions.find((region) => region.sheetId === sheetId && region.templateRow === start.row);
       if (!removed) throw new Error('当前行没有重复区域。');
-      setDefinition((current) => ({ ...current, regions: current.regions.filter((region) => region.id !== removed.id), bindings: current.bindings.filter((binding) => !(binding.sheetId === removed.sheetId && binding.sourceId === removed.sourceId && (() => { try { const c = parseA1(binding.cell); return c.row === removed.templateRow && c.column >= removed.startColumn && c.column <= removed.endColumn; } catch { return false; } })())) }));
+      const bindingsToRemove = definition.bindings.filter((binding) => {
+        if (binding.sheetId !== removed.sheetId || binding.sourceId !== removed.sourceId) return false;
+        try {
+          const coordinate = parseA1(binding.cell);
+          return coordinate.row === removed.templateRow && coordinate.column >= removed.startColumn && coordinate.column <= removed.endColumn;
+        } catch { return false; }
+      });
+      bindingsToRemove.forEach((binding) => clearBindingPlaceholder(instanceRef.current?.api, binding));
+      const removedBindingIds = new Set(bindingsToRemove.map((binding) => binding.id));
+      setDefinition((current) => ({
+        ...current,
+        regions: current.regions.filter((region) => region.id !== removed.id),
+        bindings: current.bindings.filter((binding) => !removedBindingIds.has(binding.id)),
+      }));
       setNotice(`已移除重复区域 ${removed.id}，并清除区域内的绑定。`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : '移除重复区域失败。'); }
   }

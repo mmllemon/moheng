@@ -35,11 +35,12 @@ const systemManagementPage = await read('apps/web/src/pages/SystemManagementPage
 const budgetPage = await read('apps/web/src/pages/BudgetPage.tsx');
 const styles = await read('apps/web/src/styles.css');
 const userManual = await read('docs/用户操作手册.md');
-const devGuide = await read('docs/开发维护指南.md');
-const plan = await read('docs/WP2-WP8实施计划与状态-v2.0.0-rc.1.md');
-const acceptance = await read('docs/阶段验收记录-v2.0.0-rc.1.md');
+const devGuide = await read('docs/开发与部署指南.md');
+const plan = await read('docs/后续四阶段开发路线图.md');
+const acceptance = await read('docs/发布与迁移验收.md');
+const architectureRules = await read('docs/架构与核心业务规则.md');
 const windowsGate = await read('scripts/windows/verify-release-candidate.ps1');
-const e2eChecklist = await read('docs/WP8-Windows与浏览器端到端验收清单-v2.0.0-rc.1.md');
+const e2eChecklist = await read('docs/开发与部署指南.md');
 
 check('package and API versions agree on the current candidate while retaining Node.js 24+ gate',
   apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
@@ -51,8 +52,14 @@ check('release command combines original regression contracts, new WP checks and
 check('eight standard CSV report types are declared and routed behind authenticated API',
   ['target-cost','actual-cost','progress-bills','changes','owner-receivables','owner-receipts','downstream-contracts','downstream-payables'].every((key) => reportData.includes(`'${key}'`)) &&
   reportRoute.includes('preHandler: authRequired') && moduleRegistry.includes("mountPrefix: '/api/reports'"));
-check('report export filters project IDs on the server and rejects inaccessible explicit project scope',
-  reportData.includes("members: { some: { userId: user.sub } }") && reportData.includes('availableIds.includes(filters.projectId)') && reportData.includes('PROJECT_ACCESS_DENIED'));
+check('standard report exports enforce project scope through relational filters without expanding every project ID',
+  reportData.includes("members: { some: { userId: user.sub } }") &&
+  reportData.includes("const selectedProjectScope = { ...projectScope, ...(filters.projectId ? { id: filters.projectId } : {}) }") &&
+  reportData.includes("const projectFilter = { project: selectedProjectScope }") &&
+  reportData.includes("downstreamContract: { project: selectedProjectScope, deletedAt: null }") &&
+  !reportData.includes('const projectIds = filters.projectId ? [filters.projectId] : availableIds') &&
+  !reportData.includes('projectId: { in: projectIds }') &&
+  reportData.includes('PROJECT_ACCESS_DENIED'));
 check('CSV export applies BOM, quoting, formula neutralization and unit test coverage',
   csv.includes('\\uFEFF') && csv.includes('replace(/"/g,') && csv.includes("text = `'${text}`") &&
   csvTests.includes('formula cells') && csvTests.includes('quotes'));
@@ -87,29 +94,28 @@ check('report and notification centers are routable, searchable in command palet
 check('budget drafts are browser-local only and do not save until explicit form submission',
   budgetPage.includes('moheng:budget-draft:') && budgetPage.includes('localStorage.setItem(draftKey') &&
   budgetPage.includes('点击“保存条目”后才会写入正式台账') && budgetPage.includes('await api.post(`/projects/${projectId}/budget/items`'));
-check('source schemas and database migrations remain intentionally unchanged by this work package',
-  plan.includes('本轮不修改 Prisma Schema / migration') && acceptance.includes('未修改 Prisma Schema、数据库迁移') &&
+check('current architecture defines safe additive migrations and avoids unnecessary service dependencies',
+  architectureRules.includes('历史迁移文件不重写') && architectureRules.includes('向前补丁') &&
   !moduleRegistry.includes('reportJobRoutes') && !moduleRegistry.includes('offlineSyncRoutes'));
 check('reduced-motion and responsive rules cover new report, notification, and member views',
   styles.includes('.report-center-page') && styles.includes('.notifications-page') && styles.includes('.project-members-page') &&
   styles.includes(':root[data-motion="reduced"]') && styles.includes('@media (max-width: 760px)'));
-check('WP8 checklist includes runtime/build, Prisma/database, browser, Windows and restore gates',
+check('current delivery roadmap includes runtime/build, Prisma/database, browser, Windows and restore gates',
   plan.includes('Node.js 24+') && plan.includes('Prisma') && plan.includes('浏览器 E2E') &&
-  plan.includes('Windows 原生') && plan.includes('备份恢复') && acceptance.includes('WP8 阻塞说明'));
-check('Windows WP8 script enforces Node 24+, reproducible dependency installation, build/test/Prisma gates and opt-in migrations',
+  plan.includes('Windows 原生') && plan.includes('备份恢复') && acceptance.includes('仍未关闭的发布阻断项'));
+check('Windows release script enforces Node 24+, reproducible dependency installation, build/test/Prisma gates and opt-in migrations',
   windowsGate.includes('Node.js 24') && windowsGate.includes('npm.cmd') && windowsGate.includes("'ci'") &&
   windowsGate.includes("'validate'") && windowsGate.includes("'db:generate'") && windowsGate.includes("'lint'") &&
   windowsGate.includes("'test'") && windowsGate.includes("'build'") && windowsGate.includes('$ApplyDatabaseMigrations') &&
   windowsGate.includes('HealthUrl'));
 
-check('WP8 manual E2E checklist covers import, project authorization, finance reversals, alerts, backups and Windows ACL',
-  e2eChecklist.includes('八种 CSV 报表') && e2eChecklist.includes('最后一名 OWNER') &&
-  e2eChecklist.includes('退款冲销') && e2eChecklist.includes('公式样本') &&
-  e2eChecklist.includes('备份恢复') && e2eChecklist.includes('NTFS ACL') && e2eChecklist.includes('Gate 签署'));
+check('current deployment guide preserves database safety, backup recovery and Windows ACL requirements',
+  e2eChecklist.includes('备份与恢复') && e2eChecklist.includes('NTFS ACL') &&
+  e2eChecklist.includes('Node.js') && e2eChecklist.includes('隔离'));
 
-check('user and developer documentation clearly distinguish CSV, drafts, alerts and incomplete release gates',
-  userManual.includes('报表中心') && userManual.includes('本地草稿') && userManual.includes('待办与预警') &&
-  devGuide.includes('v2.0.0-rc.1') && devGuide.includes('CSV') && devGuide.includes('Node.js 24+'));
+check('consolidated user and developer documentation describe report scope and current runtime',
+  userManual.includes('报表中心') && userManual.includes('外部确认金额') && userManual.includes('AI 助手') &&
+  devGuide.includes('db:deploy') && devGuide.includes('CSV') && devGuide.includes('Node.js'));
 
 console.log(`\n${passed}/${passed + failures.length} WP2–WP8 source contracts passed.`);
 if (failures.length) process.exitCode = 1;

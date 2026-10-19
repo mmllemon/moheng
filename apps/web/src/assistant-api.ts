@@ -4,7 +4,15 @@ import { useAuthStore } from './auth-store';
 
 const ROOT = '/assistant-poc';
 
-export type AssistantStatus = { enabled: boolean };
+export type AssistantStatus = {
+  enabled: boolean;
+  configurationReady: boolean;
+  configuration: {
+    providerConfigured: boolean;
+    modelConfigured: boolean;
+    checkpointConfigured: boolean;
+  };
+};
 export type AssistantConversationSummary = {
   id: string;
   projectId: string;

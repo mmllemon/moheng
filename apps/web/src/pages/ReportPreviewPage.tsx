@@ -8,6 +8,8 @@ import { useUiStore } from '../auth-store';
 import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 import type { ReportPreview } from '../report-template-types';
 import type { ReportStudioPreview, ReportStudioTemplate } from '../report-studio-types';
+import { roundFixedDecimal, formatIsoDateWithExcelPattern } from '../report-preview-format';
+import { classifyReportExportJob } from '../report-export-job.js';
 
 function colorValue(input: unknown): string | undefined {
   if (typeof input !== 'string') {
@@ -97,25 +99,21 @@ function displayValue(value: unknown, format?: string | null, rawStyle?: Record<
       const decimals = numericPattern.includes('.') ? (numericPattern.split('.')[1]?.split(';')[0]?.match(/[0#]+/)?.[0].length ?? 0) : 0;
       if (typeof value === 'number' && Number.isFinite(value)) return value.toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
       if (typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value)) {
-        const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value)!;
-        let whole = match[2]!;
-        let fraction = match[3] ?? '';
-        if (decimals < fraction.length) {
-          const roundingDigit = Number(fraction[decimals] ?? '0');
-          const scale = 10n ** BigInt(decimals);
-          const cents = BigInt(whole) * 100n + BigInt((fraction + '00').slice(0, 2));
-          const rounded = decimals === 0 ? (cents + (roundingDigit >= 5 ? 50n : 0n)) / 100n : (cents + (roundingDigit >= 5 ? 10n ** BigInt(2 - decimals) / 2n : 0n)) / (10n ** BigInt(2 - decimals));
-          whole = (rounded / scale).toString();
-          fraction = scale > 1n ? (rounded % scale).toString().padStart(decimals, '0') : '';
-        } else fraction = fraction.padEnd(decimals, '0');
-        return groupFixedDecimal(`${match[1]}${whole}${decimals ? `.${fraction.slice(0, decimals)}` : ''}`);
+        const rounded = roundFixedDecimal(value, decimals);
+        if (rounded !== null) return groupFixedDecimal(rounded);
       }
     }
   }
   if (format === 'MONEY' && typeof value === 'number') return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (format === 'MONEY' && typeof value === 'string') return groupFixedDecimal(value);
   if (format === 'NUMBER' && typeof value === 'number') return value.toLocaleString('zh-CN', { maximumFractionDigits: 3 });
-  if (format === 'DATE' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (format === 'DATE' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    if (typeof pattern === 'string' && pattern !== 'General' && pattern !== '@') {
+      const formatted = formatIsoDateWithExcelPattern(value, pattern);
+      if (formatted !== null) return formatted;
+    }
+    return value;
+  }
   if (typeof value === 'boolean') return value ? '是' : '否';
   return String(value);
 }
@@ -179,11 +177,24 @@ export default function ReportPreviewPage() {
   const missingProjectScope = isStudio && domain === 'PROJECT' && !projectId;
   const missingPartyScope = isStudio && domain === 'PARTY' && !partyId;
 
-  async function downloadJob(fileJobId: string) {
+  async function downloadJob(fileJobId: string): Promise<boolean> {
+    setError('');
     try {
-      const job = await api.get<{ id: string; status: string; resultAvailable: boolean; downloadUrl: string | null; result: { suggestedFileName?: string } | null }>(`/reports/jobs/${fileJobId}`);
-      if (job.status !== 'SUCCEEDED' || !job.resultAvailable || !job.downloadUrl) {
-        setNotice(`任务状态：${job.status}。任务编号：${fileJobId}`); return;
+      const job = await api.get<{ id: string; status: string; resultAvailable: boolean; downloadUrl: string | null; error?: string | null; result: { suggestedFileName?: string } | null }>(`/reports/jobs/${fileJobId}`);
+      const disposition = classifyReportExportJob(job);
+      if (disposition === 'failed') {
+        setError(job.error ?? `报表生成失败，任务编号 ${fileJobId}。请重新提交导出或联系管理员。`);
+        setNotice(`任务状态：${job.status}。任务编号：${fileJobId}`);
+        return false;
+      }
+      if (disposition === 'completed-unavailable') {
+        setError('报表任务已完成，但导出文件不可用或已过期。请重新提交导出任务。');
+        setNotice(`任务已结束但没有可下载文件。任务编号：${fileJobId}`);
+        return false;
+      }
+      if (disposition === 'pending') {
+        setNotice(`任务状态：${job.status}。任务编号：${fileJobId}`);
+        return false;
       }
       const blob = await api.download(`/reports/jobs/${fileJobId}/download`);
       const url = URL.createObjectURL(blob);
@@ -191,7 +202,11 @@ export default function ReportPreviewPage() {
       anchor.download = job.result?.suggestedFileName ?? `墨衡-报表-${fileJobId}.xlsx`;
       document.body.appendChild(anchor); anchor.click(); anchor.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1200);
       setNotice('文件已生成，下载已开始。');
-    } catch (cause) { setError(cause instanceof Error ? cause.message : '查询报表任务失败。'); }
+      return true;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '查询报表任务失败。');
+      return false;
+    }
   }
 
   async function exportXlsx() {
@@ -202,13 +217,25 @@ export default function ReportPreviewPage() {
         : await api.post<{ id: string }>(`/reports/${encodeURIComponent(reportKey)}.xlsx/jobs`, { projectId: projectId || undefined, from: from || undefined, to: to || undefined, templateId: templateId || undefined }, { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `report-${Date.now()}` });
       setJobId(submitted.id); setNotice(`已提交后台生成任务：${submitted.id}。页面会等待短时间，完成后自动下载；你也可以稍后查询任务。`);
       let downloaded = false;
+      let terminalWithoutDownload = false;
       for (let attempt = 0; attempt < 90; attempt += 1) {
         await new Promise<void>((resolve) => window.setTimeout(resolve, 1000));
-        const job = await api.get<{ status: string; resultAvailable: boolean; downloadUrl: string | null }>(`/reports/jobs/${submitted.id}`);
-        if (job.status === 'FAILED' || job.status === 'CANCELLED') throw new Error(`报表生成失败，任务编号 ${submitted.id}`);
-        if (job.status === 'SUCCEEDED' && job.resultAvailable && job.downloadUrl) { await downloadJob(submitted.id); downloaded = true; break; }
+        const job = await api.get<{ status: string; resultAvailable: boolean; downloadUrl: string | null; error?: string | null }>(`/reports/jobs/${submitted.id}`);
+        const disposition = classifyReportExportJob(job);
+        if (disposition === 'failed') throw new Error(job.error ?? `报表生成失败，任务编号 ${submitted.id}`);
+        if (disposition === 'completed-unavailable') {
+          setError('报表任务已完成，但导出文件不可用或已过期。请重新提交导出任务。');
+          setNotice(`任务已结束但没有可下载文件。任务编号：${submitted.id}`);
+          terminalWithoutDownload = true;
+          break;
+        }
+        if (disposition === 'downloadable') {
+          downloaded = await downloadJob(submitted.id);
+          terminalWithoutDownload = !downloaded;
+          break;
+        }
       }
-      if (!downloaded) setNotice(`报表仍在后台处理。任务编号：${submitted.id}，可稍后查询或下载。`);
+      if (!downloaded && !terminalWithoutDownload) setNotice(`报表仍在后台处理。任务编号：${submitted.id}，可稍后查询或下载。`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : '提交报表导出失败。'); }
     finally { setExportBusy(false); }
   }

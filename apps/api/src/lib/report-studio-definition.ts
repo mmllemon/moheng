@@ -99,6 +99,9 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
   if (!Array.isArray(workbook.sheetOrder) || !workbook.sheetOrder.length || workbook.sheetOrder.length > 8) {
     return { success: false, message: '工作簿必须包含 1–8 张工作表' };
   }
+  if (workbook.sheetOrder.some((sheetId) => typeof sheetId !== 'string' || !sheetId.trim())) {
+    return { success: false, message: '工作表目录包含无效的工作表 ID' };
+  }
   if (!workbook.sheets || typeof workbook.sheets !== 'object' || Array.isArray(workbook.sheets)) {
     return { success: false, message: '工作表结构无效' };
   }
@@ -108,19 +111,51 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
     if (seenSheetIds.has(sheetId) || !Object.hasOwn(workbook.sheets, sheetId)) return { success: false, message: '工作表目录存在重复或丢失的工作表' };
     seenSheetIds.add(sheetId);
     const sheet = workbook.sheets[sheetId];
-    if (!sheet || typeof sheet !== 'object') return { success: false, message: '工作表定义无效' };
+    if (!sheet || typeof sheet !== 'object' || Array.isArray(sheet)) return { success: false, message: '工作表定义无效' };
+    if (sheet.cellData != null && (typeof sheet.cellData !== 'object' || Array.isArray(sheet.cellData))) {
+      return { success: false, message: '单元格数据结构无效' };
+    }
     const rowCount = Number(sheet.rowCount ?? 200);
     const columnCount = Number(sheet.columnCount ?? 20);
     if (!Number.isInteger(rowCount) || rowCount < 1 || rowCount > 400 || !Number.isInteger(columnCount) || columnCount < 1 || columnCount > 40) {
       return { success: false, message: '每张工作表最多 400 行、40 列' };
     }
-    if (sheet.mergeData && (!Array.isArray(sheet.mergeData) || sheet.mergeData.length > 200)) return { success: false, message: '每张工作表最多 200 个合并区域' };
+    if (sheet.rowData != null && (typeof sheet.rowData !== 'object' || Array.isArray(sheet.rowData))) {
+      return { success: false, message: '行高数据结构无效' };
+    }
+    for (const [rowKey, rowData] of Object.entries(sheet.rowData ?? {})) {
+      if (!/^(0|[1-9]\d*)$/.test(rowKey)) return { success: false, message: '行高坐标格式无效' };
+      const row = Number(rowKey);
+      if (!Number.isInteger(row) || row < 0 || row >= rowCount || !rowData || typeof rowData !== 'object' || Array.isArray(rowData)) {
+        return { success: false, message: '行高坐标超出工作表范围或定义无效' };
+      }
+      if (Object.hasOwn(rowData, 'h') && (typeof rowData.h !== 'number' || !Number.isFinite(rowData.h))) {
+        return { success: false, message: '行高必须是有限数字' };
+      }
+    }
+    if (sheet.columnData != null && (typeof sheet.columnData !== 'object' || Array.isArray(sheet.columnData))) {
+      return { success: false, message: '列宽数据结构无效' };
+    }
+    for (const [columnKey, columnData] of Object.entries(sheet.columnData ?? {})) {
+      if (!/^(0|[1-9]\d*)$/.test(columnKey)) return { success: false, message: '列宽坐标格式无效' };
+      const column = Number(columnKey);
+      if (!Number.isInteger(column) || column < 0 || column >= columnCount || !columnData || typeof columnData !== 'object' || Array.isArray(columnData)) {
+        return { success: false, message: '列宽坐标超出工作表范围或定义无效' };
+      }
+      if (Object.hasOwn(columnData, 'w') && (typeof columnData.w !== 'number' || !Number.isFinite(columnData.w))) {
+        return { success: false, message: '列宽必须是有限数字' };
+      }
+    }
+    if (sheet.mergeData != null && !Array.isArray(sheet.mergeData)) return { success: false, message: '合并区域列表结构无效' };
+    if (Array.isArray(sheet.mergeData) && sheet.mergeData.length > 200) return { success: false, message: '每张工作表最多 200 个合并区域' };
     for (const [rowKey, cells] of Object.entries(sheet.cellData ?? {})) {
       const row = Number(rowKey);
-      if (!Number.isInteger(row) || row < 0 || row >= rowCount || !cells || typeof cells !== 'object') return { success: false, message: '单元格行坐标超出范围' };
+      if (!/^(0|[1-9]\d*)$/.test(rowKey)) return { success: false, message: '单元格行坐标格式无效' };
+      if (!Number.isInteger(row) || row < 0 || row >= rowCount || !cells || typeof cells !== 'object' || Array.isArray(cells)) return { success: false, message: '单元格行坐标超出范围' };
       for (const [colKey, cell] of Object.entries(cells)) {
         const column = Number(colKey);
-        if (!Number.isInteger(column) || column < 0 || column >= columnCount || !cell || typeof cell !== 'object') return { success: false, message: '单元格列坐标超出范围' };
+        if (!/^(0|[1-9]\d*)$/.test(colKey)) return { success: false, message: '单元格列坐标格式无效' };
+        if (!Number.isInteger(column) || column < 0 || column >= columnCount || !cell || typeof cell !== 'object' || Array.isArray(cell)) return { success: false, message: '单元格列坐标超出范围' };
         cellCount += 1;
         if (cellCount > 8000) return { success: false, message: '整个工作簿最多保存 8,000 个非空单元格' };
         if (Object.hasOwn(cell, 'f') && cell.f != null && cell.f !== '') return { success: false, message: '第一阶段不允许保存公式，请使用受控业务指标绑定' };
@@ -132,11 +167,35 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
         }
       }
     }
+    const validatedMerges: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> = [];
     for (const merge of sheet.mergeData ?? []) {
+      if (!merge || typeof merge !== 'object' || Array.isArray(merge)) {
+        return { success: false, message: '合并区域定义无效' };
+      }
       if (![merge.startRow, merge.startColumn, merge.endRow, merge.endColumn].every(Number.isInteger) || merge.startRow < 0 || merge.startColumn < 0 || merge.endRow < merge.startRow || merge.endColumn < merge.startColumn || merge.endRow >= rowCount || merge.endColumn >= columnCount) {
         return { success: false, message: '合并区域坐标超出工作表范围' };
       }
+      const overlaps = validatedMerges.some((existing) =>
+        merge.startRow <= existing.endRow
+        && merge.endRow >= existing.startRow
+        && merge.startColumn <= existing.endColumn
+        && merge.endColumn >= existing.startColumn
+      );
+      if (overlaps) return { success: false, message: '合并区域不能重叠' };
+      for (let row = merge.startRow; row <= merge.endRow; row += 1) {
+        for (let column = merge.startColumn; column <= merge.endColumn; column += 1) {
+          if (row === merge.startRow && column === merge.startColumn) continue;
+          const coveredCell = sheet.cellData?.[String(row)]?.[String(column)];
+          if (coveredCell && Object.hasOwn(coveredCell, 'v') && coveredCell.v !== null && coveredCell.v !== '') {
+            return { success: false, message: '合并区域非左上角单元格不能包含静态值' };
+          }
+        }
+      }
+      validatedMerges.push(merge);
     }
+  }
+  if (seenSheetIds.size !== Object.keys(workbook.sheets).length) {
+    return { success: false, message: '工作表目录与工作表定义不一致' };
   }
   return { success: true, workbook };
 }
@@ -156,6 +215,15 @@ export function validateReportStudioDefinition(input: unknown): ReportStudioVali
     let coordinate: { row: number; column: number };
     try { coordinate = parseA1(binding.cell); } catch { return { success: false, message: `单元格地址无效：${binding.cell}` }; }
     if (coordinate.row >= Number(sheet.rowCount ?? 200) || coordinate.column >= Number(sheet.columnCount ?? 20)) return { success: false, message: `绑定单元格 ${binding.cell} 超出工作表范围` };
+    const containingMerge = (sheet.mergeData ?? []).find((merge) =>
+      coordinate.row >= merge.startRow
+      && coordinate.row <= merge.endRow
+      && coordinate.column >= merge.startColumn
+      && coordinate.column <= merge.endColumn
+    );
+    if (containingMerge && (coordinate.row !== containingMerge.startRow || coordinate.column !== containingMerge.startColumn)) {
+      return { success: false, message: `合并单元格绑定必须指向合并区域左上角：${binding.cell}` };
+    }
     const key = `${binding.sheetId}:${binding.cell}`;
     if (bindingKeys.has(key)) return { success: false, message: `单元格 ${binding.cell} 存在重复绑定` };
     bindingKeys.add(key);

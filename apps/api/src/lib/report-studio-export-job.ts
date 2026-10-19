@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { loadReportStudioDataset } from './report-studio-data.js';
 import { domainFromStudioReportKey, studioReportKey, validateReportStudioDefinition } from './report-studio-definition.js';
 import { buildReportStudioWorkbook } from './report-studio-xlsx.js';
+import { ReportStudioRenderLimitError } from './report-studio-render.js';
 
 const payloadSchema = z.object({
   templateId: z.string().min(1),
@@ -64,7 +65,13 @@ export const reportStudioXlsxExportJobHandler: BackgroundJobHandler = async (job
   const validated = validateReportStudioDefinition(payload.templateDefinition);
   if (!validated.success || validated.data.domain !== payload.domain) throw new PermanentBackgroundJobError('REPORT_STUDIO_TEMPLATE_INVALID');
   const dataset = await loadReportStudioDataset(authUser, payload.domain, payload.projectId, payload.businessPartyId);
-  const buffer = await buildReportStudioWorkbook({ definition: validated.data, dataset, templateName: template.name, templateVersion: payload.templateVersion });
+  let buffer: Buffer;
+  try {
+    buffer = await buildReportStudioWorkbook({ definition: validated.data, dataset, templateName: template.name, templateVersion: payload.templateVersion });
+  } catch (error) {
+    if (error instanceof ReportStudioRenderLimitError) throw new PermanentBackgroundJobError(error.code);
+    throw error;
+  }
   const fileName = `${job.id}-${job.attempts}.xlsx`;
   await mkdir(backgroundJobStorageRoot(), { recursive: true });
   await writeFile(backgroundJobArtifactPath(fileName), buffer);

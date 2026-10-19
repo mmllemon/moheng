@@ -21,7 +21,9 @@ type PartyTransaction = Prisma.TransactionClient;
 export async function lockBusinessPartyName(tx: PartyTransaction, normalizedName: string) {
   // Lightweight mocks in pure unit tests need not implement raw SQL.
   if (typeof tx.$queryRaw === 'function') {
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(147384, hashtext(${normalizedName}))`;
+    // Explicitly cast PostgreSQL's void return to text: Prisma 7's PostgreSQL
+    // adapter cannot deserialize a selected "void" result (P2010).
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(147384, hashtext(${normalizedName}))::text AS locked`;
   }
 }
 

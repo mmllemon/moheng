@@ -32,6 +32,16 @@ export interface ReportStudioRenderResult {
 const MAX_RENDERED_ROWS_PER_SHEET = 10000;
 const MAX_RENDERED_CELLS = 1_000_000;
 
+export class ReportStudioRenderLimitError extends Error {
+  readonly statusCode = 422;
+  readonly code = 'REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED';
+
+  constructor() {
+    super('当前报表超过单次渲染的 1,000,000 个单元格上限。请减少工作表数量、列数或明细范围后重试。');
+    this.name = 'ReportStudioRenderLimitError';
+  }
+}
+
 function parseCell(cell: string): { row: number; column: number } {
   const match = /^([A-Z]{1,3})([1-9]\d{0,3})$/.exec(cell);
   if (!match) throw new Error(`REPORT_STUDIO_CELL_INVALID:${cell}`);
@@ -85,9 +95,27 @@ function formatValue(value: unknown, format: string | undefined): unknown {
 /** Pure deterministic renderer shared by the preview and XLSX adapters. */
 export function renderReportStudio(definition: ReportStudioDefinition, dataset: ReportStudioDataset): ReportStudioRenderResult {
   const workbook = definition.workbook as unknown as StudioWorkbookData;
-  const warnings = [...dataset.warnings];
+  const usedSourceIds = new Set([
+    ...definition.bindings.map((binding) => binding.sourceId),
+    ...definition.regions.map((region) => region.sourceId),
+  ]);
+  const usedBindingKeys = new Set(definition.bindings.map((binding) => `${binding.sourceId}:${binding.fieldId}`));
+  const truncationNotices = dataset.truncationNotices ?? [];
+  const knownTruncationMessages = new Set(truncationNotices.map((notice) => notice.message));
+  const noticeIsRelevant = (notice: (typeof truncationNotices)[number]) =>
+    notice.sourceIds.some((sourceId) => usedSourceIds.has(sourceId))
+    || (notice.fields ?? []).some(({ sourceId, fieldIds }) => fieldIds.some((fieldId) => usedBindingKeys.has(`${sourceId}:${fieldId}`)));
+  const warnings = [
+    ...dataset.warnings.filter((warning) => !knownTruncationMessages.has(warning)),
+    ...truncationNotices.filter(noticeIsRelevant).map((notice) => notice.message),
+  ];
   const renderedSheets: ReportStudioRenderedSheet[] = [];
-  let allTruncated = dataset.truncated === true;
+  const truncatedSourceIds = new Set(dataset.truncatedSources ?? []);
+  const truncatedFieldKeys = new Set((dataset.truncatedFields ?? []).flatMap(({ sourceId, fieldIds }) => fieldIds.map((fieldId) => `${sourceId}:${fieldId}`)));
+  // Prefer source/field-scoped truncation when the loader identifies affected outputs.
+  // Keep the legacy global fallback for older datasets without a usable dependency map.
+  const hasScopedTruncation = dataset.truncated === true && (truncatedSourceIds.size > 0 || truncatedFieldKeys.size > 0);
+  let allTruncated = dataset.truncated === true && !hasScopedTruncation;
   let totalRenderedCells = 0;
   for (const sheetId of workbook.sheetOrder) {
     const sourceSheet = workbook.sheets[sheetId];
@@ -97,14 +125,38 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       const coordinate = parseCell(binding.cell);
       return [`${coordinate.row}:${coordinate.column}`, binding] as const;
     }));
+    const bindingColumnsByRow = new Map<number, string[]>();
+    for (const binding of sheetBindings) {
+      const coordinate = parseCell(binding.cell);
+      const columns = bindingColumnsByRow.get(coordinate.row) ?? [];
+      columns.push(String(coordinate.column));
+      bindingColumnsByRow.set(coordinate.row, columns);
+    }
     const sheetRegions = definition.regions.filter((region) => region.sheetId === sheetId).sort((a, b) => a.templateRow - b.templateRow);
     const regionByRow = new Map(sheetRegions.map((region) => [region.templateRow, region] as const));
     const sourceRows = sourceSheet.cellData ?? {};
+    const declaredColumnCount = Number(sourceSheet.columnCount ?? 40);
+    const renderColumnLimit = Number.isFinite(declaredColumnCount) && declaredColumnCount > 0
+      ? Math.min(40, Math.floor(declaredColumnCount))
+      : 40;
     const rowKeys = Object.keys(sourceRows).map(Number).filter(Number.isInteger);
-    const rowStyleKeys = Object.keys(sourceSheet.rowData ?? {}).map(Number).filter(Number.isInteger);
+    // Defend the preview/export layer even if a malformed internal workbook bypasses the API validator.
+    const rowStyleKeys = Object.keys(sourceSheet.rowData ?? {})
+      .filter((key) => /^(0|[1-9]\d*)$/.test(key))
+      .map(Number)
+      .filter((row) => Number.isInteger(row) && row >= 0 && row < MAX_RENDERED_ROWS_PER_SHEET);
     const mergeEndRow = Math.max(-1, ...(sourceSheet.mergeData ?? []).map((merge) => merge.endRow));
     const regionMaxRow = Math.max(-1, ...sheetRegions.map((region) => region.templateRow));
-    const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow);
+    const bindingMaxRow = Math.max(-1, ...sheetBindings.map((binding) => parseCell(binding.cell).row));
+    const lastSourceRow = Math.max(-1, ...rowKeys, ...rowStyleKeys, mergeEndRow, regionMaxRow, bindingMaxRow);
+    let sheetTruncated = dataset.truncated === true && !hasScopedTruncation;
+    if (hasScopedTruncation) {
+      // A capped collection affects any binding/region that consumes it; a partial summary
+      // affects only cells whose specific source field depends on the capped collection.
+      sheetTruncated = sheetBindings.some((binding) => truncatedSourceIds.has(binding.sourceId) || truncatedFieldKeys.has(`${binding.sourceId}:${binding.fieldId}`))
+        || sheetRegions.some((region) => truncatedSourceIds.has(region.sourceId));
+    }
+    if (sheetTruncated) allTruncated = true;
     const regionExpansions = new Map<number, unknown[]>();
     for (const region of sheetRegions) {
       const collection = dataset.sources[region.sourceId];
@@ -112,29 +164,41 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       if (records.length > region.maxRows) {
         warnings.push(`工作表“${sourceSheet.name ?? sheetId}”的区域 ${region.id} 超出 ${region.maxRows} 行上限，已截断。`);
         allTruncated = true;
+        sheetTruncated = true;
       }
       regionExpansions.set(region.templateRow, records.slice(0, region.maxRows));
     }
 
-    const rowOutputStart = new Map<number, number>();
+    const outputRowsBySourceRow = new Map<number, number[]>();
     const renderedRows: ReportStudioRenderedCell[][] = [];
     const rowHeights: Record<number, number> = {};
     let outputIndex = 0;
     for (let sourceRow = 0; sourceRow <= lastSourceRow; sourceRow += 1) {
-      if (outputIndex >= MAX_RENDERED_ROWS_PER_SHEET) { allTruncated = true; break; }
-      rowOutputStart.set(sourceRow, outputIndex);
+      if (outputIndex >= MAX_RENDERED_ROWS_PER_SHEET) {
+        allTruncated = true;
+        sheetTruncated = true;
+        warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行渲染上限，后续行已省略。`);
+        break;
+      }
+      outputRowsBySourceRow.set(sourceRow, []);
       const rowCells = sourceRows[String(sourceRow)] ?? {};
       const rowStyles = sourceSheet.rowData?.[String(sourceRow)];
       const region = regionByRow.get(sourceRow);
       const regionRecords = region ? regionExpansions.get(sourceRow) ?? [] : null;
       const repetitions = region ? Math.max(regionRecords?.length ?? 0, 1) : 1;
       const allowedRepetitions = Math.min(repetitions, MAX_RENDERED_ROWS_PER_SHEET - outputIndex);
-      if (region && repetitions > allowedRepetitions) { allTruncated = true; warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行上限。`); }
+      if (region && repetitions > allowedRepetitions) { allTruncated = true; sheetTruncated = true; warnings.push(`工作表“${sourceSheet.name ?? sheetId}”已达到 ${MAX_RENDERED_ROWS_PER_SHEET} 行上限。`); }
       for (let repeat = 0; repeat < allowedRepetitions; repeat += 1) {
+        outputRowsBySourceRow.get(sourceRow)!.push(outputIndex);
         const outputRow: ReportStudioRenderedCell[] = [];
-        for (const [columnKey, rawCell] of Object.entries(rowCells)) {
+        // A binding is authoritative even if the spreadsheet adapter omitted an otherwise-empty cell from cellData.
+        // Render the union so a valid binding never silently disappears from preview/export.
+        const boundColumns = bindingColumnsByRow.get(sourceRow) ?? [];
+        const columnsToRender = new Set([...Object.keys(rowCells), ...boundColumns]);
+        for (const columnKey of columnsToRender) {
           const column = Number(columnKey);
-          if (!Number.isInteger(column) || column < 0 || column >= Number(sourceSheet.columnCount ?? 40)) continue;
+          if (!Number.isInteger(column) || column < 0 || column >= renderColumnLimit) continue;
+          const rawCell = rowCells[columnKey] ?? {};
           const binding = bindingByCoordinate.get(`${sourceRow}:${column}`);
           let value = primitive((rawCell as StudioCellData).v);
           let format: string | undefined;
@@ -148,6 +212,8 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
           while (outputRow.length <= column) outputRow.push({ value: null });
           outputRow[column] = { value: formatValue(value, format), style: workbookStyle(workbook, rawCell as StudioCellData), ...(format ? { format } : {}) };
         }
+        if (totalRenderedCells + outputRow.length > MAX_RENDERED_CELLS) throw new ReportStudioRenderLimitError();
+        totalRenderedCells += outputRow.length;
         renderedRows.push(outputRow);
         if (typeof rowStyles?.h === 'number' && Number.isFinite(rowStyles.h)) rowHeights[outputIndex] = Math.min(400, Math.max(8, rowStyles.h));
         outputIndex += 1;
@@ -155,28 +221,42 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     }
     const merges: ReportStudioRenderedMerge[] = [];
     for (const merge of sourceSheet.mergeData ?? []) {
-      let shift = 0;
-      for (const region of sheetRegions) {
-        if (region.templateRow < merge.startRow) {
-          const count = (regionExpansions.get(region.templateRow)?.length ?? 0);
-          shift += Math.max(count, 1) - 1;
+      // A horizontal merge on a repeated template row must be reproduced once per rendered
+      // record. Stretching its end row would merge adjacent records together and hide cells.
+      if (merge.startRow === merge.endRow && regionByRow.has(merge.startRow)) {
+        for (const outputRow of outputRowsBySourceRow.get(merge.startRow) ?? []) {
+          if (outputRow < MAX_RENDERED_ROWS_PER_SHEET) {
+            merges.push({ startRow: outputRow, startColumn: merge.startColumn, endRow: outputRow, endColumn: merge.endColumn });
+          }
         }
+        continue;
       }
-      const startRow = merge.startRow + shift;
-      const endRow = merge.endRow + shift;
+      let startShift = 0;
+      let endShift = 0;
+      for (const region of sheetRegions) {
+        const count = regionExpansions.get(region.templateRow)?.length ?? 0;
+        const expansion = Math.max(count, 1) - 1;
+        if (region.templateRow < merge.startRow) startShift += expansion;
+        // A vertical merge that spans a repeated row must extend over the expanded rows,
+        // even when the merge is in columns outside the repeated region.
+        if (region.templateRow <= merge.endRow) endShift += expansion;
+      }
+      const startRow = merge.startRow + startShift;
+      const endRow = merge.endRow + endShift;
       if (startRow < MAX_RENDERED_ROWS_PER_SHEET && endRow < MAX_RENDERED_ROWS_PER_SHEET) merges.push({ startRow, startColumn: merge.startColumn, endRow, endColumn: merge.endColumn });
     }
     const columnWidths: Record<number, number> = {};
     for (const [columnKey, column] of Object.entries(sourceSheet.columnData ?? {})) {
+      if (!/^(0|[1-9]\d*)$/.test(columnKey)) continue;
       const index = Number(columnKey);
-      if (Number.isInteger(index) && typeof column?.w === 'number' && Number.isFinite(column.w)) columnWidths[index] = Math.min(600, Math.max(16, column.w));
+      if (Number.isInteger(index) && index >= 0 && index < renderColumnLimit && typeof column?.w === 'number' && Number.isFinite(column.w)) {
+        columnWidths[index] = Math.min(600, Math.max(16, column.w));
+      }
     }
     const freeze = sourceSheet.freeze && typeof sourceSheet.freeze === 'object' ? sourceSheet.freeze as Record<string, unknown> : {};
     const frozenRows = Math.max(0, Number(freeze.ySplit ?? 0) || 0);
     const frozenColumns = Math.max(0, Number(freeze.xSplit ?? 0) || 0);
-    totalRenderedCells += renderedRows.reduce((total, row) => total + row.length, 0);
-    if (totalRenderedCells > MAX_RENDERED_CELLS) throw new Error('REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED');
-    renderedSheets.push({ id: sheetId, name: String(sourceSheet.name ?? sheetId), rows: renderedRows, rowHeights, columnWidths, merges, frozenRows, frozenColumns, rowCount: renderedRows.length, truncated: allTruncated });
+    renderedSheets.push({ id: sheetId, name: String(sourceSheet.name ?? sheetId), rows: renderedRows, rowHeights, columnWidths, merges, frozenRows, frozenColumns, rowCount: renderedRows.length, truncated: sheetTruncated });
   }
   return { title: definition.title, domain: definition.domain, generatedAt: dataset.generatedAt, projectId: dataset.projectId, sheets: renderedSheets, warnings: [...new Set(warnings)], truncated: allTruncated };
 }
@@ -189,7 +269,7 @@ export function previewReportStudio(result: ReportStudioRenderResult, maxRowsPer
       id: sheet.id, name: sheet.name, rowCount: sheet.rowCount, previewRowCount: Math.min(maxRowsPerSheet, sheet.rows.length),
       truncated: sheet.truncated || sheet.rows.length > maxRowsPerSheet,
       rows: sheet.rows.slice(0, maxRowsPerSheet).map((row) => row.map((cell) => ({ value: cell.value, style: cell.style ?? null, format: cell.format ?? null }))),
-      rowHeights: sheet.rowHeights, columnWidths: sheet.columnWidths, merges: sheet.merges.filter((merge) => merge.startRow < maxRowsPerSheet),
+      rowHeights: sheet.rowHeights, columnWidths: sheet.columnWidths, merges: sheet.merges.filter((merge) => merge.startRow < maxRowsPerSheet && merge.endRow < maxRowsPerSheet),
     })),
   };
 }

@@ -37,7 +37,7 @@ function styleToExcel(style?: Record<string, unknown>): Partial<ExcelJS.Style> |
   const fillColor = colorArgb(style.bg);
   if (fillColor) result.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillColor } };
   const horizontalMap: Record<string, ExcelJS.Alignment['horizontal']> = { 1: 'left', 2: 'center', 3: 'right', left: 'left', center: 'center', right: 'right' };
-  const verticalMap: Record<string, ExcelJS.Alignment['vertical']> = { 1: 'middle', 2: 'top', 3: 'bottom', middle: 'middle', top: 'top', bottom: 'bottom' };
+  const verticalMap: Record<string, ExcelJS.Alignment['vertical']> = { 1: 'top', 2: 'middle', 3: 'bottom', middle: 'middle', top: 'top', bottom: 'bottom' };
   const alignment: Partial<ExcelJS.Alignment> = {};
   if (style.ht !== undefined && horizontalMap[String(style.ht)]) alignment.horizontal = horizontalMap[String(style.ht)];
   if (style.vt !== undefined && verticalMap[String(style.vt)]) alignment.vertical = verticalMap[String(style.vt)];
@@ -73,6 +73,149 @@ function excelValue(value: unknown, format?: string): ExcelJS.CellValue {
   return String(value);
 }
 
+
+function reportDomainLabel(domain: ReportStudioDataset['domain']): string {
+  return domain === 'PROJECT' ? '项目级综合报表' : domain === 'PARTY' ? '往来单位档案报表' : '公司级经营报表';
+}
+function sourceName(source: unknown): string | undefined {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) return undefined;
+  const name = (source as Record<string, unknown>).name;
+  return typeof name === 'string' && name.trim() ? name.trim() : undefined;
+}
+function uniqueWorksheetName(rawName: string, usedNames: Set<string>): string {
+  let sanitizedName = rawName;
+  for (const invalidCharacter of [String.fromCharCode(92), '/', '?', '*', '[', ']', ':']) {
+    sanitizedName = sanitizedName.replaceAll(invalidCharacter, '-');
+  }
+  const base = sanitizedName.replace(/^'+|'+$/g, '').trim().slice(0, 31) || '报表';
+  let candidate = base;
+  let suffix = 2;
+  while (usedNames.has(candidate.toLocaleLowerCase())) {
+    const tail = ` (${suffix++})`;
+    candidate = `${base.slice(0, 31 - tail.length)}${tail}`;
+  }
+  usedNames.add(candidate.toLocaleLowerCase());
+  return candidate;
+}
+function addOverviewSheet(
+  workbook: ExcelJS.Workbook,
+  input: { definition: ReportStudioDefinition; dataset: ReportStudioDataset; templateName: string; templateVersion: number },
+  rendered: ReturnType<typeof renderReportStudio>,
+  usedNames: Set<string>,
+): void {
+  const sheet = workbook.addWorksheet(uniqueWorksheetName('报表预览', usedNames));
+  const domainLabel = reportDomainLabel(input.dataset.domain);
+  const projectName = sourceName(input.dataset.sources.project);
+  const partyName = sourceName(input.dataset.sources.businessParty);
+  const dataScope = input.dataset.domain === 'PROJECT'
+    ? projectName ?? (input.dataset.projectId ? `项目 ID：${input.dataset.projectId}` : '未指定项目')
+    : input.dataset.domain === 'PARTY'
+      ? partyName ?? (input.dataset.businessPartyId ? `单位 ID：${input.dataset.businessPartyId}` : '未指定单位')
+      : `当前账号可访问的 ${input.dataset.accessibleProjectCount} 个项目`;
+
+  sheet.columns = [{ width: 18 }, { width: 36 }, { width: 18 }, { width: 36 }];
+  sheet.views = [{ state: 'normal', zoomScale: 90 }];
+  sheet.properties.defaultRowHeight = 22;
+  sheet.pageSetup = {
+    paperSize: 9 as unknown as ExcelJS.PaperSize,
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,
+    // Keep warning text readable across multiple printed pages instead of shrinking the entire overview to one page.
+    fitToHeight: 0,
+    margins: { left: 0.35, right: 0.35, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
+  };
+  sheet.headerFooter.oddFooter = '墨衡 · 报表导出摘要　&P/&N';
+
+  sheet.mergeCells('A1:D1');
+  sheet.getCell('A1').value = input.definition.title || input.templateName;
+  sheet.getCell('A1').font = { name: 'Microsoft YaHei', size: 20, bold: true, color: { argb: 'FFFFFFFF' } };
+  sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF17324D' } };
+  sheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(1).height = 42;
+
+  sheet.mergeCells('A2:D2');
+  sheet.getCell('A2').value = '墨衡 · 报表导出总览';
+  sheet.getCell('A2').font = { name: 'Microsoft YaHei', size: 10, color: { argb: 'FF35536D' } };
+  sheet.getCell('A2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF1F7' } };
+  sheet.getCell('A2').alignment = { vertical: 'middle', indent: 1 };
+  sheet.getRow(2).height = 26;
+
+  sheet.getRow(4).values = ['报表类型', domainLabel, '生成时间', input.dataset.generatedAt];
+  sheet.getRow(5).values = ['模板名称', input.templateName, '模板版本', `v${input.templateVersion}`];
+  sheet.getRow(6).values = ['数据范围', dataScope, '工作表数量', rendered.sheets.length];
+  sheet.getRow(7).values = ['数据完整性', rendered.truncated ? '存在截断，详见生成提示' : '当前报表未截断', '生成提示', rendered.warnings.length];
+  sheet.getRow(8).values = ['文件用途', '只读数据快照', '业务写入', '不会回写业务台账'];
+  for (let rowIndex = 4; rowIndex <= 8; rowIndex += 1) {
+    const row = sheet.getRow(rowIndex);
+    row.height = rowIndex === 6 ? 32 : 26;
+    row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+      cell.alignment = { vertical: 'middle', wrapText: true };
+      cell.border = {
+        bottom: { style: 'thin', color: { argb: 'FFE0E6ED' } },
+      };
+      if (columnNumber === 1 || columnNumber === 3) {
+        cell.font = { name: 'Microsoft YaHei', size: 10, bold: true, color: { argb: 'FF29465F' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F5F8' } };
+      } else {
+        cell.font = { name: 'Microsoft YaHei', size: 10, color: { argb: 'FF253746' } };
+      }
+    });
+  }
+
+  sheet.mergeCells('A10:D10');
+  sheet.getCell('A10').value = '工作表目录';
+  sheet.getCell('A10').font = { name: 'Microsoft YaHei', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  sheet.getCell('A10').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF35536D' } };
+  sheet.getCell('A10').alignment = { vertical: 'middle', indent: 1 };
+  sheet.getRow(10).height = 26;
+
+  sheet.getRow(11).values = ['序号', '工作表名称', '数据行数', '备注'];
+  sheet.getRow(11).eachCell({ includeEmpty: true }, (cell) => {
+    cell.font = { name: 'Microsoft YaHei', size: 10, bold: true, color: { argb: 'FF29465F' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF1F7' } };
+    cell.alignment = { vertical: 'middle', wrapText: true };
+    cell.border = { bottom: { style: 'thin', color: { argb: 'FFCAD5DF' } } };
+  });
+  rendered.sheets.forEach((item, index) => {
+    const row = sheet.addRow([
+      index + 1,
+      item.name,
+      item.rowCount,
+      item.truncated ? '数据不完整，详见生成提示' : '已生成',
+    ]);
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      cell.font = { name: 'Microsoft YaHei', size: 10, color: { argb: 'FF253746' } };
+      cell.alignment = { vertical: 'middle', wrapText: true };
+      cell.border = { bottom: { style: 'hair', color: { argb: 'FFE0E6ED' } } };
+    });
+  });
+
+  const noteTitleRow = 12 + rendered.sheets.length;
+  sheet.mergeCells(`A${noteTitleRow}:D${noteTitleRow}`);
+  sheet.getCell(`A${noteTitleRow}`).value = '阅读说明';
+  sheet.getCell(`A${noteTitleRow}`).font = { name: 'Microsoft YaHei', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  sheet.getCell(`A${noteTitleRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF35536D' } };
+  sheet.getCell(`A${noteTitleRow}`).alignment = { vertical: 'middle', indent: 1 };
+  const notes = [
+    '本工作簿是生成时点的只读快照，不会修改或回写墨衡业务台账。',
+    '公司级汇总只包含当前账号有权访问的项目；请勿将报表范围误解为系统全部数据。',
+    ...(rendered.truncated ? ['存在明细截断；请缩小筛选范围后重新生成完整报表。'] : []),
+    ...(rendered.warnings.length ? ['以下为本次报表生成提示：', ...rendered.warnings] : []),
+  ];
+  notes.forEach((note, index) => {
+    const rowNumber = noteTitleRow + index + 1;
+    sheet.mergeCells(`A${rowNumber}:D${rowNumber}`);
+    const cell = sheet.getCell(`A${rowNumber}`);
+    cell.value = note;
+    cell.font = { name: 'Microsoft YaHei', size: 9, color: { argb: 'FF536575' } };
+    cell.alignment = { vertical: 'middle', wrapText: true };
+    cell.border = { bottom: { style: 'hair', color: { argb: 'FFE0E6ED' } } };
+    sheet.getRow(rowNumber).height = 28;
+  });
+  sheet.pageSetup.printArea = `A1:D${noteTitleRow + notes.length}`;
+}
+
 export async function buildReportStudioWorkbook(input: { definition: ReportStudioDefinition; dataset: ReportStudioDataset; templateName: string; templateVersion: number }): Promise<Buffer> {
   const rendered = renderReportStudio(input.definition, input.dataset);
   const workbook = new ExcelJS.Workbook();
@@ -84,8 +227,10 @@ export async function buildReportStudioWorkbook(input: { definition: ReportStudi
   workbook.subject = input.definition.domain === 'PROJECT' ? '项目级综合报表' : input.definition.domain === 'PARTY' ? '往来单位经营档案报表' : '公司级经营报表';
   workbook.company = '墨衡';
   workbook.properties.date1904 = false;
+  const usedWorksheetNames = new Set<string>();
+  addOverviewSheet(workbook, input, rendered, usedWorksheetNames);
   for (const sheet of rendered.sheets) {
-    const worksheet = workbook.addWorksheet(sheet.name.slice(0, 31) || '报表');
+    const worksheet = workbook.addWorksheet(uniqueWorksheetName(sheet.name, usedWorksheetNames));
     worksheet.properties.defaultRowHeight = 20;
     worksheet.views = [{ state: 'frozen', ySplit: sheet.frozenRows, xSplit: sheet.frozenColumns }];
     worksheet.pageSetup = {
@@ -129,7 +274,7 @@ export async function buildReportStudioWorkbook(input: { definition: ReportStudi
     if (sheet.rows.length && sheet.rows[0]!.length) worksheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: sheet.rows.length, column: Math.max(1, ...sheet.rows.map((row) => row.length)) } };
   }
   if (input.definition.page.includeMetadata) {
-    const metadata = workbook.addWorksheet('报表说明');
+    const metadata = workbook.addWorksheet(uniqueWorksheetName('报表说明', usedWorksheetNames));
     metadata.columns = [{ width: 24 }, { width: 70 }];
     metadata.addRows([
       ['报表名称', input.definition.title], ['报表类型', input.definition.domain === 'PROJECT' ? '项目级综合报表' : input.definition.domain === 'PARTY' ? '往来单位经营档案报表' : '公司级经营报表'],

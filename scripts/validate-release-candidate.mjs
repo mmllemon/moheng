@@ -41,7 +41,9 @@ const analysisPage = await read('apps/web/src/pages/AnalysisPage.tsx');
 const appRoutes = await read('apps/web/src/App.tsx');
 const userTypes = await read('apps/web/src/types.ts');
 const dashboardPage = await read('apps/web/src/pages/DashboardPage.tsx');
-const auditPlan = await read('docs/下一阶段开发计划与实施记录-v1.9.0-rc.1.md');
+const auditPlan = await read('docs/后续四阶段开发路线图.md');
+const architectureRules = await read('docs/架构与核心业务规则.md');
+const releaseStatus = await read('docs/发布与迁移验收.md');
 const projectOverviewPage = await read('apps/web/src/pages/ProjectOverviewPage.tsx');
 const workspaceLayout = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const contractsPage = await read('apps/web/src/pages/ContractsPage.tsx');
@@ -79,9 +81,14 @@ const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), {
 check('package, API and Web versions agree on 2.19.0-rc.2',
   rootPackage.version === '2.19.0-rc.2' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.2'") && server.includes('version: APP_VERSION'));
 
-const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
-check('previously shipped migration remains byte-for-byte unchanged',
-  shippedHash === '059b76e6da8be469a6e514554d9c26e89705ef4e8aaf17433cb489fbb2c5120b', shippedHash);
+// Normalize Git's Windows autocrlf conversion before hashing. The migration guard is
+// meant to detect changes to the checked-in migration, not CRLF versus LF in the worktree.
+const shippedHash = createHash('sha256').update(shippedMigration.replace(/\r\n/g, '\n')).digest('hex');
+// Pin the canonical LF content of the already-shipped migration so an actual in-place edit
+// is caught. If the migration is legitimately superseded, update this hash and record why.
+const SHIPPED_MIGRATION_SHA256 = '059b76e6da8be469a6e514554d9c26e89705ef4e8aaf17433cb489fbb2c5120b';
+check('previously shipped migration remains byte-for-byte unchanged (line-ending normalized)',
+  shippedHash === SHIPPED_MIGRATION_SHA256, `${shippedHash} (expected ${SHIPPED_MIGRATION_SHA256})`);
 
 check('baseline migration records old/new values and uses main-contract ledger as baseline',
   baselineMigration.includes('ContractBaselineMigrationReconciliation') &&
@@ -139,11 +146,17 @@ check('Windows startup identifies the project by absolute server entry point',
   startWindows.includes('Win32_Process') &&
   startWindows.includes('$commandLine.IndexOf($serverScript'));
 
-check('Windows startup requires a healthy API and database before reporting success',
+check('Windows startup requires a healthy API, database, and listener owned by the launched process',
   startWindows.includes('Invoke-RestMethod -Uri $healthUrl') &&
   startWindows.includes("$health.data.status -eq 'ok'") &&
   startWindows.includes("$health.data.database -eq 'ok'") &&
+  startWindows.includes('$ownedListener.Count -gt 0') &&
   startWindows.includes('20 秒内通过数据库健康检查'));
+check('Windows startup rejects an already occupied port instead of trusting an unrelated healthy API',
+  startWindows.includes('Get-NetTCPConnection -LocalPort $port -State Listen') &&
+  startWindows.includes('$existingListeners.Count -gt 0') &&
+  startWindows.includes('已拒绝启动') &&
+  startWindows.includes('OwningProcess -eq $process.Id'));
 
 check('Windows stop script verifies Node process, entry point and process start time before kill',
   stopWindows.includes("$processInfo.Name -ieq 'node.exe'") &&
@@ -362,13 +375,13 @@ check('selecting a unit previews reusable contact, address and invoicing data; c
   partyPicker.includes("setSearch(''); onChange(null, '')") &&
   (await read('apps/web/src/styles.css')).includes('--surface-muted: var(--neutral-100)'));
 
-check('historical documentation preserves the unit master, owner finance, combined navigation and numbering design',
-  (await read('docs/往来单位主数据与经营档案设计说明-v1.4.0-rc.1.md')).includes('identityVerified') &&
-  (await read('docs/往来单位主数据与经营档案设计说明-v1.4.0-rc.1.md')).includes('检索名称只帮助匹配，不替代法律身份核验') &&
-  (await read('docs/结算与应付账款模型设计说明-v1.3.0-rc.1.md')).includes('可选') &&
-  (await read('docs/业主结算与应收账款设计说明-v1.5.0-rc.1.md')).includes('负向调整') &&
-  (await read('docs/编号规则与用户身份安全说明-v1.5.0-rc.1.md')).includes('浏览器密码管理器') &&
-  (await read('docs/阶段验收记录-v1.5.0-rc.1.md')).includes('非生产验收通过版'));
+check('consolidated documentation preserves unit identity, financial posting and security rules',
+  architectureRules.includes('identityVerified') &&
+  architectureRules.includes('检索名称只帮助匹配，不替代法律身份核验') &&
+  architectureRules.includes('可选') &&
+  architectureRules.includes('负向调整') &&
+  architectureRules.includes('浏览器密码管理器') &&
+  releaseStatus.includes('仍未关闭的发布阻断项'));
 
 check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
@@ -515,10 +528,13 @@ check('audit UI is routed and accessible from primary navigation and dashboard r
   dashboardPage.includes("navigate('/audit-logs')") && auditPage.includes('应用筛选') &&
   auditPage.includes('变更快照') && auditPage.includes('导出 CSV') && auditPage.includes('EmptyState') && auditPage.includes('ErrorBlock'));
 
-check('next-step plan records current partial alignment, explicit conflicts and deferred higher-risk scope',
-  auditPlan.includes('当前完成度与对齐度判断') && auditPlan.includes('不直接照搬项') &&
-  auditPlan.includes('WP2') && auditPlan.includes('WP3') && auditPlan.includes('WP7') &&
-  auditPlan.includes('Node.js 20') && auditPlan.includes('不新增数据表/迁移'));
+check('current roadmap defines all four product-development phases and honest release boundaries',
+  auditPlan.includes('阶段一：完成报表中心与 XLSX 交付体验') &&
+  auditPlan.includes('阶段二：全站 UI 与交互统一') &&
+  auditPlan.includes('阶段三：完成 AI 助手的产品闭环') &&
+  auditPlan.includes('阶段四：统一回归、整理交付与发布评审') &&
+  auditPlan.includes('Node.js 24+') &&
+  releaseStatus.includes('发布候选（RC）'));
 
 const failures = checks.filter((entry) => !entry.passed);
 for (const entry of checks) {

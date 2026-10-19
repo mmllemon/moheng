@@ -29,7 +29,7 @@ const types = await read('apps/web/src/report-template-types.ts');
 const reportCenter = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const styles = await read('apps/web/src/styles.css');
 const app = await read('apps/web/src/App.tsx');
-const designDoc = await read('docs/原生XLSX与报表模板设计器-v2.1.0-rc.1.md');
+const designDoc = await read('docs/报表中心规格与验收.md');
 
 check('all application packages use the same candidate version',
   apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version);
@@ -37,8 +37,10 @@ check('ExcelJS is pinned to a specific version and API test command includes XLS
   apiPackage.dependencies.exceljs === 'npm:exceljs-hardened@5.1.0' && apiPackage.scripts.test.includes('report-template.test.ts') && apiPackage.scripts.test.includes('report-xlsx.test.ts') && apiPackage.scripts.test.includes('budget-xlsx.test.ts'));
 check('eight report types share a central server-side data registry',
   ['target-cost','actual-cost','progress-bills','changes','owner-receivables','owner-receipts','downstream-contracts','downstream-payables'].every((key) => reportData.includes(`key: '${key}'`)) && reportRoute.includes('loadReportSnapshot'));
-check('XLSX exports produce typed styled data, freeze panes, filters, page settings, and optional explanation sheet',
-  xlsx.includes("addWorksheet('数据'") && xlsx.includes("addWorksheet('导出说明'") && xlsx.includes('numFmt') && xlsx.includes('autoFilter') && xlsx.includes("state: 'frozen'") && xlsx.includes('printTitlesRow') && xlsx.includes('safeCellValue'));
+check('standard XLSX export includes a styled overview, typed data, frozen header, filters, print setup and optional explanation',
+  xlsx.includes("addWorksheet('报表预览')") && xlsx.includes("addWorksheet('数据'") && xlsx.includes("addWorksheet('导出说明'") &&
+  xlsx.includes('addStandardReportOverview') && xlsx.includes('snapshot.truncated') && xlsx.includes('numFmt') && xlsx.includes('autoFilter') &&
+  xlsx.includes("state: 'frozen'") && xlsx.includes('printTitlesRow') && xlsx.includes('safeCellValue'));
 check('template schema bounds grid dimensions and validates field allowlists, duplicate bindings and merge overlap',
   template.includes('.max(40)') && template.includes('allowedKeys') && template.includes('seenFields') && template.includes('cellGrid') && template.includes('至少需要保留一列可见字段'));
 check('template APIs support scopes, publishing, archive, optimistic concurrency, revision restore and audit logging',
@@ -59,8 +61,11 @@ check('legacy designer is routed and XLSX export now passes through formal previ
   app.includes('path="reports/designer"') && app.includes('path="reports/preview"') && reportCenter.includes('previewStandardReport') && reportCenter.includes('设计报表模板') && designer.includes('/reports/preview?'));
 check('template validation has unit tests for unknown fields, visibility, duplicates and merges',
   templateTests.includes('unknown field keys') && templateTests.includes('cannot hide every column') && templateTests.includes('duplicate field bindings') && templateTests.includes('cannot overlap'));
-check('XLSX tests check formulas-as-strings, leading zero IDs, merge, frozen view and metadata sheet',
-  xlsxTests.includes("'=1+1'") && xlsxTests.includes("'000123'") && xlsxTests.includes('isMerged') && xlsxTests.includes("state, 'frozen'") && xlsxTests.includes("'导出说明'"));
+check('standard XLSX tests verify first-sheet overview, metadata, truncation and preserved data sheets',
+  xlsxTests.includes("'=1+1'") && xlsxTests.includes("'000123'") && xlsxTests.includes('isMerged') &&
+  xlsxTests.includes("['报表预览', '数据', '导出说明']") && xlsxTests.includes("getCell('B14').value, '数据'") &&
+  xlsxTests.includes("getCell('D8').value, 10000") && xlsxTests.includes("standard XLSX overview explicitly warns") &&
+  xlsxTests.includes("getCell('A21').value") && xlsxTests.includes("'导出说明'"));
 check('product documentation describes design boundary, scopes, APIs, security, acceptance and open release gates',
   designDoc.includes('PERSONAL') && designDoc.includes('PROJECT') && designDoc.includes('SYSTEM') && designDoc.includes('ExcelJS') && designDoc.includes('XLSX') && designDoc.includes('Node.js 24+'));
 check('responsive and print styles exist for the report designer and print surfaces',

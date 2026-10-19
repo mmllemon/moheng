@@ -9,8 +9,7 @@ function safeCellValue(value: unknown): ExcelJS.CellValue {
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
   if (typeof value === 'bigint') return value.toString();
   if (typeof value === 'object' && value.constructor?.name === 'Decimal') {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : String(value);
+    return valueForJson(value) as ExcelJS.CellValue;
   }
   return String(value);
 }
@@ -61,6 +60,111 @@ export interface ReportWorkbookOptions {
   templateVersion: number;
 }
 
+function addStandardReportOverview(workbook: ExcelJS.Workbook, options: ReportWorkbookOptions, visibleColumnCount: number): void {
+  const { snapshot, definition, templateName, templateVersion } = options;
+  const sheet = workbook.addWorksheet('报表预览');
+  sheet.columns = [{ width: 18 }, { width: 36 }, { width: 18 }, { width: 36 }];
+  sheet.views = [{ state: 'normal', zoomScale: 90 }];
+  sheet.properties.defaultRowHeight = 23;
+  sheet.pageSetup = {
+    paperSize: (definition.page.paper === 'A3' ? 8 : definition.page.paper === 'Letter' ? 1 : 9) as unknown as ExcelJS.PaperSize,
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,
+    // Keep row-limit warnings readable; never force the overview and warnings onto one page.
+    fitToHeight: 0,
+    margins: { left: 0.35, right: 0.35, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
+  };
+  sheet.headerFooter.oddFooter = '墨衡 · 报表导出摘要　&P/&N';
+
+  sheet.mergeCells('A1:D1');
+  sheet.getCell('A1').value = definition.title || snapshot.report.label;
+  sheet.getCell('A1').font = { name: 'Microsoft YaHei', size: 20, bold: true, color: { argb: 'FFFFFFFF' } };
+  sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF17324D' } };
+  sheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(1).height = 42;
+
+  sheet.mergeCells('A2:D2');
+  sheet.getCell('A2').value = '墨衡 · 报表导出总览';
+  sheet.getCell('A2').font = { name: 'Microsoft YaHei', size: 10, color: { argb: 'FF35536D' } };
+  sheet.getCell('A2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF1F7' } };
+  sheet.getCell('A2').alignment = { vertical: 'middle', indent: 1 };
+  sheet.getRow(2).height = 26;
+
+  const generatedAt = snapshot.generatedAt.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
+  sheet.getRow(4).values = ['报表类型', snapshot.report.label, '报表编号', snapshot.report.key];
+  sheet.getRow(5).values = ['模板名称', templateName, '模板版本', `v${templateVersion}`];
+  sheet.getRow(6).values = ['数据范围', snapshot.projectScope || '当前授权数据范围', '生成时间', generatedAt];
+  sheet.getRow(7).values = ['开始日期', snapshot.filters.from ?? '不限', '结束日期', snapshot.filters.to ?? '不限'];
+  sheet.getRow(8).values = ['导出行数', snapshot.rows.length, '导出上限', snapshot.report.rowLimit];
+  sheet.getRow(9).values = ['数据完整性', snapshot.truncated ? '达到导出上限，详见提示' : '未触发导出截断', '可见字段数', visibleColumnCount];
+  sheet.getRow(10).values = ['文件用途', '只读数据快照', '业务写入', '不会回写业务台账'];
+  for (let rowIndex = 4; rowIndex <= 10; rowIndex += 1) {
+    const row = sheet.getRow(rowIndex);
+    row.height = rowIndex === 6 || rowIndex === 9 ? 31 : 26;
+    row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+      cell.alignment = { vertical: 'middle', wrapText: true };
+      cell.border = { bottom: { style: 'thin', color: { argb: 'FFE0E6ED' } } };
+      if (columnNumber === 1 || columnNumber === 3) {
+        cell.font = { name: 'Microsoft YaHei', size: 10, bold: true, color: { argb: 'FF29465F' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F5F8' } };
+      } else {
+        cell.font = { name: 'Microsoft YaHei', size: 10, color: { argb: 'FF253746' } };
+      }
+    });
+  }
+
+  sheet.mergeCells('A12:D12');
+  sheet.getCell('A12').value = '工作表目录';
+  sheet.getCell('A12').font = { name: 'Microsoft YaHei', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  sheet.getCell('A12').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF35536D' } };
+  sheet.getCell('A12').alignment = { vertical: 'middle', indent: 1 };
+  sheet.getRow(12).height = 26;
+  sheet.getRow(13).values = ['序号', '工作表名称', '导出记录数', '备注'];
+  sheet.getRow(13).eachCell({ includeEmpty: true }, (cell) => {
+    cell.font = { name: 'Microsoft YaHei', size: 10, bold: true, color: { argb: 'FF29465F' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF1F7' } };
+    cell.alignment = { vertical: 'middle', wrapText: true };
+    cell.border = { bottom: { style: 'thin', color: { argb: 'FFCAD5DF' } } };
+  });
+  const directory = [
+    ['数据', snapshot.rows.length, snapshot.truncated ? '部分数据受导出上限约束' : '业务数据明细'],
+    ...(definition.page.includeDescription ? [['导出说明', 13, '范围、口径与生成元数据']] : []),
+  ] as Array<[string, number, string]>;
+  directory.forEach(([name, count, note], index) => {
+    const row = sheet.addRow([index + 1, name, count, note]);
+    row.eachCell({ includeEmpty: true }, (cell) => {
+      cell.font = { name: 'Microsoft YaHei', size: 10, color: { argb: 'FF253746' } };
+      cell.alignment = { vertical: 'middle', wrapText: true };
+      cell.border = { bottom: { style: 'hair', color: { argb: 'FFE0E6ED' } } };
+    });
+  });
+
+  const noteHeader = 15 + directory.length;
+  sheet.mergeCells(`A${noteHeader}:D${noteHeader}`);
+  sheet.getCell(`A${noteHeader}`).value = '阅读说明';
+  sheet.getCell(`A${noteHeader}`).font = { name: 'Microsoft YaHei', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  sheet.getCell(`A${noteHeader}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF35536D' } };
+  sheet.getCell(`A${noteHeader}`).alignment = { vertical: 'middle', indent: 1 };
+  const notes = [
+    '本工作簿是生成时点的只读快照；修改 Excel 文件不会回写墨衡业务台账。',
+    '数据范围受当前登录账号、项目权限与筛选条件约束。',
+    '金额和合同调整口径以墨衡正式业务台账为准；报表导出不重新计算业务金额。',
+    ...(snapshot.truncated ? ['本次结果达到导出上限，文件可能未包含全部符合筛选条件的记录；请缩小范围或分批导出。'] : []),
+  ];
+  notes.forEach((note, index) => {
+    const rowNumber = noteHeader + index + 1;
+    sheet.mergeCells(`A${rowNumber}:D${rowNumber}`);
+    const cell = sheet.getCell(`A${rowNumber}`);
+    cell.value = note;
+    cell.font = { name: 'Microsoft YaHei', size: 9, color: { argb: snapshot.truncated && note.startsWith('本次结果') ? 'FF9A3412' : 'FF536575' } };
+    cell.alignment = { vertical: 'middle', wrapText: true };
+    cell.border = { bottom: { style: 'hair', color: { argb: 'FFE0E6ED' } } };
+    sheet.getRow(rowNumber).height = 30;
+  });
+  sheet.pageSetup.printArea = `A1:D${noteHeader + notes.length}`;
+}
+
 export async function buildReportWorkbook(options: ReportWorkbookOptions): Promise<Buffer> {
   const { snapshot, definition } = options;
   const visibleSourceIndexes = definition.columns.map((column, index) => column.visible ? index : -1).filter((index) => index >= 0);
@@ -75,6 +179,7 @@ export async function buildReportWorkbook(options: ReportWorkbookOptions): Promi
   workbook.title = definition.title;
   workbook.company = '墨衡';
   workbook.properties.date1904 = false;
+  addStandardReportOverview(workbook, options, columns.length);
 
   const sheet = workbook.addWorksheet('数据', {
     views: [{ state: 'frozen', ySplit: 1 + (definition.subtitle ? 1 : 0) + definition.customRows.length + 1, xSplit: 0 }],
@@ -165,7 +270,7 @@ export async function buildReportWorkbook(options: ReportWorkbookOptions): Promi
   applyBorders(sheet, headerRow, Math.max(headerRow, nextRow - 1), columns.length);
   sheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: Math.max(headerRow, nextRow - 1), column: columns.length } };
   sheet.views = [{ state: 'frozen', ySplit: headerRow, xSplit: 0 }];
-  sheet.pageSetup.printArea = `A1:${sheet.getColumn(columns.length).letter}${Math.max(headerRow, nextRow - 1)}`;
+  sheet.pageSetup.printArea = `A1:${sheet.getColumn(columns.length).letter}${snapshot.truncated ? nextRow + 1 : Math.max(headerRow, nextRow - 1)}`;
   if (snapshot.truncated) {
     const note = sheet.getCell(nextRow + 1, 1);
     note.value = '提示：本次数据达到导出上限，文件可能未包含全部符合条件的记录。请缩小筛选范围后分批导出。';

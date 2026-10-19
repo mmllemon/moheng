@@ -16,12 +16,24 @@ const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgPr
   read('experiments/pi-durable-poc/src/pi-durable-hardkill-smoke.mjs'),
   read('package.json'),
   read('experiments/pi-durable-poc/package.json'),
-  read('docs/assistant-runtime-decision-v1.0.md'),
+  read('docs/AI助手实施与准入.md'),
   read('.github/workflows/assistant-runtime-gates.yml'),
+]);
+
+const [cashSummary, costVariance] = await Promise.all([
+  read('apps/api/src/lib/report-studio-payment-summary.ts'),
+  read('apps/api/src/lib/assistant-cost-variance.ts'),
 ]);
 
 const packageJson = JSON.parse(packageJsonText);
 const pocPackage = JSON.parse(pocPackageText);
+assert.match(service, /prisma\.downstreamContractPayment\.findMany/, 'read-only project overview must read actual downstream payment/refund records separately');
+assert.match(service, /summarizeDownstreamPaymentTotals/, 'cash payment and refund summaries must use exact-cent shared logic');
+assert.match(service, /downstreamCash\.scanTruncated/, 'cash summary must surface truncation rather than presenting partial totals as complete');
+assert.match(service, /calculateAssistantCostVarianceSummary/, 'cost variance must delegate to the tested calculation policy');
+assert.match(costVariance, /input\.targetTruncated/);
+assert.match(costVariance, /input\.targetTruncated/);
+assert.match(cashSummary, /centsToMoney\(paidCents - refundCents\)/, 'refund must be subtracted exactly once from net cash paid');
 const toolIds = [...service.matchAll(/^  '([a-z_]+)',$/gm)].map((m) => m[1]);
 assert.deepEqual(toolIds, ['project_operating_overview', 'cost_variance', 'change_evidence_completeness'], 'only the three approved read-only tools may be exposed');
 assert.match(service, /canAccessProject\(actor\.sub, actor\.role, projectId, undefined, 'PROJECT_READ'\)/, 'project access must be rechecked at execution time');
@@ -61,7 +73,10 @@ assert.match(packageJson.scripts['test:pi-poc'], /npm test --prefix experiments\
 assert.match(workflow, /npm ci --prefix experiments\/pi-durable-poc/, 'CI must use the committed standalone PoC lockfile');
 assert.match(workflow, /package-lock\.json/, 'CI must fail clearly if the standalone PoC lockfile is absent');
 assert.match(packageJsonText, /node scripts\/validate-assistant-runtime-decision\.mjs/, 'runtime/storage decision invariants must run in the release-candidate chain');
-assert.match(decision, /采用 LangGraph\.js \+ PostgreSQL `PostgresSaver`/, 'runtime decision must be explicit');
+assert.match(decision, /采用 \*\*LangGraph\.js \+ PostgreSQL `PostgresSaver`\*\*/, 'runtime decision must be explicit');
+assert.match(decision, /默认每次模型请求最多生成 1,800 tokens/);
+assert.match(decision, /超时为 45 秒/);
+assert.match(decision, /最多进行 1 次 SDK 重试/);
 assert.match(decision, /不构成生产启用批准/, 'runtime decision must not imply production approval');
 assert.match(decision, /ASSISTANT_POC_ENABLED=true/, 'decision must explicitly keep the PoC switch out of production');
 

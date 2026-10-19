@@ -1,18 +1,10 @@
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, type ForwardedRef, type FocusEvent as ReactFocusEvent, type KeyboardEvent as ReactKeyboardEvent, type InputHTMLAttributes } from 'react';
+import { forwardRef, useCallback, useEffect, useId, useMemo, useRef, useState, type ForwardedRef, type FocusEvent as ReactFocusEvent, type KeyboardEvent as ReactKeyboardEvent, type InputHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { CalendarDays, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import { currentDateInputValue } from './Ui';
 import { useAnimatedPresence } from './useAnimatedPresence';
+import { asIsoDate, isIsoDateWithinBounds, monthIntersectsIsoDateBounds, normalizeIsoDateWithinBounds, parseIsoDate } from './date-picker-utils.js';
 
-function asIsoDate(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-function parseIsoDate(value?: string | null) {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const [year, month, day] = value.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
-}
 function formatDateLabel(value: string) {
   const date = parseIsoDate(value);
   return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '';
@@ -28,6 +20,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     value, defaultValue, onChange, onBlur, disabled = false, name, id, min, max, required, title, className = '',
     autoFocus, placeholder, ...otherProps
   } = props;
+  const controlId = useId();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const proxyRef = useRef<HTMLInputElement | null>(null);
@@ -40,6 +33,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   const [focusedDate, setFocusedDate] = useState(String(value ?? defaultValue ?? currentDateInputValue()));
   const [invalid, setInvalid] = useState(false);
   const presence = useAnimatedPresence(open, 190);
+  const ariaInvalid = invalid || props['aria-invalid'] === true || props['aria-invalid'] === 'true';
   const selectedDate = parseIsoDate(selectedValue);
   const monthYear = `${viewDate.getFullYear()} 年 ${String(viewDate.getMonth() + 1).padStart(2, '0')} 月`;
   const todayValue = currentDateInputValue();
@@ -63,6 +57,26 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     // Keep React Hook Form's default value visible after it writes to the registered input ref.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, value]);
+
+  // A controlled form may change the selected date without unmounting this picker.
+  // Keep the calendar month and roving keyboard focus aligned with that external value;
+  // do not run this on month navigation itself, which intentionally leaves selectedValue unchanged.
+  useEffect(() => {
+    const focusValue = normalizeIsoDateWithinBounds(selectedValue, min == null ? null : String(min), max == null ? null : String(max))
+      ?? normalizeIsoDateWithinBounds(todayValue, min == null ? null : String(min), max == null ? null : String(max));
+    if (!focusValue) {
+      setFocusedDate('');
+      return;
+    }
+    const selected = parseIsoDate(focusValue);
+    if (!selected) return;
+    setViewDate((current) => (
+      current.getFullYear() === selected.getFullYear() && current.getMonth() === selected.getMonth()
+        ? current
+        : new Date(selected.getFullYear(), selected.getMonth(), 1)
+    ));
+    setFocusedDate((current) => current === focusValue ? current : focusValue);
+  }, [selectedValue, min, max]);
 
   const syncPosition = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -116,7 +130,16 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
 
   function moveFocusBy(days: number) {
     const base = parseIsoDate(focusedDate) ?? selectedDate ?? new Date();
-    const next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+    let next = new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+    // Never move the roving tab stop onto a disabled date: disabled buttons cannot receive
+    // focus, which otherwise leaves keyboard users stranded after an Arrow/Home/End action.
+    const direction = days < 0 ? -1 : 1;
+    let attempts = 0;
+    while (isDisabled(asIsoDate(next)) && attempts < 3660) {
+      next = new Date(next.getFullYear(), next.getMonth(), next.getDate() + direction);
+      attempts += 1;
+    }
+    if (isDisabled(asIsoDate(next))) return;
     const nextValue = asIsoDate(next);
     setFocusedDate(nextValue);
     if (next.getMonth() !== viewDate.getMonth() || next.getFullYear() !== viewDate.getFullYear()) setViewDate(new Date(next.getFullYear(), next.getMonth(), 1));
@@ -138,9 +161,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   }
 
   function isDisabled(valueToCheck: string) {
-    const minimum = min == null ? '' : String(min);
-    const maximum = max == null ? '' : String(max);
-    return Boolean((minimum && valueToCheck < minimum) || (maximum && valueToCheck > maximum));
+    return !isIsoDateWithinBounds(valueToCheck, min == null ? null : String(min), max == null ? null : String(max));
   }
 
   function chooseDate(nextValue: string) {
@@ -177,8 +198,39 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
   };
 
   function changeMonth(delta: number) {
-    setViewDate((date) => new Date(date.getFullYear(), date.getMonth() + delta, 1));
-    setFocusedDate((current) => { const date = parseIsoDate(current) ?? selectedDate ?? new Date(); const next = new Date(date.getFullYear(), date.getMonth() + delta, Math.min(date.getDate(), new Date(date.getFullYear(), date.getMonth() + delta + 1, 0).getDate())); return asIsoDate(next); });
+    const targetMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
+    const dateMin = min == null ? null : String(min);
+    const dateMax = max == null ? null : String(max);
+    if (!monthIntersectsIsoDateBounds(targetMonth.getFullYear(), targetMonth.getMonth(), dateMin, dateMax)) return;
+    setViewDate(targetMonth);
+    setFocusedDate((current) => {
+      const base = parseIsoDate(current) ?? selectedDate ?? new Date();
+      const lastDay = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+      const next = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), Math.min(base.getDate(), lastDay));
+      return normalizeIsoDateWithinBounds(asIsoDate(next), dateMin, dateMax) ?? current;
+    });
+  }
+
+  function openCalendar() {
+    const dateMin = min == null ? null : String(min);
+    const dateMax = max == null ? null : String(max);
+    const initial = normalizeIsoDateWithinBounds(selectedValue, dateMin, dateMax)
+      ?? normalizeIsoDateWithinBounds(todayValue, dateMin, dateMax);
+    if (initial) {
+      const date = parseIsoDate(initial);
+      if (date) {
+        setFocusedDate(initial);
+        setViewDate(new Date(date.getFullYear(), date.getMonth(), 1));
+      }
+    } else {
+      // An invalid/contradictory range has no enabled day to focus; keep focus on the trigger.
+      setFocusedDate('');
+      const fallback = selectedDate ?? new Date();
+      setViewDate(new Date(fallback.getFullYear(), fallback.getMonth(), 1));
+    }
+    setInvalid(false);
+    setOpen(true);
+    requestAnimationFrame(syncPosition);
   }
 
   return <div ref={wrapperRef} className={`date-picker-control ${className}`.trim()} data-open={open ? 'true' : 'false'}>
@@ -186,7 +238,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       {...otherProps}
       type="date"
       ref={handleProxyRef}
-      id={id}
+      id={id ? `${id}-native` : undefined}
       name={name}
       defaultValue={defaultValue as string | undefined}
       min={min}
@@ -203,10 +255,15 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     <button
       ref={triggerRef}
       type="button"
-      id={id ? `${id}-trigger` : undefined}
-      className={`date-picker-trigger ${invalid || props['aria-invalid'] ? 'is-invalid' : ''}`}
+      id={id}
+      className={`date-picker-trigger ${ariaInvalid ? 'is-invalid' : ''}`}
       role="combobox"
-      aria-label={props['aria-label'] ?? '选择日期'}
+      aria-label={props['aria-label']}
+      aria-labelledby={props['aria-labelledby']}
+      aria-describedby={props['aria-describedby']}
+      aria-errormessage={props['aria-errormessage']}
+      aria-invalid={ariaInvalid ? 'true' : undefined}
+      aria-controls={open ? `date-picker-dialog-${controlId}` : undefined}
       aria-haspopup="dialog"
       aria-expanded={open}
       aria-required={required}
@@ -215,22 +272,14 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       title={title}
       onClick={() => {
         if (disabled) return;
-        const initial = selectedDate ?? new Date();
-        setFocusedDate(asIsoDate(initial));
-        setInvalid(false);
-        setViewDate(new Date(initial.getFullYear(), initial.getMonth(), 1));
-        setOpen((current) => !current);
-        requestAnimationFrame(syncPosition);
+        if (open) setOpen(false);
+        else openCalendar();
       }}
       onKeyDown={(event) => {
         if (disabled) return;
         if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
           event.preventDefault();
-          const initial = selectedDate ?? new Date();
-          setFocusedDate(asIsoDate(initial));
-          setViewDate(new Date(initial.getFullYear(), initial.getMonth(), 1));
-          setOpen(true);
-          requestAnimationFrame(syncPosition);
+          openCalendar();
         } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
           if (!selectedDate) return;
           event.preventDefault();
@@ -247,6 +296,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
     </button>
     {presence.mounted && createPortal(<section
       ref={popupRef}
+      id={`date-picker-dialog-${controlId}`}
       className={`date-picker-popover ${presence.visible ? 'is-visible' : 'is-closing'}`}
       role="dialog"
       aria-label="日期选择器"
@@ -256,12 +306,12 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       <header className="date-picker-header">
         <div className="date-picker-month-copy"><span className="date-picker-year">{viewDate.getFullYear()}</span><strong>{monthYear}</strong></div>
         <div className="date-picker-month-actions">
-          <button type="button" aria-label="上个月" onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
-          <button type="button" aria-label="下个月" onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
+          <button type="button" aria-label="上个月" disabled={!monthIntersectsIsoDateBounds(viewDate.getFullYear(), viewDate.getMonth() - 1, min == null ? null : String(min), max == null ? null : String(max))} onClick={() => changeMonth(-1)}><ChevronLeft size={16} /></button>
+          <button type="button" aria-label="下个月" disabled={!monthIntersectsIsoDateBounds(viewDate.getFullYear(), viewDate.getMonth() + 1, min == null ? null : String(min), max == null ? null : String(max))} onClick={() => changeMonth(1)}><ChevronRight size={16} /></button>
         </div>
       </header>
-      <div className="date-picker-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
-      <div className="date-picker-days">
+      <div className="date-picker-weekdays" aria-hidden="true">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
+      <div className="date-picker-days" role="group" aria-label="日期网格">
         {cells.map((cell) => {
           const selected = selectedValue === cell.value;
           const today = todayValue === cell.value;
@@ -276,6 +326,7 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
             className={`date-picker-day ${cell.inMonth ? '' : 'is-outside'} ${selected ? 'is-selected' : ''} ${today ? 'is-today' : ''}`}
             disabled={unavailable}
             aria-pressed={selected}
+            aria-current={today ? "date" : undefined}
             aria-label={`${cell.date.getFullYear()}年${cell.date.getMonth() + 1}月${cell.date.getDate()}日`}
             onClick={() => chooseDate(cell.value)}
           >{cell.date.getDate()}</button>;
