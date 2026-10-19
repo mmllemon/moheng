@@ -62,3 +62,30 @@ test('rejects malformed merge entries as validation errors rather than throwing'
   if (!result.success) assert.match(result.message, /合并区域定义无效/);
 });
 
+test('rejects overlapping merge regions before rendering or XLSX export', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
+  };
+  workbook.sheets.sheet1!.mergeData = [
+    { startRow: 2, startColumn: 0, endRow: 3, endColumn: 0 },
+    { startRow: 3, startColumn: 0, endRow: 3, endColumn: 1 },
+  ];
+  const result = validateReportStudioDefinition(report);
+  assert.equal(result.success, false);
+  if (!result.success) assert.match(result.message, /合并区域不能重叠/);
+});
+
+test('allows adjacent merge regions with no shared cells', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> }>;
+  };
+  workbook.sheets.sheet1!.mergeData = [
+    { startRow: 2, startColumn: 0, endRow: 2, endColumn: 0 },
+    { startRow: 2, startColumn: 1, endRow: 2, endColumn: 1 },
+  ];
+  const result = validateReportStudioDefinition(report);
+  assert.equal(result.success, true);
+});
+

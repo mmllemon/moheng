@@ -138,6 +138,7 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
         }
       }
     }
+    const validatedMerges: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }> = [];
     for (const merge of sheet.mergeData ?? []) {
       if (!merge || typeof merge !== 'object' || Array.isArray(merge)) {
         return { success: false, message: '合并区域定义无效' };
@@ -145,6 +146,14 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
       if (![merge.startRow, merge.startColumn, merge.endRow, merge.endColumn].every(Number.isInteger) || merge.startRow < 0 || merge.startColumn < 0 || merge.endRow < merge.startRow || merge.endColumn < merge.startColumn || merge.endRow >= rowCount || merge.endColumn >= columnCount) {
         return { success: false, message: '合并区域坐标超出工作表范围' };
       }
+      const overlaps = validatedMerges.some((existing) =>
+        merge.startRow <= existing.endRow
+        && merge.endRow >= existing.startRow
+        && merge.startColumn <= existing.endColumn
+        && merge.endColumn >= existing.startColumn
+      );
+      if (overlaps) return { success: false, message: '合并区域不能重叠' };
+      validatedMerges.push(merge);
     }
   }
   if (seenSheetIds.size !== Object.keys(workbook.sheets).length) {
