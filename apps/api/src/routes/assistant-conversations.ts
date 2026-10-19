@@ -7,6 +7,7 @@ import { canAccessProject } from '../lib/project-access.js';
 import { prisma } from '../lib/prisma.js';
 import { appendAssistantRunEvent } from '../lib/assistant-run-events.js';
 import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
+import { isAssistantBaseUrlValid } from '../lib/assistant-config.js';
 
 const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
   if (process.env.ASSISTANT_POC_ENABLED !== 'true') {
@@ -184,7 +185,7 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
           if (previous.requestHash !== requestHash) throw new Error('ASSISTANT_IDEMPOTENCY_CONFLICT');
           return { runId: previous.id, status: previous.status, idempotentReplay: true };
         }
-        if (!process.env.OPENAI_API_KEY?.trim() || (!process.env.ASSISTANT_CHECKPOINT_DATABASE_URL?.trim() && !process.env.DATABASE_URL?.trim()) || !process.env.ASSISTANT_POC_MODEL_ID?.trim()) {
+        if (!process.env.OPENAI_API_KEY?.trim() || (!process.env.ASSISTANT_CHECKPOINT_DATABASE_URL?.trim() && !process.env.DATABASE_URL?.trim()) || !process.env.ASSISTANT_POC_MODEL_ID?.trim() || !isAssistantBaseUrlValid(process.env.OPENAI_BASE_URL)) {
           throw new Error('ASSISTANT_RUNTIME_NOT_CONFIGURED');
         }
         const active = await tx.assistantRun.findFirst({ where: { conversationId: conversation.id, status: { in: ['QUEUED', 'RUNNING'] } }, select: { id: true } });
