@@ -151,6 +151,11 @@ check('design docs enforce neutral professional visual language and record navig
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
   acceptance.includes('经营健康度') && acceptance.includes('项目驾驶舱'));
 
+check('global keyboard focus rings follow the active accent theme rather than a hard-coded hue',
+  styles.includes(':where(button, a, input, select, textarea):focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-500) 80%, transparent); outline-offset: 2px; }') &&
+  !styles.includes('rgba(81, 105, 216, .75)') &&
+  styles.includes('--control-focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent-500) 12%, transparent)'));
+
 check('minimum readable typography removes 8px/9px text declarations',
   styles.includes('--text-2xs: 11px;') &&
   !['font-size: 8px', 'font-size:8px', 'font-size: 9px', 'font-size:9px'].some((token) => styles.includes(token)));

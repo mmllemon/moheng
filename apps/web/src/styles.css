@@ -616,7 +616,7 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 .login-brand .brand-mark svg, .login-mobile-brand .brand-mark svg { width: 20px; height: 20px; }
 .success-notice, .form-alert { animation: noticeIn .18s ease both; }
 @keyframes noticeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
-:where(button, a, input, select, textarea):focus-visible { outline: 2px solid rgba(81, 105, 216, .75); outline-offset: 2px; }
+:where(button, a, input, select, textarea):focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-500) 80%, transparent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .route-transition { animation: none; }
