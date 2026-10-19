@@ -35,6 +35,21 @@ check(thread.includes('ThreadPrimitive.Messages') && thread.includes('ComposerPr
 check(thread.includes('MarkdownTextPrimitive') && thread.includes('remarkGfm'), 'message rendering must support safe Markdown and tables');
 check(thread.includes('native.isComposing') && thread.includes('native.keyCode === 229'), 'CJK IME composition guard must prevent accidental Enter submit');
 check(thread.includes('submitAssistantMessage') && thread.includes('cancelAssistantRun'), 'send/cancel must call MoHeng APIs, not mock responses');
+check(thread.includes('type RetryableSubmission =') &&
+  thread.includes('submitAssistantMessage(mountedConversationId, pending.content, pending.requestId)') &&
+  thread.includes('setRetryableSubmission(pending)') &&
+  thread.includes("conversation.status === 'ACTIVE' && !isRunning") &&
+  thread.includes('使用原请求重试') &&
+  thread.includes('const activeRunRecord = activeRunId ? conversation.runs.find') &&
+  thread.includes("activeRunRecord?.status === 'FAILED'") &&
+  thread.includes('submitPendingMessage({ requestId, optimisticId: optimistic.id, content: original.content })') &&
+  thread.includes('重新提交同一问题') &&
+  thread.includes('const reconnectActiveRun = useCallback') &&
+  thread.includes('await onRun(mountedConversationId, activeRunId)') &&
+  thread.includes('重新连接') &&
+  css.includes('.assistant-inline-retry {') &&
+  css.includes('border:1px solid color-mix(in srgb,var(--danger) 28%,var(--line))'),
+  'submission retry must reuse the original idempotency key, stay hidden for archived/running threads, and use shared theme tokens');
 check(thread.includes('分供资金核对') && thread.includes('已登记应付的差异') && page.includes("DownstreamContractPayment: '分供付款/退款流水'"), 'AI read-only cash flow evidence must be discoverable and visibly labeled in Chinese');
 check(!thread.includes('Hello, world!') && !thread.includes('setTimeout(resolve'), 'production UI must not contain demo reply behavior');
 check(apiClient.includes("'/assistant-poc'") && apiClient.includes('listAssistantConversations') && apiClient.includes('archiveAssistantConversation'), 'custom client must use existing MoHeng conversation APIs');

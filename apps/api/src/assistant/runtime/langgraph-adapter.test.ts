@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ASSISTANT_MODEL_POLICY, runLangGraphAssistantTurn, type LangGraphAssistantTurn } from './langgraph-adapter.js';
+import { ASSISTANT_MODEL_POLICY, runLangGraphAssistantTurn, type AssistantRuntimeTestDependencies, type LangGraphAssistantTurn } from './langgraph-adapter.js';
 import { assertSafeAssistantEventPayload } from '../../lib/assistant-run-events.js';
 import type { AuthUser } from '../../lib/auth.js';
 import type { AssistantReadOnlyToolInput } from '../../lib/assistant-read-only-tools.js';
@@ -49,4 +49,22 @@ test('fake provider autonomously chooses project_operating_overview for an overv
   assert.match(answer, /有效合同额 1200000\.00/);
   assert.match(answer, /目标成本 100000\.00/);
   assert.doesNotMatch(JSON.stringify(emitted), new RegExp(FAKE_PROVIDER_PRIVATE_MARKER));
+});
+
+
+test('empty final model response is rejected instead of completing with a blank answer', async () => {
+  const toolCalls: AssistantReadOnlyToolInput[] = [];
+  const emitted: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  const dependencies = {
+    ...createFakeRuntimeDependencies(toolCalls),
+    createAgent: (() => ({
+      invoke: async () => ({ messages: [{ type: 'ai', content: '  \n  ' }] }),
+    })) as unknown as AssistantRuntimeTestDependencies['createAgent'],
+  };
+  await assert.rejects(
+    runLangGraphAssistantTurn(turn('请分析当前项目。', emitted), dependencies),
+    /ASSISTANT_EMPTY_RESPONSE/,
+  );
+  assert.deepEqual(toolCalls, []);
+  assert.deepEqual(emitted, []);
 });
