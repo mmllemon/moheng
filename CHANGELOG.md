@@ -1,8 +1,8 @@
 ## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
 
-### Draft: v2.20.0 product completion (not released)
+### v2.20.0 product completion — merged to main, not released
 
-> Draft notes for [PR #4: consolidated v2.20 product completion](https://github.com/mmllemon/moheng/pull/4). This is not a release announcement; package versions remain `2.19.0-rc.2` and the PR is not merged.
+> Source integration status: merged to `main` on 2026-10-19 as commit `08696e5bc5fb106c10aae5b796616b25c159aa52`. This is **not a formal release**: package versions remain `2.19.0-rc.2`, no GitHub Release has been published, and production rollout remains blocked on the real-environment acceptance and authorized owner sign-offs documented in the acceptance review.
 
 - Consolidated repository documentation into one current index and four-phase roadmap; archived the historical defect review and summarized old RC acceptance records rather than keeping repeated versioned design documents.
 - Added styled `报表预览` overview sheets to both standard XLSX exports and Report Studio XLSX exports, including report scope, filters/template version, worksheet directory, row limit and truncation warnings.
