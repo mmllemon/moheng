@@ -124,9 +124,11 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
     if (Array.isArray(sheet.mergeData) && sheet.mergeData.length > 200) return { success: false, message: '每张工作表最多 200 个合并区域' };
     for (const [rowKey, cells] of Object.entries(sheet.cellData ?? {})) {
       const row = Number(rowKey);
+      if (!/^(0|[1-9]\d*)$/.test(rowKey)) return { success: false, message: '单元格行坐标格式无效' };
       if (!Number.isInteger(row) || row < 0 || row >= rowCount || !cells || typeof cells !== 'object' || Array.isArray(cells)) return { success: false, message: '单元格行坐标超出范围' };
       for (const [colKey, cell] of Object.entries(cells)) {
         const column = Number(colKey);
+        if (!/^(0|[1-9]\d*)$/.test(colKey)) return { success: false, message: '单元格列坐标格式无效' };
         if (!Number.isInteger(column) || column < 0 || column >= columnCount || !cell || typeof cell !== 'object' || Array.isArray(cell)) return { success: false, message: '单元格列坐标超出范围' };
         cellCount += 1;
         if (cellCount > 8000) return { success: false, message: '整个工作簿最多保存 8,000 个非空单元格' };

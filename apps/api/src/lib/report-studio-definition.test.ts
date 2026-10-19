@@ -157,3 +157,33 @@ test('rejects falsey non-array mergeData values as validation errors instead of 
     if (!result.success) assert.match(result.message, /合并区域列表结构无效/);
   }
 });
+
+test('rejects non-canonical cell row keys instead of validating a different render coordinate', () => {
+  for (const rowKey of ['00', '-0', '+1', '1.0', ' 1']) {
+    const report = definition();
+    const workbook = report.workbook as unknown as {
+      sheets: Record<string, { cellData: Record<string, Record<string, unknown>> };
+    };
+    workbook.sheets.sheet1!.cellData = {
+      [rowKey]: { '0': { v: 'This key would not be read by the renderer' } },
+    };
+    const result = validateReportStudioDefinition(report);
+    assert.equal(result.success, false, `row key ${JSON.stringify(rowKey)} should be rejected`);
+    if (!result.success) assert.match(result.message, /单元格行坐标格式无效/);
+  }
+});
+
+test('rejects non-canonical cell column keys instead of silently dropping values during rendering', () => {
+  for (const columnKey of ['00', '-0', '+1', '1.0', ' 1']) {
+    const report = definition();
+    const workbook = report.workbook as unknown as {
+      sheets: Record<string, { cellData: Record<string, Record<string, unknown>> };
+    };
+    workbook.sheets.sheet1!.cellData = {
+      '0': { [columnKey]: { v: 'This key would not be read by the renderer' } },
+    };
+    const result = validateReportStudioDefinition(report);
+    assert.equal(result.success, false, `column key ${JSON.stringify(columnKey)} should be rejected`);
+    if (!result.success) assert.match(result.message, /单元格列坐标格式无效/);
+  }
+});
