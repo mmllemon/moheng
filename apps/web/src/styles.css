@@ -891,44 +891,44 @@ kbd { padding: 1px 5px; border: 1px solid #e0e5ee; border-radius: 4px; color: #9
 .business-party-role-hints { color: #8792a3; font-size: 10px; }
 .business-party-create-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .business-parties-page, .business-party-detail-page { display: grid; gap: 17px; }
-.business-party-summary-strip { display: flex; align-items: center; gap: 22px; padding: 14px 17px; border: 1px solid #e8edf4; border-radius: 10px; background: #fff; }
-.business-party-summary-strip > div { display: flex; align-items: center; gap: 9px; color: #6778bc; }
+.business-party-summary-strip { display: flex; align-items: center; gap: 22px; padding: 14px 17px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }
+.business-party-summary-strip > div { display: flex; align-items: center; gap: 9px; color: var(--accent-700); }
 .business-party-summary-strip > div span { display: grid; gap: 2px; }
-.business-party-summary-strip strong { color: #27354a; font-size: 17px; font-variant-numeric: tabular-nums; }
-.business-party-summary-strip small { color: #8a96a9; font-size: var(--text-2xs); }
-.business-party-summary-strip p { margin: 0 0 0 auto; color: #8591a4; font-size: 10px; text-align: right; }
+.business-party-summary-strip strong { color: var(--neutral-800); font-size: 17px; font-variant-numeric: tabular-nums; }
+.business-party-summary-strip small { color: var(--text-muted); font-size: var(--text-2xs); }
+.business-party-summary-strip p { margin: 0 0 0 auto; color: var(--text-muted); font-size: 10px; text-align: right; }
 .business-party-table { min-width: 940px; }
-.business-party-name-link { display: flex; align-items: center; gap: 9px; color: #2c3b51; text-decoration: none; }
-.business-party-name-link > svg { flex: 0 0 auto; color: #7b89c7; }
+.business-party-name-link { display: flex; align-items: center; gap: 9px; color: var(--neutral-800); text-decoration: none; }
+.business-party-name-link > svg { flex: 0 0 auto; color: var(--accent-600); }
 .business-party-name-link span { display: grid; gap: 4px; min-width: 0; }
 .business-party-name-link strong { font-size: 11px; font-weight: 700; }
 .business-party-name-link small { color: #919caf; font-size: var(--text-2xs); }
-.business-party-name-link:hover strong, .data-table a:hover { color: #4f64ba; text-decoration: underline; }
+.business-party-name-link:hover strong, .data-table a:hover { color: var(--accent-700); text-decoration: underline; }
 .business-party-role-list { display: flex; flex-wrap: wrap; gap: 4px; max-width: 290px; }
-.neutral-pill { display: inline-flex; align-items: center; padding: 3px 6px; border-radius: 4px; background: #f2f4f8; color: #66758a; font-size: var(--text-2xs); white-space: nowrap; }
-.business-party-role-checks { display: flex; flex-wrap: wrap; gap: 8px 13px; padding: 10px; border: 1px solid #e8edf4; border-radius: 7px; background: #fbfcfe; }
-.business-party-role-checks label { display: inline-flex; align-items: center; gap: 6px; color: #59677d; font-size: 11px; cursor: pointer; }
+.neutral-pill { display: inline-flex; align-items: center; padding: 3px 6px; border-radius: 4px; background: var(--surface-muted); color: var(--text-secondary); font-size: var(--text-2xs); white-space: nowrap; }
+.business-party-role-checks { display: flex; flex-wrap: wrap; gap: 8px 13px; padding: 10px; border: 1px solid var(--card-border); border-radius: 7px; background: var(--bg-base); }
+.business-party-role-checks label { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 11px; cursor: pointer; }
 .business-party-role-checks input { width: auto; min-width: 0; }
-.business-party-backline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: -4px; color: #939eb0; font-size: 10px; }
-.business-party-backline a { display: inline-flex; align-items: center; gap: 6px; color: #5d6fb8; text-decoration: none; font-size: 11px; font-weight: 600; }
+.business-party-backline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: -4px; color: var(--text-muted); font-size: 10px; }
+.business-party-backline a { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-700); text-decoration: none; font-size: 11px; font-weight: 600; }
 .business-party-profile-hero { display: flex; align-items: flex-start; gap: 16px; padding: 20px; }
-.business-party-profile-icon { display: grid; place-items: center; width: 52px; height: 52px; flex: 0 0 auto; border-radius: 13px; color: #6477c6; background: #eff2ff; }
+.business-party-profile-icon { display: grid; place-items: center; width: 52px; height: 52px; flex: 0 0 auto; border-radius: 13px; color: var(--accent-700); background: var(--accent-50); }
 .business-party-profile-copy { flex: 1; min-width: 0; }
 .business-party-profile-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.business-party-profile-title h2 { margin: 0; color: #253247; font-size: 20px; letter-spacing: -.025em; overflow-wrap: anywhere; }
-.business-party-profile-identifiers { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 8px 0 11px; color: #7e8ba0; font-size: 10px; }
+.business-party-profile-title h2 { margin: 0; color: var(--neutral-800); font-size: 20px; letter-spacing: -.025em; overflow-wrap: anywhere; }
+.business-party-profile-identifiers { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 8px 0 11px; color: var(--text-muted); font-size: 10px; }
 .business-party-metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.business-party-metric { display: grid; gap: 7px; min-width: 0; padding: 14px; border: 1px solid #e7ecf3; border-radius: 9px; background: #fff; }
-.business-party-metric span { color: #77849a; font-size: 10px; }
-.business-party-metric strong { color: #2d3a50; font-size: clamp(14px, 1.35vw, 20px); line-height: 1.25; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.business-party-metric small { color: #99a3b2; font-size: var(--text-2xs); line-height: 1.45; }
+.business-party-metric { display: grid; gap: 7px; min-width: 0; padding: 14px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }
+.business-party-metric span { color: var(--text-secondary); font-size: 10px; }
+.business-party-metric strong { color: var(--neutral-800); font-size: clamp(14px, 1.35vw, 20px); line-height: 1.25; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.business-party-metric small { color: var(--text-muted); font-size: var(--text-2xs); line-height: 1.45; }
 .business-party-info-panel .panel-heading, .business-party-projects-panel .panel-heading, .business-party-contracts-panel .panel-heading { align-items: center; }
 .business-party-info-panel .panel-heading h3, .business-party-projects-panel .panel-heading h3, .business-party-contracts-panel .panel-heading h3 { gap: 7px; }
 .business-party-info-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 0; padding: 0 18px 15px; }
-.business-party-info-grid > div { display: grid; gap: 6px; padding: 12px 8px; border-bottom: 1px solid #f0f2f6; min-width: 0; }
-.business-party-info-grid span { color: #8a96a8; font-size: 10px; }
-.business-party-info-grid strong { color: #435169; font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }
-.business-party-empty-state { padding: 22px 18px; color: #909bad; font-size: 11px; }
+.business-party-info-grid > div { display: grid; gap: 6px; padding: 12px 8px; border-bottom: 1px solid var(--border-light, var(--card-border)); min-width: 0; }
+.business-party-info-grid span { color: var(--text-muted); font-size: 10px; }
+.business-party-info-grid strong { color: var(--text-secondary); font-size: 11px; font-weight: 600; overflow-wrap: anywhere; }
+.business-party-empty-state { padding: 22px 18px; color: var(--text-muted); font-size: 11px; }
 .business-party-projects-panel, .business-party-contracts-panel { min-width: 0; overflow: hidden; }
 .business-party-projects-panel .data-table, .business-party-contracts-panel .data-table { min-width: 980px; }
 @media (max-width: 1100px) {

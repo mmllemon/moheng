@@ -182,6 +182,12 @@ check('theme rendering uses one canonical attribute to prevent stale dark surfac
   styles.includes(':root[data-theme-name="obsidian"] .app-shell') &&
   !/root\.dataset\.theme\s*=/.test((await read('apps/web/src/components/UiPreferencesBar.tsx'))) &&
   (await read('apps/web/src/components/UiPreferencesBar.tsx')).includes('root.dataset.themeName = resolved'));
+check('business-party summary, profile, metrics and identity details use shared theme tokens',
+  styles.includes('.business-party-summary-strip { display: flex; align-items: center; gap: 22px; padding: 14px 17px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }') &&
+  styles.includes('.business-party-profile-title h2 { margin: 0; color: var(--neutral-800);') &&
+  styles.includes('.business-party-metric { display: grid; gap: 7px; min-width: 0; padding: 14px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }') &&
+  styles.includes('.business-party-info-grid span { color: var(--text-muted);') &&
+  !styles.includes('color: #253247; font-size: 20px; letter-spacing: -.025em;'));
 check('primary action foreground contrast uses the stronger accent-600 background across themes',
   styles.includes('.button-primary { color: white; background: var(--accent-600); border-color: var(--accent-600);') &&
   styles.includes('.breadcrumb { display: flex; align-items: center; min-width: 0; gap: 10px; color: var(--text-muted);'));
