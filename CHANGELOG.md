@@ -12,6 +12,10 @@
 - Added/expanded XLSX, payment summary, AI configuration, cost-variance and runtime-policy tests.
 - Fixed the built-in party report's `businessParty.id` field contract and added runtime validation of the PROJECT, COMPANY and PARTY default templates to the release-candidate gate.
 - Consolidated system configuration and authorization governance into dedicated workbenches, including dictionary/parameter revision controls and the authorization review workbench; production acceptance remains subject to the documented RC gates. Current-head CI is required; this draft does not claim real-model E2E, real browser visual sign-off, sanitized user-staging reconciliation or production rollout approval.
+- Fixed the default project report's lowercase `mainContract.amount` binding so it receives money formatting; added a release-gate regression test.
+- Fixed report-preview decimal rounding for custom formats with arbitrary supported precision by using decimal-string arithmetic, and added coverage for carry, negative values, and precision beyond two places.
+- Aligned report preview with common numeric Excel date formats (`yyyy-mm-dd`, `dd/mm/yyyy`, and Chinese literal patterns); locale-dependent month/day-name and time formats retain a predictable ISO-date fallback.
+- Fixed report-export polling and manual result lookup to distinguish a pending job from a completed job whose artifact is missing/expired; terminal states now show actionable errors rather than a false "still processing" or success message.
 
 ---
 
