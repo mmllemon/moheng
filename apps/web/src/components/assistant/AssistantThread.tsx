@@ -67,6 +67,15 @@ export function AssistantThread({
   const mountedConversationId = conversation.id;
   const hasActiveRun = activeRunStatus === 'QUEUED' || activeRunStatus === 'RUNNING';
   const isRunning = isSubmitting || hasActiveRun;
+  const activeRunRecord = activeRunId ? conversation.runs.find((run) => run.id === activeRunId) : undefined;
+  const activeRunMessage = activeRunRecord
+    ? messages.find((item) => item.role === 'USER' && item.requestId === activeRunRecord.requestId)
+    : undefined;
+  const canRetryFailedRun = !retryableSubmission && conversation.status === 'ACTIVE' && !isRunning
+    && activeRunStatus === 'FAILED' && activeRunRecord?.status === 'FAILED' && Boolean(activeRunMessage);
+  const canReconnectActiveRun = !retryableSubmission && conversation.status === 'ACTIVE' && !isRunning
+    && activeRunStatus === 'FAILED' && Boolean(activeRunId)
+    && (activeRunRecord?.status === 'QUEUED' || activeRunRecord?.status === 'RUNNING');
 
   useEffect(() => {
     setMessages(conversation.messages);
@@ -124,6 +133,38 @@ export function AssistantThread({
     void submitPendingMessage(pending);
   }, [retryableSubmission, isRunning, conversation.status, submitPendingMessage]);
 
+  const retryFailedRun = useCallback(() => {
+    const original = activeRunMessage;
+    if (!original || !canRetryFailedRun) return;
+    const requestId = createRequestId();
+    const optimistic: AssistantMessage = {
+      id: `local-${requestId}`,
+      conversationId: mountedConversationId,
+      requestId,
+      role: 'USER',
+      content: original.content,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    setLocalError('');
+    setRetryableSubmission(null);
+    setMessages((current) => [...current, optimistic]);
+    void submitPendingMessage({ requestId, optimisticId: optimistic.id, content: original.content });
+  }, [activeRunMessage, canRetryFailedRun, mountedConversationId, submitPendingMessage]);
+
+  const reconnectActiveRun = useCallback(async () => {
+    if (!activeRunId || !canReconnectActiveRun) return;
+    setLocalError('');
+    setIsSubmitting(true);
+    try {
+      await onRun(mountedConversationId, activeRunId);
+    } catch (error) {
+      setLocalError(error instanceof ApiError ? error.message : '重新连接失败，请刷新会话状态后重试。');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [activeRunId, canReconnectActiveRun, mountedConversationId, onRun]);
+
   const onCancel = useCallback(async () => {
     const runId = activeRunIdRef.current;
     if (!runId) return;
@@ -163,6 +204,8 @@ export function AssistantThread({
           <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
           <ThreadPrimitive.ViewportFooter className="assistant-composer-footer">
             {localError && <div className="assistant-inline-error" role="alert"><CircleAlert size={15} /><span>{localError}</span>{retryableSubmission && conversation.status === 'ACTIVE' && !isRunning && <button type="button" className="assistant-inline-retry" onClick={retryFailedSubmission}>使用原请求重试</button>}</div>
+            {canRetryFailedRun && <div className="assistant-inline-error" role="status"><CircleAlert size={15} /><span>本次分析运行失败，可以重新提交原问题并创建一次新运行。</span><button type="button" className="assistant-inline-retry" onClick={retryFailedRun}>重新提交同一问题</button></div>}
+            {canReconnectActiveRun && <div className="assistant-inline-error" role="status"><CircleAlert size={15} /><span>页面连接已中断，但服务端任务仍在排队或运行中。</span><button type="button" className="assistant-inline-retry" onClick={() => void reconnectActiveRun()}>重新连接</button></div>
             {hasActiveRun && <div className="assistant-live-run" role="status"><span className="assistant-live-dot" />{activeRunStatus === 'QUEUED' ? '任务已排队，等待执行' : '正在读取台账并整理分析'}<span> · 可随时取消</span></div>}
             {conversation.status === 'ARCHIVED'
               ? <div className="assistant-archived-note">此会话已归档，只能查看历史内容。</div>

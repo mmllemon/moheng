@@ -40,6 +40,13 @@ check(thread.includes('type RetryableSubmission =') &&
   thread.includes('setRetryableSubmission(pending)') &&
   thread.includes("conversation.status === 'ACTIVE' && !isRunning") &&
   thread.includes('使用原请求重试') &&
+  thread.includes('const activeRunRecord = activeRunId ? conversation.runs.find') &&
+  thread.includes("activeRunRecord?.status === 'FAILED'") &&
+  thread.includes('submitPendingMessage({ requestId, optimisticId: optimistic.id, content: original.content })') &&
+  thread.includes('重新提交同一问题') &&
+  thread.includes('const reconnectActiveRun = useCallback') &&
+  thread.includes('await onRun(mountedConversationId, activeRunId)') &&
+  thread.includes('重新连接') &&
   css.includes('.assistant-inline-retry {') &&
   css.includes('border:1px solid color-mix(in srgb,var(--danger) 28%,var(--line))'),
   'submission retry must reuse the original idempotency key, stay hidden for archived/running threads, and use shared theme tokens');
