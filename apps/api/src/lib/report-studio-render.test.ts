@@ -118,6 +118,7 @@ test('full print preview returns all rendered rows beyond the normal 200-row scr
   assert.ok(printPreview.sheets[0]!.rows.length > 200);
   assert.equal(printPreview.sheets[0]!.rows.length, rendered.sheets[0]!.rows.length);
   assert.equal(printPreview.sheets[0]!.previewRowCount, rendered.sheets[0]!.rows.length);
+  assert.equal(printPreview.sheets[0]!.frozenRows, 2);
   assert.equal(printPreview.sheets[0]!.truncated, false);
   assert.equal(printPreview.sheets[0]!.rows.at(-2)?.[0]?.value, 'SK-240');
 });
@@ -173,6 +174,7 @@ test('XLSX export starts with a styled overview sheet and preserves the report w
 
   // The export still contains the original user-designed sheet and values.
   const designedSheet = workbook.getWorksheet('测试表')!;
+  assert.equal(designedSheet.pageSetup.printTitlesRow, '1:2', 'frozen rows repeat on printed pages when no merge crosses the frozen boundary');
   assert.equal(designedSheet.getCell('B1').value, '测试项目');
   assert.equal(designedSheet.getCell('B1').alignment?.vertical, 'top');
   assert.equal(designedSheet.getCell('B1').font.color && (designedSheet.getCell('B1').font.color as { argb?: string }).argb, 'FF123456');
