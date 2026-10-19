@@ -166,7 +166,7 @@ check('Obsidian primary actions use contrast-safe dark accent backgrounds',
 check('theme rendering uses one canonical attribute to prevent stale dark surfaces after a theme switch',
   !styles.includes(':root[data-theme="dark"]') &&
   styles.includes(':root[data-theme-name="obsidian"] .app-shell') &&
-  !/root\\.dataset\\.theme\\s*=/.test((await read('apps/web/src/components/UiPreferencesBar.tsx'))) &&
+  !/root\.dataset\.theme\s*=/.test((await read('apps/web/src/components/UiPreferencesBar.tsx'))) &&
   (await read('apps/web/src/components/UiPreferencesBar.tsx')).includes('root.dataset.themeName = resolved'));
 check('primary action foreground contrast uses the stronger accent-600 background across themes',
   styles.includes('.button-primary { color: white; background: var(--accent-600); border-color: var(--accent-600);') &&
