@@ -50,6 +50,7 @@ check(routes.includes('status: conversation.status'), 'conversation list must ex
 check(routes.includes("if (conversation.status !== 'ACTIVE')"), 'archived conversations cannot accept new messages');
 check(routes.includes("status: 'ACTIVE', project: { deletedAt: null }") && routes.indexOf('FOR UPDATE') < routes.indexOf("status: 'ACTIVE', project: { deletedAt: null }"), 'message submission rechecks active conversation status under the row lock');
 check(routes.includes('ASSISTANT_CONVERSATION_ARCHIVED') && routes.includes('ASSISTANT_RUNTIME_NOT_CONFIGURED'), 'archival race and runtime misconfiguration return explicit safe errors');
+check(routes.includes("import { isAssistantBaseUrlValid } from '../lib/assistant-config.js'") && routes.includes('!isAssistantBaseUrlValid(process.env.OPENAI_BASE_URL)'), 'message submission must reject an invalid optional model endpoint before enqueueing a run');
 check(routes.includes('ASSISTANT_EVENT_CURSOR_AHEAD') && routes.includes('after > ownedRun.lastEventSequence'), 'SSE rejects a cursor that skips beyond the durable event stream');
 check(eventService.includes('lastEventSequence: { increment: 1 }') && eventService.includes('sequence: run.lastEventSequence'), 'run event sequence must be monotonic and transactionally allocated');
 check(jobHandler.includes("type: 'run.started'") && jobHandler.includes("type: 'run.completed'") && jobHandler.includes("type: 'run.failed'"), 'run lifecycle must publish durable events');
