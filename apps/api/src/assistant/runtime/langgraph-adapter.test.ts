@@ -12,11 +12,11 @@ test('assistant model policy bounds response size, timeout and retries', () => {
 
 const actor: AuthUser = { sub: 'test-user', email: 'test@example.invalid', role: 'ADMIN', sid: 'test-session' };
 
-function turn(prompt: string, emitted: Array<{ type: string; payload: Record<string, unknown> }>): LangGraphAssistantTurn {
+function turn(prompt: string, emitted: Array<{ type: string; payload: Record<string, unknown> }>, signal?: AbortSignal): LangGraphAssistantTurn {
   return {
     apiKey: 'test-only-not-a-real-api-key', modelId: 'fake-provider', baseURL: 'https://provider.example.invalid/v1',
     checkpointUrl: 'postgres://not-used-by-memory-checkpointer', conversationId: 'gate-conversation', runId: 'gate-run', projectId: 'project-乙', actor,
-    messages: [{ role: 'user', content: prompt }], isCancellationRequested: async () => false,
+    messages: [{ role: 'user', content: prompt }], ...(signal ? { signal } : {}), isCancellationRequested: async () => false,
     emit: async (type, payload) => {
       assertSafeAssistantEventPayload(type, payload);
       emitted.push({ type, payload });
@@ -83,4 +83,59 @@ test('the system prompt warns the model when older conversation context was omit
   const input = { ...turn('请继续刚才的分析。', []), contextTruncated: true };
   assert.equal(await runLangGraphAssistantTurn(input, dependencies), '已根据当前上下文回答。');
   assert.match(systemPrompt, /较早的会话历史已因输入长度预算而省略/);
+});
+
+test('LangGraph invocation receives the run cancellation signal and aborts in-flight work', async () => {
+  const toolCalls: AssistantReadOnlyToolInput[] = [];
+  const emitted: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  const controller = new AbortController();
+  let observedSignal: AbortSignal | undefined;
+  const dependencies = {
+    ...createFakeRuntimeDependencies(toolCalls),
+    createAgent: (() => ({
+      invoke: async (_input: unknown, options?: { signal?: AbortSignal }) => {
+        observedSignal = options?.signal;
+        return new Promise((resolve, reject) => {
+          const abort = () => reject(new Error('ASSISTANT_CANCEL_REQUESTED'));
+          if (options?.signal?.aborted) abort();
+          else options?.signal?.addEventListener('abort', abort, { once: true });
+        });
+      },
+    })) as unknown as AssistantRuntimeTestDependencies['createAgent'],
+  };
+  const pending = runLangGraphAssistantTurn(turn('请分析当前项目。', emitted, controller.signal), dependencies);
+  assert.equal(observedSignal, controller.signal);
+  controller.abort(new Error('ASSISTANT_CANCEL_REQUESTED'));
+  await assert.rejects(pending, /ASSISTANT_CANCEL_REQUESTED/);
+  assert.deepEqual(toolCalls, []);
+});
+
+
+test('tool cancellation during a read-only query does not emit false completion or failure events', async () => {
+  const toolCalls: AssistantReadOnlyToolInput[] = [];
+  const emitted: Array<{ type: string; payload: Record<string, unknown> }> = [];
+  let cancellationChecks = 0;
+  const dependencies = {
+    ...createFakeRuntimeDependencies(toolCalls),
+    runReadOnlyTool: (async (input: AssistantReadOnlyToolInput) => {
+      toolCalls.push(input);
+      return (await import('../../../test-support/fake-assistant-provider.js')).fakeToolResult(input) as never;
+    }) as unknown as AssistantRuntimeTestDependencies['runReadOnlyTool'],
+    createAgent: ((config: { tools?: Array<{ invoke: (input: unknown) => Promise<unknown> }> }) => ({
+      invoke: async () => {
+        await config.tools?.[0]?.invoke({});
+        return { messages: [{ type: 'ai', content: '这条答复不应产生。' }] };
+      },
+    })) as unknown as AssistantRuntimeTestDependencies['createAgent'],
+  };
+  const input = {
+    ...turn('请分析当前项目。', emitted),
+    isCancellationRequested: async () => {
+      cancellationChecks += 1;
+      return cancellationChecks > 1;
+    },
+  };
+  await assert.rejects(runLangGraphAssistantTurn(input, dependencies), /ASSISTANT_CANCEL_REQUESTED/);
+  assert.equal(toolCalls.length, 1);
+  assert.deepEqual(emitted.map((event) => event.type), ['tool.started']);
 });

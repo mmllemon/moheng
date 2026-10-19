@@ -50,6 +50,7 @@ export type LangGraphAssistantTurn = {
   actor: AuthUser;
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   contextTruncated?: boolean;
+  signal?: AbortSignal;
   isCancellationRequested: () => Promise<boolean>;
   emit: (type: string, payload: Record<string, AssistantEventJsonValue>) => Promise<void>;
 };
@@ -84,11 +85,13 @@ export async function runLangGraphAssistantTurn(
       change_evidence_completeness: '检查已授权项目变更签证所需字段是否缺失，仅返回缺口代码；不是审批或法律效力结论。',
     };
     const tools = allowedToolIds.map((toolId) => tool(async () => {
-      if (await input.isCancellationRequested()) throw new Error('ASSISTANT_CANCEL_REQUESTED');
+      if (input.signal?.aborted || await input.isCancellationRequested()) throw new Error('ASSISTANT_CANCEL_REQUESTED');
       const started = Date.now();
       await input.emit('tool.started', { toolId });
       try {
         const result = await runtime.runReadOnlyTool({ toolId, projectId: input.projectId }, input.actor);
+        // A read-only DB query may finish after the graph was aborted; never append a false completion event afterward.
+        if (input.signal?.aborted || await input.isCancellationRequested()) throw new Error('ASSISTANT_CANCEL_REQUESTED');
         // Persist only compact, structured source metadata; never persist raw result bodies or user-provided business text in events.
         await input.emit('tool.completed', {
           toolId, durationMs: Date.now() - started, sourceCount: result.sources.length, generatedAt: result.generatedAt,
@@ -97,6 +100,7 @@ export async function runLangGraphAssistantTurn(
         });
         return JSON.stringify(result);
       } catch (error) {
+        if (error instanceof Error && error.message === 'ASSISTANT_CANCEL_REQUESTED') throw error;
         const code = isRecord(error) && typeof error.code === 'string' && /^[A-Z0-9_]{3,80}$/.test(error.code)
           ? error.code : 'ASSISTANT_TOOL_FAILED';
         await input.emit('tool.failed', { toolId, durationMs: Date.now() - started, code });
@@ -121,6 +125,7 @@ export async function runLangGraphAssistantTurn(
     const result = await agent.invoke({ messages: input.messages }, {
       configurable: { thread_id: `moheng:${input.conversationId}:${input.runId}` },
       recursionLimit: 12,
+      ...(input.signal ? { signal: input.signal } : {}),
     });
     const messages = (result as { messages?: Array<{ getType?: () => string; type?: string; content?: unknown }> }).messages ?? [];
     const finalMessage = [...messages].reverse().find((message) => message.getType?.() === 'ai' || message.type === 'ai');

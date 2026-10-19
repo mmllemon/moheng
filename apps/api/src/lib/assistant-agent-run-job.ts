@@ -133,6 +133,25 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
   const history = boundedHistory.messages;
   const contextTruncated = boundedHistory.truncated || historyDesc.length > MAX_CONTEXT_MESSAGES;
   const actor: AuthUser = { sub: user.id, email: user.email, role: user.role, sid: 'assistant-background-job' };
+  const cancellationController = new AbortController();
+  let cancellationPollStopped = false;
+  let cancellationPollTimer: ReturnType<typeof setTimeout> | undefined;
+  const pollForCancellation = () => {
+    cancellationPollTimer = setTimeout(async () => {
+      try {
+        if (await isCancellationRequested(runId)) {
+          cancellationController.abort(new Error('ASSISTANT_CANCEL_REQUESTED'));
+          return;
+        }
+      } catch {
+        // A transient database probe failure must not be treated as a user cancellation.
+      }
+      if (!cancellationPollStopped && !cancellationController.signal.aborted) pollForCancellation();
+    }, 1500);
+    cancellationPollTimer.unref?.();
+  };
+  pollForCancellation();
+
   try {
     // Loading provider/runtime packages only at execution time keeps ordinary API startup independent of Agent code paths.
     const runtime = await import('../assistant/runtime/langgraph-adapter.js');
@@ -140,6 +159,7 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
     const responseText = await runAssistantTurn({
       apiKey, modelId, baseURL, checkpointUrl, conversationId, runId, projectId: run.projectId,
       actor, messages: history, contextTruncated,
+      signal: cancellationController.signal,
       isCancellationRequested: () => isCancellationRequested(runId),
       emit: (type, payload) => appendEvent(conversationId, runId, type, payload),
     });
@@ -182,6 +202,9 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
     }
     await failRun(conversationId, runId, 'ASSISTANT_RUNTIME_FAILED').catch(() => undefined);
     throw new PermanentBackgroundJobError('ASSISTANT_RUNTIME_FAILED');
+  } finally {
+    cancellationPollStopped = true;
+    if (cancellationPollTimer) clearTimeout(cancellationPollTimer);
   }
   };
 }

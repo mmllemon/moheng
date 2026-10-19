@@ -126,6 +126,47 @@ test('isolated PostgreSQL assistant recovery + injected fake provider success co
     const s3Audit = await prisma.auditLog.findMany({ where: { entity: 'AssistantRun', entityId: s3.run.id } });
     assert.equal(s3Audit.filter((row) => row.action === 'ASSISTANT_RUN_COMPLETED').length, 1);
 
+    // S3-CANCEL: a persisted cancellation request must abort the active model call via AbortSignal.
+    const sCancel = await makeRun({ label: 'S3-CANCEL-provider-abort', status: 'QUEUED', job: { status: 'QUEUED', attempts: 0, maxAttempts: 1 } });
+    const cancelClaimed = await claimNextBackgroundJob(`assistant-cancel-gate-${suffix}`, 900);
+    assert.ok(cancelClaimed, 'queued cancellation test job should be claimed');
+    assert.equal(cancelClaimed.id, sCancel.jobId);
+    let observedSignal: AbortSignal | undefined;
+    let abortObserved = false;
+    const cancellationHandler = createAssistantAgentRunJobHandler({
+      runAssistantTurn: (input) => new Promise<string>((_resolve, reject) => {
+        observedSignal = input.signal;
+        assert.ok(observedSignal, 'worker must pass a model-call AbortSignal');
+        const onAbort = () => {
+          abortObserved = true;
+          reject(new Error('ASSISTANT_CANCEL_REQUESTED'));
+        };
+        if (observedSignal.aborted) onAbort();
+        else observedSignal.addEventListener('abort', onAbort, { once: true });
+      }),
+    });
+    const cancellationExecution = cancellationHandler(cancelClaimed);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const liveRun = await prisma.assistantRun.findUniqueOrThrow({ where: { id: sCancel.run.id } });
+      if (liveRun.status === 'RUNNING' && observedSignal) break;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    assert.ok(observedSignal, 'model call should start before cancellation is requested');
+    assert.equal((await prisma.assistantRun.findUniqueOrThrow({ where: { id: sCancel.run.id } })).status, 'RUNNING');
+    await prisma.assistantRun.update({ where: { id: sCancel.run.id }, data: { cancelRequestedAt: new Date() } });
+    await cancellationExecution;
+    await prisma.backgroundJob.updateMany({
+      where: { id: cancelClaimed.id, status: 'RUNNING' },
+      data: { status: 'SUCCEEDED', finishedAt: new Date(), lockedAt: null, lockedBy: null },
+    });
+    assert.equal(abortObserved, true, 'worker must abort the model call after observing the persisted cancel marker');
+    const cancelledRun = await prisma.assistantRun.findUniqueOrThrow({ where: { id: sCancel.run.id } });
+    assert.equal(cancelledRun.status, 'CANCELLED');
+    assert.equal(await prisma.assistantMessage.count({ where: { conversationId: sCancel.conversation.id, role: 'ASSISTANT' } }), 0);
+    const cancelledEvents = await prisma.assistantRunEvent.findMany({ where: { runId: sCancel.run.id }, orderBy: { sequence: 'asc' } });
+    assert.deepEqual(cancelledEvents.map((event) => event.type), ['run.queued', 'run.started', 'run.cancelled']);
+
+
     if (artifactDir) {
       await mkdir(artifactDir, { recursive: true });
       await writeFile(join(artifactDir, 'assistant-events.jsonl'), s3Events.map((event) => JSON.stringify({ type: event.type, payload: event.payload })).join('\n') + '\n', 'utf8');
