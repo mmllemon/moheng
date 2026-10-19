@@ -1,4 +1,4 @@
-import { readdir, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, extname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,7 +15,6 @@ const ignoredDirectories = new Set([
 ]);
 const markdownExtensions = new Set(['.md', '.mdx']);
 const brokenLinks = [];
-let markdownFilesChecked = 0;
 let localLinksChecked = 0;
 
 async function collectMarkdownFiles(directory) {
@@ -34,15 +33,19 @@ async function collectMarkdownFiles(directory) {
 }
 
 function withoutCode(markdown) {
+  const tick = String.fromCharCode(96);
+  const tripleTick = tick.repeat(3);
+  const fencedCode = new RegExp(tripleTick + '[\\s\\S]*?' + tripleTick, 'g');
+  const inlineCode = new RegExp(tick + '[^' + tick + '\\n]*' + tick, 'g');
   return markdown
-    .replace(/```[\\s\\S]*?```/g, '')
-    .replace(/~~~[\\s\\S]*?~~~/g, '')
-    .replace(/`[^`\\n]*`/g, '');
+    .replace(fencedCode, '')
+    .replace(/~~~[\s\S]*?~~~/g, '')
+    .replace(inlineCode, '');
 }
 
 function markdownDestinations(markdown) {
   const text = withoutCode(markdown);
-  const pattern = /!?\\[[^\\]]*\\]\\(([^)\\n]+)\\)/g;
+  const pattern = /!?\[[^\]]*\]\(([^)\n]+)\)/g;
   const results = [];
   for (const match of text.matchAll(pattern)) {
     let destination = match[1].trim();
@@ -51,16 +54,16 @@ function markdownDestinations(markdown) {
       const closing = destination.indexOf('>');
       if (closing > 0) destination = destination.slice(1, closing);
     } else {
-      destination = destination.split(/\\s+/)[0] ?? '';
+      destination = destination.split(/\s+/)[0] ?? '';
     }
-    if (destination) results.push({ destination, offset: match.index ?? 0 });
+    if (destination) results.push({ destination });
   }
   return results;
 }
 
 function isInsideRoot(path) {
   const pathFromRoot = relative(root, path);
-  return pathFromRoot === '' || (!pathFromRoot.startsWith(`..${sep}`) && pathFromRoot !== '..');
+  return pathFromRoot === '' || (!pathFromRoot.startsWith('..' + sep) && pathFromRoot !== '..');
 }
 
 async function targetExists(path) {
@@ -74,13 +77,12 @@ async function targetExists(path) {
 }
 
 const files = await collectMarkdownFiles(root);
-markdownFilesChecked = files.length;
 
 for (const sourceFile of files) {
-  const markdown = await (await import('node:fs/promises')).readFile(sourceFile, 'utf8');
+  const markdown = await readFile(sourceFile, 'utf8');
   for (const link of markdownDestinations(markdown)) {
     const original = link.destination;
-    if (/^(?:[a-z][a-z0-9+.-]*:|\\/\\/)/i.test(original) || original.startsWith('#')) continue;
+    if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(original) || original.startsWith('#')) continue;
 
     const pathname = original.split(/[?#]/, 1)[0] ?? '';
     if (!pathname) continue;
@@ -92,10 +94,10 @@ for (const sourceFile of files) {
       continue;
     }
 
-    // Root-relative application routes (for example /cost/overview) are not repository file links.
+    // Root-relative application routes are not repository file links.
     if (decodedPath.startsWith('/') && !extname(decodedPath)) continue;
     const targetPath = decodedPath.startsWith('/')
-      ? resolve(root, `.${decodedPath}`)
+      ? resolve(root, '.' + decodedPath)
       : resolve(dirname(sourceFile), decodedPath);
     if (!isInsideRoot(targetPath)) {
       brokenLinks.push({ sourceFile, destination: original, reason: 'link resolves outside repository root' });
@@ -110,11 +112,11 @@ for (const sourceFile of files) {
 }
 
 if (brokenLinks.length) {
-  console.error(`FAIL Markdown local links: ${brokenLinks.length} unresolved target(s) in ${markdownFilesChecked} Markdown file(s).`);
+  console.error('FAIL Markdown local links: ' + brokenLinks.length + ' unresolved target(s) in ' + files.length + ' Markdown file(s).');
   for (const issue of brokenLinks) {
-    console.error(`- ${relative(root, issue.sourceFile)} -> ${issue.destination} (${issue.reason})`);
+    console.error('- ' + relative(root, issue.sourceFile) + ' -> ' + issue.destination + ' (' + issue.reason + ')');
   }
   process.exitCode = 1;
 } else {
-  console.log(`PASS Markdown local links: checked ${localLinksChecked} local target(s) across ${markdownFilesChecked} Markdown file(s).`);
+  console.log('PASS Markdown local links: checked ' + localLinksChecked + ' local target(s) across ' + files.length + ' Markdown file(s).');
 }
