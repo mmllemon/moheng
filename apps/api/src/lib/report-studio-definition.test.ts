@@ -38,3 +38,27 @@ test('repeating row rejects a cell bound to another collection so row data canno
   assert.equal(result.success, false);
   if (!result.success) assert.match(result.message, /对应的重复区域样板行/);
 });
+test('rejects unlisted workbook sheets so hidden workbook entries cannot bypass validation', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as { sheets: Record<string, unknown> };
+  workbook.sheets.hidden = {
+    id: 'hidden',
+    rowCount: 1,
+    columnCount: 1,
+    cellData: { '0': { '0': { v: '隐藏单元格', f: '=1+1' } } },
+    mergeData: [],
+  };
+  const result = validateReportStudioDefinition(report);
+  assert.equal(result.success, false);
+  if (!result.success) assert.match(result.message, /工作表目录与工作表定义不一致/);
+});
+
+test('rejects malformed merge entries as validation errors rather than throwing', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as { sheets: Record<string, { mergeData: unknown[] }> };
+  workbook.sheets.sheet1!.mergeData = [null];
+  const result = validateReportStudioDefinition(report);
+  assert.equal(result.success, false);
+  if (!result.success) assert.match(result.message, /合并区域定义无效/);
+});
+
