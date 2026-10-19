@@ -151,6 +151,12 @@ check('design docs enforce neutral professional visual language and record navig
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
   acceptance.includes('经营健康度') && acceptance.includes('项目驾驶舱'));
 
+check('global keyboard focus rings follow the active accent theme rather than a hard-coded hue',
+  styles.includes(':where(button, a, input, select, textarea):focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-500) 80%, transparent); outline-offset: 2px; }') &&
+  !styles.includes('rgba(81, 105, 216, .75)') &&
+  !styles.includes('rgba(81,105,216,.75)') &&
+  styles.includes('--control-focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent-500) 12%, transparent)'));
+
 check('minimum readable typography removes 8px/9px text declarations',
   styles.includes('--text-2xs: 11px;') &&
   !['font-size: 8px', 'font-size:8px', 'font-size: 9px', 'font-size:9px'].some((token) => styles.includes(token)));
@@ -177,6 +183,18 @@ check('theme rendering uses one canonical attribute to prevent stale dark surfac
   styles.includes(':root[data-theme-name="obsidian"] .app-shell') &&
   !/root\.dataset\.theme\s*=/.test((await read('apps/web/src/components/UiPreferencesBar.tsx'))) &&
   (await read('apps/web/src/components/UiPreferencesBar.tsx')).includes('root.dataset.themeName = resolved'));
+check('Obsidian selected segmented controls use the selected accent instead of fixed indigo colors',
+  styles.includes(':root[data-theme-name="obsidian"] .ui-segmented button.active { border-color: color-mix(in srgb, var(--accent-500) 42%, var(--card-border)); background: color-mix(in srgb, var(--accent-500) 18%, var(--card-bg)); color: var(--accent-700); }') &&
+  !styles.includes(':root[data-theme-name="obsidian"] .ui-segmented button.active { background: #24314b; color: #e0e6ff; }'));
+
+check('business-party summary, profile, metrics and identity details use shared theme tokens',
+  styles.includes('.business-party-summary-strip { display: flex; align-items: center; gap: 22px; padding: 14px 17px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }') &&
+  styles.includes('.business-party-profile-title h2 { margin: 0; color: var(--neutral-800);') &&
+  styles.includes('.business-party-metric { display: grid; gap: 7px; min-width: 0; padding: 14px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }') &&
+  styles.includes('.business-party-info-grid span { color: var(--text-muted);') &&
+  styles.includes('.business-party-result { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px; border: 0; border-radius: 7px; background: var(--card-bg); color: var(--text-primary); cursor: pointer; }') &&
+  styles.includes('.business-party-create-trigger { width: 100%; display: flex; align-items: center; gap: 7px; padding: 10px; border: 0; border-top: 1px solid var(--card-border); background: var(--card-bg); color: var(--accent-700);') &&
+  !styles.includes('color: #253247; font-size: 20px; letter-spacing: -.025em;'));
 check('primary action foreground contrast uses the stronger accent-600 background across themes',
   styles.includes('.button-primary { color: white; background: var(--accent-600); border-color: var(--accent-600);') &&
   styles.includes('.breadcrumb { display: flex; align-items: center; min-width: 0; gap: 10px; color: var(--text-muted);'));
