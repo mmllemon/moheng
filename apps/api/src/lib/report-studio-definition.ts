@@ -120,6 +120,32 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
     if (!Number.isInteger(rowCount) || rowCount < 1 || rowCount > 400 || !Number.isInteger(columnCount) || columnCount < 1 || columnCount > 40) {
       return { success: false, message: '每张工作表最多 400 行、40 列' };
     }
+    if (sheet.rowData != null && (typeof sheet.rowData !== 'object' || Array.isArray(sheet.rowData))) {
+      return { success: false, message: '行高数据结构无效' };
+    }
+    for (const [rowKey, rowData] of Object.entries(sheet.rowData ?? {})) {
+      if (!/^(0|[1-9]\\d*)$/.test(rowKey)) return { success: false, message: '行高坐标格式无效' };
+      const row = Number(rowKey);
+      if (!Number.isInteger(row) || row < 0 || row >= rowCount || !rowData || typeof rowData !== 'object' || Array.isArray(rowData)) {
+        return { success: false, message: '行高坐标超出工作表范围或定义无效' };
+      }
+      if (Object.hasOwn(rowData, 'h') && (typeof rowData.h !== 'number' || !Number.isFinite(rowData.h))) {
+        return { success: false, message: '行高必须是有限数字' };
+      }
+    }
+    if (sheet.columnData != null && (typeof sheet.columnData !== 'object' || Array.isArray(sheet.columnData))) {
+      return { success: false, message: '列宽数据结构无效' };
+    }
+    for (const [columnKey, columnData] of Object.entries(sheet.columnData ?? {})) {
+      if (!/^(0|[1-9]\\d*)$/.test(columnKey)) return { success: false, message: '列宽坐标格式无效' };
+      const column = Number(columnKey);
+      if (!Number.isInteger(column) || column < 0 || column >= columnCount || !columnData || typeof columnData !== 'object' || Array.isArray(columnData)) {
+        return { success: false, message: '列宽坐标超出工作表范围或定义无效' };
+      }
+      if (Object.hasOwn(columnData, 'w') && (typeof columnData.w !== 'number' || !Number.isFinite(columnData.w))) {
+        return { success: false, message: '列宽必须是有限数字' };
+      }
+    }
     if (sheet.mergeData != null && !Array.isArray(sheet.mergeData)) return { success: false, message: '合并区域列表结构无效' };
     if (Array.isArray(sheet.mergeData) && sheet.mergeData.length > 200) return { success: false, message: '每张工作表最多 200 个合并区域' };
     for (const [rowKey, cells] of Object.entries(sheet.cellData ?? {})) {

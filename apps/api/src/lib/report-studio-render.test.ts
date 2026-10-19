@@ -550,3 +550,34 @@ test('report cell-limit failures expose an actionable non-retryable error contra
   assert.equal(error.code, 'REPORT_STUDIO_RENDERED_CELL_LIMIT_EXCEEDED');
   assert.match(error.message, /减少工作表数量、列数或明细范围后重试/);
 });
+
+test('ignores out-of-range internal column widths so preview cannot allocate an enormous grid', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { columnData: Record<string, { w?: number }> }>;
+  };
+  workbook.sheets.main!.columnData = {
+    '0': { w: 130 },
+    '1': { w: 120 },
+    '100000000': { w: 220 },
+  };
+  const result = renderReportStudio(report, dataset);
+  assert.deepEqual(result.sheets[0]!.columnWidths, { 0: 130, 1: 120 });
+  const preview = previewReportStudio(result);
+  assert.equal(Math.max(...Object.keys(preview.sheets[0]!.columnWidths).map(Number)) < 40, true);
+});
+
+test('ignores malformed and out-of-range internal row-height keys when calculating layout extent', () => {
+  const report = definition();
+  const workbook = report.workbook as unknown as {
+    sheets: Record<string, { rowData: Record<string, { h?: number }> }>;
+  };
+  workbook.sheets.main!.rowData = {
+    '0': { h: 30 },
+    '00': { h: 800 },
+    '100000000': { h: 24 },
+  };
+  const result = renderReportStudio(report, dataset);
+  assert.equal(result.sheets[0]!.rows.length, 10);
+  assert.equal(result.sheets[0]!.rowHeights[0], 30);
+});

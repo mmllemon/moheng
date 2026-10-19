@@ -140,7 +140,11 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
       ? Math.min(40, Math.floor(declaredColumnCount))
       : 40;
     const rowKeys = Object.keys(sourceRows).map(Number).filter(Number.isInteger);
-    const rowStyleKeys = Object.keys(sourceSheet.rowData ?? {}).map(Number).filter(Number.isInteger);
+    // Defend the preview/export layer even if a malformed internal workbook bypasses the API validator.
+    const rowStyleKeys = Object.keys(sourceSheet.rowData ?? {})
+      .filter((key) => /^(0|[1-9]\\d*)$/.test(key))
+      .map(Number)
+      .filter((row) => Number.isInteger(row) && row >= 0 && row < MAX_RENDERED_ROWS_PER_SHEET);
     const mergeEndRow = Math.max(-1, ...(sourceSheet.mergeData ?? []).map((merge) => merge.endRow));
     const regionMaxRow = Math.max(-1, ...sheetRegions.map((region) => region.templateRow));
     const bindingMaxRow = Math.max(-1, ...sheetBindings.map((binding) => parseCell(binding.cell).row));
@@ -243,8 +247,11 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     }
     const columnWidths: Record<number, number> = {};
     for (const [columnKey, column] of Object.entries(sourceSheet.columnData ?? {})) {
+      if (!/^(0|[1-9]\\d*)$/.test(columnKey)) continue;
       const index = Number(columnKey);
-      if (Number.isInteger(index) && typeof column?.w === 'number' && Number.isFinite(column.w)) columnWidths[index] = Math.min(600, Math.max(16, column.w));
+      if (Number.isInteger(index) && index >= 0 && index < renderColumnLimit && typeof column?.w === 'number' && Number.isFinite(column.w)) {
+        columnWidths[index] = Math.min(600, Math.max(16, column.w));
+      }
     }
     const freeze = sourceSheet.freeze && typeof sourceSheet.freeze === 'object' ? sourceSheet.freeze as Record<string, unknown> : {};
     const frozenRows = Math.max(0, Number(freeze.ySplit ?? 0) || 0);

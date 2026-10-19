@@ -187,3 +187,37 @@ test('rejects non-canonical cell column keys instead of silently dropping values
     if (!result.success) assert.match(result.message, /单元格列坐标格式无效/);
   }
 });
+
+test('rejects invalid row-height metadata keys, shapes, and values', () => {
+  const cases: Array<{ key: string; value: unknown; message: RegExp }> = [
+    { key: '00', value: { h: 24 }, message: /行高坐标格式无效/ },
+    { key: '4', value: { h: 24 }, message: /行高坐标超出工作表范围或定义无效/ },
+    { key: '1', value: { h: '24' }, message: /行高必须是有限数字/ },
+    { key: '1', value: null, message: /行高坐标超出工作表范围或定义无效/ },
+  ];
+  for (const item of cases) {
+    const report = definition();
+    const workbook = report.workbook as unknown as { sheets: Record<string, { rowData: Record<string, unknown> }> };
+    workbook.sheets.sheet1!.rowData = { [item.key]: item.value };
+    const result = validateReportStudioDefinition(report);
+    assert.equal(result.success, false);
+    if (!result.success) assert.match(result.message, item.message);
+  }
+});
+
+test('rejects invalid column-width metadata keys, shapes, and values', () => {
+  const cases: Array<{ key: string; value: unknown; message: RegExp }> = [
+    { key: '00', value: { w: 120 }, message: /列宽坐标格式无效/ },
+    { key: '2', value: { w: 120 }, message: /列宽坐标超出工作表范围或定义无效/ },
+    { key: '1', value: { w: '120' }, message: /列宽必须是有限数字/ },
+    { key: '1', value: null, message: /列宽坐标超出工作表范围或定义无效/ },
+  ];
+  for (const item of cases) {
+    const report = definition();
+    const workbook = report.workbook as unknown as { sheets: Record<string, { columnData: Record<string, unknown> }> };
+    workbook.sheets.sheet1!.columnData = { [item.key]: item.value };
+    const result = validateReportStudioDefinition(report);
+    assert.equal(result.success, false);
+    if (!result.success) assert.match(result.message, item.message);
+  }
+});
