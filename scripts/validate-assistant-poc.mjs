@@ -54,6 +54,7 @@ assert.match(assistantConfig, /!url\.username[\s\S]*?!url\.password[\s\S]*?!url\
 assert.match(assistantJob, /!isAssistantBaseUrlValid\(baseURL\)/, 'invalid provider base URL must be rejected before model execution');
 assert.match(assistantApi, /endpointValid: boolean/);
 assert.match(assistantPage, /status\.configuration\.endpointValid === false[\s\S]*?模型兼容 API 地址格式无效/, 'UI must explain invalid endpoint without rendering the raw URL');
+assert.match(decision, /查询参数或片段/, 'assistant configuration docs must define unsafe URL components');
 
 assert.match(routes, /z\.object\([\s\S]*?\)\.strict\(\)/, 'public PoC input schema must reject extra fields');
 assert.match(routes, /preHandler: \[featureGate, authRequired\]/, 'each route must be feature-gated and authenticated');
@@ -94,7 +95,7 @@ assert.match(decision, /ASSISTANT_POC_ENABLED=true/, 'decision must explicitly k
 console.log(JSON.stringify({
   gate: 'ASSISTANT_POC_STATIC_SECURITY_CONTRACT',
   result: 'PASS',
-  assertions: 40,
+  assertions: 47,
   toolIds,
   caveat: 'Static contract checks only; not a substitute for TypeScript build, app integration tests, or live authorization against PostgreSQL.',
 }, null, 2));
