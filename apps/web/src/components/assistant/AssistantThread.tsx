@@ -205,7 +205,7 @@ export function AssistantThread({
           <ThreadPrimitive.ViewportFooter className="assistant-composer-footer">
             {localError && <div className="assistant-inline-error" role="alert"><CircleAlert size={15} /><span>{localError}</span>{retryableSubmission && conversation.status === 'ACTIVE' && !isRunning && <button type="button" className="assistant-inline-retry" onClick={retryFailedSubmission}>使用原请求重试</button>}</div>
             {canRetryFailedRun && <div className="assistant-inline-error" role="status"><CircleAlert size={15} /><span>本次分析运行失败，可以重新提交原问题并创建一次新运行。</span><button type="button" className="assistant-inline-retry" onClick={retryFailedRun}>重新提交同一问题</button></div>}
-            {canReconnectActiveRun && <div className="assistant-inline-error" role="status"><CircleAlert size={15} /><span>页面连接已中断，但服务端任务仍在排队或运行中。</span><button type="button" className="assistant-inline-retry" onClick={() => void reconnectActiveRun()}>重新连接</button></div>
+            {canReconnectActiveRun && <div className="assistant-inline-error" role="status"><CircleAlert size={15} /><span>页面连接已中断，但服务端任务仍在排队或运行中。</span><button type="button" className="assistant-inline-retry" onClick={() => void reconnectActiveRun()}>重新连接</button></div>}
             {hasActiveRun && <div className="assistant-live-run" role="status"><span className="assistant-live-dot" />{activeRunStatus === 'QUEUED' ? '任务已排队，等待执行' : '正在读取台账并整理分析'}<span> · 可随时取消</span></div>}
             {conversation.status === 'ARCHIVED'
               ? <div className="assistant-archived-note">此会话已归档，只能查看历史内容。</div>
