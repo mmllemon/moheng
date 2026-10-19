@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const read = (path) => readFile(resolve(path), 'utf8');
-const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgProbe, safePath, hardKillSmoke, packageJsonText, pocPackageText, decision, workflow] = await Promise.all([
+const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgProbe, safePath, hardKillSmoke, packageJsonText, pocPackageText, decision, workflow, assistantConfig, assistantJob, assistantApi, assistantPage] = await Promise.all([
   read('apps/api/src/lib/assistant-read-only-tools.ts'),
   read('apps/api/src/routes/assistant-poc.ts'),
   read('apps/api/src/server.ts'),
@@ -18,6 +18,10 @@ const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgPr
   read('experiments/pi-durable-poc/package.json'),
   read('docs/AI助手实施与准入.md'),
   read('.github/workflows/assistant-runtime-gates.yml'),
+  read('apps/api/src/lib/assistant-config.ts'),
+  read('apps/api/src/lib/assistant-agent-run-job.ts'),
+  read('apps/web/src/assistant-api.ts'),
+  read('apps/web/src/pages/CostAssistantPage.tsx'),
 ]);
 
 const [cashSummary, costVariance] = await Promise.all([
@@ -44,6 +48,13 @@ assert.match(service, /ASSISTANT_READ_ONLY_TOOL_SUCCEEDED/, 'successful tool cal
 assert.match(service, /changes: \{[\s\S]*?toolId: validInput\.toolId[\s\S]*?durationMs:/, 'audit payload must stay metadata-oriented');
 assert.doesNotMatch(service, /changes: \{[\s\S]*?(?:prompt|apiKey|authorization|responseText|rawInput):/, 'audit payload must not store prompts, secrets or raw text');
 assert.doesNotMatch(service, /prisma\.(?:project|change|budgetItem|costEntry|progressBill|downstreamContract)\.(?:create|update|upsert|delete|deleteMany|updateMany)\s*\(/, 'read-only tool service must not mutate business entities');
+assert.match(assistantConfig, /function isAssistantBaseUrlValid/);
+assert.match(assistantConfig, /url\.protocol === 'http:' \|\| url\.protocol === 'https:'/);
+assert.match(assistantConfig, /!url\.username[\s\S]*?!url\.password[\s\S]*?!url\.search[\s\S]*?!url\.hash/);
+assert.match(assistantJob, /!isAssistantBaseUrlValid\(baseURL\)/, 'invalid provider base URL must be rejected before model execution');
+assert.match(assistantApi, /endpointValid: boolean/);
+assert.match(assistantPage, /status\.configuration\.endpointValid === false[\s\S]*?模型兼容 API 地址格式无效/, 'UI must explain invalid endpoint without rendering the raw URL');
+
 assert.match(routes, /z\.object\([\s\S]*?\)\.strict\(\)/, 'public PoC input schema must reject extra fields');
 assert.match(routes, /preHandler: \[featureGate, authRequired\]/, 'each route must be feature-gated and authenticated');
 assert.match(routes, /timeWindow: '1 minute'/, 'rate limit must be configured');
