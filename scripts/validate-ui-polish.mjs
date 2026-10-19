@@ -87,6 +87,13 @@ check('sidebar health indicator without data semantics is removed and replaced b
   !layout.includes('经营健康度') && layout.includes('打开当前项目驾驶舱') || (!layout.includes('经营健康度') && layout.includes("onClick={() => navigate('/cost')}")));
 check('core business pages use shared date/select controls instead of unstyled native controls',
   corePageSources.every((source) => !/<select\b/i.test(source) && !/type\s*=\s*["']date["']/i.test(source)));
+check('shared date/select triggers use common geometry, typography, focus ring and popover radius',
+  styles.includes('--control-height: 38px;') && styles.includes('--control-focus-ring:') &&
+  styles.includes('.select-control-trigger, .date-picker-trigger {') &&
+  styles.includes('box-shadow: var(--control-focus-ring)') &&
+  styles.includes('border-radius: var(--control-popover-radius)') &&
+  styles.includes('min-height: var(--control-height-compact)') &&
+  styles.includes('.date-picker-trigger { font-variant-numeric: tabular-nums; }'));
 check('shared date and select controls expose popup relationships, labels, and validation state',
   datePicker.includes('date-picker-dialog-') &&
   datePicker.includes('id={id ? `${id}-native` : undefined}') && datePicker.includes('id={id}') &&
