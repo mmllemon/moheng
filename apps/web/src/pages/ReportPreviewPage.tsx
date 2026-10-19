@@ -8,7 +8,7 @@ import { useUiStore } from '../auth-store';
 import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 import type { ReportPreview } from '../report-template-types';
 import type { ReportStudioPreview, ReportStudioTemplate } from '../report-studio-types';
-import { roundFixedDecimal } from '../report-preview-format';
+import { roundFixedDecimal, formatIsoDateWithExcelPattern } from '../report-preview-format';
 import { classifyReportExportJob } from '../report-export-job.js';
 
 function colorValue(input: unknown): string | undefined {
@@ -107,7 +107,13 @@ function displayValue(value: unknown, format?: string | null, rawStyle?: Record<
   if (format === 'MONEY' && typeof value === 'number') return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (format === 'MONEY' && typeof value === 'string') return groupFixedDecimal(value);
   if (format === 'NUMBER' && typeof value === 'number') return value.toLocaleString('zh-CN', { maximumFractionDigits: 3 });
-  if (format === 'DATE' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (format === 'DATE' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    if (typeof pattern === 'string' && pattern !== 'General' && pattern !== '@') {
+      const formatted = formatIsoDateWithExcelPattern(value, pattern);
+      if (formatted !== null) return formatted;
+    }
+    return value;
+  }
   if (typeof value === 'boolean') return value ? '是' : '否';
   return String(value);
 }
