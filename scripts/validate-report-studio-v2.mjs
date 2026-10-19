@@ -41,6 +41,8 @@ const xlsx = await read('apps/api/src/lib/report-studio-xlsx.ts');
 const renderTests = await read('apps/api/src/lib/report-studio-render.test.ts');
 const studioPage = await read('apps/web/src/pages/ReportStudioPage.tsx');
 const previewPage = await read('apps/web/src/pages/ReportPreviewPage.tsx');
+const reportPrint = await read('apps/web/src/report-print.ts');
+const reportPrintTests = await read('apps/web/src/report-print.test.ts');
 const centerPage = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const legacyDesigner = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const app = await read('apps/web/src/App.tsx');
@@ -223,6 +225,15 @@ check('party template context is isolated by businessPartyId through an append-o
   studioRoute.includes('REPORT_TEMPLATE_PARTY_MISMATCH') && studioRoute.includes('hasBusinessParty') && studioRoute.includes('businessPartyId') &&
   (await read('apps/api/prisma/schema.prisma')).includes('businessPartyId String?') && (await read('apps/api/prisma/migrations/20261015030000_party_report_template_context/migration.sql')).includes('FOREIGN KEY'));
 
+check('formal preview printing loads full server-bounded standard and studio datasets before window.print',
+  reportsRoute.includes("parsed.data.printAll === 'true' ? snapshot.rows : snapshot.rows.slice(0, 80)") &&
+  studioRoute.includes('printAll: z.boolean().optional()') &&
+  studioRoute.includes('previewReportStudio(rendered, parsed.data.printAll ? MAX_RENDERED_ROWS_PER_SHEET : undefined)') &&
+  renderer.includes('export const MAX_RENDERED_ROWS_PER_SHEET = 10000') &&
+  previewPage.includes('async function printReport()') && previewPage.includes('setPrintPending(true)') &&
+  previewPage.includes('afterprint') && previewPage.includes('window.print()') &&
+  reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
+  reportPrintTests.includes('requests all server-bounded rows') && rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-print.test.ts'));
 check('standard and studio preview grids use fixed natural-width columns to avoid stretching the last column',
   previewPage.includes("width: 'max-content'") && previewPage.includes('<colgroup>') && previewPage.includes('Math.min(72, column.width)') &&
   (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid { width:max-content; min-width:0; table-layout:fixed;'));
