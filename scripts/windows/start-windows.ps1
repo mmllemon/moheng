@@ -44,15 +44,34 @@ New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 $outLog = Join-Path $logDir 'api.out.log'
 $errLog = Join-Path $logDir 'api.err.log'
 
-# Use an absolute entry point so later stop/start scripts can verify process identity.
-$process = Start-Process -FilePath $node -ArgumentList @("`"$serverScript`"") -WorkingDirectory $apiRoot -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
-Set-Content -Path $pidFile -Value $process.Id -Encoding ascii
-
 $port = 3001
 $portMatch = [regex]::Match((Get-Content $apiEnv -Raw), '(?m)^PORT=(\d+)\s*$')
 if ($portMatch.Success) { $port = [int]$portMatch.Groups[1].Value }
+
+# Refuse to launch if another process already owns the port. A healthy HTTP response
+# alone is not proof that this invocation's process started successfully.
+$existingListeners = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
+if ($existingListeners.Count -gt 0) {
+    $ownerDetails = foreach ($listener in $existingListeners) {
+        $owner = Get-CimInstance Win32_Process -Filter "ProcessId = $($listener.OwningProcess)" -ErrorAction SilentlyContinue
+        [pscustomobject]@{
+            LocalAddress = $listener.LocalAddress
+            Port = $listener.LocalPort
+            PID = $listener.OwningProcess
+            Process = if ($owner) { $owner.Name } else { 'unknown' }
+            CommandLine = if ($owner) { [string]$owner.CommandLine } else { '' }
+        }
+    }
+    $detailText = ($ownerDetails | Format-Table -AutoSize | Out-String).Trim()
+    throw "端口 $port 已被其他进程监听。为防止把旧实例的健康状态误认为本次启动成功，已拒绝启动。监听信息：" + [Environment]::NewLine + $detailText
+}
+
 $healthUrl = "http://127.0.0.1:$port/health"
 $healthy = $false
+
+# Use an absolute entry point so later stop/start scripts can verify process identity.
+$process = Start-Process -FilePath $node -ArgumentList @("`"$serverScript`"") -WorkingDirectory $apiRoot -RedirectStandardOutput $outLog -RedirectStandardError $errLog -PassThru
+Set-Content -Path $pidFile -Value $process.Id -Encoding ascii
 
 # A live process is not sufficient: the app must bind its port and reach PostgreSQL.
 for ($attempt = 1; $attempt -le 20; $attempt++) {
@@ -60,7 +79,12 @@ for ($attempt = 1; $attempt -le 20; $attempt++) {
     if ($process.HasExited) { break }
     try {
         $health = Invoke-RestMethod -Uri $healthUrl -Method Get -TimeoutSec 2
-        if ($health.success -eq $true -and $health.data.status -eq 'ok' -and $health.data.database -eq 'ok') {
+        $process.Refresh()
+        $ownedListener = @(Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
+            Where-Object { [int]$_.OwningProcess -eq $process.Id } |
+            Select-Object -First 1)
+        if (-not $process.HasExited -and $ownedListener.Count -gt 0 -and
+            $health.success -eq $true -and $health.data.status -eq 'ok' -and $health.data.database -eq 'ok') {
             $healthy = $true
             break
         }
