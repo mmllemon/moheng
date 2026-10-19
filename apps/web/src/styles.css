@@ -2325,6 +2325,8 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
   body:has(.report-export-preview-page) .page-wrap { max-width:none; padding:0; margin:0; }
   .report-preview-workbook-scroll { overflow:visible !important; }
   .report-studio-preview-grid,.report-preview-table { width:100%; min-width:0; font-size:9pt; }
+  .report-studio-preview-grid.print-fit-width { width:100% !important; min-width:0 !important; table-layout:fixed !important; }
+  .report-studio-preview-grid.print-natural-width { width:max-content !important; min-width:100% !important; table-layout:auto !important; }
   .report-preview-sheet,.report-preview-standard-surface { break-inside:auto; box-shadow:none !important; border:0 !important; }
   .report-preview-sheet-head { break-after:avoid; }
   .report-studio-preview-grid thead { display:table-header-group; }
