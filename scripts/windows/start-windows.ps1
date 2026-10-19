@@ -63,7 +63,7 @@ if ($existingListeners.Count -gt 0) {
         }
     }
     $detailText = ($ownerDetails | Format-Table -AutoSize | Out-String).Trim()
-    throw "端口 $port 已被其他进程监听。为防止把旧实例的健康状态误认为本次启动成功，已拒绝启动。监听信息：" + [Environment]::NewLine + $detailText
+    throw ("端口 $port 已被其他进程监听。为防止把旧实例的健康状态误认为本次启动成功，已拒绝启动。监听信息：" + [Environment]::NewLine + $detailText)
 }
 
 $healthUrl = "http://127.0.0.1:$port/health"
