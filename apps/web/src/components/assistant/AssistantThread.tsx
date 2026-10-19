@@ -24,6 +24,8 @@ import {
   type AssistantMessage,
 } from '../../assistant-api';
 
+type RetryableSubmission = { requestId: string; optimisticId: string; content: string };
+
 const QUICK_PROMPTS = [
   { title: '项目经营概览', label: '合同、成本与进度款口径', prompt: '请概览当前项目经营情况，并说明各项金额的来源口径、统计时间和限制。' },
   { title: '成本偏差分析', label: '目标成本与已记录实际成本', prompt: '请比较当前项目目标成本与已记录实际成本，解释差异，并明确这不代表预计完工成本或会计利润。' },
