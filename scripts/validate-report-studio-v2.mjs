@@ -43,6 +43,8 @@ const studioPage = await read('apps/web/src/pages/ReportStudioPage.tsx');
 const previewPage = await read('apps/web/src/pages/ReportPreviewPage.tsx');
 const reportPrint = await read('apps/web/src/report-print.ts');
 const reportPrintTests = await read('apps/web/src/report-print.test.ts');
+const reportPreviewLayout = await read('apps/web/src/report-preview-layout.ts');
+const reportPreviewLayoutTests = await read('apps/web/src/report-preview-layout.test.ts');
 const centerPage = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const legacyDesigner = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const app = await read('apps/web/src/App.tsx');
@@ -235,6 +237,15 @@ check('formal preview printing loads full server-bounded standard and studio dat
   previewPage.includes('afterprint') && previewPage.includes('window.print()') &&
   reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
   reportPrintTests.includes('requests all server-bounded rows') && rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-print.test.ts'));
+check('standard preview custom rows preserve per-cell values, row heights, visible-column merges and XLSX coordinates',
+  previewPage.includes("import { buildCustomRowMergeLayout } from '../report-preview-layout.js'") &&
+  previewPage.includes('row.cells[sourceIndex] ??') &&
+  previewPage.includes('standardCustomRowLayout.mergeByStart.get(key)') &&
+  previewPage.includes('style={{ height: row.height }}') &&
+  reportPreviewLayout.includes('visibleSourceIndexes') &&
+  reportPreviewLayout.includes('covered.add') &&
+  reportPreviewLayoutTests.includes('mapped to visible preview columns like XLSX export') &&
+  rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-preview-layout.test.ts'));
 check('standard and studio preview grids use fixed natural-width columns to avoid stretching the last column',
   previewPage.includes("width: 'max-content'") && previewPage.includes('<colgroup>') && previewPage.includes('Math.min(72, column.width)') &&
   (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid { width:max-content; min-width:0; table-layout:fixed;'));
