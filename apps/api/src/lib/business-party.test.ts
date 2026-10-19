@@ -69,12 +69,16 @@ test('selected ID wins over text and cannot silently attach to a nonexistent par
   );
 });
 
-
-test('serializes automatic create and writes a master-data audit record', async () => {
+test('serializes automatic create and writes a master-data audit record with a deserializable lock result', async () => {
   let lockCalled = false;
+  let lockSql = '';
   const auditRows: Array<{ data: { entity: string; entityId: string; action: string; projectId: string | null } }> = [];
   const tx = {
-    $queryRaw: async () => { lockCalled = true; },
+    $queryRaw: async (query: TemplateStringsArray) => {
+      lockCalled = true;
+      lockSql = query.join('?');
+      return [{ locked: '' }];
+    },
     businessParty: {
       findMany: async () => [],
       create: async (args: { data: { name: string; normalizedName: string; roles: string[] } }) => ({ id: 'party-audited', name: args.data.name }),
@@ -83,6 +87,7 @@ test('serializes automatic create and writes a master-data audit record', async 
   } as never;
   await resolveBusinessParty(tx, { name: '新建后即关联合同的单位', role: 'OWNER', actorUserId: 'user-1', auditProjectId: 'project-1' });
   assert.equal(lockCalled, true);
+  assert.match(lockSql, /pg_advisory_xact_lock\(147384, hashtext\(\?\)\)::text AS locked/);
   assert.equal(auditRows.length, 1);
   assert.equal(auditRows[0]!.data.entity, 'BusinessParty');
   assert.equal(auditRows[0]!.data.entityId, 'party-audited');
