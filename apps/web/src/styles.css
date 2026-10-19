@@ -2910,6 +2910,9 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .assistant-composer-footnote { margin:0; color:var(--text-muted); text-align:center; font-size:var(--text-2xs); line-height:1.5; }
 .assistant-inline-error { display:flex; align-items:flex-start; gap:6px; padding:7px 9px; border-radius:6px; color:var(--danger); background:color-mix(in srgb,var(--danger) 7%,var(--surface)); font-size:var(--text-2xs); }
 .assistant-inline-error svg { flex:0 0 15px; }
+.assistant-inline-error > span { min-width:0; flex:1; }
+.assistant-inline-retry { flex:0 0 auto; padding:4px 7px; border:1px solid color-mix(in srgb,var(--danger) 28%,var(--line)); border-radius:5px; color:var(--danger); background:var(--surface); font-size:var(--text-2xs); font-weight:600; white-space:nowrap; }
+.assistant-inline-retry:hover { background:color-mix(in srgb,var(--danger) 6%,var(--surface)); }
 .assistant-live-run { display:flex; align-items:center; gap:6px; color:var(--text-secondary); font-size:var(--text-2xs); }
 .assistant-live-run > span:last-child { color:var(--text-muted); }
 .assistant-live-dot { width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:var(--accent-500); animation:assistantPulse 1.35s ease-in-out infinite; }

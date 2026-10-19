@@ -62,6 +62,7 @@ export function AssistantThread({
   const [messages, setMessages] = useState<readonly AssistantMessage[]>(conversation.messages);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [retryableSubmission, setRetryableSubmission] = useState<RetryableSubmission | null>(null);
   const activeRunIdRef = useRef<string | null>(activeRunId);
   const mountedConversationId = conversation.id;
   const hasActiveRun = activeRunStatus === 'QUEUED' || activeRunStatus === 'RUNNING';
@@ -70,16 +71,39 @@ export function AssistantThread({
   useEffect(() => {
     setMessages(conversation.messages);
     setLocalError('');
+    setRetryableSubmission(null);
   }, [conversation.id, conversation.messages]);
 
   useEffect(() => {
     activeRunIdRef.current = activeRunId;
   }, [activeRunId]);
 
+  const submitPendingMessage = useCallback(async (pending: RetryableSubmission) => {
+    setLocalError('');
+    setIsSubmitting(true);
+    setMessages((current) => current.map((item) => item.id === pending.optimisticId ? { ...item, status: 'PENDING' } : item));
+    try {
+      // Keep the original requestId for retries. If the first response was lost after the
+      // server accepted the message, the API idempotency key replays that run instead of duplicating it.
+      const run = await submitAssistantMessage(mountedConversationId, pending.content, pending.requestId);
+      setRetryableSubmission(null);
+      activeRunIdRef.current = run.runId;
+      await onRun(mountedConversationId, run.runId);
+    } catch (error) {
+      const messageText = error instanceof ApiError ? error.message : '提交失败或连接中断，请使用原请求编号重试。';
+      setLocalError(messageText);
+      setMessages((current) => current.map((item) => item.id === pending.optimisticId ? { ...item, status: 'FAILED' } : item));
+      setRetryableSubmission(pending);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [mountedConversationId, onRun]);
+
   const onNew = useCallback(async (message: AppendMessage) => {
     const content = extractText(message);
     if (!content) return;
     setLocalError('');
+    setRetryableSubmission(null);
     const requestId = createRequestId();
     const optimistic: AssistantMessage = {
       id: `local-${requestId}`,
@@ -91,19 +115,14 @@ export function AssistantThread({
       createdAt: new Date().toISOString(),
     };
     setMessages((current) => [...current, optimistic]);
-    setIsSubmitting(true);
-    try {
-      const run = await submitAssistantMessage(mountedConversationId, content, requestId);
-      activeRunIdRef.current = run.runId;
-      await onRun(mountedConversationId, run.runId);
-    } catch (error) {
-      const messageText = error instanceof ApiError ? error.message : '提交失败，请检查连接后重试。';
-      setLocalError(messageText);
-      setMessages((current) => current.map((item) => item.id === optimistic.id ? { ...item, status: 'FAILED' } : item));
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [mountedConversationId, onRun]);
+    await submitPendingMessage({ requestId, optimisticId: optimistic.id, content });
+  }, [mountedConversationId, submitPendingMessage]);
+
+  const retryFailedSubmission = useCallback(() => {
+    const pending = retryableSubmission;
+    if (!pending || isRunning || conversation.status !== 'ACTIVE') return;
+    void submitPendingMessage(pending);
+  }, [retryableSubmission, isRunning, conversation.status, submitPendingMessage]);
 
   const onCancel = useCallback(async () => {
     const runId = activeRunIdRef.current;
@@ -143,7 +162,7 @@ export function AssistantThread({
         <ThreadPrimitive.Viewport className="assistant-thread-viewport" aria-label="成本助手对话记录">
           <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
           <ThreadPrimitive.ViewportFooter className="assistant-composer-footer">
-            {localError && <div className="assistant-inline-error" role="alert"><CircleAlert size={15} />{localError}</div>}
+            {localError && <div className="assistant-inline-error" role="alert"><CircleAlert size={15} /><span>{localError}</span>{retryableSubmission && conversation.status === 'ACTIVE' && !isRunning && <button type="button" className="assistant-inline-retry" onClick={retryFailedSubmission}>使用原请求重试</button>}</div>
             {hasActiveRun && <div className="assistant-live-run" role="status"><span className="assistant-live-dot" />{activeRunStatus === 'QUEUED' ? '任务已排队，等待执行' : '正在读取台账并整理分析'}<span> · 可随时取消</span></div>}
             {conversation.status === 'ARCHIVED'
               ? <div className="assistant-archived-note">此会话已归档，只能查看历史内容。</div>
