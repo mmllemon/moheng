@@ -1,4 +1,5 @@
 import { prisma } from './prisma.js';
+import { isAssistantBaseUrlValid } from './assistant-config.js';
 import { canAccessProject } from './project-access.js';
 import { appendAssistantRunEvent, type AssistantEventJsonValue } from './assistant-run-events.js';
 import { PermanentBackgroundJobError } from './background-jobs.js';
@@ -93,7 +94,7 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
   const modelId = process.env.ASSISTANT_POC_MODEL_ID?.trim();
   const baseURL = process.env.OPENAI_BASE_URL?.trim() || undefined;
   const checkpointUrl = process.env.ASSISTANT_CHECKPOINT_DATABASE_URL?.trim() || process.env.DATABASE_URL?.trim();
-  if (!apiKey || !modelId || !checkpointUrl) {
+  if (!apiKey || !modelId || !checkpointUrl || !isAssistantBaseUrlValid(baseURL)) {
     await failRun(conversationId, runId, 'ASSISTANT_RUNTIME_NOT_CONFIGURED');
     throw new PermanentBackgroundJobError('ASSISTANT_RUNTIME_NOT_CONFIGURED');
   }

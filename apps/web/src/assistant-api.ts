@@ -11,6 +11,7 @@ export type AssistantStatus = {
     providerConfigured: boolean;
     modelConfigured: boolean;
     checkpointConfigured: boolean;
+    endpointValid: boolean;
   };
 };
 export type AssistantConversationSummary = {

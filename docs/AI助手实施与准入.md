@@ -32,13 +32,15 @@
 |---|---|
 | `OPENAI_API_KEY` | 模型 API 凭据 |
 | `ASSISTANT_POC_MODEL_ID` | 具体模型 ID |
-| `OPENAI_BASE_URL` | 可选 OpenAI-compatible 服务地址 |
+| `OPENAI_BASE_URL` | 可选 OpenAI-compatible 服务地址；留空时使用 SDK 默认地址 |
 | `ASSISTANT_CHECKPOINT_DATABASE_URL` | 可选独立 checkpoint 连接；未设置时使用 `DATABASE_URL` |
 | `ASSISTANT_POC_ENABLED` | 显式功能开关；默认关闭 |
 
 checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKPOINT_SETUP_ALLOW=true` 后运行 `npm run assistant:checkpoint:setup -w @cms/api`。普通 HTTP 请求不得执行 DDL。
 
 不得将任何真实 API key/数据库口令写入源码、文档、CI artifacts、普通日志或审计变化字段。状态接口只允许返回是否就绪，不得返回秘密原文。
+
+若配置 `OPENAI_BASE_URL`，必须为绝对 HTTP(S) 地址；不接受 URL 内嵌用户名/密码、查询参数或片段。状态接口只返回 `endpointValid` 布尔值，不回显地址，也不探测供应商网络可达性。错误地址会使助手就绪状态为未就绪，并在后台执行模型之前拒绝该任务。
 
 ## 4. 只读与项目隔离原则
 

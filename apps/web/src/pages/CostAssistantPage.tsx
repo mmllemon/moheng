@@ -69,6 +69,7 @@ export default function CostAssistantPage() {
         ...(!status.configuration.providerConfigured ? ['模型服务凭据尚未配置'] : []),
         ...(!status.configuration.modelConfigured ? ['模型 ID 尚未配置'] : []),
         ...(!status.configuration.checkpointConfigured ? ['PostgreSQL 检查点连接尚未配置'] : []),
+        ...(status.configuration.endpointValid === false ? ['模型兼容 API 地址格式无效；请配置合法的 HTTP(S) 绝对地址，且不要将密钥写入地址参数'] : []),
       ]);
     }).catch(() => {
       if (!alive) return;
