@@ -42,3 +42,33 @@ test('default project main-contract amount binding uses the money format', () =>
   assert.ok(binding, 'the default project report should bind the main-contract amount');
   assert.equal(binding.format, 'MONEY');
 });
+
+test('project template keeps the downstream payment region aligned to its header and populated row', () => {
+  const definition = createDefaultStudioDefinition('PROJECT');
+  const region = definition.regions.find((candidate) => candidate.sourceId === 'downstreamPayments');
+  assert.ok(region, 'the project template should include downstream payments');
+  assert.equal(region.templateRow, 22, 'the repeated-row template is the zero-based 23rd spreadsheet row');
+
+  const workbook = definition.workbook as {
+    sheets: Record<string, { cellData: Record<string, Record<string, { v?: unknown }>> };
+  };
+  const cellData = workbook.sheets.sheet1?.cellData;
+  assert.ok(cellData, 'the project template sheet should have cell data');
+  assert.deepEqual(
+    Array.from({ length: 6 }, (_, column) => cellData['21']?.[String(column)]?.v),
+    ['合同编号', '类型', '支付/退款金额', '支付日期', '支付参考号', '原付款参考号'],
+    'the row immediately above the region must contain all payment/refund column headers',
+  );
+  assert.deepEqual(
+    Array.from({ length: 6 }, (_, column) => cellData['22']?.[String(column)]?.v),
+    [
+      '{{downstreamPayments.contractNo}}',
+      '{{downstreamPayments.type}}',
+      '{{downstreamPayments.amount}}',
+      '{{downstreamPayments.paidAt}}',
+      '{{downstreamPayments.referenceNo}}',
+      '{{downstreamPayments.originalReferenceNo}}',
+    ],
+    'the repeated-row template must provide all six bound cells',
+  );
+});

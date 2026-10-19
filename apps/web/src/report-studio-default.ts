@@ -68,14 +68,14 @@ function defaultProjectData() {
   ]);
   const put = (r: number, c: number, v: unknown, s?: Record<string, unknown>) => { (cellData[String(r)] ??= {})[String(c)] = cell(v, s); };
   put(0, 0, '项目综合经营报告', titleStyle);
-  for (const [r, c, v] of [[1,0,'项目摘要'],[5,0,'主合同信息'],[8,0,'分供合同明细'],[11,0,'业主收款与退款流水'],[14,0,'项目成本及其他指标'],[17,0,'变更签证清单'],[21,0,'分供合同付款与退款流水']] as Array<[number, number, string]>) put(r,c,v,sectionStyle);
+  for (const [r, c, v] of [[1,0,'项目摘要'],[5,0,'主合同信息'],[8,0,'分供合同明细'],[11,0,'业主收款与退款流水'],[14,0,'项目成本及其他指标'],[17,0,'变更签证清单'],[20,0,'分供合同付款与退款流水']] as Array<[number, number, string]>) put(r,c,v,sectionStyle);
   for (const r of [2,3,4,6,15]) for (const c of [0,2,4]) if (cellData[String(r)]?.[String(c)]) put(r,c,cellData[String(r)]![String(c)]!.v,labelStyle);
   for (const r of [2,3,4,6,15]) for (const c of [1,3,5]) put(r,c,'',valueStyle);
-  for (const r of [9,12,18,22]) for (let c = 0; c < 6; c += 1) put(r,c,cellData[String(r)]![String(c)]!.v,headerStyle);
-  for (const regionRow of [10,13,19,23]) for (let c = 0; c < 6; c += 1) put(regionRow,c,'', { ...valueStyle, ...(c === 4 ? { ht: 3 } : {}) });
-  const merges = [1,5,8,11,14,17,21].map((r) => ({ startRow: r, startColumn: 0, endRow: r, endColumn: 5 }));
+  for (const r of [9,12,18,21]) for (let c = 0; c < 6; c += 1) put(r,c,cellData[String(r)]![String(c)]!.v,headerStyle);
+  for (const regionRow of [10,13,19,22]) for (let c = 0; c < 6; c += 1) put(regionRow,c,'', { ...valueStyle, ...(c === 4 ? { ht: 3 } : {}) });
+  const merges = [1,5,8,11,14,17,20].map((r) => ({ startRow: r, startColumn: 0, endRow: r, endColumn: 5 }));
   merges.push({ startRow: 0, startColumn: 0, endRow: 0, endColumn: 5 });
-  const workbook = { id: 'moheng-project-studio', name: '项目综合经营报告', appVersion: '1.0.4', locale: 'zhCN', styles: {}, sheetOrder: ['sheet1'], sheets: { sheet1: { id: 'sheet1', name: '项目综合报告', rowCount: 80, columnCount: 12, defaultColumnWidth: 100, defaultRowHeight: 24, mergeData: merges, cellData, rowData: { '0': { h: 34 }, '1': { h: 28 }, '5': { h: 28 }, '8': { h: 26 }, '11': { h: 26 }, '14': { h: 26 }, '17': { h: 26 }, '21': { h: 26 } }, columnData: { '0': { w: 140 }, '1': { w: 135 }, '2': { w: 140 }, '3': { w: 125 }, '4': { w: 140 }, '5': { w: 130 } }, showGridlines: 1, freeze: { startRow: -1, startColumn: -1, ySplit: 3, xSplit: 0 } } } };
+  const workbook = { id: 'moheng-project-studio', name: '项目综合经营报告', appVersion: '1.0.4', locale: 'zhCN', styles: {}, sheetOrder: ['sheet1'], sheets: { sheet1: { id: 'sheet1', name: '项目综合报告', rowCount: 80, columnCount: 12, defaultColumnWidth: 100, defaultRowHeight: 24, mergeData: merges, cellData, rowData: { '0': { h: 34 }, '1': { h: 28 }, '5': { h: 28 }, '8': { h: 26 }, '11': { h: 26 }, '14': { h: 26 }, '17': { h: 26 }, '20': { h: 26 } }, columnData: { '0': { w: 140 }, '1': { w: 135 }, '2': { w: 140 }, '3': { w: 125 }, '4': { w: 140 }, '5': { w: 130 } }, showGridlines: 1, freeze: { startRow: -1, startColumn: -1, ySplit: 3, xSplit: 0 } } } };
   const bindings: ReportStudioBinding[] = [
     ['B3','project','name'], ['D3','project','code'], ['F3','project','ownerName'],
     ['B4','financialSummary','effectiveContractAmount'], ['D4','financialSummary','netReceipts'], ['F4','financialSummary','issuedReceivableNetAmount'],
@@ -87,7 +87,7 @@ function defaultProjectData() {
     [10, 'downstreamContracts', ['contractNo','name','counterpartyName','status','effectiveAmount','signedAt']],
     [13, 'ownerReceipts', ['receiptNo','type','amount','receivedAt','referenceNo','notes']],
     [19, 'changes', ['code','name','type','externalStatus','confirmedAmount','effectiveAt']],
-    [23, 'downstreamPayments', ['contractNo','type','amount','paidAt','referenceNo','originalReferenceNo']],
+    [22, 'downstreamPayments', ['contractNo','type','amount','paidAt','referenceNo','originalReferenceNo']],
   ];
   const regions: ReportStudioRegion[] = regionBindingSet.map(([templateRow, sourceId], index) => ({ id: `region-${index+1}`, sheetId: 'sheet1', sourceId, templateRow, startColumn: 0, endColumn: 5, maxRows: 10000 }));
   for (const [row, sourceId, fields] of regionBindingSet) fields.forEach((fieldId, c) => bindings.push({ id: `binding-region-${row}-${c}`, sheetId: 'sheet1', cell: `${String.fromCharCode(65 + c)}${row + 1}`, sourceId, fieldId, format: defaultRegionFieldFormat(fieldId, /Amount|amount/i.test(fieldId)) }));
