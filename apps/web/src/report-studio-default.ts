@@ -82,7 +82,7 @@ function defaultProjectData() {
     ['B5','financialSummary','downstreamNetPaymentTotal'], ['D5','financialSummary','downstreamRefundTotal'], ['F5','financialSummary','postedPayableTotal'],
     ['B7','mainContract','contractNo'], ['D7','mainContract','name'], ['F7','mainContract','amount'],
     ['B16','financialSummary','targetCostTotal'], ['D16','financialSummary','actualCostTotal'], ['F16','financialSummary','postedPayableTotal'],
-  ].map(([cellAddress, sourceId, fieldId], index) => ({ id: `binding-${index + 1}`, sheetId: 'sheet1', cell: cellAddress!, sourceId: sourceId!, fieldId: fieldId!, format: /Amount|Receipts|Total/i.test(fieldId!) ? 'MONEY' as const : 'AUTO' as const }));
+  ].map(([cellAddress, sourceId, fieldId], index) => ({ id: `binding-${index + 1}`, sheetId: 'sheet1', cell: cellAddress!, sourceId: sourceId!, fieldId: fieldId!, format: /amount|receipts|total/i.test(fieldId!) ? 'MONEY' as const : 'AUTO' as const }));
   const regionBindingSet: Array<[number, string, string[]]> = [
     [10, 'downstreamContracts', ['contractNo','name','counterpartyName','status','effectiveAmount','signedAt']],
     [13, 'ownerReceipts', ['receiptNo','type','amount','receivedAt','referenceNo','notes']],

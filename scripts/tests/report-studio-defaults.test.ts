@@ -35,3 +35,10 @@ test('the party template labels its internal database identifier honestly', () =
   const workbook = definition.workbook as { sheets: Record<string, { cellData: Record<string, Record<string, { v?: unknown }>> }> };
   assert.equal(workbook.sheets.sheet1?.cellData['3']?.['6']?.v, '系统档案 ID');
 });
+
+test('default project main-contract amount binding uses the money format', () => {
+  const report = createDefaultStudioDefinition('PROJECT');
+  const binding = report.bindings.find((item) => item.sourceId === 'mainContract' && item.fieldId === 'amount');
+  assert.ok(binding, 'the default project report should bind the main-contract amount');
+  assert.equal(binding.format, 'MONEY');
+});
