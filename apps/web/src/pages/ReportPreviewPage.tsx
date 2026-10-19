@@ -172,9 +172,21 @@ export default function ReportPreviewPage() {
   const missingPartyScope = isStudio && domain === 'PARTY' && !partyId;
 
   async function downloadJob(fileJobId: string): Promise<boolean> {
+    setError('');
     try {
       const job = await api.get<{ id: string; status: string; resultAvailable: boolean; downloadUrl: string | null; result: { suggestedFileName?: string } | null }>(`/reports/jobs/${fileJobId}`);
-      if (classifyReportExportJob(job) !== 'downloadable') {
+      const disposition = classifyReportExportJob(job);
+      if (disposition === 'failed') {
+        setError(`报表生成失败，任务编号 ${fileJobId}。请重新提交导出或联系管理员。`);
+        setNotice(`任务状态：${job.status}。任务编号：${fileJobId}`);
+        return false;
+      }
+      if (disposition === 'completed-unavailable') {
+        setError('报表任务已完成，但导出文件不可用或已过期。请重新提交导出任务。');
+        setNotice(`任务已结束但没有可下载文件。任务编号：${fileJobId}`);
+        return false;
+      }
+      if (disposition === 'pending') {
         setNotice(`任务状态：${job.status}。任务编号：${fileJobId}`);
         return false;
       }
