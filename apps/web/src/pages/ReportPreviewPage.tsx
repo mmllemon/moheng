@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, Printer, RefreshCw } from 'lucide-react';
@@ -10,6 +10,7 @@ import type { ReportPreview } from '../report-template-types';
 import type { ReportStudioPreview, ReportStudioTemplate } from '../report-studio-types';
 import { roundFixedDecimal, formatIsoDateWithExcelPattern } from '../report-preview-format';
 import { classifyReportExportJob } from '../report-export-job.js';
+import { buildStandardReportPrintUrl, buildStudioReportPrintRequest } from '../report-print.js';
 
 function colorValue(input: unknown): string | undefined {
   if (typeof input !== 'string') {
@@ -140,6 +141,10 @@ export default function ReportPreviewPage() {
   const [jobId, setJobId] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [printBusy, setPrintBusy] = useState(false);
+  const [printPending, setPrintPending] = useState(false);
+  const [printStudioPreview, setPrintStudioPreview] = useState<ReportStudioPreview | null>(null);
+  const [printStandardPreview, setPrintStandardPreview] = useState<ReportPreview | null>(null);
   const isStudio = Boolean(studioTemplateId);
   function goBack() {
     // In-app entry points mark that their previous history entry is the correct source.
@@ -169,13 +174,31 @@ export default function ReportPreviewPage() {
       return api.get<ReportPreview>(`/reports/${encodeURIComponent(reportKey)}/preview?${params.toString()}`);
     }, enabled: !isStudio && Boolean(reportKey),
   });
-  const studioPreview = studioPreviewQuery.data;
-  const standardPreview = standardPreviewQuery.data;
+  // During printing, replace the bounded screen preview with an explicit full-data response.
+  const studioPreview = printStudioPreview ?? studioPreviewQuery.data;
+  const standardPreview = printStandardPreview ?? standardPreviewQuery.data;
   const errorQuery = isStudio ? studioTemplateQuery.error ?? studioPreviewQuery.error : standardPreviewQuery.error;
   const loading = isStudio ? studioTemplateQuery.isLoading || studioPreviewQuery.isLoading : standardPreviewQuery.isLoading;
   const title = isStudio ? studioPreview?.title ?? studioTemplateQuery.data?.name ?? '综合报表预览' : standardPreview?.template.name ?? standardPreview?.report.label ?? '报表预览';
   const missingProjectScope = isStudio && domain === 'PROJECT' && !projectId;
   const missingPartyScope = isStudio && domain === 'PARTY' && !partyId;
+
+  useEffect(() => {
+    if (!printPending || (!printStudioPreview && !printStandardPreview)) return;
+    const frame = window.requestAnimationFrame(() => window.print());
+    return () => window.cancelAnimationFrame(frame);
+  }, [printPending, printStudioPreview, printStandardPreview]);
+
+  useEffect(() => {
+    const restoreScreenPreview = () => {
+      setPrintPending(false);
+      setPrintStudioPreview(null);
+      setPrintStandardPreview(null);
+      setNotice('');
+    };
+    window.addEventListener('afterprint', restoreScreenPreview);
+    return () => window.removeEventListener('afterprint', restoreScreenPreview);
+  }, []);
 
   async function downloadJob(fileJobId: string): Promise<boolean> {
     setError('');
@@ -206,6 +229,35 @@ export default function ReportPreviewPage() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '查询报表任务失败。');
       return false;
+    }
+  }
+
+  async function printReport() {
+    if (printBusy || loading || errorQuery || missingProjectScope || missingPartyScope) return;
+    setPrintBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      if (isStudio) {
+        const printable = await api.post<ReportStudioPreview>('/reports/studio/preview', buildStudioReportPrintRequest({
+          templateId: studioTemplateId,
+          domain,
+          projectId,
+          businessPartyId: partyId,
+        }));
+        setPrintStandardPreview(null);
+        setPrintStudioPreview(printable);
+      } else {
+        const printable = await api.get<ReportPreview>(buildStandardReportPrintUrl(reportKey, { projectId, from, to, templateId }));
+        setPrintStudioPreview(null);
+        setPrintStandardPreview(printable);
+      }
+      setNotice('已准备完整打印数据。若触及系统渲染上限，打印内容会保留明确的截断提示。');
+      setPrintPending(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '准备打印数据失败，请刷新预览后重试。');
+    } finally {
+      setPrintBusy(false);
     }
   }
 
@@ -248,7 +300,7 @@ export default function ReportPreviewPage() {
 
   if (!isStudio && !reportKey) return <div className="page-wrap"><ErrorBlock message="缺少报表类型或综合报表模板编号。请从报表中心重新进入预览。" retry={() => navigate('/reports')} /></div>;
   return <div className="page-wrap report-export-preview-page">
-    <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={goBack}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => window.print()}><Printer size={15}/>打印 / PDF</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />
+    <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={goBack}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => void printReport()} disabled={printBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Printer size={15}/>{printBusy ? '正在准备打印…' : '打印 / PDF'}</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />
     {loading && <LoadingBlock label="正在按当前权限范围读取报表预览…" />}
     {missingProjectScope && <ErrorBlock message="项目级报表需要明确选择项目。请返回报表工作室选择项目后重新预览。" retry={() => navigate('/reports/studio?domain=PROJECT')} />}
     {missingPartyScope && <ErrorBlock message="单位档案级报表需要指定往来单位。请从具体的单位经营档案页面进入。" retry={() => navigate('/parties')} />}
