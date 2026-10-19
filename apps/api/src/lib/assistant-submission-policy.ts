@@ -1,6 +1,7 @@
 import type { Prisma } from '../generated/prisma/client.js';
 
 export const MAX_ACTIVE_ASSISTANT_RUNS_PER_USER = 2;
+export const MAX_ASSISTANT_SUBMISSIONS_PER_USER_PER_MINUTE = 6;
 
 export function isAssistantUserRunLimitReached(activeRunCount: number): boolean {
   if (!Number.isSafeInteger(activeRunCount) || activeRunCount < 0) {
@@ -9,12 +10,19 @@ export function isAssistantUserRunLimitReached(activeRunCount: number): boolean 
   return activeRunCount >= MAX_ACTIVE_ASSISTANT_RUNS_PER_USER;
 }
 
+export function isAssistantUserSubmissionRateLimitReached(recentSubmissionCount: number): boolean {
+  if (!Number.isSafeInteger(recentSubmissionCount) || recentSubmissionCount < 0) {
+    throw new Error('ASSISTANT_RECENT_SUBMISSION_COUNT_INVALID');
+  }
+  return recentSubmissionCount >= MAX_ASSISTANT_SUBMISSIONS_PER_USER_PER_MINUTE;
+}
+
 /**
- * Serialize run admission per user inside the caller's transaction.
- * The user-row lock must stay held through creation of the accepted AssistantRun,
- * so concurrent submissions in different conversations cannot both pass the count.
+ * Serialize user-level admission inside the caller's transaction.
+ * The user-row lock stays held through creation of the accepted AssistantRun,
+ * preventing concurrent conversations from racing both the active-run and sliding-window counts.
  */
-export async function assertAssistantUserRunCapacity(
+export async function assertAssistantUserRunAdmission(
   tx: Prisma.TransactionClient,
   userId: string,
 ): Promise<void> {
@@ -26,5 +34,15 @@ export async function assertAssistantUserRunCapacity(
   });
   if (isAssistantUserRunLimitReached(activeRunCount)) {
     throw new Error('ASSISTANT_USER_RUN_LIMIT_REACHED');
+  }
+
+  // Count all recent submissions, including completed, failed, or cancelled runs,
+  // so quickly ending tasks cannot be used to evade the model-call rate limit.
+  const windowStart = new Date(Date.now() - 60_000);
+  const recentSubmissionCount = await tx.assistantRun.count({
+    where: { ownerUserId: userId, createdAt: { gte: windowStart } },
+  });
+  if (isAssistantUserSubmissionRateLimitReached(recentSubmissionCount)) {
+    throw new Error('ASSISTANT_USER_RUN_RATE_LIMIT_REACHED');
   }
 }
