@@ -234,7 +234,6 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
     </button>
     {presence.mounted && createPortal(<div
       ref={popupRef}
-      id={`select-options-${controlId}`}
       className={`select-popover ${presence.visible ? 'is-visible' : 'is-closing'}`}
       style={{ top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight }}
       onMouseDown={(event) => event.preventDefault()}
@@ -256,7 +255,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
           {option.value === selectedValue && <Check size={15} />}
         </button>)}
       </div>
-      {!visibleOptions.length && <div className="select-option-empty" role="status" aria-live="polite">没有匹配的选项</div>
+      {!visibleOptions.length && <div className="select-option-empty" role="status" aria-live="polite">没有匹配的选项</div>}
     </div>, document.body)}
   </div>;
 });

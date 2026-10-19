@@ -98,6 +98,7 @@ check('shared date and select controls expose popup relationships, labels, and v
   selectField.includes("props['aria-invalid'] === 'true'"));
 check('select search control is outside a semantic listbox containing only option rows',
   !selectField.includes("className={`select-popover ${presence.visible ? 'is-visible' : 'is-closing'}`}\n      role=\"listbox\"") &&
+  !selectField.includes("ref={popupRef}\n      id={`select-options-${controlId}`}") &&
   selectField.includes("id={`select-options-${controlId}`} className=\"select-option-list\" role=\"listbox\"") &&
   selectField.includes("aria-controls={`select-options-${controlId}`}"));
 check('select empty-result status is announced outside the listbox and active descendants never target disabled options',
