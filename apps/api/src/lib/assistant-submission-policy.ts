@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../generated/prisma/client.js';
 
 export const MAX_ACTIVE_ASSISTANT_RUNS_PER_USER = 2;
 
