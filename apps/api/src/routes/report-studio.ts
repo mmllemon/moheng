@@ -8,7 +8,7 @@ import { failure, success } from '../lib/http.js';
 import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
 import { loadReportStudioDataset, reportStudioSources, type ReportStudioDomain } from '../lib/report-studio-data.js';
 import { domainFromStudioReportKey, STUDIO_REPORT_KEYS, studioReportKey, validateReportStudioDefinition } from '../lib/report-studio-definition.js';
-import { previewReportStudio, renderReportStudio } from '../lib/report-studio-render.js';
+import { MAX_RENDERED_ROWS_PER_SHEET, previewReportStudio, renderReportStudio } from '../lib/report-studio-render.js';
 import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 
 const domainSchema = z.enum(['PROJECT', 'COMPANY', 'PARTY']);
@@ -252,7 +252,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
 
   app.post('/preview', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
-    const parsed = z.object({ templateId: z.string().trim().min(1), projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional() }).strict().safeParse(request.body);
+    const parsed = z.object({ templateId: z.string().trim().min(1), projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional(), printAll: z.boolean().optional() }).strict().safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '预览参数无效', parsed.error.flatten());
     const template = await prisma.reportTemplate.findUnique({ where: { id: parsed.data.templateId } });
     if (!template || !domainFromStudioReportKey(template.reportKey) || template.status === 'ARCHIVED') return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在或已归档');
@@ -273,7 +273,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
     try {
       const dataset = await loadReportStudioDataset(user, domain, effectiveProjectId, effectivePartyId);
       const rendered = renderReportStudio(validated.data, dataset);
-      return success(previewReportStudio(rendered));
+      return success(previewReportStudio(rendered, parsed.data.printAll ? MAX_RENDERED_ROWS_PER_SHEET : undefined));
     } catch (error) {
       const status = typeof error === 'object' && error !== null && 'statusCode' in error ? Number((error as { statusCode: unknown }).statusCode) : 500;
       const code = typeof error === 'object' && error !== null && 'code' in error ? String((error as { code: unknown }).code) : 'REPORT_STUDIO_PREVIEW_FAILED';
