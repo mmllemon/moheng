@@ -29,7 +29,7 @@ export interface ReportStudioRenderResult {
   truncated: boolean;
 }
 
-const MAX_RENDERED_ROWS_PER_SHEET = 10000;
+export const MAX_RENDERED_ROWS_PER_SHEET = 10000;
 const MAX_RENDERED_CELLS = 1_000_000;
 
 export class ReportStudioRenderLimitError extends Error {
