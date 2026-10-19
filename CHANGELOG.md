@@ -16,6 +16,7 @@
 - Fixed report-preview decimal rounding for custom formats with arbitrary supported precision by using decimal-string arithmetic, and added coverage for carry, negative values, and precision beyond two places.
 - Aligned report preview with common numeric Excel date formats (`yyyy-mm-dd`, `dd/mm/yyyy`, and Chinese literal patterns); locale-dependent month/day-name and time formats retain a predictable ISO-date fallback.
 - Fixed report-export polling and manual result lookup to distinguish a pending job from a completed job whose artifact is missing/expired; terminal states now show actionable errors rather than a false "still processing" or success message.
+- Made the report studio's 1,000,000-cell workbook safety limit a deterministic, non-retryable failure; preview returns an actionable limit message and queued exports report the same cause without wasting three worker attempts.
 
 ---
 
