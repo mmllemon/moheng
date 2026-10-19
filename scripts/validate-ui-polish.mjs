@@ -100,6 +100,12 @@ check('select search control is outside a semantic listbox containing only optio
   !selectField.includes("className={`select-popover ${presence.visible ? 'is-visible' : 'is-closing'}`}\n      role=\"listbox\"") &&
   selectField.includes("id={`select-options-${controlId}`} className=\"select-option-list\" role=\"listbox\"") &&
   selectField.includes("aria-controls={`select-options-${controlId}`}"));
+check('select empty-result status is announced outside the listbox and active descendants never target disabled options',
+  selectField.includes('className="select-option-empty" role="status" aria-live="polite"') &&
+  !selectField.includes(': <div className="select-option-empty">') &&
+  selectField.includes('if (activeOption && !activeOption.disabled) return;') &&
+  selectField.includes('index === activeIndex && !option.disabled') &&
+  (selectField.match(/visibleOptions\[activeIndex\] && !visibleOptions\[activeIndex\]!.disabled/g) ?? []).length === 2);
 check('date picker keyboard movement skips disabled dates and preserves focusable range boundaries',
   datePicker.includes('while (isDisabled(asIsoDate(next)) && attempts < 3660)') &&
   datePicker.includes('if (isDisabled(asIsoDate(next))) return;') &&

@@ -120,6 +120,15 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
 
   useEffect(() => {
     if (!presence.mounted || !visibleOptions.length) return;
+    const activeOption = visibleOptions[activeIndex];
+    if (activeOption && !activeOption.disabled) return;
+    const currentIndex = activeIndex >= 0 && activeIndex < visibleOptions.length ? activeIndex : -1;
+    const nextIndex = nextEnabledOptionIndex(visibleOptions, currentIndex, 1);
+    if (nextIndex !== activeIndex) setActiveIndex(nextIndex);
+  }, [activeIndex, presence.mounted, visibleOptions]);
+
+  useEffect(() => {
+    if (!presence.mounted || !visibleOptions.length) return;
     popupRef.current?.querySelector<HTMLElement>('.select-option.is-active')?.scrollIntoView({ block: 'nearest' });
   }, [activeIndex, presence.mounted, visibleOptions.length]);
 
@@ -209,7 +218,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
       aria-haspopup="listbox"
       aria-expanded={open}
       aria-controls={open ? `select-options-${controlId}` : undefined}
-      aria-activedescendant={open && visibleOptions[activeIndex] ? `select-option-${controlId}-${activeIndex}` : undefined}
+      aria-activedescendant={open && visibleOptions[activeIndex] && !visibleOptions[activeIndex]!.disabled ? `select-option-${controlId}-${activeIndex}` : undefined}
       aria-required={required}
       aria-disabled={disabled}
       disabled={disabled}
@@ -230,23 +239,24 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
       style={{ top: position.top, left: position.left, width: position.width, maxHeight: position.maxHeight }}
       onMouseDown={(event) => event.preventDefault()}
     >
-      {options.length > 7 && <div className="select-popover-search"><Search size={14} /><input aria-label="筛选下拉选项" role="combobox" aria-autocomplete="list" aria-controls={`select-options-${controlId}`} aria-expanded={open} aria-activedescendant={visibleOptions[activeIndex] ? `select-option-${controlId}-${activeIndex}` : undefined} value={filterText} onChange={(event) => { const nextFilter = event.target.value; const nextVisible = options.filter((option) => !nextFilter || option.label.toLocaleLowerCase().includes(nextFilter.toLocaleLowerCase())); setFilterText(nextFilter); setActiveIndex(nextEnabledOptionIndex(nextVisible, -1, 1)); }} onKeyDown={(event) => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex((index) => nextEnabledOptionIndex(visibleOptions, index, event.key === 'ArrowDown' ? 1 : -1)); } else if (event.key === 'Enter') { event.preventDefault(); const option = visibleOptions[activeIndex]; if (option) choose(option); } }} placeholder="筛选选项…" autoFocus /></div>}
+      {options.length > 7 && <div className="select-popover-search"><Search size={14} /><input aria-label="筛选下拉选项" role="combobox" aria-autocomplete="list" aria-controls={`select-options-${controlId}`} aria-expanded={open} aria-activedescendant={visibleOptions[activeIndex] && !visibleOptions[activeIndex]!.disabled ? `select-option-${controlId}-${activeIndex}` : undefined} value={filterText} onChange={(event) => { const nextFilter = event.target.value; const nextVisible = options.filter((option) => !nextFilter || option.label.toLocaleLowerCase().includes(nextFilter.toLocaleLowerCase())); setFilterText(nextFilter); setActiveIndex(nextEnabledOptionIndex(nextVisible, -1, 1)); }} onKeyDown={(event) => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex((index) => nextEnabledOptionIndex(visibleOptions, index, event.key === 'ArrowDown' ? 1 : -1)); } else if (event.key === 'Enter') { event.preventDefault(); const option = visibleOptions[activeIndex]; if (option) choose(option); } }} placeholder="筛选选项…" autoFocus /></div>}
       <div id={`select-options-${controlId}`} className="select-option-list" role="listbox" aria-label={props['aria-label'] ?? '下拉选项'}>
-        {visibleOptions.length ? visibleOptions.map((option, index) => <button
+        {visibleOptions.map((option, index) => <button
           type="button"
           role="option"
           aria-selected={option.value === selectedValue}
           id={`select-option-${controlId}-${index}`}
           key={`${option.value}-${index}`}
           disabled={option.disabled}
-          className={`select-option ${option.value === selectedValue ? 'is-selected' : ''} ${index === activeIndex ? 'is-active' : ''}`}
+          className={`select-option ${option.value === selectedValue ? 'is-selected' : ''} ${index === activeIndex && !option.disabled ? 'is-active' : ''}`}
           onMouseEnter={() => setActiveIndex(index)}
           onClick={() => choose(option)}
         >
           <span className="select-option-label">{option.label}</span>
           {option.value === selectedValue && <Check size={15} />}
-        </button>) : <div className="select-option-empty">没有匹配的选项</div>}
+        </button>)}
       </div>
+      {!visibleOptions.length && <div className="select-option-empty" role="status" aria-live="polite">没有匹配的选项</div>
     </div>, document.body)}
   </div>;
 });
