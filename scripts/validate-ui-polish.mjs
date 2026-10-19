@@ -163,5 +163,13 @@ check('Obsidian primary actions use contrast-safe dark accent backgrounds',
   styles.includes('--accent-600: #257b66;') &&
   styles.includes('--accent-600: #ad4030;'));
 
+check('theme rendering uses one canonical attribute to prevent stale dark surfaces after a theme switch',
+  !styles.includes(':root[data-theme="dark"]') &&
+  styles.includes(':root[data-theme-name="obsidian"] .app-shell') &&
+  !/root\\.dataset\\.theme\\s*=/.test((await read('apps/web/src/components/UiPreferencesBar.tsx'))) &&
+  (await read('apps/web/src/components/UiPreferencesBar.tsx')).includes('root.dataset.themeName = resolved'));
+check('primary action foreground contrast uses the stronger accent-600 background across themes',
+  styles.includes('.button-primary { color: white; background: var(--accent-600); border-color: var(--accent-600);') &&
+  styles.includes('.breadcrumb { display: flex; align-items: center; min-width: 0; gap: 10px; color: var(--text-muted);'));
 console.log(`\n${passed}/${passed + failures.length} UI polish checks passed.`);
 if (failures.length) process.exitCode = 1;
