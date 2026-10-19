@@ -119,6 +119,15 @@ check('select empty-result status is announced outside the listbox and active de
   selectField.includes('if (activeOption && !activeOption.disabled) return;') &&
   selectField.includes('index === activeIndex && !option.disabled') &&
   (selectField.match(/visibleOptions\[activeIndex\] && !visibleOptions\[activeIndex\]!.disabled/g) ?? []).length === 2);
+
+check('shared select and date popovers close on keyboard focus exit without putting every option in the Tab sequence',
+  selectField.includes("document.addEventListener('focusin', onFocusIn)") &&
+  selectField.includes("document.removeEventListener('focusin', onFocusIn)") &&
+  datePicker.includes("document.addEventListener('focusin', onFocusIn)") &&
+  datePicker.includes("document.removeEventListener('focusin', onFocusIn)") &&
+  selectField.includes('role="option"\n          tabIndex={-1}\n          aria-selected={option.value === selectedValue}') &&
+  selectField.includes('if (wrapperRef.current?.contains(target) || popupRef.current?.contains(target)) return;') &&
+  datePicker.includes('if (wrapperRef.current?.contains(target) || popupRef.current?.contains(target)) return;'));
 check('date picker keyboard movement skips disabled dates and preserves focusable range boundaries',
   datePicker.includes('while (isDisabled(asIsoDate(next)) && attempts < 3660)') &&
   datePicker.includes('if (isDisabled(asIsoDate(next))) return;') &&

@@ -101,6 +101,11 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       if (wrapperRef.current?.contains(target) || popupRef.current?.contains(target)) return;
       setOpen(false);
     };
+    const onFocusIn = (event: FocusEvent) => {
+      const target = event.target as Node;
+      if (wrapperRef.current?.contains(target) || popupRef.current?.contains(target)) return;
+      setOpen(false);
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); setOpen(false); triggerRef.current?.focus(); }
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
@@ -108,11 +113,13 @@ const DatePicker = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEle
       }
     };
     document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('focusin', onFocusIn);
     document.addEventListener('keydown', onKeyDown);
     window.addEventListener('resize', syncPosition);
     window.addEventListener('scroll', syncPosition, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('resize', syncPosition);
       window.removeEventListener('scroll', syncPosition, true);
