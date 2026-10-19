@@ -144,9 +144,9 @@ check('design docs enforce neutral professional visual language and record navig
 
 check('minimum readable typography removes 8px/9px text declarations',
   styles.includes('--text-2xs: 11px;') &&
-  !/\\bfont-size\\s*:\\s*(?:8|9)px\\b/.test(styles));
+  !['font-size: 8px', 'font-size:8px', 'font-size: 9px', 'font-size:9px'].some((token) => styles.includes(token)));
 check('font weights follow the standard 400/500/600/700 scale',
-  !/\\bfont-weight\\s*:\\s*(?:550|650|750|800)\\b/.test(styles));
+  !['font-weight: 550', 'font-weight:550', 'font-weight: 650', 'font-weight:650', 'font-weight: 750', 'font-weight:750', 'font-weight: 800', 'font-weight:800'].some((token) => styles.includes(token)));
 check('muted text and sidebar tokens use contrast-strengthened values across four themes',
   styles.includes('--text-muted: #606d80;') &&
   styles.includes('--text-secondary: #475569; --text-muted: #606d80;') &&
