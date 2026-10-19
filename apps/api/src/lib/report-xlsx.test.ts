@@ -22,6 +22,8 @@ test('standard XLSX begins with a styled overview sheet and preserves typed data
   await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   assert.deepEqual(workbook.worksheets.map((sheet) => sheet.name), ['报表预览', '数据', '导出说明']);
   const overview = workbook.getWorksheet('报表预览')!;
+  assert.equal(overview.pageSetup.orientation, definition.page.orientation, 'overview and data sheets must use the configured print orientation');
+  assert.equal(overview.pageSetup.paperSize, 9, 'overview must preserve the template A4 paper size');
   assert.equal(overview.getCell('A1').value, definition.title);
   assert.equal(overview.getCell('A4').value, '报表类型');
   assert.equal(overview.getCell('B4').value, '目标成本清单');
