@@ -77,8 +77,11 @@ check(rootPkg.scripts['validate:release-candidate'].includes('validate-assistant
 
 const submissionPolicy = await read('apps/api/src/lib/assistant-submission-policy.ts');
 const submissionPolicyTests = await read('apps/api/src/lib/assistant-submission-policy.test.ts');
-check(routes.includes("assertAssistantUserRunCapacity(tx, actor.sub)") && routes.includes('ASSISTANT_USER_RUN_LIMIT_REACHED'), 'message submission must enforce a cross-conversation per-user active run cap');
+check(routes.includes("assertAssistantUserRunAdmission(tx, actor.sub)") && routes.includes('ASSISTANT_USER_RUN_LIMIT_REACHED') && routes.includes('ASSISTANT_USER_RUN_RATE_LIMIT_REACHED'), 'message submission must enforce cross-conversation active and sliding-window per-user limits');
 check(submissionPolicy.includes('MAX_ACTIVE_ASSISTANT_RUNS_PER_USER = 2') && submissionPolicy.includes('FOR UPDATE') && submissionPolicy.includes("status: { in: ['QUEUED', 'RUNNING'] }"), 'user-level admission must serialize the count under a user-row lock and count queued plus running work');
+check(submissionPolicy.includes('MAX_ASSISTANT_SUBMISSIONS_PER_USER_PER_MINUTE = 6') && submissionPolicy.includes('createdAt: { gte: windowStart }'), 'user-level sliding-window rate limit must count all recent runs under the same user-row lock');
+check(submissionPolicyTests.includes('assistant user sliding-window submission limit admits six and rejects the seventh'), 'user submission rate-limit boundary must have unit coverage');
+check((await read('apps/api/src/lib/assistant-recovery.integration.test.ts')).includes('limits concurrent user submissions to six in a rolling minute'), 'isolated PostgreSQL gate must exercise concurrent cross-session rate-limit admission');
 check(submissionPolicyTests.includes('assistant user run limit admits fewer than two active runs and rejects the third') && submissionPolicyTests.includes('rejects invalid counters'), 'user run-cap policy must have boundary unit tests');
 
 console.log(JSON.stringify({ gate: 'ASSISTANT_CONVERSATION_API_SSE_STATIC_CONTRACT', result: 'PASS', assertions, runtime: 'LangGraph adapter + PostgreSQL checkpoint schema', productionEnabled: false, caveat: 'Static source contract only; not a TypeScript build, live DB migration, API concurrency test, or model E2E.' }, null, 2));
