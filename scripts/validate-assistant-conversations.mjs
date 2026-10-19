@@ -75,4 +75,10 @@ check(rootPkg.version === apiPkg.version && rootPkg.version === webPkg.version, 
 check(['@langchain/core', '@langchain/openai', '@langchain/langgraph-checkpoint-postgres', 'langchain'].every((name) => Boolean(apiPkg.dependencies[name])), 'API must pin required runtime dependencies');
 check(rootPkg.scripts['validate:release-candidate'].includes('validate-assistant-conversations.mjs'), 'assistant session contract must run in release validation');
 
+const submissionPolicy = await read('apps/api/src/lib/assistant-submission-policy.ts');
+const submissionPolicyTests = await read('apps/api/src/lib/assistant-submission-policy.test.ts');
+check(routes.includes("assertAssistantUserRunCapacity(tx, actor.sub)") && routes.includes('ASSISTANT_USER_RUN_LIMIT_REACHED'), 'message submission must enforce a cross-conversation per-user active run cap');
+check(submissionPolicy.includes('MAX_ACTIVE_ASSISTANT_RUNS_PER_USER = 2') && submissionPolicy.includes('FOR UPDATE') && submissionPolicy.includes("status: { in: ['QUEUED', 'RUNNING'] }"), 'user-level admission must serialize the count under a user-row lock and count queued plus running work');
+check(submissionPolicyTests.includes('assistant user run limit admits fewer than two active runs and rejects the third') && submissionPolicyTests.includes('rejects invalid counters'), 'user run-cap policy must have boundary unit tests');
+
 console.log(JSON.stringify({ gate: 'ASSISTANT_CONVERSATION_API_SSE_STATIC_CONTRACT', result: 'PASS', assertions, runtime: 'LangGraph adapter + PostgreSQL checkpoint schema', productionEnabled: false, caveat: 'Static source contract only; not a TypeScript build, live DB migration, API concurrency test, or model E2E.' }, null, 2));

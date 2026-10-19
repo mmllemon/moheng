@@ -7,6 +7,7 @@ import { prisma } from './prisma.js';
 import { appendAssistantRunEvent } from './assistant-run-events.js';
 import { claimNextBackgroundJob, reconcileOrphanAssistantRuns } from './background-jobs.js';
 import { createAssistantAgentRunJobHandler } from './assistant-agent-run-job.js';
+import { assertAssistantUserRunCapacity } from './assistant-submission-policy.js';
 import { runLangGraphAssistantTurn } from '../assistant/runtime/langgraph-adapter.js';
 import { createFakeRuntimeDependencies, FAKE_PROVIDER_PRIVATE_MARKER } from '../../test-support/fake-assistant-provider.js';
 import type { AssistantReadOnlyToolInput } from './assistant-read-only-tools.js';
@@ -214,6 +215,56 @@ test('isolated PostgreSQL assistant recovery + injected fake provider success co
       await prisma.backgroundJob.deleteMany({ where: { ownerUserId: userId } }).catch(() => undefined);
       await prisma.auditLog.deleteMany({ where: { OR: [{ userId }, ...(projectId ? [{ projectId }] : [])] } }).catch(() => undefined);
     }
+    if (conversationIds.length) await prisma.assistantConversation.deleteMany({ where: { id: { in: conversationIds } } }).catch(() => undefined);
+    if (projectId) await prisma.project.delete({ where: { id: projectId } }).catch(() => undefined);
+    if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
+  }
+});
+
+
+test('isolated PostgreSQL serializes concurrent assistant submissions across conversations per user', { skip: !enabled }, async () => {
+  const testDatabaseUrl = process.env.DATABASE_URL;
+  assert.ok(testDatabaseUrl, 'DATABASE_URL must point to an isolated, migrated PostgreSQL test database');
+  assert.ok(testDatabaseUrl !== process.env.PRODUCTION_DATABASE_URL, 'test database must not equal PRODUCTION_DATABASE_URL');
+  assert.ok(/localhost|127\.0\.0\.1|postgres(?:ql)?:\/\/.*(?:test|ci)/i.test(testDatabaseUrl), 'guard refused a database URL that does not look isolated; use local/CI test PostgreSQL');
+
+  const suffix = randomUUID().replaceAll('-', '').slice(0, 16);
+  let userId: string | undefined;
+  let projectId: string | undefined;
+  const conversationIds: string[] = [];
+  try {
+    const user = await prisma.user.create({
+      data: { name: `Assistant Cap ${suffix}`, email: `assistant-cap-${suffix}@example.invalid`, passwordHash: 'test-only-not-a-login-password', role: 'ADMIN' },
+    });
+    userId = user.id;
+    const project = await prisma.project.create({
+      data: { name: `Assistant Cap Project ${suffix}`, code: `AC-${suffix}`, ownerName: 'Gate Owner', contractAmount: '1000.00', originalContractAmount: '1000.00', startDate: new Date() },
+    });
+    projectId = project.id;
+    const conversations = await Promise.all([0, 1, 2].map((index) => prisma.assistantConversation.create({
+      data: { ownerUserId: user.id, projectId: project.id, title: `Assistant Cap ${suffix} ${index}` },
+    })));
+    conversationIds.push(...conversations.map((conversation) => conversation.id));
+
+    const outcomes = await Promise.allSettled(conversations.map((conversation, index) =>
+      prisma.$transaction(async (tx) => {
+        await assertAssistantUserRunCapacity(tx, user.id);
+        const requestId = `cap-${suffix}-${index}`;
+        return tx.assistantRun.create({
+          data: {
+            conversationId: conversation.id, ownerUserId: user.id, projectId: project.id,
+            requestId, requestHash: createHash('sha256').update(requestId).digest('hex'), status: 'QUEUED',
+          },
+        });
+      }),
+    ));
+
+    assert.equal(outcomes.filter((outcome) => outcome.status === 'fulfilled').length, 2);
+    const rejected = outcomes.filter((outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected');
+    assert.equal(rejected.length, 1);
+    assert.equal((rejected[0]?.reason as Error)?.message, 'ASSISTANT_USER_RUN_LIMIT_REACHED');
+    assert.equal(await prisma.assistantRun.count({ where: { ownerUserId: user.id, status: { in: ['QUEUED', 'RUNNING'] } } }), 2);
+  } finally {
     if (conversationIds.length) await prisma.assistantConversation.deleteMany({ where: { id: { in: conversationIds } } }).catch(() => undefined);
     if (projectId) await prisma.project.delete({ where: { id: projectId } }).catch(() => undefined);
     if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => undefined);
