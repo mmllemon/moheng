@@ -8,6 +8,7 @@ import { useUiStore } from '../auth-store';
 import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 import type { ReportPreview } from '../report-template-types';
 import type { ReportStudioPreview, ReportStudioTemplate } from '../report-studio-types';
+import { roundFixedDecimal } from '../report-preview-format';
 import { classifyReportExportJob } from '../report-export-job.js';
 
 function colorValue(input: unknown): string | undefined {
@@ -98,18 +99,8 @@ function displayValue(value: unknown, format?: string | null, rawStyle?: Record<
       const decimals = numericPattern.includes('.') ? (numericPattern.split('.')[1]?.split(';')[0]?.match(/[0#]+/)?.[0].length ?? 0) : 0;
       if (typeof value === 'number' && Number.isFinite(value)) return value.toLocaleString('zh-CN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
       if (typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value)) {
-        const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value)!;
-        let whole = match[2]!;
-        let fraction = match[3] ?? '';
-        if (decimals < fraction.length) {
-          const roundingDigit = Number(fraction[decimals] ?? '0');
-          const scale = 10n ** BigInt(decimals);
-          const cents = BigInt(whole) * 100n + BigInt((fraction + '00').slice(0, 2));
-          const rounded = decimals === 0 ? (cents + (roundingDigit >= 5 ? 50n : 0n)) / 100n : (cents + (roundingDigit >= 5 ? 10n ** BigInt(2 - decimals) / 2n : 0n)) / (10n ** BigInt(2 - decimals));
-          whole = (rounded / scale).toString();
-          fraction = scale > 1n ? (rounded % scale).toString().padStart(decimals, '0') : '';
-        } else fraction = fraction.padEnd(decimals, '0');
-        return groupFixedDecimal(`${match[1]}${whole}${decimals ? `.${fraction.slice(0, decimals)}` : ''}`);
+        const rounded = roundFixedDecimal(value, decimals);
+        if (rounded !== null) return groupFixedDecimal(rounded);
       }
     }
   }
