@@ -98,6 +98,30 @@ test('preview is bounded and marks truncation without changing the render source
   assert.equal(result.sheets[0]!.rows.length, 10);
 });
 
+
+test('full print preview returns all rendered rows beyond the normal 200-row screen preview', () => {
+  const report = definition();
+  report.regions[1]!.maxRows = 500;
+  const receipts = Array.from({ length: 240 }, (_, index) => ({
+    id: `receipt-${index + 1}`,
+    receiptNo: `SK-${String(index + 1).padStart(3, '0')}`,
+    amount: index + 1,
+  }));
+  const rendered = renderReportStudio(report, {
+    ...dataset,
+    sources: { ...dataset.sources, receipts },
+  });
+  const screenPreview = previewReportStudio(rendered);
+  const printPreview = previewReportStudio(rendered, 10_000);
+  assert.equal(screenPreview.sheets[0]!.rows.length, 200);
+  assert.equal(screenPreview.sheets[0]!.truncated, true);
+  assert.ok(printPreview.sheets[0]!.rows.length > 200);
+  assert.equal(printPreview.sheets[0]!.rows.length, rendered.sheets[0]!.rows.length);
+  assert.equal(printPreview.sheets[0]!.previewRowCount, rendered.sheets[0]!.rows.length);
+  assert.equal(printPreview.sheets[0]!.truncated, false);
+  assert.equal(printPreview.sheets[0]!.rows.at(-2)?.[0]?.value, 'SK-240');
+});
+
 test('empty repeating regions render one blank template row rather than removing downstream layout', () => {
   const result = renderReportStudio(definition(), { ...dataset, sources: { ...dataset.sources, contracts: [], receipts: [] } });
   const rows = result.sheets[0]!.rows;
