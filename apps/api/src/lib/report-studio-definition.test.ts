@@ -162,7 +162,7 @@ test('rejects non-canonical cell row keys instead of validating a different rend
   for (const rowKey of ['00', '-0', '+1', '1.0', ' 1']) {
     const report = definition();
     const workbook = report.workbook as unknown as {
-      sheets: Record<string, { cellData: Record<string, Record<string, unknown>> };
+      sheets: Record<string, { cellData: Record<string, Record<string, unknown>> }>;
     };
     workbook.sheets.sheet1!.cellData = {
       [rowKey]: { '0': { v: 'This key would not be read by the renderer' } },
@@ -177,7 +177,7 @@ test('rejects non-canonical cell column keys instead of silently dropping values
   for (const columnKey of ['00', '-0', '+1', '1.0', ' 1']) {
     const report = definition();
     const workbook = report.workbook as unknown as {
-      sheets: Record<string, { cellData: Record<string, Record<string, unknown>> };
+      sheets: Record<string, { cellData: Record<string, Record<string, unknown>> }>;
     };
     workbook.sheets.sheet1!.cellData = {
       '0': { [columnKey]: { v: 'This key would not be read by the renderer' } },
