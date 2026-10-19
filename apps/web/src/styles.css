@@ -2329,6 +2329,8 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
   .report-studio-preview-grid.print-natural-width { width:max-content !important; min-width:100% !important; table-layout:auto !important; }
   .report-preview-table.print-fit-width { width:100% !important; min-width:0 !important; table-layout:fixed !important; }
   .report-preview-table.print-natural-width { width:max-content !important; min-width:100% !important; table-layout:auto !important; }
+  .report-preview-table.repeat-header thead { display:table-header-group; }
+  .report-preview-table.no-repeat-header thead { display:table-row-group; }
   .report-preview-sheet,.report-preview-standard-surface { break-inside:auto; box-shadow:none !important; border:0 !important; }
   .report-preview-sheet-head { break-after:avoid; }
   .report-studio-preview-grid thead { display:table-header-group; }
