@@ -117,8 +117,8 @@ function addOverviewSheet(
   sheet.views = [{ state: 'normal', zoomScale: 90 }];
   sheet.properties.defaultRowHeight = 22;
   sheet.pageSetup = {
-    paperSize: 9 as unknown as ExcelJS.PaperSize,
-    orientation: 'portrait',
+    paperSize: (input.definition.page.paper === 'A3' ? 8 : input.definition.page.paper === 'Letter' ? 1 : 9) as unknown as ExcelJS.PaperSize,
+    orientation: input.definition.page.orientation,
     fitToPage: true,
     fitToWidth: 1,
     // Keep warning text readable across multiple printed pages instead of shrinking the entire overview to one page.
@@ -241,6 +241,8 @@ export async function buildReportStudioWorkbook(input: { definition: ReportStudi
       fitToHeight: 0,
       margins: { left: 0.25, right: 0.25, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
     };
+    const frozenRowsCrossMerge = sheet.frozenRows > 0 && sheet.merges.some((merge) => merge.startRow < sheet.frozenRows && merge.endRow >= sheet.frozenRows);
+    if (sheet.frozenRows > 0 && !frozenRowsCrossMerge) worksheet.pageSetup.printTitlesRow = `1:${sheet.frozenRows}`;
     worksheet.pageSetup.horizontalCentered = false;
     worksheet.headerFooter.oddFooter = `${input.definition.page.footerText.replace(/&/g, '&&')}${input.definition.page.includeMetadata ? ` · ${input.definition.domain === 'PROJECT' ? '项目级' : input.definition.domain === 'PARTY' ? '往来单位档案级' : '公司级'} · 模板 ${input.templateName} v${input.templateVersion}` : ''}　&P/&N`;
     for (const [columnKey, width] of Object.entries(sheet.columnWidths)) worksheet.getColumn(Number(columnKey) + 1).width = Math.min(80, Math.max(2, width / 7));

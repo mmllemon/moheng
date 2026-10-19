@@ -29,7 +29,7 @@ export interface ReportStudioRenderResult {
   truncated: boolean;
 }
 
-const MAX_RENDERED_ROWS_PER_SHEET = 10000;
+export const MAX_RENDERED_ROWS_PER_SHEET = 10000;
 const MAX_RENDERED_CELLS = 1_000_000;
 
 export class ReportStudioRenderLimitError extends Error {
@@ -256,6 +256,8 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const freeze = sourceSheet.freeze && typeof sourceSheet.freeze === 'object' ? sourceSheet.freeze as Record<string, unknown> : {};
     const frozenRows = Math.max(0, Number(freeze.ySplit ?? 0) || 0);
     const frozenColumns = Math.max(0, Number(freeze.xSplit ?? 0) || 0);
+    const frozenRowsCrossMerge = frozenRows > 0 && merges.some((merge) => merge.startRow < frozenRows && merge.endRow >= frozenRows);
+    if (frozenRowsCrossMerge) warnings.push(`工作表“${sourceSheet.name ?? sheetId}”的冻结行与跨行合并区域相交；打印时将不重复冻结行以保留合并布局。`);
     renderedSheets.push({ id: sheetId, name: String(sourceSheet.name ?? sheetId), rows: renderedRows, rowHeights, columnWidths, merges, frozenRows, frozenColumns, rowCount: renderedRows.length, truncated: sheetTruncated });
   }
   return { title: definition.title, domain: definition.domain, generatedAt: dataset.generatedAt, projectId: dataset.projectId, sheets: renderedSheets, warnings: [...new Set(warnings)], truncated: allTruncated };
@@ -266,7 +268,7 @@ export function previewReportStudio(result: ReportStudioRenderResult, maxRowsPer
     title: result.title, domain: result.domain, generatedAt: result.generatedAt, projectId: result.projectId,
     warnings: result.warnings, truncated: result.truncated,
     sheets: result.sheets.map((sheet) => ({
-      id: sheet.id, name: sheet.name, rowCount: sheet.rowCount, previewRowCount: Math.min(maxRowsPerSheet, sheet.rows.length),
+      id: sheet.id, name: sheet.name, rowCount: sheet.rowCount, previewRowCount: Math.min(maxRowsPerSheet, sheet.rows.length), frozenRows: sheet.frozenRows, frozenColumns: sheet.frozenColumns,
       truncated: sheet.truncated || sheet.rows.length > maxRowsPerSheet,
       rows: sheet.rows.slice(0, maxRowsPerSheet).map((row) => row.map((cell) => ({ value: cell.value, style: cell.style ?? null, format: cell.format ?? null }))),
       rowHeights: sheet.rowHeights, columnWidths: sheet.columnWidths, merges: sheet.merges.filter((merge) => merge.startRow < maxRowsPerSheet && merge.endRow < maxRowsPerSheet),

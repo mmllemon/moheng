@@ -68,7 +68,7 @@ function addStandardReportOverview(workbook: ExcelJS.Workbook, options: ReportWo
   sheet.properties.defaultRowHeight = 23;
   sheet.pageSetup = {
     paperSize: (definition.page.paper === 'A3' ? 8 : definition.page.paper === 'Letter' ? 1 : 9) as unknown as ExcelJS.PaperSize,
-    orientation: 'portrait',
+    orientation: definition.page.orientation,
     fitToPage: true,
     fitToWidth: 1,
     // Keep row-limit warnings readable; never force the overview and warnings onto one page.

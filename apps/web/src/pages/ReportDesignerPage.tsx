@@ -11,6 +11,7 @@ import { useAuthStore, useUiStore } from '../auth-store';
 import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 import SelectField from '../components/SelectField';
 import DatePicker from '../components/DatePicker';
+import { describeStandardPrintResult } from '../report-print.js';
 import type { Project } from '../types';
 import type {
   ReportCatalogEntry, ReportField, ReportPreview, ReportTemplateColumn, ReportTemplateDefinition,
@@ -146,6 +147,7 @@ export default function ReportDesignerPage() {
   const [to, setTo] = useState(searchParams.get('to') ?? '');
   const [addFieldKey, setAddFieldKey] = useState('');
   const [printRows, setPrintRows] = useState<unknown[][] | null>(null);
+  const [printTruncated, setPrintTruncated] = useState(false);
 
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
   const catalogQuery = useQuery({ queryKey: ['reports-catalog-designer'], queryFn: () => api.get<ReportCatalogEntry[]>('/reports/catalog') });
@@ -303,14 +305,15 @@ export default function ReportDesignerPage() {
       params.set('printAll', 'true');
       const result = await api.get<ReportPreview>(`/reports/${reportKey}/preview?${params.toString()}`);
       setPrintRows(result.rows as unknown[][]);
-      setNotice(`已准备 ${result.previewRowCount.toLocaleString('zh-CN')} 行完整打印数据；如果数据被导出上限截断，页内会显示提醒。`);
+      setPrintTruncated(result.truncated);
+      setNotice(describeStandardPrintResult(result.previewRowCount, result.truncated));
     } catch (cause) { setError(cause instanceof Error ? cause.message : '打印数据加载失败'); }
     finally { setBusy(false); }
   }
 
   useEffect(() => {
     if (printRows === null) return;
-    const afterPrint = () => setPrintRows(null);
+    const afterPrint = () => { setPrintRows(null); setPrintTruncated(false); };
     window.addEventListener('afterprint', afterPrint);
     const timeout = window.setTimeout(() => window.print(), 300);
     return () => { window.clearTimeout(timeout); window.removeEventListener('afterprint', afterPrint); };
@@ -562,7 +565,7 @@ export default function ReportDesignerPage() {
               })}</tr>)}
               {!printRows.length && <tr><td colSpan={Math.max(1, outputColumns.length)} className="report-preview-empty">当前筛选范围没有数据。</td></tr>}
             </tbody></table>
-            <footer className="report-preview-footer"><span>{model.page.footerText}</span><span>{printRows.length.toLocaleString('zh-CN')} 行 · {preview.truncated ? '注意：数据达到单次查询上限，打印内容可能不完整，请缩小筛选范围分批打印。' : '数据完整'}</span></footer>
+            <footer className="report-preview-footer"><span>{model.page.footerText}</span><span>{printRows.length.toLocaleString('zh-CN')} 行 · {printTruncated ? '注意：本次打印已达到服务端数据上限，内容可能不完整，请缩小筛选范围分批打印。' : '数据完整'}</span></footer>
           </article>
         </div>}
       </section>

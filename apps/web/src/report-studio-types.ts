@@ -22,7 +22,7 @@ export interface ReportStudioTemplate {
   editable?: boolean; createdAt: string; updatedAt: string;
 }
 export interface ReportStudioPreviewSheet {
-  id: string; name: string; rowCount: number; previewRowCount: number; truncated: boolean;
+  id: string; name: string; rowCount: number; previewRowCount: number; truncated: boolean; frozenRows?: number; frozenColumns?: number;
   rows: Array<Array<{ value: unknown; style: Record<string, unknown> | null; format: string | null }>>;
   rowHeights: Record<number, number>; columnWidths: Record<number, number>;
   merges: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }>;

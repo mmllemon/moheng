@@ -98,6 +98,57 @@ test('preview is bounded and marks truncation without changing the render source
   assert.equal(result.sheets[0]!.rows.length, 10);
 });
 
+
+test('full print preview returns all rendered rows beyond the normal 200-row screen preview', () => {
+  const report = definition();
+  report.regions[1]!.maxRows = 500;
+  const receipts = Array.from({ length: 240 }, (_, index) => ({
+    id: `receipt-${index + 1}`,
+    receiptNo: `SK-${String(index + 1).padStart(3, '0')}`,
+    amount: index + 1,
+  }));
+  const rendered = renderReportStudio(report, {
+    ...dataset,
+    sources: { ...dataset.sources, receipts },
+  });
+  const screenPreview = previewReportStudio(rendered);
+  const printPreview = previewReportStudio(rendered, 10_000);
+  assert.equal(screenPreview.sheets[0]!.rows.length, 200);
+  assert.equal(screenPreview.sheets[0]!.truncated, true);
+  assert.ok(printPreview.sheets[0]!.rows.length > 200);
+  assert.equal(printPreview.sheets[0]!.rows.length, rendered.sheets[0]!.rows.length);
+  assert.equal(printPreview.sheets[0]!.previewRowCount, rendered.sheets[0]!.rows.length);
+  assert.equal(printPreview.sheets[0]!.frozenRows, 2);
+  assert.equal(printPreview.sheets[0]!.truncated, false);
+  assert.equal(printPreview.sheets[0]!.rows.at(-2)?.[0]?.value, 'SK-240');
+});
+
+
+test('XLSX avoids repeating frozen rows when a vertical merge crosses the frozen boundary', async () => {
+  const report = definition();
+  const workbookData = report.workbook as unknown as {
+    sheets: Record<string, {
+      freeze: { ySplit: number; xSplit: number };
+      mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }>;
+    }>;
+  };
+  workbookData.sheets.main!.freeze.ySplit = 1;
+  workbookData.sheets.main!.mergeData = [{ startRow: 0, startColumn: 2, endRow: 1, endColumn: 2 }];
+
+  const rendered = renderReportStudio(report, dataset);
+  assert.ok(rendered.warnings.some((warning) => warning.includes('冻结行与跨行合并区域相交')));
+
+  const buffer = await buildReportStudioWorkbook({
+    definition: report,
+    dataset,
+    templateName: '冻结区合并冲突模板',
+    templateVersion: 1,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  assert.equal(workbook.getWorksheet('测试表')!.pageSetup.printTitlesRow, undefined);
+});
+
 test('empty repeating regions render one blank template row rather than removing downstream layout', () => {
   const result = renderReportStudio(definition(), { ...dataset, sources: { ...dataset.sources, contracts: [], receipts: [] } });
   const rows = result.sheets[0]!.rows;
@@ -149,6 +200,9 @@ test('XLSX export starts with a styled overview sheet and preserves the report w
 
   // The export still contains the original user-designed sheet and values.
   const designedSheet = workbook.getWorksheet('测试表')!;
+  assert.equal(overview.pageSetup.orientation, designedSheet.pageSetup.orientation, 'overview and designed sheet must use the same print orientation');
+  assert.equal(overview.pageSetup.paperSize, designedSheet.pageSetup.paperSize, 'overview and designed sheet must use the same paper size');
+  assert.equal(designedSheet.pageSetup.printTitlesRow, '1:2', 'frozen rows repeat on printed pages when no merge crosses the frozen boundary');
   assert.equal(designedSheet.getCell('B1').value, '测试项目');
   assert.equal(designedSheet.getCell('B1').alignment?.vertical, 'top');
   assert.equal(designedSheet.getCell('B1').font.color && (designedSheet.getCell('B1').font.color as { argb?: string }).argb, 'FF123456');

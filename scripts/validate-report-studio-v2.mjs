@@ -41,6 +41,13 @@ const xlsx = await read('apps/api/src/lib/report-studio-xlsx.ts');
 const renderTests = await read('apps/api/src/lib/report-studio-render.test.ts');
 const studioPage = await read('apps/web/src/pages/ReportStudioPage.tsx');
 const previewPage = await read('apps/web/src/pages/ReportPreviewPage.tsx');
+const studioExportCode = previewPage.slice(previewPage.indexOf('async function exportXlsx()'), previewPage.indexOf('const standardColumns'));
+const reportPrint = await read('apps/web/src/report-print.ts');
+const reportPrintTests = await read('apps/web/src/report-print.test.ts');
+const reportPreviewLayout = await read('apps/web/src/report-preview-layout.ts');
+const reportPreviewLayoutTests = await read('apps/web/src/report-preview-layout.test.ts');
+const reportPreviewData = await read('apps/web/src/report-preview-data.ts');
+const reportPreviewDataTests = await read('apps/web/src/report-preview-data.test.ts');
 const centerPage = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const legacyDesigner = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const app = await read('apps/web/src/App.tsx');
@@ -223,6 +230,53 @@ check('party template context is isolated by businessPartyId through an append-o
   studioRoute.includes('REPORT_TEMPLATE_PARTY_MISMATCH') && studioRoute.includes('hasBusinessParty') && studioRoute.includes('businessPartyId') &&
   (await read('apps/api/prisma/schema.prisma')).includes('businessPartyId String?') && (await read('apps/api/prisma/migrations/20261015030000_party_report_template_context/migration.sql')).includes('FOREIGN KEY'));
 
+check('formal preview printing loads full server-bounded standard and studio datasets before window.print',
+  reportsRoute.includes("parsed.data.printAll === 'true' ? snapshot.rows : snapshot.rows.slice(0, 80)") &&
+  studioRoute.includes('printAll: z.boolean().optional()') &&
+  studioRoute.includes('previewReportStudio(rendered, parsed.data.printAll ? MAX_RENDERED_ROWS_PER_SHEET : undefined)') &&
+  renderer.includes('export const MAX_RENDERED_ROWS_PER_SHEET = 10000') && renderer.includes('frozenRows: sheet.frozenRows') &&
+  xlsx.includes('worksheet.pageSetup.printTitlesRow') && previewPage.includes('repeatedHeaderRows > 0 && <thead>') &&
+  previewPage.includes('frozenRowsCrossMerge') && previewPage.includes('async function printReport()') && previewPage.includes('setPrintPending(true)') &&
+  previewPage.includes('afterprint') && previewPage.includes('window.print()') &&
+  previewPage.includes('@page { size: ${printPaper} ${printOrientation}; margin: 10mm; }') &&
+  previewPage.includes("'print-fit-width' : 'print-natural-width'") &&
+  (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid.print-fit-width') &&
+  (await read('apps/web/src/styles.css')).includes('.report-preview-table.print-fit-width { width:100% !important; min-width:0 !important; table-layout:fixed !important; }') &&
+  (await read('apps/web/src/styles.css')).includes('.report-preview-table.print-natural-width { width:max-content !important; min-width:100% !important; table-layout:auto !important; }') &&
+  (await read('apps/web/src/styles.css')).includes('.report-preview-table.repeat-header thead { display:table-header-group; }') &&
+  (await read('apps/web/src/styles.css')).includes('.report-preview-table.no-repeat-header thead { display:table-row-group; }') &&
+  reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
+  reportPrint.includes('export function describeStandardPrintResult') && reportPrintTests.includes('does not describe capped results as complete') &&
+  legacyDesigner.includes('setPrintTruncated(result.truncated)') && legacyDesigner.includes('describeStandardPrintResult(result.previewRowCount, result.truncated)') &&
+  legacyDesigner.includes('printTruncated ? \'注意：本次打印已达到服务端数据上限') &&
+  reportPrintTests.includes('requests all server-bounded rows') && rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-print.test.ts'));
+check('standard preview custom rows preserve per-cell values, row heights, visible-column merges and XLSX coordinates',
+  previewPage.includes("import { buildCustomRowMergeLayout } from '../report-preview-layout.js'") &&
+  previewPage.includes('row.cells[sourceIndex] ??') &&
+  previewPage.includes('standardCustomRowLayout.mergeByStart.get(key)') &&
+  previewPage.includes('style={{ height: row.height }}') &&
+  previewPage.includes('standardPreview.template.definition.customRows.map((row,rowIndex)') &&
+  previewPage.includes('report-preview-custom-rows') && previewPage.includes('<thead><tr>{standardColumns.map') &&
+  reportPreviewLayout.includes('visibleSourceIndexes') &&
+  reportPreviewLayout.includes('covered.add') &&
+  reportPreviewLayoutTests.includes('mapped to visible preview columns like XLSX export') &&
+  rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-preview-layout.test.ts'));
+check('studio preview honors template-bound project and party scopes for both screen preview and print',
+  previewPage.includes('studioTemplateQuery.data?.projectId') &&
+  previewPage.includes('studioTemplateQuery.data?.businessPartyId') &&
+  previewPage.includes('projectId: studioProjectId') &&
+  previewPage.includes('businessPartyId: studioPartyId') &&
+  studioExportCode.includes('projectId: studioProjectId') && studioExportCode.includes('businessPartyId: studioPartyId') &&
+  previewPage.includes('!studioProjectId') && previewPage.includes('!studioPartyId') &&
+  previewPage.includes("searchParams.get('allProjects') === '1' ? '' : selectedProjectId || ''"));
+check('standard preview values resolve through bound field keys and print behavior follows template page settings',
+  previewPage.includes('resolveStandardPreviewCell(column, standardPreview.fields, row)') &&
+  previewPage.includes("standardPreview.template.definition.page.repeatHeader ? 'repeat-header' : 'no-repeat-header'") &&
+  previewPage.includes("standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'") &&
+  reportPreviewData.includes('fields.findIndex((field) => field.key === column.fieldKey)') &&
+  reportPreviewDataTests.includes('resolves reordered template columns by stable field key') &&
+  reportPreviewDataTests.includes('do not borrow a value from a same-position data field') &&
+  rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-preview-data.test.ts'));
 check('standard and studio preview grids use fixed natural-width columns to avoid stretching the last column',
   previewPage.includes("width: 'max-content'") && previewPage.includes('<colgroup>') && previewPage.includes('Math.min(72, column.width)') &&
   (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid { width:max-content; min-width:0; table-layout:fixed;'));

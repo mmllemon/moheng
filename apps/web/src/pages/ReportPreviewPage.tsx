@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, Download, FileSpreadsheet, Printer, RefreshCw } from 'lucide-react';
@@ -10,6 +10,9 @@ import type { ReportPreview } from '../report-template-types';
 import type { ReportStudioPreview, ReportStudioTemplate } from '../report-studio-types';
 import { roundFixedDecimal, formatIsoDateWithExcelPattern } from '../report-preview-format';
 import { classifyReportExportJob } from '../report-export-job.js';
+import { buildStandardReportPrintUrl, buildStudioReportPrintRequest } from '../report-print.js';
+import { buildCustomRowMergeLayout } from '../report-preview-layout.js';
+import { resolveStandardPreviewCell } from '../report-preview-data.js';
 
 function colorValue(input: unknown): string | undefined {
   if (typeof input !== 'string') {
@@ -140,6 +143,10 @@ export default function ReportPreviewPage() {
   const [jobId, setJobId] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [printBusy, setPrintBusy] = useState(false);
+  const [printPending, setPrintPending] = useState(false);
+  const [printStudioPreview, setPrintStudioPreview] = useState<ReportStudioPreview | null>(null);
+  const [printStandardPreview, setPrintStandardPreview] = useState<ReportPreview | null>(null);
   const isStudio = Boolean(studioTemplateId);
   function goBack() {
     // In-app entry points mark that their previous history entry is the correct source.
@@ -153,10 +160,16 @@ export default function ReportPreviewPage() {
     queryFn: () => api.get<ReportStudioTemplate>(`/reports/studio/templates/${studioTemplateId}`),
     enabled: isStudio,
   });
+  const studioProjectId = domain === 'PROJECT'
+    ? searchParams.get('projectId') || studioTemplateQuery.data?.projectId || (searchParams.get('allProjects') === '1' ? '' : selectedProjectId || '')
+    : '';
+  const studioPartyId = domain === 'PARTY'
+    ? partyId || studioTemplateQuery.data?.businessPartyId || ''
+    : '';
   const studioPreviewQuery = useQuery({
-    queryKey: ['report-studio-preview', studioTemplateId, domain, projectId, partyId],
-    queryFn: () => api.post<ReportStudioPreview>('/reports/studio/preview', { templateId: studioTemplateId, ...(domain === 'PROJECT' ? { projectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: partyId } : {}) }),
-    enabled: isStudio && Boolean(studioTemplateQuery.data) && (domain === 'COMPANY' || (domain === 'PROJECT' ? Boolean(projectId) : Boolean(partyId))),
+    queryKey: ['report-studio-preview', studioTemplateId, domain, studioProjectId, studioPartyId],
+    queryFn: () => api.post<ReportStudioPreview>('/reports/studio/preview', { templateId: studioTemplateId, ...(domain === 'PROJECT' ? { projectId: studioProjectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: studioPartyId } : {}) }),
+    enabled: isStudio && Boolean(studioTemplateQuery.data) && (domain === 'COMPANY' || (domain === 'PROJECT' ? Boolean(studioProjectId) : Boolean(studioPartyId))),
   });
   const standardPreviewQuery = useQuery({
     queryKey: ['report-export-preview', reportKey, projectId, from, to, templateId],
@@ -169,13 +182,34 @@ export default function ReportPreviewPage() {
       return api.get<ReportPreview>(`/reports/${encodeURIComponent(reportKey)}/preview?${params.toString()}`);
     }, enabled: !isStudio && Boolean(reportKey),
   });
-  const studioPreview = studioPreviewQuery.data;
-  const standardPreview = standardPreviewQuery.data;
+  // During printing, replace the bounded screen preview with an explicit full-data response.
+  const studioPreview = printStudioPreview ?? studioPreviewQuery.data;
+  const standardPreview = printStandardPreview ?? standardPreviewQuery.data;
   const errorQuery = isStudio ? studioTemplateQuery.error ?? studioPreviewQuery.error : standardPreviewQuery.error;
   const loading = isStudio ? studioTemplateQuery.isLoading || studioPreviewQuery.isLoading : standardPreviewQuery.isLoading;
   const title = isStudio ? studioPreview?.title ?? studioTemplateQuery.data?.name ?? '综合报表预览' : standardPreview?.template.name ?? standardPreview?.report.label ?? '报表预览';
-  const missingProjectScope = isStudio && domain === 'PROJECT' && !projectId;
-  const missingPartyScope = isStudio && domain === 'PARTY' && !partyId;
+  const printPageConfig = isStudio ? studioTemplateQuery.data?.definition.page : standardPreview?.template.definition.page;
+  const printPaper = printPageConfig?.paper ?? 'A4';
+  const printOrientation = printPageConfig?.orientation ?? 'landscape';
+  const missingProjectScope = isStudio && domain === 'PROJECT' && !studioProjectId;
+  const missingPartyScope = isStudio && domain === 'PARTY' && !studioPartyId;
+
+  useEffect(() => {
+    if (!printPending || (!printStudioPreview && !printStandardPreview)) return;
+    const frame = window.requestAnimationFrame(() => window.print());
+    return () => window.cancelAnimationFrame(frame);
+  }, [printPending, printStudioPreview, printStandardPreview]);
+
+  useEffect(() => {
+    const restoreScreenPreview = () => {
+      setPrintPending(false);
+      setPrintStudioPreview(null);
+      setPrintStandardPreview(null);
+      setNotice('');
+    };
+    window.addEventListener('afterprint', restoreScreenPreview);
+    return () => window.removeEventListener('afterprint', restoreScreenPreview);
+  }, []);
 
   async function downloadJob(fileJobId: string): Promise<boolean> {
     setError('');
@@ -209,11 +243,40 @@ export default function ReportPreviewPage() {
     }
   }
 
+  async function printReport() {
+    if (printBusy || printPending || loading || errorQuery || missingProjectScope || missingPartyScope) return;
+    setPrintBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      if (isStudio) {
+        const printable = await api.post<ReportStudioPreview>('/reports/studio/preview', buildStudioReportPrintRequest({
+          templateId: studioTemplateId,
+          domain,
+          projectId: studioProjectId,
+          businessPartyId: studioPartyId,
+        }));
+        setPrintStandardPreview(null);
+        setPrintStudioPreview(printable);
+      } else {
+        const printable = await api.get<ReportPreview>(buildStandardReportPrintUrl(reportKey, { projectId, from, to, templateId }));
+        setPrintStudioPreview(null);
+        setPrintStandardPreview(printable);
+      }
+      setNotice('已准备完整打印数据。若触及系统渲染上限，打印内容会保留明确的截断提示。');
+      setPrintPending(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '准备打印数据失败，请刷新预览后重试。');
+    } finally {
+      setPrintBusy(false);
+    }
+  }
+
   async function exportXlsx() {
     setExportBusy(true); setError(''); setNotice('');
     try {
       const submitted = isStudio
-        ? await api.post<{ id: string }> (`/reports/studio/templates/${studioTemplateId}/xlsx/jobs`, { ...(domain === 'PROJECT' ? { projectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: partyId } : {}) }, { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `report-${Date.now()}` })
+        ? await api.post<{ id: string }> (`/reports/studio/templates/${studioTemplateId}/xlsx/jobs`, { ...(domain === 'PROJECT' ? { projectId: studioProjectId } : {}), ...(domain === 'PARTY' ? { businessPartyId: studioPartyId } : {}) }, { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `report-${Date.now()}` })
         : await api.post<{ id: string }>(`/reports/${encodeURIComponent(reportKey)}.xlsx/jobs`, { projectId: projectId || undefined, from: from || undefined, to: to || undefined, templateId: templateId || undefined }, { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() ?? `report-${Date.now()}` });
       setJobId(submitted.id); setNotice(`已提交后台生成任务：${submitted.id}。页面会等待短时间，完成后自动下载；你也可以稍后查询任务。`);
       let downloaded = false;
@@ -245,10 +308,18 @@ export default function ReportPreviewPage() {
     const visible = standardPreview.template.definition.columns.map((column, sourceIndex) => ({ column, sourceIndex })).filter(({ column }) => column.visible);
     return visible.map(({ column, sourceIndex }) => ({ column, sourceIndex }));
   }, [standardPreview]);
+  const standardCustomRowLayout = standardPreview
+    ? buildCustomRowMergeLayout(
+        standardPreview.template.definition.merges,
+        standardColumns.map(({ sourceIndex }) => sourceIndex),
+        standardPreview.template.definition.customRows.length,
+      )
+    : { mergeByStart: new Map<string, { rowSpan: number; colSpan: number }>(), covered: new Set<string>() };
 
   if (!isStudio && !reportKey) return <div className="page-wrap"><ErrorBlock message="缺少报表类型或综合报表模板编号。请从报表中心重新进入预览。" retry={() => navigate('/reports')} /></div>;
   return <div className="page-wrap report-export-preview-page">
-    <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={goBack}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => window.print()}><Printer size={15}/>打印 / PDF</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />
+    <style>{`@media print { @page { size: ${printPaper} ${printOrientation}; margin: 10mm; } }`}</style>
+    <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={goBack}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => void printReport()} disabled={printBusy || printPending || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Printer size={15}/>{printBusy ? '正在准备打印…' : printPending ? '正在打开打印…' : '打印 / PDF'}</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />
     {loading && <LoadingBlock label="正在按当前权限范围读取报表预览…" />}
     {missingProjectScope && <ErrorBlock message="项目级报表需要明确选择项目。请返回报表工作室选择项目后重新预览。" retry={() => navigate('/reports/studio?domain=PROJECT')} />}
     {missingPartyScope && <ErrorBlock message="单位档案级报表需要指定往来单位。请从具体的单位经营档案页面进入。" retry={() => navigate('/parties')} />}
@@ -257,7 +328,7 @@ export default function ReportPreviewPage() {
     {!loading && !errorQuery && <>
       <section className="report-preview-meta panel">
         <div><span>报表名称</span><strong>{title}</strong></div>
-        <div><span>报表范围</span><strong>{isStudio ? domain === 'PROJECT' ? `项目 · ${projectId || '未选择'}` : domain === 'PARTY' ? `往来单位 · ${partyId || '未选择'}` : '公司 · 当前账号可访问项目' : standardPreview?.projectScope ?? '—'}</strong></div>
+        <div><span>报表范围</span><strong>{isStudio ? domain === 'PROJECT' ? `项目 · ${studioProjectId || '未选择'}` : domain === 'PARTY' ? `往来单位 · ${studioPartyId || '未选择'}` : '公司 · 当前账号可访问项目' : standardPreview?.projectScope ?? '—'}</strong></div>
         <div><span>模板版本</span><strong>{isStudio ? `v${studioTemplateQuery.data?.version ?? '—'}` : `v${standardPreview?.template.version ?? 1}`}</strong></div>
         <div><span>生成时间</span><strong>{isStudio ? studioPreview?.generatedAt ? new Date(studioPreview.generatedAt).toLocaleString('zh-CN') : '—' : standardPreview?.generatedAt ? new Date(standardPreview.generatedAt).toLocaleString('zh-CN') : '—'}</strong></div>
       </section>
@@ -269,28 +340,55 @@ export default function ReportPreviewPage() {
           const mergeByStart = new Map(sheet.merges.map((merge) => [`${merge.startRow}:${merge.startColumn}`, merge]));
           const covered = new Set<string>();
           for (const merge of sheet.merges) for (let r=merge.startRow;r<=merge.endRow;r+=1) for(let c=merge.startColumn;c<=merge.endColumn;c+=1) if (r!==merge.startRow || c!==merge.startColumn) covered.add(`${r}:${c}`);
-          return <article className="report-preview-sheet panel" key={sheet.id}>
-            <div className="report-preview-sheet-head"><div><strong>{sheet.name}</strong><small>{sheet.previewRowCount.toLocaleString('zh-CN')} / {sheet.rowCount.toLocaleString('zh-CN')} 行</small></div>{sheet.truncated && <span className="report-preview-truncated">预览已截断</span>}</div>
-            <div className="report-preview-workbook-scroll"><table className="report-studio-preview-grid" style={{ width: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px`, minWidth: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px` }}><colgroup>{<col key="row-number" style={{ width: '36px' }} />}{Array.from({length:colCount},(_,col)=><col key={col} style={{width:`${Math.min(420,Math.max(56,sheet.columnWidths[col] ?? 140))}px`}} />)}</colgroup><tbody>
-              {sheet.rows.map((row,rowIndex)=><tr key={rowIndex} style={sheet.rowHeights[rowIndex] ? {height:sheet.rowHeights[rowIndex]} : undefined}><th className="report-studio-preview-row-number">{rowIndex+1}</th>{Array.from({length:colCount},(_,columnIndex)=>{
+          const frozenRowCount = Math.max(0, Math.min(sheet.frozenRows ?? 0, sheet.rows.length));
+          const frozenRowsCrossMerge = frozenRowCount > 0 && sheet.merges.some((merge) => merge.startRow < frozenRowCount && merge.endRow >= frozenRowCount);
+          const repeatedHeaderRows = frozenRowsCrossMerge ? 0 : frozenRowCount;
+          const renderSheetRow = (row: (typeof sheet.rows)[number], rowIndex: number) => (
+            <tr key={rowIndex} style={sheet.rowHeights[rowIndex] ? {height:sheet.rowHeights[rowIndex]} : undefined}>
+              <th className="report-studio-preview-row-number">{rowIndex+1}</th>
+              {Array.from({length:colCount},(_,columnIndex)=>{
                 const cellKey=`${rowIndex}:${columnIndex}`; if (covered.has(cellKey)) return null;
                 const merged=mergeByStart.get(cellKey); const cell=row[columnIndex];
                 return <td key={columnIndex} colSpan={merged ? merged.endColumn-merged.startColumn+1:1} rowSpan={merged ? merged.endRow-merged.startRow+1:1} style={studioCellStyle(cell?.style ?? null,cell?.format ?? null)}>{displayValue(cell?.value,cell?.format,cell?.style ?? null)}</td>;
-              })}</tr>)}
-            </tbody></table></div>
+              })}
+            </tr>
+          );
+          return <article className="report-preview-sheet panel" key={sheet.id}>
+            <div className="report-preview-sheet-head"><div><strong>{sheet.name}</strong><small>{sheet.previewRowCount.toLocaleString('zh-CN')} / {sheet.rowCount.toLocaleString('zh-CN')} 行</small></div>{sheet.truncated && <span className="report-preview-truncated">预览已截断</span>}</div>
+            {frozenRowsCrossMerge && <div className="report-preview-warning">冻结区与跨行合并区域相交，打印时不重复冻结行以保留合并布局。</div>}
+            <div className="report-preview-workbook-scroll"><table className={`report-studio-preview-grid ${studioTemplateQuery.data?.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'}`} style={{ width: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px`, minWidth: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px` }}><colgroup>{<col key="row-number" style={{ width: '36px' }} />}{Array.from({length:colCount},(_,col)=><col key={col} style={{width:`${Math.min(420,Math.max(56,sheet.columnWidths[col] ?? 140))}px`}} />)}</colgroup>
+              {repeatedHeaderRows > 0 && <thead>{sheet.rows.slice(0,repeatedHeaderRows).map((row,index)=>renderSheetRow(row,index))}</thead>}
+              <tbody>{sheet.rows.slice(repeatedHeaderRows).map((row,index)=>renderSheetRow(row,index+repeatedHeaderRows))}</tbody>
+            </table></div>
           </article>;
         })}
       </section>}
       {!isStudio && standardPreview && <section className="report-preview-standard-surface panel">
         <div className="report-preview-standard-title"><h2>{standardPreview.template.definition.title}</h2>{standardPreview.template.definition.subtitle && <p>{standardPreview.template.definition.subtitle.replaceAll('{project}',standardPreview.projectScope).replaceAll('{generatedAt}',new Date(standardPreview.generatedAt).toLocaleString('zh-CN')).replaceAll('{rowCount}',String(standardPreview.rowCount))}</p>}</div>
-        <div className="report-preview-workbook-scroll"><table className="report-preview-table" style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}><colgroup>{standardColumns.map(({ column }) => <col key={column.id} style={{ width: `${Math.max(6, Math.min(72, column.width))}ch` }} />)}</colgroup><thead>
-          {standardPreview.template.definition.customRows.map((row,index)=><tr key={`custom-${row.id}`}><th colSpan={Math.max(1,standardColumns.length)}>{row.cells.filter((_,i)=>standardPreview.template.definition.columns[i]?.visible).join('　')}</th></tr>)}
-          <tr>{standardColumns.map(({column})=><th key={column.id} style={{textAlign:column.align}}>{column.label}</th>)}</tr>
-        </thead><tbody>{standardPreview.rows.map((row,index)=><tr key={index}>{standardColumns.map(({column,sourceIndex})=>{
-          const field = standardPreview.fields[sourceIndex];
-          const value = column.fieldKey ? row[sourceIndex] : column.staticValue;
-          return <td key={column.id} style={{textAlign:column.align}}>{displayValue(value,column.format==='auto' ? field?.type?.toUpperCase() : column.format.toUpperCase())}</td>;
-        })}</tr>)}{standardPreview.rows.length===0 && <tr><td colSpan={Math.max(1,standardColumns.length)} className="report-preview-empty">当前筛选范围没有可预览的数据。</td></tr>}</tbody></table></div>
+        <div className="report-preview-workbook-scroll">
+          {standardPreview.template.definition.customRows.length > 0 && <table className={`report-preview-table report-preview-custom-rows ${standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'}`} style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}>
+            <colgroup>{standardColumns.map(({ column }) => <col key={column.id} style={{ width: `${Math.max(6, Math.min(72, column.width))}ch` }} />)}</colgroup>
+            <tbody>{standardPreview.template.definition.customRows.map((row,rowIndex)=><tr key={`custom-${row.id}`} style={{ height: row.height }}>
+              {standardColumns.map(({ column, sourceIndex }, outputIndex) => {
+                const key = `${rowIndex}:${outputIndex}`;
+                if (standardCustomRowLayout.covered.has(key)) return null;
+                const merge = standardCustomRowLayout.mergeByStart.get(key);
+                return <td key={column.id} colSpan={merge?.colSpan ?? 1} rowSpan={merge?.rowSpan ?? 1} style={{ textAlign: column.align, verticalAlign: 'middle' }}>{row.cells[sourceIndex] ?? ''}</td>;
+              })}
+            </tr>)}</tbody>
+          </table>}
+          <table className={`report-preview-table ${standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'} ${standardPreview.template.definition.page.repeatHeader ? 'repeat-header' : 'no-repeat-header'}`} style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}>
+            <colgroup>{standardColumns.map(({ column }) => <col key={column.id} style={{ width: `${Math.max(6, Math.min(72, column.width))}ch` }} />)}</colgroup>
+            <thead><tr>{standardColumns.map(({column})=><th key={column.id} style={{textAlign:column.align}}>{column.label}</th>)}</tr></thead>
+            <tbody>
+              {standardPreview.rows.map((row,index)=><tr key={index}>{standardColumns.map(({column})=>{
+                const resolved = resolveStandardPreviewCell(column, standardPreview.fields, row);
+                return <td key={column.id} style={{textAlign:column.align}}>{displayValue(resolved.value,column.format==='auto' ? resolved.field?.type?.toUpperCase() : column.format.toUpperCase())}</td>;
+              })}</tr>)}
+              {standardPreview.rows.length===0 && <tr><td colSpan={Math.max(1,standardColumns.length)} className="report-preview-empty">当前筛选范围没有可预览的数据。</td></tr>}
+            </tbody>
+          </table>
+        </div>
         <div className="report-preview-standard-footer"><span>预览显示 {standardPreview.previewRowCount.toLocaleString('zh-CN')} / {standardPreview.rowCount.toLocaleString('zh-CN')} 条</span>{standardPreview.truncated && <strong>数据已截断，请调整范围</strong>}</div>
       </section>}
     </>}
