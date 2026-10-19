@@ -359,23 +359,30 @@ export default function ReportPreviewPage() {
       </section>}
       {!isStudio && standardPreview && <section className="report-preview-standard-surface panel">
         <div className="report-preview-standard-title"><h2>{standardPreview.template.definition.title}</h2>{standardPreview.template.definition.subtitle && <p>{standardPreview.template.definition.subtitle.replaceAll('{project}',standardPreview.projectScope).replaceAll('{generatedAt}',new Date(standardPreview.generatedAt).toLocaleString('zh-CN')).replaceAll('{rowCount}',String(standardPreview.rowCount))}</p>}</div>
-        <div className="report-preview-workbook-scroll"><table className={`report-preview-table ${standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'} ${standardPreview.template.definition.page.repeatHeader ? 'repeat-header' : 'no-repeat-header'}`} style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}><colgroup>{standardColumns.map(({ column }) => <col key={column.id} style={{ width: `${Math.max(6, Math.min(72, column.width))}ch` }} />)}</colgroup><thead>
-          <tr>{standardColumns.map(({column})=><th key={column.id} style={{textAlign:column.align}}>{column.label}</th>)}</tr>
-        </thead><tbody>
-          {standardPreview.template.definition.customRows.map((row,rowIndex)=><tr key={`custom-${row.id}`} style={{ height: row.height }}>
-            {standardColumns.map(({ column, sourceIndex }, outputIndex) => {
-              const key = `${rowIndex}:${outputIndex}`;
-              if (standardCustomRowLayout.covered.has(key)) return null;
-              const merge = standardCustomRowLayout.mergeByStart.get(key);
-              return <td key={column.id} colSpan={merge?.colSpan ?? 1} rowSpan={merge?.rowSpan ?? 1} style={{ textAlign: column.align, verticalAlign: 'middle' }}>{row.cells[sourceIndex] ?? ''}</td>;
-            })}
-          </tr>)}
-          {standardPreview.rows.map((row,index)=><tr key={index}>{standardColumns.map(({column})=>{
-            const resolved = resolveStandardPreviewCell(column, standardPreview.fields, row);
-            return <td key={column.id} style={{textAlign:column.align}}>{displayValue(resolved.value,column.format==='auto' ? resolved.field?.type?.toUpperCase() : column.format.toUpperCase())}</td>;
-          })}</tr>)}
-          {standardPreview.rows.length===0 && <tr><td colSpan={Math.max(1,standardColumns.length)} className="report-preview-empty">当前筛选范围没有可预览的数据。</td></tr>}
-        </tbody></table></div>
+        <div className="report-preview-workbook-scroll">
+          {standardPreview.template.definition.customRows.length > 0 && <table className={`report-preview-table report-preview-custom-rows ${standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'}`} style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}>
+            <colgroup>{standardColumns.map(({ column }) => <col key={column.id} style={{ width: `${Math.max(6, Math.min(72, column.width))}ch` }} />)}</colgroup>
+            <tbody>{standardPreview.template.definition.customRows.map((row,rowIndex)=><tr key={`custom-${row.id}`} style={{ height: row.height }}>
+              {standardColumns.map(({ column, sourceIndex }, outputIndex) => {
+                const key = `${rowIndex}:${outputIndex}`;
+                if (standardCustomRowLayout.covered.has(key)) return null;
+                const merge = standardCustomRowLayout.mergeByStart.get(key);
+                return <td key={column.id} colSpan={merge?.colSpan ?? 1} rowSpan={merge?.rowSpan ?? 1} style={{ textAlign: column.align, verticalAlign: 'middle' }}>{row.cells[sourceIndex] ?? ''}</td>;
+              })}
+            </tr>)}</tbody>
+          </table>}
+          <table className={`report-preview-table ${standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'} ${standardPreview.template.definition.page.repeatHeader ? 'repeat-header' : 'no-repeat-header'}`} style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}>
+            <colgroup>{standardColumns.map(({ column }) => <col key={column.id} style={{ width: `${Math.max(6, Math.min(72, column.width))}ch` }} />)}</colgroup>
+            <thead><tr>{standardColumns.map(({column})=><th key={column.id} style={{textAlign:column.align}}>{column.label}</th>)}</tr></thead>
+            <tbody>
+              {standardPreview.rows.map((row,index)=><tr key={index}>{standardColumns.map(({column})=>{
+                const resolved = resolveStandardPreviewCell(column, standardPreview.fields, row);
+                return <td key={column.id} style={{textAlign:column.align}}>{displayValue(resolved.value,column.format==='auto' ? resolved.field?.type?.toUpperCase() : column.format.toUpperCase())}</td>;
+              })}</tr>)}
+              {standardPreview.rows.length===0 && <tr><td colSpan={Math.max(1,standardColumns.length)} className="report-preview-empty">当前筛选范围没有可预览的数据。</td></tr>}
+            </tbody>
+          </table>
+        </div>
         <div className="report-preview-standard-footer"><span>预览显示 {standardPreview.previewRowCount.toLocaleString('zh-CN')} / {standardPreview.rowCount.toLocaleString('zh-CN')} 条</span>{standardPreview.truncated && <strong>数据已截断，请调整范围</strong>}</div>
       </section>}
     </>}
