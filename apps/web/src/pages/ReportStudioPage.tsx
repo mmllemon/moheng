@@ -317,6 +317,27 @@ export default function ReportStudioPage() {
       const coordinate = parseA1(address);
       const sheetId = selectedSheetId || sheetIdFromDefinition;
       if (!selectedSource || !selectedField) throw new Error('请先选择有效的数据源和字段。');
+      const currentWorkbook = snapshotDefinition().workbook as {
+        sheets?: Record<string, { mergeData?: unknown }>;
+      };
+      const mergeData = currentWorkbook.sheets?.[sheetId]?.mergeData;
+      if (Array.isArray(mergeData)) {
+        const containingMerge = mergeData.find((entry) => {
+          if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return false;
+          const merge = entry as { startRow?: unknown; startColumn?: unknown; endRow?: unknown; endColumn?: unknown };
+          if (![merge.startRow, merge.startColumn, merge.endRow, merge.endColumn].every(Number.isInteger)) return false;
+          return coordinate.row >= (merge.startRow as number)
+            && coordinate.row <= (merge.endRow as number)
+            && coordinate.column >= (merge.startColumn as number)
+            && coordinate.column <= (merge.endColumn as number);
+        });
+        if (containingMerge) {
+          const merge = containingMerge as { startRow: number; startColumn: number };
+          if (coordinate.row !== merge.startRow || coordinate.column !== merge.startColumn) {
+            throw new Error(`合并单元格绑定必须指向合并区域左上角：${address}。`);
+          }
+        }
+      }
       if (selectedSource.cardinality === 'MANY') {
         const matchingRegion = definition.regions.some((region) => region.sheetId === sheetId && region.sourceId === sourceId && region.templateRow === coordinate.row && coordinate.column >= region.startColumn && coordinate.column <= region.endColumn);
         if (!matchingRegion) throw new Error('集合字段需要先创建重复区域：选中该明细样板行的整个列范围，点击“设置为自动延伸区域”，再绑定其中的单元格。');

@@ -16,6 +16,7 @@ const styles = await read('apps/web/src/styles.css');
 const layout = await read('apps/web/src/components/Layout.tsx');
 const datePicker = await read('apps/web/src/components/DatePicker.tsx');
 const selectField = await read('apps/web/src/components/SelectField.tsx');
+const reportStudio = await read('apps/web/src/pages/ReportStudioPage.tsx');
 const workspace = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
@@ -96,6 +97,10 @@ check('shared date and select controls expose popup relationships, labels, and v
   selectField.includes("aria-errormessage={props['aria-errormessage']}") &&
   datePicker.includes("props['aria-invalid'] === 'true'") &&
   selectField.includes("props['aria-invalid'] === 'true'"));
+check('report studio blocks bindings into non-anchor merged cells before save',
+  reportStudio.includes('snapshotDefinition().workbook') &&
+  reportStudio.includes('合并单元格绑定必须指向合并区域左上角') &&
+  reportStudio.includes('coordinate.row !== merge.startRow || coordinate.column !== merge.startColumn'));
 check('select search control is outside a semantic listbox containing only option rows',
   !selectField.includes("className={`select-popover ${presence.visible ? 'is-visible' : 'is-closing'}`}\n      role=\"listbox\"") &&
   !selectField.includes("ref={popupRef}\n      id={`select-options-${controlId}`}") &&
