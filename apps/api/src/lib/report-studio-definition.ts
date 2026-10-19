@@ -177,6 +177,15 @@ export function validateReportStudioDefinition(input: unknown): ReportStudioVali
     let coordinate: { row: number; column: number };
     try { coordinate = parseA1(binding.cell); } catch { return { success: false, message: `单元格地址无效：${binding.cell}` }; }
     if (coordinate.row >= Number(sheet.rowCount ?? 200) || coordinate.column >= Number(sheet.columnCount ?? 20)) return { success: false, message: `绑定单元格 ${binding.cell} 超出工作表范围` };
+    const containingMerge = (sheet.mergeData ?? []).find((merge) =>
+      coordinate.row >= merge.startRow
+      && coordinate.row <= merge.endRow
+      && coordinate.column >= merge.startColumn
+      && coordinate.column <= merge.endColumn
+    );
+    if (containingMerge && (coordinate.row !== containingMerge.startRow || coordinate.column !== containingMerge.startColumn)) {
+      return { success: false, message: `合并单元格绑定必须指向合并区域左上角：${binding.cell}` };
+    }
     const key = `${binding.sheetId}:${binding.cell}`;
     if (bindingKeys.has(key)) return { success: false, message: `单元格 ${binding.cell} 存在重复绑定` };
     bindingKeys.add(key);
