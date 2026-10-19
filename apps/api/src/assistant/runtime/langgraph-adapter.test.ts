@@ -68,3 +68,19 @@ test('empty final model response is rejected instead of completing with a blank 
   assert.deepEqual(toolCalls, []);
   assert.deepEqual(emitted, []);
 });
+
+
+test('the system prompt warns the model when older conversation context was omitted by the budget', async () => {
+  const toolCalls: AssistantReadOnlyToolInput[] = [];
+  let systemPrompt = '';
+  const dependencies = {
+    ...createFakeRuntimeDependencies(toolCalls),
+    createAgent: ((config: { systemPrompt?: string }) => {
+      systemPrompt = config.systemPrompt ?? '';
+      return { invoke: async () => ({ messages: [{ type: 'ai', content: '已根据当前上下文回答。' }] }) };
+    }) as unknown as AssistantRuntimeTestDependencies['createAgent'],
+  };
+  const input = { ...turn('请继续刚才的分析。', []), contextTruncated: true };
+  assert.equal(await runLangGraphAssistantTurn(input, dependencies), '已根据当前上下文回答。');
+  assert.match(systemPrompt, /较早的会话历史已因输入长度预算而省略/);
+});
