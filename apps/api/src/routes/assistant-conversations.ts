@@ -8,6 +8,7 @@ import { prisma } from '../lib/prisma.js';
 import { appendAssistantRunEvent } from '../lib/assistant-run-events.js';
 import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
 import { isAssistantBaseUrlValid } from '../lib/assistant-config.js';
+import { assertAssistantUserRunCapacity, MAX_ACTIVE_ASSISTANT_RUNS_PER_USER } from '../lib/assistant-submission-policy.js';
 
 const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
   if (process.env.ASSISTANT_POC_ENABLED !== 'true') {
@@ -190,6 +191,8 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
         }
         const active = await tx.assistantRun.findFirst({ where: { conversationId: conversation.id, status: { in: ['QUEUED', 'RUNNING'] } }, select: { id: true } });
         if (active) throw new Error('ASSISTANT_RUN_ALREADY_ACTIVE');
+        // Hold the user-row lock through run creation so concurrent sessions cannot bypass this cap.
+        await assertAssistantUserRunCapacity(tx, actor.sub);
         const message = await tx.assistantMessage.create({ data: {
           conversationId: conversation.id, requestId: body.data.requestId, role: 'USER', content: body.data.content, status: 'COMPLETED',
         } });
@@ -213,6 +216,7 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
         return { runId: run.id, status: 'QUEUED', idempotentReplay: false };
       });
     } catch (error) {
+      if (error instanceof Error && error.message === 'ASSISTANT_USER_RUN_LIMIT_REACHED') return failure(reply, 429, 'ASSISTANT_USER_RUN_LIMIT_REACHED', `该账号最多允许 ${MAX_ACTIVE_ASSISTANT_RUNS_PER_USER} 个排队或运行中的助手任务；请等待完成或取消后再提交`);
       if (error instanceof Error && error.message === 'ASSISTANT_RUN_ALREADY_ACTIVE') return failure(reply, 409, 'ASSISTANT_RUN_ALREADY_ACTIVE', '该会话已有运行中的任务，请等待完成或取消后再发送');
       if (error instanceof Error && error.message === 'ASSISTANT_CONVERSATION_ARCHIVED') return failure(reply, 409, 'ASSISTANT_CONVERSATION_ARCHIVED', '会话已归档，不能继续发送消息');
       if (error instanceof Error && error.message === 'ASSISTANT_RUNTIME_NOT_CONFIGURED') return failure(reply, 503, 'ASSISTANT_RUNTIME_NOT_CONFIGURED', '只读助手运行环境尚未配置');
