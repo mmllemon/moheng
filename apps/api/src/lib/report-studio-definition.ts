@@ -124,7 +124,7 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
       return { success: false, message: '行高数据结构无效' };
     }
     for (const [rowKey, rowData] of Object.entries(sheet.rowData ?? {})) {
-      if (!/^(0|[1-9]\\d*)$/.test(rowKey)) return { success: false, message: '行高坐标格式无效' };
+      if (!/^(0|[1-9]\d*)$/.test(rowKey)) return { success: false, message: '行高坐标格式无效' };
       const row = Number(rowKey);
       if (!Number.isInteger(row) || row < 0 || row >= rowCount || !rowData || typeof rowData !== 'object' || Array.isArray(rowData)) {
         return { success: false, message: '行高坐标超出工作表范围或定义无效' };
@@ -137,7 +137,7 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
       return { success: false, message: '列宽数据结构无效' };
     }
     for (const [columnKey, columnData] of Object.entries(sheet.columnData ?? {})) {
-      if (!/^(0|[1-9]\\d*)$/.test(columnKey)) return { success: false, message: '列宽坐标格式无效' };
+      if (!/^(0|[1-9]\d*)$/.test(columnKey)) return { success: false, message: '列宽坐标格式无效' };
       const column = Number(columnKey);
       if (!Number.isInteger(column) || column < 0 || column >= columnCount || !columnData || typeof columnData !== 'object' || Array.isArray(columnData)) {
         return { success: false, message: '列宽坐标超出工作表范围或定义无效' };

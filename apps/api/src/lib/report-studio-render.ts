@@ -142,7 +142,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     const rowKeys = Object.keys(sourceRows).map(Number).filter(Number.isInteger);
     // Defend the preview/export layer even if a malformed internal workbook bypasses the API validator.
     const rowStyleKeys = Object.keys(sourceSheet.rowData ?? {})
-      .filter((key) => /^(0|[1-9]\\d*)$/.test(key))
+      .filter((key) => /^(0|[1-9]\d*)$/.test(key))
       .map(Number)
       .filter((row) => Number.isInteger(row) && row >= 0 && row < MAX_RENDERED_ROWS_PER_SHEET);
     const mergeEndRow = Math.max(-1, ...(sourceSheet.mergeData ?? []).map((merge) => merge.endRow));
@@ -247,7 +247,7 @@ export function renderReportStudio(definition: ReportStudioDefinition, dataset: 
     }
     const columnWidths: Record<number, number> = {};
     for (const [columnKey, column] of Object.entries(sourceSheet.columnData ?? {})) {
-      if (!/^(0|[1-9]\\d*)$/.test(columnKey)) continue;
+      if (!/^(0|[1-9]\d*)$/.test(columnKey)) continue;
       const index = Number(columnKey);
       if (Number.isInteger(index) && index >= 0 && index < renderColumnLimit && typeof column?.w === 'number' && Number.isFinite(column.w)) {
         columnWidths[index] = Math.min(600, Math.max(16, column.w));
