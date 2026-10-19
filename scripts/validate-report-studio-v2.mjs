@@ -240,6 +240,8 @@ check('formal preview printing loads full server-bounded standard and studio dat
   previewPage.includes('@page { size: ${printPaper} ${printOrientation}; margin: 10mm; }') &&
   previewPage.includes("'print-fit-width' : 'print-natural-width'") &&
   (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid.print-fit-width') &&
+  (await read('apps/web/src/styles.css')).includes('.report-preview-table.print-fit-width { width:100% !important; min-width:0 !important; table-layout:fixed !important; }') &&
+  (await read('apps/web/src/styles.css')).includes('.report-preview-table.print-natural-width { width:max-content !important; min-width:100% !important; table-layout:auto !important; }') &&
   reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
   reportPrintTests.includes('requests all server-bounded rows') && rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-print.test.ts'));
 check('standard preview custom rows preserve per-cell values, row heights, visible-column merges and XLSX coordinates',
