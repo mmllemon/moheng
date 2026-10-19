@@ -248,6 +248,7 @@ check('standard preview custom rows preserve per-cell values, row heights, visib
   previewPage.includes('standardCustomRowLayout.mergeByStart.get(key)') &&
   previewPage.includes('style={{ height: row.height }}') &&
   previewPage.includes('standardPreview.template.definition.customRows.map((row,rowIndex)') &&
+  previewPage.includes('report-preview-custom-rows') && previewPage.includes('<thead><tr>{standardColumns.map') &&
   reportPreviewLayout.includes('visibleSourceIndexes') &&
   reportPreviewLayout.includes('covered.add') &&
   reportPreviewLayoutTests.includes('mapped to visible preview columns like XLSX export') &&
