@@ -191,6 +191,8 @@ check('business-party summary, profile, metrics and identity details use shared 
   styles.includes('.business-party-profile-title h2 { margin: 0; color: var(--neutral-800);') &&
   styles.includes('.business-party-metric { display: grid; gap: 7px; min-width: 0; padding: 14px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }') &&
   styles.includes('.business-party-info-grid span { color: var(--text-muted);') &&
+  styles.includes('.business-party-result { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 9px; border: 0; border-radius: 7px; background: var(--card-bg); color: var(--text-primary); cursor: pointer; }') &&
+  styles.includes('.business-party-create-trigger { width: 100%; display: flex; align-items: center; gap: 7px; padding: 10px; border: 0; border-top: 1px solid var(--card-border); background: var(--card-bg); color: var(--accent-700);') &&
   !styles.includes('color: #253247; font-size: 20px; letter-spacing: -.025em;'));
 check('primary action foreground contrast uses the stronger accent-600 background across themes',
   styles.includes('.button-primary { color: white; background: var(--accent-600); border-color: var(--accent-600);') &&
