@@ -117,8 +117,8 @@ function addOverviewSheet(
   sheet.views = [{ state: 'normal', zoomScale: 90 }];
   sheet.properties.defaultRowHeight = 22;
   sheet.pageSetup = {
-    paperSize: 9 as unknown as ExcelJS.PaperSize,
-    orientation: 'portrait',
+    paperSize: (input.definition.page.paper === 'A3' ? 8 : input.definition.page.paper === 'Letter' ? 1 : 9) as unknown as ExcelJS.PaperSize,
+    orientation: input.definition.page.orientation,
     fitToPage: true,
     fitToWidth: 1,
     // Keep warning text readable across multiple printed pages instead of shrinking the entire overview to one page.
