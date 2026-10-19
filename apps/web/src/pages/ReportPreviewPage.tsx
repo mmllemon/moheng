@@ -182,6 +182,9 @@ export default function ReportPreviewPage() {
   const errorQuery = isStudio ? studioTemplateQuery.error ?? studioPreviewQuery.error : standardPreviewQuery.error;
   const loading = isStudio ? studioTemplateQuery.isLoading || studioPreviewQuery.isLoading : standardPreviewQuery.isLoading;
   const title = isStudio ? studioPreview?.title ?? studioTemplateQuery.data?.name ?? '综合报表预览' : standardPreview?.template.name ?? standardPreview?.report.label ?? '报表预览';
+  const printPageConfig = isStudio ? studioTemplateQuery.data?.definition.page : standardPreview?.template.definition.page;
+  const printPaper = printPageConfig?.paper ?? 'A4';
+  const printOrientation = printPageConfig?.orientation ?? 'landscape';
   const missingProjectScope = isStudio && domain === 'PROJECT' && !projectId;
   const missingPartyScope = isStudio && domain === 'PARTY' && !partyId;
 
@@ -309,6 +312,7 @@ export default function ReportPreviewPage() {
 
   if (!isStudio && !reportKey) return <div className="page-wrap"><ErrorBlock message="缺少报表类型或综合报表模板编号。请从报表中心重新进入预览。" retry={() => navigate('/reports')} /></div>;
   return <div className="page-wrap report-export-preview-page">
+    <style>{`@media print { @page { size: ${printPaper} ${printOrientation}; margin: 10mm; } }`}</style>
     <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={goBack}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => void printReport()} disabled={printBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Printer size={15}/>{printBusy ? '正在准备打印…' : '打印 / PDF'}</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />
     {loading && <LoadingBlock label="正在按当前权限范围读取报表预览…" />}
     {missingProjectScope && <ErrorBlock message="项目级报表需要明确选择项目。请返回报表工作室选择项目后重新预览。" retry={() => navigate('/reports/studio?domain=PROJECT')} />}
@@ -346,7 +350,7 @@ export default function ReportPreviewPage() {
           return <article className="report-preview-sheet panel" key={sheet.id}>
             <div className="report-preview-sheet-head"><div><strong>{sheet.name}</strong><small>{sheet.previewRowCount.toLocaleString('zh-CN')} / {sheet.rowCount.toLocaleString('zh-CN')} 行</small></div>{sheet.truncated && <span className="report-preview-truncated">预览已截断</span>}</div>
             {frozenRowsCrossMerge && <div className="report-preview-warning">冻结区与跨行合并区域相交，打印时不重复冻结行以保留合并布局。</div>}
-            <div className="report-preview-workbook-scroll"><table className="report-studio-preview-grid" style={{ width: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px`, minWidth: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px` }}><colgroup>{<col key="row-number" style={{ width: '36px' }} />}{Array.from({length:colCount},(_,col)=><col key={col} style={{width:`${Math.min(420,Math.max(56,sheet.columnWidths[col] ?? 140))}px`}} />)}</colgroup>
+            <div className="report-preview-workbook-scroll"><table className={`report-studio-preview-grid ${studioTemplateQuery.data?.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'}`} style={{ width: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px`, minWidth: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px` }}><colgroup>{<col key="row-number" style={{ width: '36px' }} />}{Array.from({length:colCount},(_,col)=><col key={col} style={{width:`${Math.min(420,Math.max(56,sheet.columnWidths[col] ?? 140))}px`}} />)}</colgroup>
               {repeatedHeaderRows > 0 && <thead>{sheet.rows.slice(0,repeatedHeaderRows).map((row,index)=>renderSheetRow(row,index))}</thead>}
               <tbody>{sheet.rows.slice(repeatedHeaderRows).map((row,index)=>renderSheetRow(row,index+repeatedHeaderRows))}</tbody>
             </table></div>
