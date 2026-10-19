@@ -45,6 +45,8 @@ const reportPrint = await read('apps/web/src/report-print.ts');
 const reportPrintTests = await read('apps/web/src/report-print.test.ts');
 const reportPreviewLayout = await read('apps/web/src/report-preview-layout.ts');
 const reportPreviewLayoutTests = await read('apps/web/src/report-preview-layout.test.ts');
+const reportPreviewData = await read('apps/web/src/report-preview-data.ts');
+const reportPreviewDataTests = await read('apps/web/src/report-preview-data.test.ts');
 const centerPage = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const legacyDesigner = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const app = await read('apps/web/src/App.tsx');
@@ -242,10 +244,19 @@ check('standard preview custom rows preserve per-cell values, row heights, visib
   previewPage.includes('row.cells[sourceIndex] ??') &&
   previewPage.includes('standardCustomRowLayout.mergeByStart.get(key)') &&
   previewPage.includes('style={{ height: row.height }}') &&
+  previewPage.includes('standardPreview.template.definition.customRows.map((row,rowIndex)') &&
   reportPreviewLayout.includes('visibleSourceIndexes') &&
   reportPreviewLayout.includes('covered.add') &&
   reportPreviewLayoutTests.includes('mapped to visible preview columns like XLSX export') &&
   rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-preview-layout.test.ts'));
+check('standard preview values resolve through bound field keys and print behavior follows template page settings',
+  previewPage.includes('resolveStandardPreviewCell(column, standardPreview.fields, row)') &&
+  previewPage.includes("standardPreview.template.definition.page.repeatHeader ? 'repeat-header' : 'no-repeat-header'") &&
+  previewPage.includes("standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'") &&
+  reportPreviewData.includes('fields.findIndex((field) => field.key === column.fieldKey)') &&
+  reportPreviewDataTests.includes('resolves reordered template columns by stable field key') &&
+  reportPreviewDataTests.includes('do not borrow a value from a same-position data field') &&
+  rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-preview-data.test.ts'));
 check('standard and studio preview grids use fixed natural-width columns to avoid stretching the last column',
   previewPage.includes("width: 'max-content'") && previewPage.includes('<colgroup>') && previewPage.includes('Math.min(72, column.width)') &&
   (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid { width:max-content; min-width:0; table-layout:fixed;'));
