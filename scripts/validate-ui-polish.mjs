@@ -142,5 +142,26 @@ check('design docs enforce neutral professional visual language and record navig
   acceptance.includes('项目成员与权限') && acceptance.includes('报表中心') &&
   acceptance.includes('经营健康度') && acceptance.includes('项目驾驶舱'));
 
+check('minimum readable typography removes 8px/9px text declarations',
+  styles.includes('--text-2xs: 11px;') &&
+  !/\\bfont-size\\s*:\\s*(?:8|9)px\\b/.test(styles));
+check('font weights follow the standard 400/500/600/700 scale',
+  !/\\bfont-weight\\s*:\\s*(?:550|650|750|800)\\b/.test(styles));
+check('muted text and sidebar tokens use contrast-strengthened values across four themes',
+  styles.includes('--text-muted: #606d80;') &&
+  styles.includes('--text-secondary: #475569; --text-muted: #606d80;') &&
+  styles.includes('--text-secondary: #57534e; --text-muted: #6f6457;') &&
+  styles.includes('--text-secondary: #a1a1aa; --text-muted: #9999a3;') &&
+  styles.includes('--text-secondary: #335c67; --text-muted: #4e7184;') &&
+  styles.includes('--sidebar-muted: #5f6b7c;') &&
+  styles.includes('--sidebar-muted: #766a5d;') &&
+  styles.includes('--sidebar-muted: #9696a1;') &&
+  styles.includes('--sidebar-muted: #4e7184;'));
+check('Obsidian primary actions use contrast-safe dark accent backgrounds',
+  styles.includes(':root[data-theme-name="obsidian"] .button-primary { background: var(--accent-600); border-color: var(--accent-600); }') &&
+  styles.includes('--accent-600: #5558d8;') &&
+  styles.includes('--accent-600: #257b66;') &&
+  styles.includes('--accent-600: #ad4030;'));
+
 console.log(`\n${passed}/${passed + failures.length} UI polish checks passed.`);
 if (failures.length) process.exitCode = 1;
