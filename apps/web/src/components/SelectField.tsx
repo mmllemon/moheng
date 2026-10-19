@@ -103,15 +103,23 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
       setOpen(false);
       setFilterText('');
     };
+    const onFocusIn = (event: FocusEvent) => {
+      const target = event.target as Node;
+      if (wrapperRef.current?.contains(target) || popupRef.current?.contains(target)) return;
+      setOpen(false);
+      setFilterText('');
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') { event.preventDefault(); setOpen(false); setFilterText(''); triggerRef.current?.focus(); }
     };
     document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('focusin', onFocusIn);
     document.addEventListener('keydown', onKeyDown);
     window.addEventListener('resize', syncPosition);
     window.addEventListener('scroll', syncPosition, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('focusin', onFocusIn);
       document.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('resize', syncPosition);
       window.removeEventListener('scroll', syncPosition, true);
@@ -243,6 +251,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
         {visibleOptions.map((option, index) => <button
           type="button"
           role="option"
+          tabIndex={-1}
           aria-selected={option.value === selectedValue}
           id={`select-option-${controlId}-${index}`}
           key={`${option.value}-${index}`}
