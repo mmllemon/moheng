@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const read = (path) => readFile(resolve(path), 'utf8');
-const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgProbe, safePath, hardKillSmoke, packageJsonText, pocPackageText, decision, workflow, assistantConfig, assistantJob, assistantApi, assistantPage, assistantContextBudget, assistantContextBudgetTests, assistantAdapterTests, apiPackageText] = await Promise.all([
+const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgProbe, safePath, hardKillSmoke, packageJsonText, pocPackageText, decision, workflow, assistantConfig, assistantJob, assistantApi, assistantPage, assistantContextBudget, assistantContextBudgetTests, assistantAdapterTests, assistantAdapter, apiPackageText] = await Promise.all([
   read('apps/api/src/lib/assistant-read-only-tools.ts'),
   read('apps/api/src/routes/assistant-poc.ts'),
   read('apps/api/src/server.ts'),
@@ -25,6 +25,7 @@ const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgPr
   read('apps/api/src/lib/assistant-context-budget.ts'),
   read('apps/api/src/lib/assistant-context-budget.test.ts'),
   read('apps/api/src/assistant/runtime/langgraph-adapter.test.ts'),
+  read('apps/api/src/assistant/runtime/langgraph-adapter.ts'),
   read('apps/api/package.json'),
 ]);
 
@@ -61,7 +62,7 @@ assert.match(assistantPage, /status\.configuration\.endpointValid === false[\s\S
 assert.match(assistantContextBudget, /ASSISTANT_CONTEXT_CHARACTER_BUDGET = 24_000/);
 assert.match(assistantJob, /buildAssistantHistoryWithinBudget\(priorMessages, promptMessage\.content\)/, 'worker must apply a bounded context budget before provider execution');
 assert.match(assistantJob, /contextTruncated = boundedHistory\.truncated \|\| historyDesc\.length > MAX_CONTEXT_MESSAGES/, 'worker must notice character- or message-count truncation');
-assert.match(langGraphAgent, /input\.contextTruncated \? \['较早的会话历史已因输入长度预算而省略/, 'model must be told not to assume omitted history');
+assert.match(assistantAdapter, /input\.contextTruncated \? \['较早的会话历史已因输入长度预算而省略/, 'API runtime must tell the model not to assume omitted history');
 assert.match(assistantContextBudgetTests, /never clips the current prompt or splits earlier messages/);
 assert.match(assistantAdapterTests, /system prompt warns the model when older conversation context was omitted by the budget/);
 assert.match(JSON.parse(apiPackageText).scripts.test, /src\/lib\/assistant-context-budget\.test\.ts/);
