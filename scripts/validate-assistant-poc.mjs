@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const read = (path) => readFile(resolve(path), 'utf8');
-const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgProbe, safePath, hardKillSmoke, packageJsonText, pocPackageText, decision, workflow, assistantConfig, assistantJob, assistantApi, assistantPage, assistantContextBudget, assistantContextBudgetTests, assistantAdapterTests, assistantAdapter, apiPackageText] = await Promise.all([
+const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgProbe, safePath, hardKillSmoke, packageJsonText, pocPackageText, decision, workflow, assistantConfig, assistantJob, assistantApi, assistantPage, assistantContextBudget, assistantContextBudgetTests, assistantAdapterTests, assistantAdapter, apiPackageText, assistantRecoveryIntegration] = await Promise.all([
   read('apps/api/src/lib/assistant-read-only-tools.ts'),
   read('apps/api/src/routes/assistant-poc.ts'),
   read('apps/api/src/server.ts'),
@@ -27,6 +27,7 @@ const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgPr
   read('apps/api/src/assistant/runtime/langgraph-adapter.test.ts'),
   read('apps/api/src/assistant/runtime/langgraph-adapter.ts'),
   read('apps/api/package.json'),
+  read('apps/api/src/lib/assistant-recovery.integration.test.ts'),
 ]);
 
 const [cashSummary, costVariance] = await Promise.all([
@@ -65,6 +66,12 @@ assert.match(assistantJob, /contextTruncated = boundedHistory\.truncated \|\| hi
 assert.match(assistantAdapter, /input\.contextTruncated \? \['较早的会话历史已因输入长度预算而省略/, 'API runtime must tell the model not to assume omitted history');
 assert.match(assistantContextBudgetTests, /never clips the current prompt or splits earlier messages/);
 assert.match(assistantAdapterTests, /system prompt warns the model when older conversation context was omitted by the budget/);
+assert.match(assistantJob, /const cancellationController = new AbortController\(\)/);
+assert.match(assistantJob, /isCancellationRequested\(runId\)[\s\S]*?cancellationController\.abort/);
+assert.match(assistantJob, /signal: cancellationController\.signal/, 'worker must pass cooperative cancellation through to the runtime');
+assert.match(assistantAdapter, /\.\.\.\(input\.signal \? \{ signal: input\.signal \} : \{\}\)/, 'LangGraph invoke must receive AbortSignal when a run is cancelled');
+assert.match(assistantAdapterTests, /LangGraph invocation receives the run cancellation signal and aborts in-flight work/);
+assert.match(assistantRecoveryIntegration, /S3-CANCEL-provider-abort[\s\S]*?abortObserved, true[\s\S]*?cancelledEvents\.map\(\(event\) => event\.type\), \['run\.queued', 'run\.started', 'run\.cancelled'\]/, 'isolated PostgreSQL recovery gate must exercise persisted cancellation through the worker to AbortSignal');
 assert.match(JSON.parse(apiPackageText).scripts.test, /src\/lib\/assistant-context-budget\.test\.ts/);
 assert.match(decision, /查询参数或片段/, 'assistant configuration docs must define unsafe URL components');
 

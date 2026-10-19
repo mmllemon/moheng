@@ -50,6 +50,7 @@ export type LangGraphAssistantTurn = {
   actor: AuthUser;
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   contextTruncated?: boolean;
+  signal?: AbortSignal;
   isCancellationRequested: () => Promise<boolean>;
   emit: (type: string, payload: Record<string, AssistantEventJsonValue>) => Promise<void>;
 };
@@ -121,6 +122,7 @@ export async function runLangGraphAssistantTurn(
     const result = await agent.invoke({ messages: input.messages }, {
       configurable: { thread_id: `moheng:${input.conversationId}:${input.runId}` },
       recursionLimit: 12,
+      ...(input.signal ? { signal: input.signal } : {}),
     });
     const messages = (result as { messages?: Array<{ getType?: () => string; type?: string; content?: unknown }> }).messages ?? [];
     const finalMessage = [...messages].reverse().find((message) => message.getType?.() === 'ai' || message.type === 'ai');
