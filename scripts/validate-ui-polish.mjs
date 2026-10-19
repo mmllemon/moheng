@@ -96,6 +96,10 @@ check('shared date and select controls expose popup relationships, labels, and v
   selectField.includes("aria-errormessage={props['aria-errormessage']}") &&
   datePicker.includes("props['aria-invalid'] === 'true'") &&
   selectField.includes("props['aria-invalid'] === 'true'"));
+check('select search control is outside a semantic listbox containing only option rows',
+  !selectField.includes("className={`select-popover ${presence.visible ? 'is-visible' : 'is-closing'}`}\n      role=\"listbox\"") &&
+  selectField.includes("id={`select-options-${controlId}`} className=\"select-option-list\" role=\"listbox\"") &&
+  selectField.includes("aria-controls={`select-options-${controlId}`}"));
 check('date picker keyboard movement skips disabled dates and preserves focusable range boundaries',
   datePicker.includes('while (isDisabled(asIsoDate(next)) && attempts < 3660)') &&
   datePicker.includes('if (isDisabled(asIsoDate(next))) return;') &&
