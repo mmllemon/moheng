@@ -321,15 +321,26 @@ export default function ReportPreviewPage() {
           const mergeByStart = new Map(sheet.merges.map((merge) => [`${merge.startRow}:${merge.startColumn}`, merge]));
           const covered = new Set<string>();
           for (const merge of sheet.merges) for (let r=merge.startRow;r<=merge.endRow;r+=1) for(let c=merge.startColumn;c<=merge.endColumn;c+=1) if (r!==merge.startRow || c!==merge.startColumn) covered.add(`${r}:${c}`);
-          return <article className="report-preview-sheet panel" key={sheet.id}>
-            <div className="report-preview-sheet-head"><div><strong>{sheet.name}</strong><small>{sheet.previewRowCount.toLocaleString('zh-CN')} / {sheet.rowCount.toLocaleString('zh-CN')} 行</small></div>{sheet.truncated && <span className="report-preview-truncated">预览已截断</span>}</div>
-            <div className="report-preview-workbook-scroll"><table className="report-studio-preview-grid" style={{ width: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px`, minWidth: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px` }}><colgroup>{<col key="row-number" style={{ width: '36px' }} />}{Array.from({length:colCount},(_,col)=><col key={col} style={{width:`${Math.min(420,Math.max(56,sheet.columnWidths[col] ?? 140))}px`}} />)}</colgroup><tbody>
-              {sheet.rows.map((row,rowIndex)=><tr key={rowIndex} style={sheet.rowHeights[rowIndex] ? {height:sheet.rowHeights[rowIndex]} : undefined}><th className="report-studio-preview-row-number">{rowIndex+1}</th>{Array.from({length:colCount},(_,columnIndex)=>{
+          const frozenRowCount = Math.max(0, Math.min(sheet.frozenRows ?? 0, sheet.rows.length));
+          const frozenRowsCrossMerge = frozenRowCount > 0 && sheet.merges.some((merge) => merge.startRow < frozenRowCount && merge.endRow >= frozenRowCount);
+          const repeatedHeaderRows = frozenRowsCrossMerge ? 0 : frozenRowCount;
+          const renderSheetRow = (row: (typeof sheet.rows)[number], rowIndex: number) => (
+            <tr key={rowIndex} style={sheet.rowHeights[rowIndex] ? {height:sheet.rowHeights[rowIndex]} : undefined}>
+              <th className="report-studio-preview-row-number">{rowIndex+1}</th>
+              {Array.from({length:colCount},(_,columnIndex)=>{
                 const cellKey=`${rowIndex}:${columnIndex}`; if (covered.has(cellKey)) return null;
                 const merged=mergeByStart.get(cellKey); const cell=row[columnIndex];
                 return <td key={columnIndex} colSpan={merged ? merged.endColumn-merged.startColumn+1:1} rowSpan={merged ? merged.endRow-merged.startRow+1:1} style={studioCellStyle(cell?.style ?? null,cell?.format ?? null)}>{displayValue(cell?.value,cell?.format,cell?.style ?? null)}</td>;
-              })}</tr>)}
-            </tbody></table></div>
+              })}
+            </tr>
+          );
+          return <article className="report-preview-sheet panel" key={sheet.id}>
+            <div className="report-preview-sheet-head"><div><strong>{sheet.name}</strong><small>{sheet.previewRowCount.toLocaleString('zh-CN')} / {sheet.rowCount.toLocaleString('zh-CN')} 行</small></div>{sheet.truncated && <span className="report-preview-truncated">预览已截断</span>}</div>
+            {frozenRowsCrossMerge && <div className="report-preview-warning">冻结区与跨行合并区域相交，打印时不重复冻结行以保留合并布局。</div>}
+            <div className="report-preview-workbook-scroll"><table className="report-studio-preview-grid" style={{ width: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px`, minWidth: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px` }}><colgroup>{<col key="row-number" style={{ width: '36px' }} />}{Array.from({length:colCount},(_,col)=><col key={col} style={{width:`${Math.min(420,Math.max(56,sheet.columnWidths[col] ?? 140))}px`}} />)}</colgroup>
+              {repeatedHeaderRows > 0 && <thead>{sheet.rows.slice(0,repeatedHeaderRows).map((row,index)=>renderSheetRow(row,index))}</thead>}
+              <tbody>{sheet.rows.slice(repeatedHeaderRows).map((row,index)=>renderSheetRow(row,index+repeatedHeaderRows))}</tbody>
+            </table></div>
           </article>;
         })}
       </section>}
