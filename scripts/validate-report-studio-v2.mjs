@@ -237,6 +237,9 @@ check('formal preview printing loads full server-bounded standard and studio dat
   xlsx.includes('worksheet.pageSetup.printTitlesRow') && previewPage.includes('repeatedHeaderRows > 0 && <thead>') &&
   previewPage.includes('frozenRowsCrossMerge') && previewPage.includes('async function printReport()') && previewPage.includes('setPrintPending(true)') &&
   previewPage.includes('afterprint') && previewPage.includes('window.print()') &&
+  previewPage.includes('@page { size: ${printPaper} ${printOrientation}; margin: 10mm; }') &&
+  previewPage.includes("'print-fit-width' : 'print-natural-width'") &&
+  (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid.print-fit-width') &&
   reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
   reportPrintTests.includes('requests all server-bounded rows') && rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-print.test.ts'));
 check('standard preview custom rows preserve per-cell values, row heights, visible-column merges and XLSX coordinates',
