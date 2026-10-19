@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildStandardReportPrintUrl, buildStudioReportPrintRequest } from './report-print.js';
+import { buildStandardReportPrintUrl, buildStudioReportPrintRequest, describeStandardPrintResult } from './report-print.js';
 
 test('standard report print URL requests all server-bounded rows and preserves the active filters', () => {
   assert.equal(
@@ -48,4 +48,10 @@ test('party print request retains only the selected business party scope', () =>
     }),
     { templateId: 'party-template', businessPartyId: 'party-9', printAll: true },
   );
+});
+
+
+test('standard print notice does not describe capped results as complete', () => {
+  assert.equal(describeStandardPrintResult(240, false), '已准备 240 行完整打印数据。');
+  assert.equal(describeStandardPrintResult(10_000, true), '已准备 10,000 行打印数据；已达到服务端导出上限，内容可能不完整，请缩小筛选范围后分批打印。');
 });

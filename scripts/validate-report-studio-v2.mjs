@@ -246,6 +246,9 @@ check('formal preview printing loads full server-bounded standard and studio dat
   (await read('apps/web/src/styles.css')).includes('.report-preview-table.repeat-header thead { display:table-header-group; }') &&
   (await read('apps/web/src/styles.css')).includes('.report-preview-table.no-repeat-header thead { display:table-row-group; }') &&
   reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
+  reportPrint.includes('export function describeStandardPrintResult') && reportPrintTests.includes('does not describe capped results as complete') &&
+  legacyDesigner.includes('setPrintTruncated(result.truncated)') && legacyDesigner.includes('describeStandardPrintResult(result.previewRowCount, result.truncated)') &&
+  legacyDesigner.includes('printTruncated ? \'注意：本次打印已达到服务端数据上限') &&
   reportPrintTests.includes('requests all server-bounded rows') && rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-print.test.ts'));
 check('standard preview custom rows preserve per-cell values, row heights, visible-column merges and XLSX coordinates',
   previewPage.includes("import { buildCustomRowMergeLayout } from '../report-preview-layout.js'") &&

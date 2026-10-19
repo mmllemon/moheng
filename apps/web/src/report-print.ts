@@ -16,6 +16,14 @@ export function buildStandardReportPrintUrl(reportKey: string, filters: Standard
   return `/reports/${encodeURIComponent(reportKey)}/preview?${params.toString()}`;
 }
 
+/** Describe the actual bounded print response, never the older screen preview. */
+export function describeStandardPrintResult(rowCount: number, truncated: boolean): string {
+  const count = rowCount.toLocaleString('zh-CN');
+  return truncated
+    ? `已准备 ${count} 行打印数据；已达到服务端导出上限，内容可能不完整，请缩小筛选范围后分批打印。`
+    : `已准备 ${count} 行完整打印数据。`;
+}
+
 export type StudioPrintDomain = 'PROJECT' | 'COMPANY' | 'PARTY';
 
 export interface StudioReportPrintContext {
