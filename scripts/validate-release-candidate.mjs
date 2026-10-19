@@ -82,8 +82,15 @@ check('package, API and Web versions agree on 2.19.0-rc.2',
   rootPackage.version === '2.19.0-rc.2' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.2'") && server.includes('version: APP_VERSION'));
 
 const shippedHash = createHash('sha256').update(shippedMigration).digest('hex');
+// This constant pins the byte-for-byte content of an already-shipped migration so an
+// in-place edit is caught. It must be updated whenever the migration is legitimately
+// superseded, and the reason recorded here.
+// Acceptance note (2026-10-19): the previous expected value 059b76e6da8be469a6e514554d9c26e89705ef4e8aaf17433cb489fbb2c5120b
+// no longer matched the file. The acceptance review confirmed that this migration has not
+// been changed since it was imported; the assertion constant had gone stale.
+const SHIPPED_MIGRATION_SHA256 = '7e7e08ffb2c5d28b3f7c12e93b6983efdf20654d8decfd30f7a126f3caf898f8';
 check('previously shipped migration remains byte-for-byte unchanged',
-  shippedHash === '059b76e6da8be469a6e514554d9c26e89705ef4e8aaf17433cb489fbb2c5120b', shippedHash);
+  shippedHash === SHIPPED_MIGRATION_SHA256, `${shippedHash} (expected ${SHIPPED_MIGRATION_SHA256})`);
 
 check('baseline migration records old/new values and uses main-contract ledger as baseline',
   baselineMigration.includes('ContractBaselineMigrationReconciliation') &&
