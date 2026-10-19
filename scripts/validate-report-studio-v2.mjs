@@ -229,8 +229,9 @@ check('formal preview printing loads full server-bounded standard and studio dat
   reportsRoute.includes("parsed.data.printAll === 'true' ? snapshot.rows : snapshot.rows.slice(0, 80)") &&
   studioRoute.includes('printAll: z.boolean().optional()') &&
   studioRoute.includes('previewReportStudio(rendered, parsed.data.printAll ? MAX_RENDERED_ROWS_PER_SHEET : undefined)') &&
-  renderer.includes('export const MAX_RENDERED_ROWS_PER_SHEET = 10000') &&
-  previewPage.includes('async function printReport()') && previewPage.includes('setPrintPending(true)') &&
+  renderer.includes('export const MAX_RENDERED_ROWS_PER_SHEET = 10000') && renderer.includes('frozenRows: sheet.frozenRows') &&
+  xlsx.includes('worksheet.pageSetup.printTitlesRow') && previewPage.includes('repeatedHeaderRows > 0 && <thead>') &&
+  previewPage.includes('frozenRowsCrossMerge') && previewPage.includes('async function printReport()') && previewPage.includes('setPrintPending(true)') &&
   previewPage.includes('afterprint') && previewPage.includes('window.print()') &&
   reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
   reportPrintTests.includes('requests all server-bounded rows') && rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-print.test.ts'));
