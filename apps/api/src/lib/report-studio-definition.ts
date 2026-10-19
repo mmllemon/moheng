@@ -120,7 +120,8 @@ function validateWorkbook(workbookInput: Record<string, unknown>): { success: tr
     if (!Number.isInteger(rowCount) || rowCount < 1 || rowCount > 400 || !Number.isInteger(columnCount) || columnCount < 1 || columnCount > 40) {
       return { success: false, message: '每张工作表最多 400 行、40 列' };
     }
-    if (sheet.mergeData && (!Array.isArray(sheet.mergeData) || sheet.mergeData.length > 200)) return { success: false, message: '每张工作表最多 200 个合并区域' };
+    if (sheet.mergeData != null && !Array.isArray(sheet.mergeData)) return { success: false, message: '合并区域列表结构无效' };
+    if (Array.isArray(sheet.mergeData) && sheet.mergeData.length > 200) return { success: false, message: '每张工作表最多 200 个合并区域' };
     for (const [rowKey, cells] of Object.entries(sheet.cellData ?? {})) {
       const row = Number(rowKey);
       if (!Number.isInteger(row) || row < 0 || row >= rowCount || !cells || typeof cells !== 'object' || Array.isArray(cells)) return { success: false, message: '单元格行坐标超出范围' };

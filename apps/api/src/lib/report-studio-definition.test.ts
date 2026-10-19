@@ -144,3 +144,16 @@ test('rejects static values in non-anchor cells of a merged range', () => {
   assert.equal(result.success, false);
   if (!result.success) assert.match(result.message, /合并区域非左上角单元格不能包含静态值/);
 });
+
+test('rejects falsey non-array mergeData values as validation errors instead of throwing', () => {
+  for (const invalidMergeData of [0, false, '']) {
+    const report = definition();
+    const workbook = report.workbook as unknown as {
+      sheets: Record<string, { mergeData: unknown }>;
+    };
+    workbook.sheets.sheet1!.mergeData = invalidMergeData;
+    const result = validateReportStudioDefinition(report);
+    assert.equal(result.success, false);
+    if (!result.success) assert.match(result.message, /合并区域列表结构无效/);
+  }
+});
