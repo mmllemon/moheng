@@ -148,11 +148,17 @@ check('Windows startup identifies the project by absolute server entry point',
   startWindows.includes('Win32_Process') &&
   startWindows.includes('$commandLine.IndexOf($serverScript'));
 
-check('Windows startup requires a healthy API and database before reporting success',
+check('Windows startup requires a healthy API, database, and listener owned by the launched process',
   startWindows.includes('Invoke-RestMethod -Uri $healthUrl') &&
   startWindows.includes("$health.data.status -eq 'ok'") &&
   startWindows.includes("$health.data.database -eq 'ok'") &&
+  startWindows.includes('$ownedListener.Count -gt 0') &&
   startWindows.includes('20 秒内通过数据库健康检查'));
+check('Windows startup rejects an already occupied port instead of trusting an unrelated healthy API',
+  startWindows.includes('Get-NetTCPConnection -LocalPort $port -State Listen') &&
+  startWindows.includes('$existingListeners.Count -gt 0') &&
+  startWindows.includes('已拒绝启动') &&
+  startWindows.includes('OwningProcess -eq $process.Id'));
 
 check('Windows stop script verifies Node process, entry point and process start time before kill',
   stopWindows.includes("$processInfo.Name -ieq 'node.exe'") &&
