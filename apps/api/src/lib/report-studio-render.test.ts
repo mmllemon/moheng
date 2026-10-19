@@ -123,6 +123,32 @@ test('full print preview returns all rendered rows beyond the normal 200-row scr
   assert.equal(printPreview.sheets[0]!.rows.at(-2)?.[0]?.value, 'SK-240');
 });
 
+
+test('XLSX avoids repeating frozen rows when a vertical merge crosses the frozen boundary', async () => {
+  const report = definition();
+  const workbookData = report.workbook as unknown as {
+    sheets: Record<string, {
+      freeze: { ySplit: number; xSplit: number };
+      mergeData: Array<{ startRow: number; startColumn: number; endRow: number; endColumn: number }>;
+    }>;
+  };
+  workbookData.sheets.main!.freeze.ySplit = 1;
+  workbookData.sheets.main!.mergeData = [{ startRow: 0, startColumn: 2, endRow: 1, endColumn: 2 }];
+
+  const rendered = renderReportStudio(report, dataset);
+  assert.ok(rendered.warnings.some((warning) => warning.includes('冻结行与跨行合并区域相交')));
+
+  const buffer = await buildReportStudioWorkbook({
+    definition: report,
+    dataset,
+    templateName: '冻结区合并冲突模板',
+    templateVersion: 1,
+  });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(Buffer.from(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  assert.equal(workbook.getWorksheet('测试表')!.pageSetup.printTitlesRow, undefined);
+});
+
 test('empty repeating regions render one blank template row rather than removing downstream layout', () => {
   const result = renderReportStudio(definition(), { ...dataset, sources: { ...dataset.sources, contracts: [], receipts: [] } });
   const rows = result.sheets[0]!.rows;
