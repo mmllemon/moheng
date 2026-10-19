@@ -154,6 +154,7 @@ check('design docs enforce neutral professional visual language and record navig
 check('global keyboard focus rings follow the active accent theme rather than a hard-coded hue',
   styles.includes(':where(button, a, input, select, textarea):focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-500) 80%, transparent); outline-offset: 2px; }') &&
   !styles.includes('rgba(81, 105, 216, .75)') &&
+  !styles.includes('rgba(81,105,216,.75)') &&
   styles.includes('--control-focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent-500) 12%, transparent)'));
 
 check('minimum readable typography removes 8px/9px text declarations',
