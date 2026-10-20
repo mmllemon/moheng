@@ -437,3 +437,45 @@
   .pv-settings-modal .pv-settings-sidebar { display: none; }
   .pv-settings-modal .pv-settings-main { padding: 20px 16px 30px; }
 }
+/* Paper surface + inset sidebar panel: the missing Hana shell cues. */
+.pv-main { background: transparent; }
+.pv-footer { background: transparent; }
+.theme-preview[data-theme="warm-paper"] .pv-window,
+.theme-preview[data-theme="warm-paper"] .pv-settings-modal {
+  background-color: var(--pv-bg);
+  background-image: url("/textures/paper-grain.png");
+  background-size: 180px 180px;
+  background-blend-mode: multiply;
+}
+.theme-preview[data-theme="warm-paper"] .pv-topbar {
+  background: color-mix(in srgb, var(--pv-surface) 42%, transparent);
+}
+.theme-preview[data-theme="warm-paper"] .pv-sidebar {
+  background-color: color-mix(in srgb, var(--pv-sidebar) 88%, transparent);
+}
+.theme-preview[data-theme="warm-paper"] .pv-settings-modal .pv-settings-sidebar {
+  background: color-mix(in srgb, var(--pv-bg) 82%, transparent);
+}
+.theme-preview[data-theme="warm-paper"] .pv-settings-modal .pv-settings-main {
+  background: color-mix(in srgb, var(--pv-bg) 38%, transparent);
+}
+.pv-sidebar {
+  width: 240px;
+  flex: 0 0 240px;
+  height: calc(100% - 16px);
+  align-self: center;
+  margin: 8px 0 8px 8px;
+  border: 1px solid color-mix(in srgb, var(--pv-border) 82%, var(--pv-text) 6%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(42, 38, 34, 0.04);
+  overflow: hidden;
+}
+.theme-preview[data-theme="midnight-contrast"] .pv-sidebar {
+  border-color: var(--pv-border-strong);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.24);
+}
+.pv-sidebar .pv-nav { padding-top: 1px; }
+.pv-sidebar .pv-brand { padding-top: 12px; }
+@media (max-width: 900px) {
+  .pv-sidebar { margin-left: 6px; width: 224px; flex-basis: 224px; height: calc(100% - 12px); }
+}
