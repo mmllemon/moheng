@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowRight, Bell, Building2, CalendarDays, ChevronDown, ChevronRight, CircleAlert,
   FileBarChart2, FileText, FolderKanban, HandCoins, LayoutDashboard, PanelLeft,
-  Minus, MoreHorizontal, Plus, ReceiptText, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserCog, Users, Wallet, X,
+  MoreHorizontal, Plus, ReceiptText, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, UserCog, Users, Wallet, X,
 } from 'lucide-react';
 import '../styles/theme-preview.css';
 
@@ -146,7 +146,7 @@ export default function ThemePreviewPage() {
       <header className="pv-titlebar">
         <div className="pv-titlebar-left"><button type="button" className="pv-tb-toggle" aria-label="切换侧栏"><PanelLeft size={15} /></button></div>
         <div className="pv-titlebar-center">金融城5号配电项目 <span>·</span> 经营总览</div>
-        <div className="pv-titlebar-controls"><button type="button" className="pv-tb-icon" aria-label="项目文件"><FolderKanban size={15} /></button><button type="button" className="pv-tb-icon" aria-label="文档"><FileText size={15} /></button><span className="pv-tb-divider" /><button type="button" className="pv-wc" aria-label="最小化"><Minus size={12} /></button><button type="button" className="pv-wc" aria-label="最大化"><Square size={10} /></button><button type="button" className="pv-wc is-close" aria-label="关闭"><X size={12} /></button></div>
+        <div className="pv-titlebar-controls"><button type="button" className="pv-tb-icon" aria-label="项目文件"><FolderKanban size={15} /></button><button type="button" className="pv-tb-icon" aria-label="文档"><FileText size={15} /></button></div>
       </header>
       <div className="pv-body">
       <aside className="pv-sidebar">
@@ -178,10 +178,6 @@ export default function ThemePreviewPage() {
         <div className="pv-sidebar-footer"><button type="button" className="pv-user"><span className="pv-avatar">系</span><span><strong>系统管理员</strong><small>系统管理员</small></span><ChevronRight size={14} /></button><button type="button" className="pv-collapse"><PanelLeft size={16} /></button></div>
       </aside>
       <div className="pv-main">
-        <header className="pv-topbar">
-          <div className="pv-breadcrumb">工程经营管理 <span>/</span> <strong>{view === 'settings' ? '系统设置' : '经营总览'}</strong></div>
-          <div className="pv-top-actions"><span className="pv-company">全公司 <ChevronDown size={12} /></span><div className="pv-top-search"><Search size={14} /><span>搜索清单、项目、单位…</span><kbd>⌘ K</kbd></div><button type="button" className="pv-icon-button" aria-label="通知"><Bell size={16} /></button><button type="button" className="pv-icon-button" aria-label="侧栏"><PanelLeft size={16} /></button><span className="pv-top-avatar">系</span></div>
-        </header>
         <div className="pv-content"><OverviewPreview /></div>
         <footer className="pv-footer"><span>墨衡 · 施工单位成本管理</span><span>v2.19.0-rc.2</span></footer>
       </div>
