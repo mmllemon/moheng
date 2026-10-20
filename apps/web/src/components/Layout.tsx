@@ -193,7 +193,7 @@ export default function Layout() {
   const isSystemArea = user?.role === 'ADMIN' && (location.pathname.startsWith('/system') || location.pathname === '/audit-logs');
 
   const costPageLabel = location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
-  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/account/security' ? '个人中心与账号安全' : location.pathname === '/preview/case' ? '变更签证案卷预览' : '工作台');
+  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/account/security' ? '个人中心与账号安全' : location.pathname === '/preview/case' ? '变更签证案卷预览' : location.pathname === '/preview/v7' ? 'V7 页面预览' : '工作台');
 
   async function logout() {
     try { await api.logout(); } catch { /* The local session is cleared even if the network is unavailable. */ }

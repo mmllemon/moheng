@@ -26,6 +26,7 @@ const SystemPoliciesPage = lazy(() => import('./pages/SystemPoliciesPage'));
 const BusinessPartiesPage = lazy(() => import('./pages/BusinessPartiesPage'));
 const BusinessPartyDetailPage = lazy(() => import('./pages/BusinessPartyDetailPage'));
 const CasePreviewPage = lazy(() => import('./pages/CasePreviewPage'));
+const PreviewV7Page = lazy(() => import('./pages/PreviewV7Page'));
 import ProjectOverviewPage from './pages/ProjectOverviewPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ContractsPage from './pages/ContractsPage';
@@ -99,7 +100,9 @@ export default function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<DashboardPage />} />
         <Route path="projects" element={<ProjectsPage />} />
+        <Route path="preview" element={<Navigate to="/preview/v7" replace />} />
         <Route path="preview/case" element={<CasePreviewPage />} />
+        <Route path="preview/v7" element={<PreviewV7Page />} />
         <Route path="audit-logs" element={<AdminOnly><AuditLogsPage /></AdminOnly>} />
         <Route path="reports" element={<ReportCenterPage />} />
         <Route path="reports/designer" element={<ReportDesignerPage />} />
