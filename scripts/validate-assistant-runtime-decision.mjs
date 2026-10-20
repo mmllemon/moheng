@@ -29,7 +29,7 @@ assert.match(decision, /BackgroundJob/, 'long-running assistant runs must remain
 assert.match(decision, /canAccessProject/, 'runtime integration must preserve server-side project authorization');
 assert.match(acceptance, /阶段三：完成 AI 助手的产品闭环/, 'assistant implementation must remain a defined development phase');
 assert.match(acceptance, /阶段四：统一回归、整理交付与发布评审/, 'release readiness and regression must be a separate phase');
-assert.match(decision, /六张业务表零变化/, 'business-table no-write regression must remain a hard gate');
+assert.match(decision, /业务表无写入的运行态回归/, 'business-table no-write regression must remain a hard gate');
 assert.match(releaseScript, /node scripts\/validate-assistant-poc\.mjs[\s\S]*?node scripts\/validate-assistant-runtime-decision\.mjs/, 'both assistant gates must execute in the release validation script');
 
 console.log(JSON.stringify({

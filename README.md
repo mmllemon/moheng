@@ -2,7 +2,9 @@
 
 墨衡面向施工单位的项目经营与经济成本管理，覆盖项目、合同、变更签证、目标成本、实际成本、结算、应收应付、收付款、往来单位、经营分析、报表与只读 AI 助手。
 
-> **当前集成状态：** v2.20 产品完善已通过 [PR #4](https://github.com/mmllemon/moheng/pull/4) 合并到 `main`，后续报表打印修复也已通过 [PR #6](https://github.com/mmllemon/moheng/pull/6) 合并；Prisma 7 迁移已纳入主分支。根/API/Web 的包版本仍为 `2.19.0-rc.2`，尚未发布正式版本，项目仍处于 RC。最近一次 AI token 用量功能的 [PR #16](https://github.com/mmllemon/moheng/pull/16) 在合并前的精确头提交 `fd20433bfa59ac6e8a3c1a51f52fa0f2aa205607` 上通过 Assistant runtime gates 与 Prisma 7 migration gates；这不替代后续主分支新提交的 CI 结果。真实浏览器/Windows 验收、脱敏业务数据迁移核对及 AI 真实供应商 E2E 仍未完成。
+> **当前仓库状态（2026-10-20）：** 本轮审阅时，`main` 的业务代码基线为 `551d154de6a43344637bbcf745152e08d07be620`。产品完善 [PR #4](https://github.com/mmllemon/moheng/pull/4)、报表打印修复 [PR #6](https://github.com/mmllemon/moheng/pull/6)、AI token 用量 [PR #16](https://github.com/mmllemon/moheng/pull/16)、项目级 AI 用量摘要 [PR #17](https://github.com/mmllemon/moheng/pull/17) 与核心经营链路两项修复 [PR #18](https://github.com/mmllemon/moheng/pull/18) 均已合入；[PR #19](https://github.com/mmllemon/moheng/pull/19) 修正了开发阶段验收边界。主干最新 Assistant runtime gates 在该业务代码基线上通过：[workflow run #39357880407](https://github.com/mmllemon/moheng/actions/runs/39357880407)。PR #17、#18 的精确头提交还分别通过 Assistant runtime 和 Prisma 7 migration 两组门禁；详情以 [PR #17](https://github.com/mmllemon/moheng/pull/17)、[PR #18](https://github.com/mmllemon/moheng/pull/18) 中链接的运行记录为准。
+>
+> **版本与阶段：** 根目录、API 和 Web 的 package version 仍为 `2.19.0-rc.2`，尚未发布正式版本。这是仓库当前的版本元数据；项目仍处于持续开发阶段，不代表最近合入的功能仍待合并。当前开发重点是继续补齐业务路由/数据库集成与真实浏览器交互验证；真实供应商 AI E2E、Windows 目标部署和后续投产验证属于后续阶段。当前不存在需要本轮核对的生产历史台账或正式人员签认，不将其列作开发阶段的合并条件。
 
 ## 技术栈
 
@@ -63,3 +65,4 @@ Windows 原生脚本位于 `scripts/windows/`。正式部署之前请先阅读[�
 - 只提交源码、迁移、可复现测试和仍有效的文档；不提交 `.env`、密钥、数据库备份或本机测试产物。
 - 依赖安装以锁文件和 `npm ci` 为准。
 - 自动化门禁通过是必要条件，不等同于产品验收、用户 UI 满意度或生产发布批准。
+- Git 分支协作规则见[开发、部署与维护指南](docs/开发与部署指南.md#10-git-分支与-pr-协作规则)：以 `main` 为唯一长期集成分支，改动通过 PR 合并；PR 合并后自动删除源分支已启用，但启用前遗留的旧分支需单独核验并清理。

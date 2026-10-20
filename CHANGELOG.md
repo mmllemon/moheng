@@ -1,13 +1,18 @@
 ## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
 
-### 2026-10-20 增量开发（未发布）
+> **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
-- 成本助手新增项目上下文中的近 30 天用量摘要：以当前登录用户和授权项目为查询范围，展示已结束/活动任务数、完整/部分/未知用量次数，以及完整供应商 token 的输入/输出/合计。
-- 不完整 token 元数据继续显示为未知，不按字符数推算 token 或费用；新增聚合边界测试并将用量契约加入助手静态门禁。该增量尚未合并或正式发布；合并前须再次确认 PR #17 最新头 SHA 的两条必需工作流均成功。自动化通过不等于真实供应商 E2E 或生产准入批准。
+### 2026-10-20 增量开发（已合入 main，未正式发布）
+
+- [PR #17](https://github.com/mmllemon/moheng/pull/17) 已合并项目上下文中的近 30 天 AI 用量摘要：按当前认证用户与授权项目聚合，区分活动任务、已结束运行以及 COMPLETE/PARTIAL/UNAVAILABLE 用量；只有完整且一致的供应商 token 元数据参与累计，不按字符数推算 token 或费用。
+- [PR #18](https://github.com/mmllemon/moheng/pull/18) 已修复业主最终结算合法负差额被拒绝，以及未核验往来单位仅凭同名被自动关联的问题，并增加对应回归测试。
+- [PR #19](https://github.com/mmllemon/moheng/pull/19) 更新核心经营链路审计记录，明确当前为开发阶段：历史台账核对、生产 Windows 权限/恢复演练和正式业务/审计签认是后续预投产/投产门禁，不是当前开发阻塞项。
+- PR #17 与 #18 的精确头提交均通过 Assistant runtime 与 Prisma 7 migration 两组 GitHub Actions；PR #18 的两项修复也已包含于当前主干业务代码基线。主干该基线的 Assistant runtime workflow [run #39357880407](https://github.com/mmllemon/moheng/actions/runs/39357880407) 已成功。
+- 根目录、API 与 Web 的包版本仍为 `2.19.0-rc.2`；上述变更已经集成到 `main`，但尚未升级 package version 或发布正式版本。自动化门禁通过不等于真实供应商 E2E、浏览器视觉验收或后续投产验收完成。
 
 ### v2.20.0 product completion — merged to main, not released
 
-> Source integration status: merged to `main` on 2026-10-19 as commit `08696e5bc5fb106c10aae5b796616b25c159aa52`. This is **not a formal release**: package versions remain `2.19.0-rc.2`, no GitHub Release has been published, and production rollout remains blocked on the real-environment acceptance and authorized owner sign-offs documented in the acceptance review.
+> Source integration status: merged to `main` on 2026-10-19 as commit `08696e5bc5fb106c10aae5b796616b25c159aa52`. This is **not a formal release**: package versions remain `2.19.0-rc.2`, no GitHub Release has been published, and production deployment has not been approved. Real deployment, historical-data reconciliation (if such data exists), and formal business/audit sign-off are later-stage gates after the relevant environment and materials exist, not current development prerequisites.
 
 - Consolidated repository documentation into one current index and four-phase roadmap; archived the historical defect review and summarized old RC acceptance records rather than keeping repeated versioned design documents.
 - Added styled `报表预览` overview sheets to both standard XLSX exports and Report Studio XLSX exports, including report scope, filters/template version, worksheet directory, row limit and truncation warnings.

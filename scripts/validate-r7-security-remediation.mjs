@@ -71,7 +71,7 @@ verify('release-candidate command runs R7 static contract', () => assert.match(r
 verify('API test command includes auth preHandler regression test', () => assert.match(apiPackage.scripts.test, /auth-prehandler-regression\.test\.ts/));
 verify('auth regression test asserts handler is not called after denial', () => assert.match(regressionTest, /handlerCalls, 0/));
 verify('POC-off regression test covers 404 gate', () => assert.match(regressionTest, /ASSISTANT_POC_ENABLED=false sends ROUTE_NOT_FOUND/));
-verify('release documentation requires lockfile-driven install and honest RC boundaries', () => { assert.match(ciGateDoc, /锁文件/); assert.match(ciGateDoc, /Node\.js/); assert.match(ciGateDoc, /发布候选/); });
+verify('release documentation requires lockfile-driven install and honest RC boundaries', () => { assert.match(ciGateDoc, /package-lock\.json/); assert.match(ciGateDoc, /npm ci/); assert.match(ciGateDoc, /Node\.js/); assert.match(ciGateDoc, /发布候选/); });
 
 console.log(JSON.stringify({
   gate: 'R7_SECURITY_REMEDIATION_STATIC_CONTRACT',

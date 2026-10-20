@@ -43,6 +43,8 @@ const userTypes = await read('apps/web/src/types.ts');
 const dashboardPage = await read('apps/web/src/pages/DashboardPage.tsx');
 const auditPlan = await read('docs/后续四阶段开发路线图.md');
 const architectureRules = await read('docs/架构与核心业务规则.md');
+const userGuide = await read('docs/用户操作手册.md');
+const securityGuide = await read('docs/安全、账号与公网部署.md');
 const releaseStatus = await read('docs/发布与迁移验收.md');
 const projectOverviewPage = await read('apps/web/src/pages/ProjectOverviewPage.tsx');
 const workspaceLayout = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
@@ -375,13 +377,15 @@ check('selecting a unit previews reusable contact, address and invoicing data; c
   partyPicker.includes("setSearch(''); onChange(null, '')") &&
   (await read('apps/web/src/styles.css')).includes('--surface-muted: var(--neutral-100)'));
 
-check('consolidated documentation preserves unit identity, financial posting and security rules',
+check('consolidated documentation preserves unit identity, financial posting and current development-stage boundaries',
   architectureRules.includes('identityVerified') &&
   architectureRules.includes('检索名称只帮助匹配，不替代法律身份核验') &&
   architectureRules.includes('可选') &&
   architectureRules.includes('负向调整') &&
   architectureRules.includes('浏览器密码管理器') &&
-  releaseStatus.includes('仍未关闭的发布阻断项'));
+  securityGuide.includes('API key') &&
+  releaseStatus.includes('当前开发阶段仍应推进的验证') &&
+  releaseStatus.includes('仅在预投产/投产条件具备后执行的门禁'));
 
 check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
