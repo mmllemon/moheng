@@ -48,19 +48,20 @@ function ProtectedRoute() {
   const restrictedFlow = useAuthStore((state) => state.restrictedFlow);
   const [ready, setReady] = useState(Boolean(token));
   const navigate = useNavigate();
+  const location = useLocation();
   useEffect(() => {
     let active = true;
     if (token) { setReady(true); return; }
     api.refreshSession().then((ok) => {
       if (!active) return;
-      if (!ok) { clearSession(); navigate('/login', { replace: true }); }
+      if (!ok) { clearSession(); navigate('/login', { replace: true, state: { from: location.pathname + location.search + location.hash } }); }
       setReady(true);
-    }).catch(() => { if (active) { clearSession(); setReady(true); navigate('/login', { replace: true }); } });
+    }).catch(() => { if (active) { clearSession(); setReady(true); navigate('/login', { replace: true, state: { from: location.pathname + location.search + location.hash } }); } });
     return () => { active = false; };
-  }, [token, clearSession, navigate]);
+  }, [token, clearSession, navigate, location.pathname, location.search, location.hash]);
   if (restrictedFlow) return <Navigate to="/account/security-step" replace />;
   if (!ready) return <div className="full-screen-loading"><LoadingBlock label="正在验证登录状态…" /></div>;
-  if (!useAuthStore.getState().accessToken) return <Navigate to="/login" replace />;
+  if (!useAuthStore.getState().accessToken) return <Navigate to="/login" replace state={{ from: location.pathname + location.search + location.hash }} />;
   return <Outlet />;
 }
 

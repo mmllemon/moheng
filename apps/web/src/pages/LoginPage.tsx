@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { api, ApiError } from '../api';
 import BrandMark from '../components/BrandMark';
@@ -17,6 +17,9 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from;
+  const destination = from && from.startsWith('/') && !from.startsWith('//') && !from.startsWith('/login') ? from : '/';
   const setSession = useAuthStore((state) => state.setSession);
   const setRestrictedSession = useAuthStore((state) => state.setRestrictedSession);
   const [submitError, setSubmitError] = useState('');
@@ -34,7 +37,7 @@ export default function LoginPage() {
       }
       setSession(result.accessToken, result.user);
       try { if (rememberAccount) { window.localStorage.setItem(REMEMBER_ACCOUNT_KEY, '1'); window.localStorage.setItem(REMEMBERED_EMAIL_KEY, values.email.trim()); } else { window.localStorage.removeItem(REMEMBER_ACCOUNT_KEY); window.localStorage.removeItem(REMEMBERED_EMAIL_KEY); } } catch { /* Storage may be disabled by browser policy; login should still succeed. */ }
-      navigate('/');
+      navigate(destination);
     } catch (error) { setSubmitError(error instanceof ApiError ? error.message : '登录失败，请检查服务是否已启动'); }
   });
 
