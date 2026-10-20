@@ -92,7 +92,7 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
         _sum: { inputTokens: true, outputTokens: true, totalTokens: true },
       }),
       prisma.assistantRun.count({
-        where: { ownerUserId: actor.sub, projectId, status: { in: ['QUEUED', 'RUNNING'] } },
+        where: { ownerUserId: actor.sub, projectId, createdAt: { gte: periodStart, lte: periodEnd }, status: { in: ['QUEUED', 'RUNNING'] } },
       }),
     ]);
 
