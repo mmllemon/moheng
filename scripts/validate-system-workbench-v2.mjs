@@ -32,10 +32,12 @@ check('parameter key is suggested from name and manual override is retained', pa
 check('code suggestion normalizes Latin/digits, has safe unknown Han fallback and enforces minimum length', helper.includes('normalize(\'NFKC\')') && helper.includes('toUpperCase()') && helper.includes('codePointAt(0)') && helper.includes('const limit = Math.max(2') && helper.includes('return result;'));
 check('data-quality action is a low-emphasis neutral control rather than primary button', governance.includes('system-quality-scan-trigger') && !governance.includes('className="button-primary" onClick={() => scanQuality.mutate()}') && css.includes('.system-quality-scan-trigger {') && css.includes('.system-quality-scan-trigger:hover:not(:disabled)'));
 check('system management overview links authorization governance as a dedicated workbench', manager.includes('/system/authorization') && manager.includes('权限治理与授权复核'));
-check('consolidated docs state module boundaries, project authorization and incomplete production acceptance',
+check('consolidated docs state module boundaries, project authorization and development/pre-production boundary',
   design.includes('模块化单体优先') && design.includes('项目授权') &&
   design.includes('只读') && design.includes('审计') &&
-  acceptance.includes('尚未完成') && /rc/i.test(acceptance));
+  acceptance.includes('当前开发阶段仍应推进的验证') &&
+  acceptance.includes('仅在预投产/投产条件具备后执行的门禁') &&
+  /rc/i.test(acceptance));
 check('release candidate gate includes this system workbench contract suite', rootPackage.scripts['validate:release-candidate'].includes('validate-system-workbench-v2.mjs'));
 check('README and changelog describe current navigation, authorization review and code recommendation', readme.includes('核心业务约束') && changelog.startsWith('## v' + rootPackage.version) && changelog.includes('授权复核工作台'));
 
