@@ -131,6 +131,7 @@ export async function contractRoutes(app: FastifyInstance) {
       if (error instanceof Error && error.message === 'BASE_CONTRACT_DATA_MISMATCH') return failure(reply, 409, 'BASE_CONTRACT_DATA_MISMATCH', '主合同台账金额与项目原始合同金额不一致，请先核对历史数据，不可直接覆盖');
       if (error instanceof Error && error.message === 'PROJECT_NOT_FOUND') return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选往来单位不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选往来单位已停用或归档，不能用于新合同');
       if (error instanceof Error && error.message === 'CONTRACT_AMOUNT_WOULD_BE_NEGATIVE') return failure(reply, 409, 'CONTRACT_AMOUNT_WOULD_BE_NEGATIVE', '该原始合同金额会导致当前有效合同额为负数，已阻止保存');
