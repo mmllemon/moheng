@@ -102,7 +102,9 @@ check('reduced-motion and responsive rules cover new report, notification, and m
   styles.includes(':root[data-motion="reduced"]') && styles.includes('@media (max-width: 760px)'));
 check('current delivery roadmap includes runtime/build, Prisma/database, browser, Windows and restore gates',
   plan.includes('Node.js 24+') && plan.includes('Prisma') && plan.includes('浏览器 E2E') &&
-  plan.includes('Windows 原生') && plan.includes('备份恢复') && acceptance.includes('仍未关闭的发布阻断项'));
+  plan.includes('Windows 原生') && plan.includes('备份恢复') &&
+  acceptance.includes('当前开发阶段仍应推进的验证') &&
+  acceptance.includes('仅在预投产/投产条件具备后执行的门禁'));
 check('Windows release script enforces Node 24+, reproducible dependency installation, build/test/Prisma gates and opt-in migrations',
   windowsGate.includes('Node.js 24') && windowsGate.includes('npm.cmd') && windowsGate.includes("'ci'") &&
   windowsGate.includes("'validate'") && windowsGate.includes("'db:generate'") && windowsGate.includes("'lint'") &&
