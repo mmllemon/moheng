@@ -1,17 +1,18 @@
 import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Activity, Banknote, CalendarDays, CircleAlert, Coins, Edit3, FolderKanban, FolderPlus, MapPin, Plus, Search, Users2, Wallet, X } from 'lucide-react';
+import { CircleAlert, Edit3, FolderPlus, Plus, Search, Users2, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import type { Project } from '../types';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import '../styles/projects-ledger.css';
 
 const schema = z.object({
   name: z.string().trim().min(2, '项目名称至少 2 个字符'),
@@ -104,6 +105,7 @@ type ProjectDashboardSnapshot = {
 };
 
 const statuses: { value: string; label: string }[] = [{ value: 'ALL', label: '全部状态' }, { value: 'CONSTRUCTION', label: '施工中' }, { value: 'SETTLEMENT_PENDING', label: '待结算' }, { value: 'SETTLED', label: '已结算' }, { value: 'PAUSED', label: '已暂停' }];
+const projectTypes: Record<string, string> = { HOUSING: '房屋建筑', ROAD: '道路桥梁', MUNICIPAL: '市政工程', DECORATION: '装饰装修', MEP: '机电安装', OTHER: '其他' };
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
@@ -124,56 +126,84 @@ export default function ProjectsPage() {
     const matchQ = !q || `${project.name} ${project.code} ${project.ownerName}`.toLowerCase().includes(q.toLowerCase());
     return matchQ && (status === 'ALL' || project.status === status);
   }), [projects, q, status]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!filtered.length) return;
+    setSelectedId((current) => current && filtered.some((project) => project.id === current) ? current : filtered[0]!.id);
+  }, [filtered]);
+  const selected = filtered.find((project) => project.id === selectedId) ?? filtered[0] ?? null;
+  const selectedSnapshot = selected ? projectMap.get(selected.id) : undefined;
+
 
   if (projectsQuery.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
   if (projectsQuery.error) return <div className="page-wrap"><ErrorBlock message={(projectsQuery.error as Error).message} retry={() => void projectsQuery.refetch()} /></div>;
 
-  return <div className="page-wrap projects-page">
+  return <div className="page-wrap projects-page projects-ledger-page">
     <PageHeader eyebrow="WORKSPACE / PROJECTS" title="项目管理" subtitle="先判断项目经营状态，再进入具体合同、目标成本、成本与结算工作。" actions={<Button onClick={() => setDialog({ open: true })}><Plus size={16} />新建项目</Button>} />
-    <section className="project-management-kpis" aria-label="项目组合摘要">
-      <article className="project-management-kpi"><span className="project-management-kpi-icon"><FolderKanban size={16} /></span><div><small>可访问项目</small><strong>{projects.length}</strong><span>当前账号可管理范围</span></div></article>
-      <article className="project-management-kpi"><span className="project-management-kpi-icon tone-jade"><Activity size={16} /></span><div><small>施工中</small><strong>{constructionCount}</strong><span>正在实施的项目</span></div></article>
-      <article className="project-management-kpi"><span className="project-management-kpi-icon tone-amber"><CircleAlert size={16} /></span><div><small>待结算</small><strong>{settlementCount}</strong><span>需关注结算与收款</span></div></article>
-      <article className="project-management-kpi project-management-kpi-contract"><span className="project-management-kpi-icon tone-blue"><Banknote size={16} /></span><div><small>当前有效合同额合计</small><strong>{formatMoney(totalContractAmount, 0)}</strong><span>含符合规则已生效的合同调整</span></div></article>
+
+    <section className="projects-kpi-strip" aria-label="项目组合摘要">
+      <div><span>可访问项目</span><strong>{projects.length}</strong><small>当前账号可管理范围</small></div>
+      <div><span>施工中</span><strong>{constructionCount}</strong><small>正在实施的项目</small></div>
+      <div><span>待结算</span><strong>{settlementCount}</strong><small>需关注结算与收款</small></div>
+      <div><span>当前有效合同额合计</span><strong>{formatMoney(totalContractAmount, 0)}</strong><small>含符合规则已生效的合同调整</small></div>
     </section>
-    <div className="project-list-toolbar">
+
+    <div className="projects-toolbar">
       <div className="toolbar-search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜索项目名称、编号或业主单位" aria-label="搜索项目" /></div>
       <SelectField className="toolbar-select" value={status} onChange={(e) => setStatus(e.target.value)} aria-label="按项目状态筛选">{statuses.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</SelectField>
       <span className="results-count">显示 <strong>{filtered.length}</strong> / {projects.length} 个项目</span>
     </div>
-    {filtered.length === 0 ? <EmptyState title={projects.length ? '没有符合条件的项目' : '项目列表还是空的'} description={projects.length ? '请更换关键词或筛选状态。' : '新建项目档案后，可以继续维护合同、目标成本和实际成本记录。'} action={() => setDialog({ open: true })} /> : <div className="project-list-grid">{filtered.map((project, index) => {
-      const snapshot = projectMap.get(project.id);
-      const pendingChanges = pendingChangeCounts.get(project.id);
-      const targetCost = snapshot?.targetCost;
-      const actualCost = snapshot?.actualCost;
-      const receivedAmount = snapshot?.receivedAmount;
-      const costRatio = targetCost != null && targetCost > 0 && actualCost != null ? actualCost / targetCost : null;
-      const recoveryRatio = snapshot?.recoveryRatio;
-      const variance = snapshot?.costVarianceAmount;
-      const originalAmount = project.originalContractAmount;
-      const changeAmount = originalAmount != null ? project.contractAmount - originalAmount : null;
-      return <article className="project-list-card" key={project.id} style={{ '--card-index': index } as CSSProperties}>
-        <div className="project-list-card-head"><span className={`project-monogram monogram-${index % 4}`}>{project.name.slice(0, 1)}</span><StatusBadge status={project.status} /><span className="project-card-spacer" />{pendingChanges != null && pendingChanges > 0 && <span className="project-risk-indicator"><i />{pendingChanges} 项待跟进</span>}<button className="icon-button card-edit-button" title="编辑项目档案" aria-label={`编辑${project.name}`} onClick={() => setDialog({ open: true, project })}><Edit3 size={16} /></button></div>
-        <div className="project-card-title-row"><div><h3>{project.name}</h3><div className="project-list-code">{project.code}</div></div><button type="button" className="project-open-icon" aria-label={`进入${project.name}的成本工作台`} title="进入成本工作台" onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }}><FolderPlus size={16} /></button></div>
-        <div className="project-list-owner"><Users2 size={14} />{project.ownerPartyId ? <Link to={`/parties/${project.ownerPartyId}`}>{project.ownerName} ↗</Link> : <span>{project.ownerName}</span>}</div>
-        <section className="project-card-contract-hero"><div><span>当前有效合同额</span><strong>{formatMoney(project.contractAmount, 0)}</strong></div>{changeAmount != null && Math.abs(changeAmount) > 0.009 && <span className={`project-change-chip ${changeAmount > 0 ? 'is-up' : 'is-down'}`}>{changeAmount > 0 ? '+' : '−'}{formatMoney(Math.abs(changeAmount), 0)}</span>}<small>{originalAmount != null ? `原始合同额 ${formatMoney(originalAmount, 0)}` : '按当前有效合同台账口径统计'}</small></section>
-        <div className="project-card-metrics-grid">
-          <div className="project-card-operating-metric"><span><Coins size={13} />目标成本</span><strong>{snapshot ? (targetCost && targetCost > 0 ? formatMoney(targetCost, 0) : '未建立基线') : '—'}</strong></div>
-          <div className="project-card-operating-metric"><span><Activity size={13} />实际成本</span><strong>{snapshot ? formatMoney(actualCost ?? 0, 0) : '加载中…'}</strong></div>
-          <div className="project-card-operating-metric"><span><Wallet size={13} />累计已收款</span><strong>{snapshot ? formatMoney(receivedAmount ?? 0, 0) : '加载中…'}</strong></div>
-          <div className="project-card-operating-metric"><span><CircleAlert size={13} />成本偏差</span><strong className={variance != null && variance > 0 ? 'text-danger' : variance != null && variance < 0 ? 'text-success' : ''}>{snapshot ? (variance == null ? '—' : `${variance > 0 ? '+' : ''}${formatMoney(variance, 0)}`) : '—'}</strong></div>
+
+    {filtered.length === 0 ? <EmptyState title={projects.length ? '没有符合条件的项目' : '项目列表还是空的'} description={projects.length ? '请更换关键词或筛选状态。' : '新建项目档案后，可以继续维护合同、目标成本和实际成本记录。'} action={() => setDialog({ open: true })} /> : <div className="projects-ledger-layout">
+      <section className="projects-ledger" aria-label="项目台账">
+        <div className="projects-ledger-head"><div><h2>项目台账</h2><p>按合同额排序 · 选择一行查看右侧项目档案</p></div><span>{filtered.length} 个项目</span></div>
+        <div className="table-scroll"><table className="data-table projects-table"><thead><tr><th>项目</th><th>状态</th><th>业主</th><th className="align-right">合同额</th><th className="align-right">目标成本</th><th className="align-right">已发生</th><th className="align-right">回款率</th></tr></thead><tbody>{filtered.map((project) => {
+          const snapshot = projectMap.get(project.id);
+          const pendingChanges = pendingChangeCounts.get(project.id) ?? 0;
+          const targetCost = snapshot?.targetCost;
+          const actualCost = snapshot?.actualCost;
+          const recoveryRatio = snapshot?.recoveryRatio;
+          return <tr key={project.id} className={selected?.id === project.id ? 'is-selected' : ''} tabIndex={0} aria-selected={selected?.id === project.id} onClick={() => setSelectedId(project.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedId(project.id); } }}>
+            <td><strong className="table-primary-text">{project.name}</strong><small className="table-subtext">{project.code}{pendingChanges > 0 ? ' · ' + pendingChanges + ' 项待跟进' : ''}</small></td>
+            <td><StatusBadge status={project.status} /></td>
+            <td><span className="projects-owner-cell">{project.ownerPartyId ? <Link to={'/parties/' + project.ownerPartyId}>{project.ownerName} ↗</Link> : project.ownerName}</span></td>
+            <td className="align-right numeric">{formatMoney(project.contractAmount, 0)}</td>
+            <td className="align-right numeric">{snapshot ? (targetCost && targetCost > 0 ? formatMoney(targetCost, 0) : '未建立') : '—'}</td>
+            <td className="align-right numeric">{snapshot ? formatMoney(actualCost ?? 0, 0) : '—'}</td>
+            <td className="align-right numeric">{recoveryRatio == null ? '—' : (recoveryRatio * 100).toFixed(1) + '%'}</td>
+          </tr>;
+        })}</tbody></table></div>
+      </section>
+
+      {selected && <aside className="projects-dossier" aria-label="当前项目档案">
+        <div className="projects-dossier-head">
+          <div><span className="eyebrow">PROJECT DOSSIER</span><h2>{selected.name}</h2><p>{selected.code} · {selected.ownerName}</p></div>
+          <div className="projects-dossier-tools"><StatusBadge status={selected.status} /><button type="button" className="icon-button" title="编辑项目档案" aria-label={'编辑' + selected.name} onClick={() => setDialog({ open: true, project: selected })}><Edit3 size={15} /></button></div>
         </div>
-        <div className="project-card-ratios">
-          <div className="project-card-ratio-head"><span>成本使用率</span><b className={costRatio != null && costRatio > 1 ? 'text-danger' : ''}>{costRatio == null ? '—' : `${(costRatio * 100).toFixed(1)}%`}</b></div>
-          <div className="project-card-progress"><span className={costRatio != null && costRatio > 1 ? 'is-over' : ''} style={{ width: `${costRatio == null ? 0 : Math.min(100, Math.max(0, costRatio * 100))}%` }} /></div>
-          <div className="project-card-ratio-foot"><span>实际成本 / 目标成本</span><span>回款率 {recoveryRatio == null ? '—' : `${(recoveryRatio * 100).toFixed(1)}%`}</span></div>
+        <div className="projects-dossier-facts">
+          <div><span>工程类型</span><strong>{projectTypes[selected.type] ?? selected.type}</strong></div>
+          <div><span>项目经理</span><strong>{selected.managerName || '待指定'}</strong></div>
+          <div><span>开工日期</span><strong>{formatDate(selected.startDate)}</strong></div>
+          <div><span>计划竣工</span><strong>{formatDate(selected.plannedEndDate)}</strong></div>
+          <div><span>项目地址</span><strong>{selected.address || '未填写'}</strong></div>
+          <div><span>项目成员</span><strong>按项目单独授权</strong></div>
         </div>
-        <div className="project-list-meta"><span><CalendarDays size={13} />开工 {formatDate(project.startDate)}</span><span><MapPin size={13} />{project.address || '未填写地址'}</span></div>
-        <div className="project-card-manager-row"><span>项目经理</span><strong>{project.managerName || '待指定'}</strong>{project.plannedEndDate && <><span className="project-manager-separator" /><span>计划竣工</span><strong>{formatDate(project.plannedEndDate)}</strong></>}</div>
-        <div className="project-card-health-foot"><span>{pendingChanges != null ? <><i className={pendingChanges > 0 ? 'has-pending' : ''} />{pendingChanges > 0 ? `${pendingChanges} 项变更待跟进` : '无待跟进变更'}</> : <><i />经营摘要加载中</>}</span><span>{project.budgetItemCount != null ? `预算清单 ${project.budgetItemCount} 项` : '目标成本台账'}{project.costEntryCount != null ? ` · 成本记录 ${project.costEntryCount} 条` : ''}</span></div>
-        <div className="project-card-actions"><Button variant="secondary" onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }}>查看驾驶舱</Button><Button onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }}>进入成本工作台 <FolderPlus size={14} /></Button></div>
-      </article>;
-    })}</div>}
+        <div className="projects-dossier-finance">
+          <div><span>当前有效合同额</span><strong>{formatMoney(selected.contractAmount, 0)}</strong><small>{selected.originalContractAmount != null && Math.abs(selected.contractAmount - selected.originalContractAmount) > 0.009 ? '原始 ' + formatMoney(selected.originalContractAmount, 0) + ' · 已含调整' : '按当前有效合同台账口径'}</small></div>
+          <div><span>目标成本</span><strong>{selectedSnapshot ? (selectedSnapshot.targetCost > 0 ? formatMoney(selectedSnapshot.targetCost, 0) : '未建立基线') : '—'}</strong><small>{selected.budgetItemCount != null ? '清单 ' + selected.budgetItemCount + ' 项' : '目标成本清单'}</small></div>
+          <div><span>实际成本</span><strong>{selectedSnapshot ? formatMoney(selectedSnapshot.actualCost ?? 0, 0) : '—'}</strong><small>{selected.costEntryCount != null ? '成本记录 ' + selected.costEntryCount + ' 条' : '已归集记录'}</small></div>
+          <div><span>成本余量</span><strong>{selectedSnapshot && selectedSnapshot.targetCost > 0 ? formatMoney(selectedSnapshot.targetCost - (selectedSnapshot.actualCost ?? 0), 0) : '—'}</strong><small>目标减已发生，不是利润</small></div>
+        </div>
+        <div className="projects-dossier-ratio">
+          <div><span>成本使用率</span><strong>{selectedSnapshot && selectedSnapshot.targetCost > 0 ? ((selectedSnapshot.actualCost ?? 0) / selectedSnapshot.targetCost * 100).toFixed(1) + '%' : '—'}</strong></div>
+          <div className="projects-ratio-track"><i style={{ width: selectedSnapshot && selectedSnapshot.targetCost > 0 ? Math.min(100, Math.max(0, (selectedSnapshot.actualCost ?? 0) / selectedSnapshot.targetCost * 100)) + '%' : '0%' }} /></div>
+          <div className="projects-dossier-ratio-foot"><span>实际 / 目标</span><span>回款率 {selectedSnapshot?.recoveryRatio == null ? '—' : (selectedSnapshot.recoveryRatio * 100).toFixed(1) + '%'}</span></div>
+        </div>
+        <div className="projects-dossier-note"><CircleAlert size={14} /><span>{pendingChangeCounts.get(selected.id) ? pendingChangeCounts.get(selected.id) + ' 项变更待跟进；进入成本工作台处理。' : '当前没有待跟进变更；目标成本与实际成本按项目独立归集。'}</span></div>
+        <div className="projects-dossier-actions"><Button onClick={() => { setSelectedProjectId(selected.id); navigate('/cost'); }}><FolderPlus size={14} />进入驾驶舱</Button><Button variant="secondary" onClick={() => { setSelectedProjectId(selected.id); navigate('/projects/members'); }}><Users2 size={14} />项目成员</Button></div>
+      </aside>}
+    </div>}
+
     {dialog.open && <ProjectDialog project={dialog.project} onClose={() => { setDialog({ open: false }); void queryClient.invalidateQueries({ queryKey: ['projects'] }); void queryClient.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
   </div>;
 }

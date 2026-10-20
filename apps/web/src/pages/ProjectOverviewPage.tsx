@@ -43,7 +43,22 @@ export default function ProjectOverviewPage() {
   const pendingChanges = changes.filter((change) => ['SUBMITTED', 'UNDER_REVIEW'].includes(change.status));
   const costVariance = analysis.actualCost - analysis.targetCost;
   const monthlyOption = {
-    tooltip: { trigger: 'axis', valueFormatter: (value: number) => formatMoney(value) },
+    tooltip: {
+      trigger: 'axis',
+      confine: true,
+      className: 'v6-chart-tooltip',
+      backgroundColor: '#fbf7ec',
+      borderColor: '#d6cdb9',
+      borderWidth: 1,
+      padding: 0,
+      textStyle: { color: '#1d2522', fontFamily: "'Noto Serif SC', serif", fontSize: 11 },
+      extraCssText: 'border-radius:2px;padding:8px 10px;box-shadow:0 10px 28px rgba(48,42,30,.14);',
+      formatter: (params: unknown) => {
+        const point = (Array.isArray(params) ? params[0] : params) as { axisValue?: string; value?: number } | undefined;
+        return '<div class="v6-chart-tooltip-inner"><span>' + (point?.axisValue ?? '') + '</span><strong>' + formatMoney(Number(point?.value ?? 0)) + '</strong><small>实际发生成本</small></div>';
+      },
+      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(162,58,42,.06)' } },
+    },
     // Reserve room for long currency tick labels; containLabel prevents clipping at the panel edge.
     grid: { left: 68, right: 18, top: 22, bottom: 34, containLabel: true },
     xAxis: { type: 'category', data: analysis.monthlyActualCost.map((row) => row.month), axisLine: { lineStyle: { color: '#ded8ca' } }, axisTick: { show: false }, axisLabel: { color: '#5b6359', fontSize: 11 } },

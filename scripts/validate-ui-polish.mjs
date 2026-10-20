@@ -87,8 +87,8 @@ check('select shows the brush underline when open',
 
 check('dashboard is restructured as a V6 ledger page',
   dashboard.includes('v6-hero') && dashboard.includes('v6-split') && dashboard.includes('v6-log'));
-check('project archive is a V6 dossier with a ruled KPI strip',
-  projects.includes('project-management-kpis') && v6.includes('.projects-page .project-list-card'));
+check('project archive uses the ledger + dossier workbench',
+  projects.includes('projects-kpi-strip') && projects.includes('projects-ledger-layout') && projects.includes('projects-dossier'));
 check('hidden assistant route has a V6 header and paper empty state',
   appSource.includes('assistant') && assistant.includes('<h1>成本助手</h1>') && assistant.includes('assistant-unavailable'));
 check('report center keeps the compact ledger catalog and export flow',

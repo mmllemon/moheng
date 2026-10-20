@@ -23,7 +23,7 @@ type DashboardData = {
   recentActivities: { id: string; action: string; entity: string; entityId: string; actor: string; projectName: string; createdAt: string }[];
 };
 
-const activityLabel: Record<string, string> = { CREATE: '新增记录', UPDATE: '更新资料', UPSERT: '更新合同', STATUS_CHANGE: '状态变更', PAYMENT_REGISTERED: '登记到账', IMPORT_CSV: '批量导入', ARCHIVE: '归档记录', PAYMENT_RECORDED: '登记付款', PAYMENT_REFUND_RECORDED: '登记退款', ASSISTANT_CONVERSATION_CREATED: '创建分析会话', ASSISTANT_RUN_STARTED: '发起分析', ASSISTANT_RUN_COMPLETED: '完成分析', REPORT_STUDIO_TEMPLATE_CREATED: '创建报表模板', REPORT_STUDIO_TEMPLATE_UPDATED: '更新报表模板', OWNER_ADVANCE_RECEIVED: '登记预付款到账', OWNER_SETTLEMENT_DRAFT_CREATED: '创建竣工结算草稿', OWNER_SETTLEMENT_CONFIRMED: '确认竣工结算', OWNER_RECEIPT_REGISTERED: '登记业主到账' };
+const activityLabel: Record<string, string> = { CREATE: '新增记录', UPDATE: '更新资料', UPSERT: '更新合同', STATUS_CHANGE: '状态变更', PAYMENT_REGISTERED: '登记到账', IMPORT_CSV: '批量导入', ARCHIVE: '归档记录', PAYMENT_RECORDED: '登记付款', PAYMENT_REFUND_RECORDED: '登记退款', ASSISTANT_CONVERSATION_CREATED: '创建分析会话', ASSISTANT_RUN_STARTED: '发起分析', ASSISTANT_RUN_COMPLETED: '完成分析', REPORT_STUDIO_TEMPLATE_CREATED: '创建报表模板', REPORT_STUDIO_TEMPLATE_UPDATED: '更新报表模板', OWNER_ADVANCE_RECEIVED: '登记预付款到账', OWNER_SETTLEMENT_DRAFT_CREATED: '创建竣工结算草稿', OWNER_SETTLEMENT_CONFIRMED: '确认竣工结算', OWNER_RECEIPT_REGISTERED: '登记业主到账', CREATE_DRAFT: '创建草稿', AUTO_CREATE_FROM_BUSINESS_RECORD: '业务记录自动建档', INTERNAL_STATUS_CHANGE: '内部状态变更', PROJECT_CREATED: '创建项目', DOWNSTREAM_CONTRACT_CREATED: '创建分供合同' };
 const sortLabels = { contract: '合同额', remain: '成本余量', recovery: '回款率' } as const;
 type SortKey = keyof typeof sortLabels;
 
@@ -104,11 +104,22 @@ export default function DashboardPage() {
         </dl>
       </section>
 
-      <div className="v6-split">
+      <div className="v6-split v6-split-table">
         <section className="v6-block" aria-label="项目台账">
           <div className="v6-block-head"><div><h2>项目台账</h2><span>按{sortLabels[sortKey]}排序</span></div><div className="ov-head-tools"><label className="ov-sort">排序<SelectField value={sortKey} onChange={(event) => setSortKey(event.target.value as SortKey)} aria-label="项目排序">{(Object.keys(sortLabels) as SortKey[]).map((key) => <option key={key} value={key}>{sortLabels[key]}</option>)}</SelectField></label><button type="button" className="v6-block-link inline" onClick={() => navigate('/projects')}>全部项目<ArrowRight size={14} /></button></div></div>
           <div className="table-scroll"><table className="data-table v6-table overview-table"><thead><tr><th>项目</th><th>状态</th><th className="align-right">合同额</th><th className="align-right">目标成本</th><th className="align-right">已发生</th><th className="align-right">成本余量</th><th className="align-right">回款率</th><th /></tr></thead><tbody>{sortedProjects.map((project) => <tr key={project.id} onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') { setSelectedProjectId(project.id); navigate('/cost'); } }}><td><strong className="table-primary-text">{project.name}</strong><small className="table-subtext">{project.code} · {project.ownerName}</small></td><td><StatusBadge status={project.status} /></td><td className="align-right numeric">{formatMoney(project.contractAmount, 0)}</td><td className="align-right numeric">{formatMoney(project.targetCost, 0)}</td><td className="align-right numeric">{formatMoney(project.actualCost, 0)}</td><td className="align-right numeric">{formatMoney(project.targetCost - project.actualCost, 0)}</td><td className="align-right numeric">{project.recoveryRatio == null ? '—' : `${(project.recoveryRatio * 100).toFixed(1)}%`}</td><td className="align-right"><ChevronRight size={14} className="v6-row-arrow" /></td></tr>)}</tbody><tfoot><tr><td colSpan={2}>合计</td><td className="align-right numeric">{formatMoney(totals.contractAmount, 0)}</td><td className="align-right numeric">{formatMoney(totals.targetCost, 0)}</td><td className="align-right numeric">{formatMoney(totals.actualCost, 0)}</td><td className="align-right numeric">{formatMoney(costRemaining, 0)}</td><td className="align-right numeric">{recoveryRatio == null ? '—' : `${(recoveryRatio * 100).toFixed(1)}%`}</td><td /></tr></tfoot></table></div>
         </section>
+
+
+      </div>
+
+      <div className="v6-split v6-log-split">
+      <section className="v6-block v6-log" aria-label="近期变动">
+        <div className="v6-block-head"><div><h2>近期变动</h2></div><div className="ov-head-tools"><DatePicker className="ov-date" value={logDate} onChange={(event) => setLogDate(event.target.value)} aria-label="筛选变动日期" />{currentUser?.role === 'ADMIN' && <button type="button" className="v6-block-link inline" onClick={() => navigate('/audit-logs')}>操作日志<ArrowRight size={14} /></button>}</div></div>
+        <div className="v6-log-list">
+          {logActivities.length === 0 ? <div className="v6-empty">该日期没有变动记录</div> : logActivities.slice(0, 8).map((activity) => <div className="v6-log-row" key={activity.id}><time>{new Date(activity.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time><div><strong>{activityLabel[activity.action] ?? activity.action}</strong><span>{activity.projectName} · {activity.entity} · {activity.actor}</span></div><span className="v6-log-date">—</span></div>)}
+        </div>
+      </section>
 
         <aside className="v6-block" aria-label="待办">
           <div className="v6-block-head"><div><h2>待办</h2></div><span className="v6-count">{data!.pendingChanges.length} 项</span></div>
@@ -117,13 +128,6 @@ export default function DashboardPage() {
           </div>
         </aside>
       </div>
-
-      <section className="v6-block v6-log" aria-label="近期变动">
-        <div className="v6-block-head"><div><h2>近期变动</h2></div><div className="ov-head-tools"><DatePicker className="ov-date" value={logDate} onChange={(event) => setLogDate(event.target.value)} aria-label="筛选变动日期" />{currentUser?.role === 'ADMIN' && <button type="button" className="v6-block-link inline" onClick={() => navigate('/audit-logs')}>操作日志<ArrowRight size={14} /></button>}</div></div>
-        <div className="v6-log-list">
-          {logActivities.length === 0 ? <div className="v6-empty">该日期没有变动记录</div> : logActivities.slice(0, 8).map((activity) => <div className="v6-log-row" key={activity.id}><time>{new Date(activity.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time><div><strong>{activityLabel[activity.action] ?? activity.action}</strong><span>{activity.projectName} · {activity.entity} · {activity.actor}</span></div><span className="v6-log-date">—</span></div>)}
-        </div>
-      </section>
     </>}
   </div>;
 }
