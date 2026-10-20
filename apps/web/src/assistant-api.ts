@@ -4,6 +4,22 @@ import { useAuthStore } from './auth-store';
 
 const ROOT = '/assistant-poc';
 
+export type AssistantUsageSummary = {
+  projectId: string;
+  periodStart: string;
+  periodEnd: string;
+  windowDays: number;
+  terminalRuns: number;
+  completeRuns: number;
+  partialRuns: number;
+  unavailableRuns: number;
+  activeRuns: number;
+  tokens: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  } | null;
+};
 export type AssistantStatus = {
   enabled: boolean;
   configurationReady: boolean;
@@ -74,6 +90,11 @@ export type AssistantRunEvent = {
 
 export async function getAssistantStatus() {
   return api.get<AssistantStatus>(`${ROOT}/status`);
+}
+
+export async function getAssistantUsageSummary(projectId: string) {
+  const query = new URLSearchParams({ projectId });
+  return api.get<AssistantUsageSummary>(`${ROOT}/usage-summary?${query.toString()}`);
 }
 
 export async function listAssistantConversations(projectId: string, includeArchived = false) {
