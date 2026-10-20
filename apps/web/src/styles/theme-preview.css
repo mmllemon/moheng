@@ -376,3 +376,64 @@
   .pv-preview-themes button, .pv-preview-views button { padding: 0 5px; font-size: 7px; }
   .pv-preview-themes i { width: 6px; height: 6px; }
 }
+/* Hana-faithful shell: compact sidebar + settings as a modal over the app. */
+.pv-window.has-modal .pv-sidebar { display: flex; }
+.pv-brand { padding: 14px 14px 8px; gap: 8px; }
+.pv-brand-avatar { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px; background: var(--pv-accent); color: var(--pv-on-accent); font-family: var(--pv-font-serif); font-size: 17px; }
+.pv-brand strong { font-size: 15px; line-height: 1.2; letter-spacing: 0.06em; }
+.pv-brand small { margin-top: 1px; font-size: 8px; letter-spacing: 0.08em; }
+.pv-brand-more { margin-left: auto; width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--pv-muted); }
+.pv-brand-more:hover { background: var(--pv-accent-soft); color: var(--pv-accent); }
+.pv-sidebar-primary { display: flex; align-items: center; gap: 2px; margin: 5px 10px 7px; }
+.pv-sidebar-new { flex: 1; height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 8px; border: 0; border-radius: 5px; background: transparent; color: var(--pv-text-2); font-size: 12px; text-align: left; }
+.pv-sidebar-new:hover { background: var(--pv-accent-soft); color: var(--pv-accent); }
+.pv-sidebar-new svg { color: var(--pv-muted); }
+.pv-ghost-icon { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--pv-muted); }
+.pv-ghost-icon:hover { background: var(--pv-accent-soft); color: var(--pv-accent); }
+.pv-nav { flex: 0 0 auto; padding: 0 8px 6px; }
+.pv-nav-group { margin: 0; }
+.pv-nav-separator { height: 1px; margin: 7px 8px; background: color-mix(in srgb, var(--pv-border) 72%, transparent); }
+.pv-nav-item { height: 32px; gap: 8px; padding: 0 8px; font-size: 12px; }
+.pv-sidebar-search { flex: 0 0 auto; height: 30px; display: flex; align-items: center; gap: 7px; margin: 8px 10px 0; padding: 0 8px; border-top: 1px solid transparent; border-radius: 4px; color: var(--pv-muted); font-size: 10px; position: relative; }
+.pv-sidebar-search::before { content: ""; position: absolute; left: 50%; top: -8px; width: 72%; height: 1px; transform: translateX(-50%); background: color-mix(in srgb, var(--pv-muted) 18%, transparent); }
+.pv-sidebar-search span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-sidebar-search kbd { padding: 1px 4px; border: 1px solid var(--pv-border); border-radius: 3px; color: var(--pv-faint); font: 8px/1.4 var(--pv-font-ui); }
+.pv-sidebar-recent { flex: 1; min-height: 0; overflow: auto; padding: 8px 8px 0; }
+.pv-sidebar-recent > span { display: block; padding: 0 8px 3px; color: var(--pv-faint); font-size: 9px; letter-spacing: 0.08em; }
+.pv-sidebar-recent button { width: 100%; display: flex; align-items: flex-start; gap: 7px; padding: 6px 8px; border: 0; border-radius: 5px; background: transparent; text-align: left; }
+.pv-sidebar-recent button:hover { background: var(--pv-accent-soft); }
+.pv-sidebar-recent button > i { width: 6px; height: 6px; flex: 0 0 auto; margin-top: 5px; border-radius: 50%; background: var(--pv-accent); }
+.pv-sidebar-recent button > span { min-width: 0; display: flex; flex-direction: column; }
+.pv-sidebar-recent strong { color: var(--pv-text); font-size: 10.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-sidebar-recent small { color: var(--pv-muted); font: 8px/1.4 var(--pv-font-num); }
+.pv-sidebar-footer { margin-top: auto; }
+/* Settings modal */
+.pv-settings-scrim { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(32, 29, 24, 0.30); backdrop-filter: blur(2px); }
+.theme-preview[data-theme="midnight-contrast"] .pv-settings-scrim { background: rgba(5, 11, 14, 0.52); }
+.pv-settings-modal { position: relative; width: min(960px, calc(100% - 8px)); height: min(720px, calc(100% - 8px)); display: flex; overflow: hidden; background: var(--pv-bg); color: var(--pv-text); border: 1px solid var(--pv-border-strong); border-radius: 12px; box-shadow: 0 28px 80px rgba(34, 29, 22, 0.30), 0 3px 12px rgba(34, 29, 22, 0.12); }
+.pv-settings-modal .pv-settings-sidebar { width: 180px; flex: 0 0 180px; padding: 24px 10px 14px; background: var(--pv-bg); border-right: 1px solid var(--pv-border); overflow: auto; }
+.pv-settings-modal .pv-settings-search { margin: 0 4px 18px; }
+.pv-settings-modal .pv-settings-group { margin-top: 17px; }
+.pv-settings-modal .pv-settings-group button { min-height: 31px; font-size: 10.5px; }
+.pv-settings-modal .pv-settings-main { flex: 1; width: auto; max-width: none; margin: 0; padding: 27px 36px 36px; overflow: auto; }
+.pv-settings-modal .pv-page-head.settings-head { padding-bottom: 14px; }
+.pv-settings-modal .pv-page-head h1 { font-size: 24px; }
+.pv-settings-modal .pv-setting-section { padding-top: 15px; }
+.pv-settings-modal .pv-setting-head h2 { font-size: 15px; }
+.pv-settings-modal .pv-theme-card { min-height: 72px; }
+.pv-settings-modal .pv-setting-row { min-height: 50px; }
+.pv-settings-modal .pv-font-preview { min-height: 78px; }
+.pv-settings-modal .pv-settings-footer { margin-top: 18px; }
+.pv-modal-close { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--pv-muted); }
+.pv-modal-close:hover { background: var(--pv-accent-soft); color: var(--pv-text); }
+@media (max-width: 900px) {
+  .pv-settings-modal { width: calc(100% - 4px); height: calc(100% - 4px); }
+  .pv-settings-modal .pv-settings-sidebar { width: 168px; flex-basis: 168px; }
+  .pv-settings-modal .pv-settings-main { padding: 24px 24px 30px; }
+}
+@media (max-width: 680px) {
+  .pv-settings-scrim { padding: 0; }
+  .pv-settings-modal { width: 100%; height: 100%; border-radius: 0; border: 0; }
+  .pv-settings-modal .pv-settings-sidebar { display: none; }
+  .pv-settings-modal .pv-settings-main { padding: 20px 16px 30px; }
+}

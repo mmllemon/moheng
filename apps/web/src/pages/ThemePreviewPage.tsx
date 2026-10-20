@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowRight, Bell, Building2, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, CircleAlert,
+  ArrowRight, Bell, Building2, CalendarDays, ChevronDown, ChevronRight, CircleAlert,
   FileBarChart2, FileText, FolderKanban, HandCoins, LayoutDashboard, PanelLeft,
-  ReceiptText, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, UserCog, Users, Wallet,
+  MoreHorizontal, Plus, ReceiptText, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, UserCog, Users, Wallet, X,
 } from 'lucide-react';
 import '../styles/theme-preview.css';
 
@@ -97,15 +97,12 @@ function ThemeCard({ theme, active, onClick }: { theme: typeof THEMES[number]; a
   </button>;
 }
 
-function SettingsSidebar({ onBack }: { onBack: () => void }) {
+function SettingsSidebar() {
   return <aside className="pv-settings-sidebar">
-    <div className="pv-settings-brand"><span className="pv-logo">墨</span><div><strong>墨衡</strong><small>系统设置</small></div></div>
-    <button type="button" className="pv-settings-back" onClick={onBack}><ChevronLeft size={14} />返回工作区</button>
     <div className="pv-settings-search"><Search size={14} /><span>搜索设置</span></div>
     <div className="pv-settings-group"><span>个人偏好</span><button type="button" className="is-active"><SlidersHorizontal size={15} />界面</button><button type="button"><Bell size={15} />通知</button><button type="button"><ShieldCheck size={15} />安全</button></div>
     <div className="pv-settings-group"><span>组织与权限</span><button type="button"><UserCog size={15} />账号管理</button><button type="button"><Users size={15} />成员与权限</button><button type="button"><ShieldCheck size={15} />授权复核</button><button type="button"><SlidersHorizontal size={15} />权限与流程</button></div>
     <div className="pv-settings-group"><span>平台</span><button type="button"><Settings2 size={15} />基础配置</button><button type="button"><FileText size={15} />操作追溯</button><button type="button"><FileBarChart2 size={15} />运维备份</button><button type="button"><Sparkles size={15} />AI 助手 <i className="pv-beta">BETA</i></button></div>
-    <div className="pv-settings-version">墨衡 · v2.19.0-rc.2</div>
   </aside>;
 }
 
@@ -145,29 +142,50 @@ export default function ThemePreviewPage() {
   const meta = THEMES.find((item) => item.id === theme)!;
   const switchTheme = (next: ThemeId) => navigate('/preview/themes/' + next);
   return <div className="theme-preview" data-theme={theme}>
-    <div className={"pv-window" + (view === 'settings' ? ' is-settings' : '')}>
+    <div className={'pv-window' + (view === 'settings' ? ' has-modal' : '')}>
       <aside className="pv-sidebar">
-        <div className="pv-brand"><span className="pv-logo">墨</span><div><strong>墨衡</strong><small>工程经营管理</small></div></div>
-        <div className="pv-workspace"><span>工程经营管理</span><ChevronDown size={13} /></div>
+        <div className="pv-brand"><span className="pv-brand-avatar">墨</span><div><strong>墨衡</strong><small>工程经营管理</small></div><button type="button" className="pv-brand-more" aria-label="更多"><MoreHorizontal size={16} /></button></div>
+        <div className="pv-sidebar-primary"><button type="button" className="pv-sidebar-new"><Plus size={15} />新建项目</button><button type="button" className="pv-ghost-icon" aria-label="更多"><MoreHorizontal size={16} /></button></div>
         <nav className="pv-nav">
-          <div className="pv-nav-group"><span>经营中心</span><NavButton active={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />经营总览</NavButton><NavButton><FileBarChart2 size={16} />报表中心</NavButton><NavButton><Bell size={16} />待办与预警<i className="pv-nav-count">3</i></NavButton><NavButton><Building2 size={16} />往来单位库</NavButton></div>
-          <div className="pv-nav-group"><span>工作台</span><NavButton><FolderKanban size={16} />成本工作台</NavButton><NavButton><ReceiptText size={16} />成本分析</NavButton><NavButton><Sparkles size={16} />成本助手<i className="pv-beta">BETA</i></NavButton></div>
-          <div className="pv-nav-group"><span>项目管理</span><NavButton><FolderKanban size={16} />项目档案</NavButton><NavButton><Users size={16} />项目成员与权限</NavButton></div>
-          <div className="pv-nav-group"><span>系统管理</span><NavButton active={view === 'settings'} onClick={() => setView('settings')}><Settings2 size={16} />系统设置</NavButton></div>
+          <div className="pv-nav-group">
+            <NavButton active={view === 'overview'} onClick={() => setView('overview')}><LayoutDashboard size={16} />经营总览</NavButton>
+            <NavButton><FileBarChart2 size={16} />报表中心</NavButton>
+            <NavButton><Bell size={16} />待办与预警<i className="pv-nav-count">3</i></NavButton>
+            <NavButton><Building2 size={16} />往来单位库</NavButton>
+          </div>
+          <div className="pv-nav-separator" />
+          <div className="pv-nav-group">
+            <NavButton><FolderKanban size={16} />成本工作台</NavButton>
+            <NavButton><ReceiptText size={16} />成本分析</NavButton>
+            <NavButton><Sparkles size={16} />成本助手<i className="pv-beta">BETA</i></NavButton>
+          </div>
+          <div className="pv-nav-separator" />
+          <div className="pv-nav-group">
+            <NavButton><FolderKanban size={16} />项目档案</NavButton>
+            <NavButton><Users size={16} />项目成员与权限</NavButton>
+          </div>
+          <div className="pv-nav-separator" />
+          <div className="pv-nav-group"><NavButton active={view === 'settings'} onClick={() => setView('settings')}><Settings2 size={16} />系统设置</NavButton></div>
         </nav>
+        <div className="pv-sidebar-search"><Search size={14} /><span>搜索项目、成本记录</span><kbd>⌘ K</kbd></div>
+        <div className="pv-sidebar-recent"><span>最近项目</span><button type="button"><i /><span><strong>金融城5号配电项目</strong><small>XM-2026-000001</small></span></button><button type="button"><i /><span><strong>滨江综合服务中心项目</strong><small>DEMO-001</small></span></button></div>
         <div className="pv-sidebar-footer"><button type="button" className="pv-user"><span className="pv-avatar">系</span><span><strong>系统管理员</strong><small>系统管理员</small></span><ChevronRight size={14} /></button><button type="button" className="pv-collapse"><PanelLeft size={16} /></button></div>
       </aside>
-      {view === 'settings' && <SettingsSidebar onBack={() => setView('overview')} />}
       <div className="pv-main">
         <header className="pv-topbar">
-          <div className="pv-breadcrumb">工程经营管理 <span>/</span> <strong>{view === 'overview' ? '经营总览' : '系统设置'}</strong></div>
+          <div className="pv-breadcrumb">工程经营管理 <span>/</span> <strong>{view === 'settings' ? '系统设置' : '经营总览'}</strong></div>
           <div className="pv-top-actions"><span className="pv-company">全公司 <ChevronDown size={12} /></span><div className="pv-top-search"><Search size={14} /><span>搜索清单、项目、单位…</span><kbd>⌘ K</kbd></div><button type="button" className="pv-icon-button" aria-label="通知"><Bell size={16} /></button><button type="button" className="pv-icon-button" aria-label="侧栏"><PanelLeft size={16} /></button><span className="pv-top-avatar">系</span></div>
         </header>
-        <div className={'pv-content' + (view === 'settings' ? ' is-settings' : '')}>
-          {view === 'overview' ? <OverviewPreview /> : <SettingsPreview theme={theme} onThemeChange={switchTheme} />}
-        </div>
+        <div className="pv-content"><OverviewPreview /></div>
         <footer className="pv-footer"><span>墨衡 · 施工单位成本管理</span><span>v2.19.0-rc.2</span></footer>
       </div>
+      {view === 'settings' && <div className="pv-settings-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) setView('overview'); }}>
+        <div className="pv-settings-modal" role="dialog" aria-modal="true" aria-label="系统设置">
+          <SettingsSidebar />
+          <SettingsPreview theme={theme} onThemeChange={switchTheme} />
+          <button type="button" className="pv-modal-close" aria-label="关闭系统设置" onClick={() => setView('overview')}><X size={16} /></button>
+        </div>
+      </div>}
     </div>
 
     <div className="pv-preview-bar" role="toolbar" aria-label="主题预览">
@@ -177,4 +195,5 @@ export default function ThemePreviewPage() {
       <div className="pv-preview-views"><button type="button" className={view === 'overview' ? 'is-active' : ''} onClick={() => setView('overview')}>经营总览</button><button type="button" className={view === 'settings' ? 'is-active' : ''} onClick={() => setView('settings')}>系统设置</button></div>
     </div>
   </div>;
+
 }
