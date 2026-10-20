@@ -2,7 +2,7 @@ import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BadgeCheck, ClipboardCheck, Download, FileCheck2, FilePlus2, GitPullRequest, Plus, Send, ShieldAlert, X } from 'lucide-react';
@@ -12,6 +12,8 @@ import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { ChangeRecord, ChangeStatus, EvidenceClass, ExternalConfirmationStatus } from '../types';
 import { Button, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { confirmThen } from '../components/ConfirmDialog';
+import DateTimeField from '../components/DateTimeField';
 
 const changeSchema = z.object({
   code: z.string().trim().optional().or(z.literal('')),
@@ -30,7 +32,7 @@ const evidenceSchema = z.object({
   evidenceAssessment: z.enum(['READY', 'SUPPLEMENT_NEEDED', 'DISPUTED']),
   externalConfirmerName: z.string().trim().min(1, '请填写外部确认人姓名'),
   externalConfirmerAuthority: z.string().trim().min(1, '请说明其身份或授权依据'),
-  externalConfirmedAt: z.string().min(1, '请选择外部确认时间'),
+  externalConfirmedAt: z.string().min(1, '请选择外部确认时间').refine((value) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) && !Number.isNaN(new Date(value).getTime()), '请输入有效的外部确认时间'),
   externalConfirmedAmount: z.coerce.number().min(0, '外部确认金额不能为负数'),
   externalConfirmationScope: z.string().trim().min(1, '请明确确认范围'),
   evidenceReference: z.string().trim().min(1, '请填写凭证编号、邮件主题或聊天定位'),
@@ -106,7 +108,7 @@ function ChangeDecisionDialog({ record, projectId, onClose, onNotice }: { record
 
 function ExternalConfirmationDialog({ record, projectId, onClose, onNotice }: { record: ChangeRecord; projectId: string; onClose: () => void; onNotice: (message: string) => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState(''); const [files, setFiles] = useState<File[]>([]);
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<EvidenceForm>({
+  const { register, control, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<EvidenceForm>({
     resolver: zodResolver(evidenceSchema),
     defaultValues: { evidenceClass: 'A', evidenceAssessment: 'READY', externalConfirmerName: '', externalConfirmerAuthority: '', externalConfirmedAt: currentDateTimeLocalInputValue(), externalConfirmedAmount: record.submittedAmount, externalConfirmationScope: record.name, evidenceReference: '', evidenceContext: '' },
   });
@@ -134,7 +136,7 @@ function ExternalConfirmationDialog({ record, projectId, onClose, onNotice }: { 
     <div className="field span-2"><label>当前证据评估</label><SelectField {...register('evidenceAssessment')}><option value="READY">材料完整、身份授权明确、金额范围无争议</option><option value="SUPPLEMENT_NEEDED">证据不足或信息有歧义，待补充材料</option><option value="DISPUTED">存在争议，不应生效</option></SelectField><small className="field-hint">待补充状态可以继续补交凭证；有争议的记录不会计入有效合同额。</small></div>
     <div className="field"><label>外部确认人姓名 <b>*</b></label><input {...register('externalConfirmerName')} />{errors.externalConfirmerName && <small className="field-error">{errors.externalConfirmerName.message}</small>}</div>
     <div className="field"><label>身份/授权依据 <b>*</b></label><input {...register('externalConfirmerAuthority')} placeholder="例如：业主项目负责人，授权文件编号" />{errors.externalConfirmerAuthority && <small className="field-error">{errors.externalConfirmerAuthority.message}</small>}</div>
-    <div className="field"><label>外部确认时间 <b>*</b></label><input type="datetime-local" {...register('externalConfirmedAt')} />{errors.externalConfirmedAt && <small className="field-error">{errors.externalConfirmedAt.message}</small>}</div>
+    <div className="field"><label>外部确认时间 <b>*</b></label><Controller control={control} name="externalConfirmedAt" render={({ field }) => <DateTimeField value={field.value} onChange={field.onChange} onBlur={field.onBlur} name={field.name} required />} />{errors.externalConfirmedAt && <small className="field-error">{errors.externalConfirmedAt.message}</small>}</div>
     <div className="field"><label>外部确认金额（元）<b>*</b></label><input type="number" min="0" step="0.01" {...register('externalConfirmedAmount')} />{errors.externalConfirmedAmount && <small className="field-error">{errors.externalConfirmedAmount.message}</small>}<small className="field-hint">有效合同额按此金额和变更方向计算，不按内部核定金额替代或封顶。若与内部参考金额不一致，凭证生效后将单独触发内部差异复核，不影响外部金额生效。</small></div>
     <div className="field span-2"><label>确认范围 <b>*</b></label><textarea rows={2} {...register('externalConfirmationScope')} placeholder="明确对应项目、变更事项、工程范围和适用内容" />{errors.externalConfirmationScope && <small className="field-error">{errors.externalConfirmationScope.message}</small>}</div>
     <div className="field span-2"><label>原始凭证定位 <b>*</b></label><input {...register('evidenceReference')} placeholder="文件编号、电子签约流水号、邮件主题/时间、聊天对象/消息定位" />{errors.evidenceReference && <small className="field-error">{errors.evidenceReference.message}</small>}</div>
@@ -239,11 +241,11 @@ export default function ChangesPage() {
     if (record.status === 'DRAFT') actions.push({ label: '提交内部审批', run: () => updateStatus.mutate({ record, status: 'SUBMITTED' }), icon: Send });
     if (record.status === 'SUBMITTED') {
       actions.push({ label: '进入审核', run: () => updateStatus.mutate({ record, status: 'UNDER_REVIEW' }), icon: GitPullRequest });
-      actions.push({ label: '驳回', run: () => { if (window.confirm(`确定驳回“${record.name}”吗？`)) updateStatus.mutate({ record, status: 'REJECTED' }); }, danger: true, icon: X });
+      actions.push({ label: '驳回', run: () => confirmThen(`确定驳回“${record.name}”吗？`, () => updateStatus.mutate({ record, status: 'REJECTED' }), { title: '驳回变更', tone: 'danger', confirmText: '驳回' }), danger: true, icon: X });
     }
     if (record.status === 'UNDER_REVIEW') {
       actions.push({ label: '内部审批', run: () => setDecision(record), icon: BadgeCheck });
-      actions.push({ label: '驳回', run: () => { if (window.confirm(`确定驳回“${record.name}”吗？`)) updateStatus.mutate({ record, status: 'REJECTED' }); }, danger: true, icon: X });
+      actions.push({ label: '驳回', run: () => confirmThen(`确定驳回“${record.name}”吗？`, () => updateStatus.mutate({ record, status: 'REJECTED' }), { title: '驳回变更', tone: 'danger', confirmText: '驳回' }), danger: true, icon: X });
     }
     if (record.status === 'REJECTED') actions.push({ label: '退回草稿', run: () => updateStatus.mutate({ record, status: 'DRAFT' }), icon: FilePlus2 });
     if (['NOT_CONFIRMED', 'PENDING_SUPPLEMENT', 'REJECTED', 'DISPUTED'].includes(record.externalConfirmationStatus)) actions.push({ label: record.externalConfirmationStatus === 'NOT_CONFIRMED' ? '登记外部确认' : record.externalConfirmationStatus === 'PENDING_SUPPLEMENT' ? '补充凭证' : '补充材料/重新提交', run: () => setExternalRecord(record), icon: FileCheck2 });

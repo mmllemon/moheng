@@ -3,13 +3,15 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileSpreadsheet, FolderTree, Import, Pencil, Plus, Upload, X } from 'lucide-react';
+import { ChevronDown, Download, FileSpreadsheet, Import, MoreHorizontal, Pencil, Plus, Search, Upload, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
-import type { Analysis, BudgetItem } from '../types';
+import type { Analysis, BudgetItem, Project } from '../types';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
-import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, PageHeader, percentage } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, PageHeader, percentage, StatusBadge } from '../components/Ui';
+import { confirmAction } from '../components/ConfirmDialog';
 
 type FlatNode = BudgetItem & { children: FlatNode[] };
 function toTree(items: BudgetItem[]): FlatNode[] {
@@ -59,9 +61,9 @@ const budgetSchema = z.object({
   unit: z.string().optional(), quantity: z.union([z.literal(''), z.coerce.number().min(0)]), unitPrice: z.union([z.literal(''), z.coerce.number().min(0)]),
   totalPrice: z.union([z.literal(''), z.coerce.number().min(0)]), sortOrder: z.coerce.number().int().default(0),
 });
-function BudgetDialog({ projectId, items, editing, onClose }: { projectId: string; items: BudgetItem[]; editing?: BudgetItem; onClose: () => void }) {
+function BudgetDialog({ projectId, items, editing, parentId, onClose }: { projectId: string; items: BudgetItem[]; editing?: BudgetItem; parentId?: string; onClose: () => void }) {
   const queryClient = useQueryClient(); const [serverError, setServerError] = useState('');
-  const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = useForm<BudgetValues>({ resolver: zodResolver(budgetSchema) as never, defaultValues: editing ? { parentId: editing.parentId ?? '', code: editing.code, name: editing.name, unit: editing.unit ?? '', quantity: editing.quantity ?? '', unitPrice: editing.unitPrice ?? '', totalPrice: editing.totalPrice, sortOrder: editing.sortOrder } : { parentId: '', code: '', name: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: 0 } });
+  const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting } } = useForm<BudgetValues>({ resolver: zodResolver(budgetSchema) as never, defaultValues: editing ? { parentId: editing.parentId ?? '', code: editing.code, name: editing.name, unit: editing.unit ?? '', quantity: editing.quantity ?? '', unitPrice: editing.unitPrice ?? '', totalPrice: editing.totalPrice, sortOrder: editing.sortOrder } : { parentId: parentId ?? '', code: '', name: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: 0 } });
   const quantity = watch('quantity'); const unitPrice = watch('unitPrice'); const totalPrice = watch('totalPrice');
   const draftKey = `moheng:budget-draft:${projectId}:${editing?.id ?? 'new'}`;
   const [draftReady, setDraftReady] = useState(false);
@@ -71,14 +73,14 @@ function BudgetDialog({ projectId, items, editing, onClose }: { projectId: strin
       const raw = localStorage.getItem(draftKey);
       if (raw) {
         const parsedDraft = JSON.parse(raw) as Partial<BudgetValues>;
-        if (window.confirm('发现上次未提交的目标成本清单草稿，是否恢复？草稿只保存在当前浏览器，不会自动写入正式台账。')) {
+        void confirmAction({ title: '恢复本地草稿', description: '发现上次未提交的目标成本清单草稿，是否恢复？草稿只保存在当前浏览器，不会自动写入正式台账。', confirmText: '恢复草稿', cancelText: '丢弃', tone: 'default' }).then((ok) => { if (!ok) { localStorage.removeItem(draftKey); return; }
           reset({
             parentId: parsedDraft.parentId ?? (editing?.parentId ?? ''), code: parsedDraft.code ?? (editing?.code ?? ''), name: parsedDraft.name ?? (editing?.name ?? ''),
             unit: parsedDraft.unit ?? (editing?.unit ?? ''), quantity: parsedDraft.quantity ?? (editing?.quantity ?? ''),
             unitPrice: parsedDraft.unitPrice ?? (editing?.unitPrice ?? ''), totalPrice: parsedDraft.totalPrice ?? (editing?.totalPrice ?? ''), sortOrder: parsedDraft.sortOrder ?? (editing?.sortOrder ?? 0),
           });
           setDraftNotice('已恢复本地草稿；点击“保存条目”后才会写入正式台账。');
-        } else localStorage.removeItem(draftKey);
+        });
       }
     } catch { setDraftNotice('本地草稿无法读取，已继续使用表单当前值。'); }
     setDraftReady(true);
@@ -91,7 +93,7 @@ function BudgetDialog({ projectId, items, editing, onClose }: { projectId: strin
     return () => subscription.unsubscribe();
   }, [draftKey, draftReady, watch]);
   function clearLocalDraft() {
-    reset(editing ? { parentId: editing.parentId ?? '', code: editing.code, name: editing.name, unit: editing.unit ?? '', quantity: editing.quantity ?? '', unitPrice: editing.unitPrice ?? '', totalPrice: editing.totalPrice, sortOrder: editing.sortOrder } : { parentId: '', code: '', name: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: 0 });
+    reset(editing ? { parentId: editing.parentId ?? '', code: editing.code, name: editing.name, unit: editing.unit ?? '', quantity: editing.quantity ?? '', unitPrice: editing.unitPrice ?? '', totalPrice: editing.totalPrice, sortOrder: editing.sortOrder } : { parentId: parentId ?? '', code: '', name: '', unit: '', quantity: '', unitPrice: '', totalPrice: '', sortOrder: 0 });
     try { localStorage.removeItem(draftKey); } catch { /* Ignore unavailable local storage. */ }
     setDraftNotice('已清除本地草稿。');
   }
@@ -165,6 +167,48 @@ export default function BudgetPage() {
     const leaves = rows.filter((item) => !idsWithChildren.has(item.id));
     return { targetCost: leaves.reduce((sum, item) => sum + item.totalPrice, 0), leafCount: leaves.length };
   }, [rows]);
+
+  const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
+  const project = projectsQuery.data?.find((item) => item.id === projectId);
+  const treeRoots = useMemo(() => toTree(rows), [rows]);
+  const categories = useMemo(() => treeRoots.map((root) => ({ id: root.id, label: root.name, count: flattenTree([root]).length })), [treeRoots]);
+  const allParentIds = useMemo(() => new Set(rows.map((item) => item.parentId).filter((id): id is string => Boolean(id))), [rows]);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('ALL');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [drawerItem, setDrawerItem] = useState<BudgetItem | null>(null);
+  const [newParentId, setNewParentId] = useState<string | undefined>(undefined);
+  const queryText = search.trim().toLocaleLowerCase();
+  const flattenVisible = (nodes: FlatNode[], depth = 0): Array<{ node: FlatNode; depth: number }> => nodes.flatMap((node) => [{ node, depth }, ...(collapsed.has(node.id) || queryText ? [] : flattenVisible(node.children, depth + 1))]);
+  const visibleRows = useMemo(() => {
+    const scoped = category === 'ALL' ? treeRoots : treeRoots.filter((root) => root.id === category);
+    if (queryText) return flattenTree(scoped).filter(({ node }) => `${node.code} ${node.name}`.toLocaleLowerCase().includes(queryText));
+    return flattenVisible(scoped);
+  }, [treeRoots, category, queryText, collapsed]);
+  const allCollapsed = allParentIds.size > 0 && [...allParentIds].every((id) => collapsed.has(id));
+  const allVisibleSelected = visibleRows.length > 0 && visibleRows.every(({ node }) => selected.has(node.id));
+  const actualByBudget = useMemo(() => new Map((analysisQuery.data?.byBudget ?? []).map((row) => [row.id, row.actualCost])), [analysisQuery.data?.byBudget]);
+  const actualTotal = analysisQuery.data?.actualCost ?? 0;
+  const remaining = rootAndLeafStats.targetCost - actualTotal;
+  const asOf = (() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; })();
+  const costExecution = rootAndLeafStats.targetCost > 0 ? actualTotal / rootAndLeafStats.targetCost : null;
+  function actualFor(item: BudgetItem) { return actualByBudget.get(item.id) ?? 0; }
+  function toggleSelected(id: string) { setSelected((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
+  function toggleAllVisible() { setSelected(allVisibleSelected ? new Set() : new Set(visibleRows.map(({ node }) => node.id))); }
+  function toggleCollapsed(id: string) { setCollapsed((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; }); }
+  function toggleAllCollapsed() { setCollapsed(allCollapsed ? new Set() : new Set(allParentIds)); }
+  function openNew(parent?: string) { setEditing(undefined); setNewParentId(parent); setDialogOpen(true); }
+  function openEdit(item: BudgetItem) { setEditing(item); setNewParentId(undefined); setDialogOpen(true); }
+  function exportSelected() { exportCsv(rows.filter((item) => selected.has(item.id)), `目标成本清单-所选-${projectId}.csv`); }
+  const drawerParent = drawerItem?.parentId ? rows.find((item) => item.id === drawerItem.parentId) : undefined;
+  const drawerChildren = drawerItem ? rows.filter((item) => item.parentId === drawerItem.id) : [];
+  useEffect(() => {
+    if (!drawerItem) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setDrawerItem(null); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drawerItem]);
 
   function mapImportRows(raw: RawBudgetImport, mapping: ImportMapping): PreviewRow[] {
     const selected = importFields.map(({ key }) => mapping[key]).filter(Boolean);
@@ -292,21 +336,101 @@ export default function BudgetPage() {
 
   if (budgetQuery.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
   if (budgetQuery.error) return <div className="page-wrap"><ErrorBlock message={(budgetQuery.error as Error).message} retry={() => void budgetQuery.refetch()} /></div>;
-  return <div className="page-wrap">
-    <PageHeader eyebrow="PROJECT COST / TARGET BUDGET" title="预算与目标成本" subtitle="维护清单层级、计划工程量和目标成本，为实际成本偏差提供对比基准。" actions={<><ProjectLedgerReportButton reportKey="target-cost" /><Button variant="secondary" onClick={() => exportCsv([], `目标成本导入模板.csv`)}><Download size={15} />CSV 模板</Button><Button variant="secondary" onClick={() => void downloadXlsxTemplate()}><FileSpreadsheet size={15} />XLSX 模板</Button><Button variant="secondary" onClick={() => exportCsv(rows, `目标成本清单-${projectId}.csv`)}><Download size={15} />导出 CSV</Button><Button variant="secondary" onClick={() => fileRef.current?.click()}><Upload size={15} />导入 CSV</Button><Button variant="secondary" onClick={() => xlsxFileRef.current?.click()}><FileSpreadsheet size={15} />导入 XLSX</Button><Button onClick={() => { setEditing(undefined); setDialogOpen(true); }}><Plus size={16} />新增条目</Button></>} />
+  return <div className="page-wrap budget-page">
+    <PageHeader
+      title="预算与目标成本"
+      context={<><span className="page-context-dot" /><span>{project?.name ?? analysisQuery.data?.project.name ?? '当前项目'}</span><span>· {project?.code ?? analysisQuery.data?.project.code ?? projectId}</span>{project && <><span>·</span><StatusBadge status={project.status} /></>}<span>· 项目级视图</span><span>· 数据截至 {asOf}</span></>}
+      actions={<>
+        <details className="ldg-import">
+          <summary className="button button-secondary"><Upload size={15} />导入<ChevronDown size={13} /></summary>
+          <div className="ldg-import-menu">
+            <button type="button" onClick={(event) => { (event.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open'); fileRef.current?.click(); }}>导入 CSV</button>
+            <button type="button" onClick={(event) => { (event.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open'); xlsxFileRef.current?.click(); }}>导入 XLSX</button>
+            <span className="ldg-menu-sep" />
+            <button type="button" onClick={(event) => { (event.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open'); exportCsv([], '目标成本导入模板.csv'); }}>CSV 模板</button>
+            <button type="button" onClick={(event) => { (event.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open'); void downloadXlsxTemplate(); }}>XLSX 模板</button>
+            <span className="ldg-menu-sep" />
+            <button type="button" onClick={(event) => { (event.currentTarget.closest('details') as HTMLDetailsElement | null)?.removeAttribute('open'); exportCsv(rows, `目标成本清单-${projectId}.csv`); }}>导出全部 CSV</button>
+          </div>
+        </details>
+        <Button onClick={() => openNew()}><Plus size={16} />新增清单</Button>
+      </>}
+    />
     <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} /><input ref={xlsxFileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} />
     {notice && <div className="success-notice"><FileSpreadsheet size={16} />{notice}</div>}{serverError && <div className="form-alert">{serverError}</div>}
-    <div className="budget-summary-grid"><article className="budget-summary-item"><span>目标成本总额</span><strong>{formatMoney(rootAndLeafStats.targetCost)}</strong><small>仅汇总末级清单项，避免父子层级重复计算</small></article><article className="budget-summary-item"><span>清单条目</span><strong>{rows.length.toLocaleString('zh-CN')} <em>条</em></strong><small>末级清单 {rootAndLeafStats.leafCount} 条</small></article><article className="budget-summary-item"><span>实际已录成本</span><strong>{formatMoney(analysisQuery.data?.actualCost)}</strong><small>来自成本录入模块</small></article><article className="budget-summary-item"><span>目标成本偏差</span><strong className={(analysisQuery.data?.actualCost ?? 0) > rootAndLeafStats.targetCost ? 'text-danger' : 'text-success'}>{rootAndLeafStats.targetCost ? percentage(((analysisQuery.data?.actualCost ?? 0) - rootAndLeafStats.targetCost) / rootAndLeafStats.targetCost) : '—'}</strong><small>实际成本 ÷ 目标成本 − 1</small></article></div>
-    <section className="panel data-table-panel"><div className="panel-heading"><div><h3>目标成本清单</h3><p><FolderTree size={13} /> 树形层级 · 选择条目可编辑 · 金额单位：人民币元</p></div><div className="table-heading-actions"><button className="button button-ghost button-small" onClick={() => exportCsv(rows, `目标成本清单-${projectId}.csv`)}><Download size={14} />导出</button></div></div>
-      {!rows.length ? <EmptyState title="还没有目标成本清单" description="可逐条新增，也可以通过 CSV 或 XLSX 导入已有清单数据。" action={() => { setEditing(undefined); setDialogOpen(true); }} /> : <div className="table-scroll"><table className="data-table budget-table"><thead><tr><th>清单编号</th><th>清单名称</th><th>单位</th><th className="align-right">工程量</th><th className="align-right">综合单价</th><th className="align-right">目标合价</th><th className="align-right">已录成本</th><th>操作</th></tr></thead><tbody>{treeRows.map(({ node, depth }) => {
-        const actual = rows.length ? (analysisQuery.data?.byBudget.find((b) => b.id === node.id)?.actualCost ?? 0) : 0;
-        const isParent = node.children.length > 0;
-        return <tr key={node.id} className={isParent ? 'budget-parent-row' : ''}><td><span className="budget-code">{node.code}</span></td><td><span className="tree-name" style={{ paddingLeft: `${depth * 18}px` }}>{isParent ? <span className="tree-branch">−</span> : <span className="tree-leaf-dot" />}{node.name}</span></td><td>{node.unit || '—'}</td><td className="align-right numeric">{node.quantity == null ? '—' : node.quantity.toLocaleString('zh-CN', { maximumFractionDigits: 3 })}</td><td className="align-right numeric">{node.unitPrice == null ? '—' : formatMoney(node.unitPrice)}</td><td className="align-right numeric">{formatMoney(node.totalPrice)}</td><td className={`align-right numeric ${actual > node.totalPrice ? 'text-danger' : ''}`}>{formatMoney(actual)}</td><td><button className="table-action" onClick={() => { setEditing(node); setDialogOpen(true); }}><Pencil size={14} />编辑</button></td></tr>;
-      })}</tbody><tfoot><tr><td colSpan={5}>合计（仅末级清单汇总）</td><td className="align-right numeric">{formatMoney(rootAndLeafStats.targetCost)}</td><td className="align-right numeric">{formatMoney(analysisQuery.data?.actualCost)}</td><td /></tr></tfoot></table></div>}
-    </section>
-    <div className="data-note"><span className="note-mark">i</span><span>支持 CSV 与原生 XLSX 导入。XLSX 读取“目标成本清单”工作表的静态值，最多 5,000 行、8 MB；编号/上级编号须为文本，公式不接受。所有格式都执行服务端重复编号、父级关系、数值及确认前复检；任一错误都会阻止整批导入。</span></div>
 
-    {dialogOpen && <BudgetDialog projectId={projectId} items={rows} editing={editing} onClose={() => setDialogOpen(false)} />}
+    <div className="ldg-stats">
+      <div><span>目标成本总额</span><strong>{formatMoney(rootAndLeafStats.targetCost, 0)}</strong><small>末级清单 {rootAndLeafStats.leafCount} 条 · 共 {rows.length} 条</small></div>
+      <div><span>已录成本</span><strong>{formatMoney(actualTotal, 0)}</strong><small>来自成本录入模块</small></div>
+      <div><span>成本余量</span><strong className={remaining < 0 ? 'text-danger' : ''}>{formatMoney(remaining, 0)}</strong><small>目标成本 − 已录成本</small></div>
+      <div><span>成本执行率</span><strong className={costExecution != null && costExecution > 1 ? 'text-danger' : ''}>{costExecution == null ? '—' : percentage(costExecution)}</strong><small>已录成本 ÷ 目标成本</small></div>
+    </div>
+
+    <div className="ldg-toolbar">
+      <label className="ldg-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索清单编号或名称" aria-label="搜索清单编号或名称" /></label>
+      <div className="ldg-segments" role="group" aria-label="按清单分类筛选">
+        <button type="button" className={category === 'ALL' ? 'active' : ''} onClick={() => setCategory('ALL')}>全部 <b>{rows.length}</b></button>
+        {categories.map((item) => <button type="button" key={item.id} className={category === item.id ? 'active' : ''} onClick={() => setCategory(item.id)}>{item.label} <b>{item.count}</b></button>)}
+      </div>
+      <div className="ldg-tools">
+        <button type="button" className="ldg-tool-link" onClick={toggleAllCollapsed}>{allCollapsed ? '展开全部' : '收起全部'}</button>
+        <button type="button" className="button button-secondary button-small" onClick={() => exportCsv(rows, `目标成本清单-${projectId}.csv`)}><Download size={14} />导出</button>
+      </div>
+    </div>
+
+    {selected.size > 0 && <div className="ldg-selected"><span>已选 {selected.size} 项</span><button type="button" onClick={exportSelected}><Download size={13} />导出所选</button><button type="button" onClick={() => setSelected(new Set())}>清除</button></div>}
+
+    {!rows.length ? <div className="ldg-empty">
+      <div className="ldg-empty-art"><span /><span /><span /></div>
+      <h3>还没有目标成本清单</h3>
+      <p>从零建立清单层级，或导入已有 CSV / XLSX。清单层级只用于成本归集，不参与合同金额计算。</p>
+      <div><Button variant="secondary" onClick={() => fileRef.current?.click()}><Upload size={15} />导入 CSV</Button><Button onClick={() => openNew()}><Plus size={15} />新增第一条</Button></div>
+    </div> : <div className="table-scroll ldg-table-wrap">
+      <table className="data-table ldg-table">
+        <thead><tr><th className="ldg-check"><input type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} aria-label="选择当前可见清单" /></th><th>编号</th><th>清单名称</th><th>单位</th><th className="align-right">工程量</th><th className="align-right">综合单价</th><th className="align-right">目标合价</th><th className="align-right">已录成本</th><th><span className="sr-only">操作</span></th></tr></thead>
+        <tbody>{visibleRows.length ? visibleRows.map(({ node, depth }) => {
+          const isParent = node.children.length > 0;
+          const actual = actualFor(node);
+          return <tr key={node.id} className={isParent ? 'ldg-parent-row' : ''} tabIndex={0} onClick={() => setDrawerItem(node)} onKeyDown={(event) => { if (event.key === 'Enter') setDrawerItem(node); }}>
+            <td className="ldg-check" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selected.has(node.id)} onChange={() => toggleSelected(node.id)} aria-label={`选择 ${node.name}`} /></td>
+            <td><span className="ldg-code">{node.code}</span></td>
+            <td><div className="ldg-name" style={{ paddingLeft: `${depth * 18}px` }}>{isParent ? <button type="button" className="ldg-tree-toggle" onClick={(event) => { event.stopPropagation(); toggleCollapsed(node.id); }} aria-label={collapsed.has(node.id) ? '展开子项' : '收起子项'}>{collapsed.has(node.id) ? '+' : '−'}</button> : <span className="ldg-leaf-dot" />}<span>{node.name}</span></div></td>
+            <td>{node.unit || '—'}</td>
+            <td className="align-right numeric">{node.quantity == null ? '—' : node.quantity.toLocaleString('zh-CN', { maximumFractionDigits: 3 })}</td>
+            <td className="align-right numeric">{node.unitPrice == null ? '—' : formatMoney(node.unitPrice)}</td>
+            <td className="align-right numeric ldg-strong">{formatMoney(node.totalPrice, 0)}</td>
+            <td className={`align-right numeric ${actual > node.totalPrice ? 'text-danger' : ''}`}>{formatMoney(actual, 0)}</td>
+            <td><div className="ldg-row-actions"><button type="button" className="ldg-text-action" onClick={(event) => { event.stopPropagation(); isParent ? openNew(node.id) : openEdit(node); }}>{isParent ? '新增子项' : '编辑'}</button><button type="button" className="ldg-more" aria-label={`打开 ${node.name} 明细`} onClick={(event) => { event.stopPropagation(); setDrawerItem(node); }}><MoreHorizontal size={15} /></button></div></td>
+          </tr>;
+        }) : <tr><td colSpan={9}><div className="ldg-empty-row">没有匹配的清单条目。</div></td></tr>}</tbody>
+        <tfoot><tr><td colSpan={6}>合计（{rows.length} 条 · 仅末级汇总）</td><td className="align-right numeric">{formatMoney(rootAndLeafStats.targetCost, 0)}</td><td className="align-right numeric">{formatMoney(actualTotal, 0)}</td><td /></tr></tfoot>
+      </table>
+    </div>}
+
+    <div className="ldg-note"><span className="note-mark">i</span><span>目标成本仅汇总末级清单；已录成本按发生日期计入，不含已归档记录。清单层级用于成本归集，不参与合同金额计算。CSV / XLSX 导入会执行服务端重复编号、父级关系与数值复检。</span></div>
+
+    {drawerItem && <div className="ldg-drawer-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerItem(null); }}>
+      <aside className="ldg-drawer" role="dialog" aria-modal="true" aria-labelledby="ldg-drawer-title">
+        <header className="ldg-drawer-head"><div><span>清单明细 · {drawerItem.code}</span><h2 id="ldg-drawer-title">{drawerItem.name}</h2><p>{drawerParent ? `${drawerParent.code} / ${drawerParent.name}` : '顶级清单'}{drawerChildren.length ? ` · ${drawerChildren.length} 个下级` : ''}</p></div><button type="button" className="ldg-drawer-close" onClick={() => setDrawerItem(null)} aria-label="关闭清单明细"><X size={18} /></button></header>
+        <div className="ldg-drawer-body">
+          <h3>计量与金额</h3>
+          <dl className="ldg-detail-list">
+            <div><dt>单位</dt><dd>{drawerItem.unit || '—'}</dd></div>
+            <div><dt>工程量</dt><dd>{drawerItem.quantity == null ? '—' : drawerItem.quantity.toLocaleString('zh-CN', { maximumFractionDigits: 3 })}</dd></div>
+            <div><dt>综合单价</dt><dd>{drawerItem.unitPrice == null ? '—' : formatMoney(drawerItem.unitPrice)}</dd></div>
+            <div><dt>目标合价</dt><dd>{formatMoney(drawerItem.totalPrice, 0)}</dd></div>
+            <div><dt>已录成本</dt><dd>{formatMoney(actualFor(drawerItem), 0)}</dd></div>
+            <div><dt>成本余量</dt><dd className={drawerItem.totalPrice - actualFor(drawerItem) < 0 ? 'text-danger' : ''}>{formatMoney(drawerItem.totalPrice - actualFor(drawerItem), 0)}</dd></div>
+          </dl>
+          {drawerChildren.length > 0 && <><h3>下级清单</h3><div className="ldg-child-list">{drawerChildren.map((child) => <button type="button" key={child.id} onClick={() => setDrawerItem(child)}><span>{child.code}</span><strong>{child.name}</strong><small>{formatMoney(child.totalPrice, 0)}</small></button>)}</div></>}
+          <h3>成本记录</h3>
+          <p className="ldg-drawer-copy">该清单已关联实际成本 {formatMoney(actualFor(drawerItem))}。逐条发生日期、供应商与合同关联请在 <Link to="/cost/costs" onClick={() => setDrawerItem(null)}>实际成本台账</Link> 查看。</p>
+        </div>
+        <footer className="ldg-drawer-foot"><Button variant="secondary" onClick={() => setDrawerItem(null)}>关闭</Button><Button variant="secondary" onClick={() => { const id = drawerItem.id; setDrawerItem(null); openNew(id); }}><Plus size={14} />新增子项</Button><Button onClick={() => { const item = drawerItem; setDrawerItem(null); openEdit(item); }}><Pencil size={14} />编辑清单</Button></footer>
+      </aside>
+    </div>}
+
+    {dialogOpen && <BudgetDialog projectId={projectId} items={rows} editing={editing} parentId={newParentId} onClose={() => setDialogOpen(false)} />}
     {preview && <div className="modal-backdrop"><div className="dialog import-dialog"><div className="dialog-header"><div><span className="eyebrow">IMPORT PREVIEW</span><h2>导入预览</h2><p>共 {preview.length} 行，错误行不会提交。</p></div><button className="icon-button" onClick={() => { setPreview(null); setRawImport(null); setMappingDirty(false); }} aria-label="关闭导入预览"><X size={18} /></button></div><div className="import-mapping-panel"><div className="import-mapping-heading"><div><strong>字段映射</strong><small>系统先按常见中英文表头自动匹配，请核对后重新校验。</small></div><Button type="button" variant="secondary" onClick={() => rawImport && void buildImportPreview(rawImport, columnMap)} disabled={!rawImport || !columnMap.code || !columnMap.name || !mappingDirty}>重新校验映射</Button></div><div className="import-mapping-grid">{importFields.map((field) => <label className="import-mapping-field" key={field.key}><span>{field.label}{field.required ? ' *' : ''}</span><SelectField aria-label={`${field.label}来源列`} value={columnMap[field.key]} onChange={(event) => { setColumnMap((current) => ({ ...current, [field.key]: event.target.value })); setMappingDirty(true); }}><option value="">不映射</option>{rawImport?.headers.map((header, index) => <option key={`${header}-${index}`} value={header}>{header}</option>)}</SelectField></label>)}</div>{mappingDirty && <small className="import-mapping-warning">当前映射尚未重新校验，不能确认导入。</small>}</div><div className="import-preview-wrap"><table className="data-table"><thead><tr><th>行</th><th>编号</th><th>名称</th><th>上级编号/ID</th><th className="align-right">数量</th><th className="align-right">单价</th><th>校验</th></tr></thead><tbody>{preview.slice(0, 100).map((row, i) => <tr className={row.error ? 'import-row-error' : ''} key={`${row.code}-${i}`}><td>{i + 2}</td><td>{row.code}</td><td>{row.name}</td><td>{row.parentId || '—'}</td><td className="align-right">{row.quantity ?? '—'}</td><td className="align-right">{row.unitPrice ?? '—'}</td><td>{row.error ? <span className="text-danger">{row.error}</span> : <span className="text-success">通过</span>}</td></tr>)}</tbody></table>{preview.length > 100 && <div className="preview-more">仅展示前 100 行，提交时将校验全部 {preview.length} 行。</div>}</div>{serverError && <div className="form-alert">{serverError}</div>}<div className="dialog-footer"><Button variant="secondary" onClick={() => { setPreview(null); setRawImport(null); setMappingDirty(false); }}>取消</Button><Button onClick={() => void confirmImport()} disabled={!rawImport || mappingDirty || preview.some((row) => row.error) || !columnMap.code || !columnMap.name}><Import size={15} />确认导入 {preview.length} 行</Button></div></div></div>}
   </div>;
 }

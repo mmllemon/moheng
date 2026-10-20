@@ -9,6 +9,7 @@ import {
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
 import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import { confirmAction } from '../components/ConfirmDialog';
 import SelectField from '../components/SelectField';
 import DatePicker from '../components/DatePicker';
 import { describeStandardPrintResult } from '../report-print.js';
@@ -282,7 +283,7 @@ export default function ReportDesignerPage() {
 
   async function archiveTemplate() {
     if (!templateId || !templateEditable || dirty) return;
-    if (!window.confirm(`确定归档模板“${templateName}”吗？归档后它不会再出现在模板列表中，历史版本和审计记录会保留。`)) return;
+    if (!(await confirmAction({ title: '归档报表模板', description: `确定归档模板“${templateName}”吗？归档后它不会再出现在模板列表中，历史版本和审计记录会保留。`, confirmText: '归档模板', tone: 'danger' }))) return;
     setBusy(true); setError('');
     try {
       await api.post<ReportTemplateDetail>(`/reports/templates/${templateId}/archive`, { expectedVersion: templateVersion });

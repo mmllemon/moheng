@@ -275,9 +275,9 @@ export default function CostAssistantPage() {
 
   if (!selectedProjectId) return <div className="page-wrap"><div className="assistant-unavailable"><ShieldCheck size={26} /><h2>请先选择项目</h2><p>助手只能在已授权的项目上下文中读取成本台账。</p></div></div>;
   if (featureEnabled === null) return <div className="page-wrap"><div className="assistant-unavailable"><RefreshCw size={22} className="assistant-spin" /><p>正在检查成本助手是否已启用……</p></div></div>;
-  if (!featureEnabled) return <div className="page-wrap"><div className="assistant-unavailable"><ShieldCheck size={28} /><h2>成本助手暂未启用</h2><p>本功能仍处于默认关闭的只读试点阶段。启用需要管理员完成模型、数据库检查点与权限验证配置。</p></div></div>;
+  if (!featureEnabled) return <div className="page-wrap assistant-page"><header className="assistant-page-header"><div><h1>成本助手</h1><p>围绕当前项目查询已授权台账、解释差异并整理数据依据。当前为只读试点，默认关闭。</p></div></header><div className="assistant-unavailable"><ShieldCheck size={28} /><h2>成本助手暂未启用</h2><p>本功能仍处于默认关闭的只读试点阶段。启用需要管理员完成模型、数据库检查点与权限验证配置。</p></div></div>;
   if (configurationReady === null) return <div className="page-wrap"><div className="assistant-unavailable"><RefreshCw size={22} className="assistant-spin" /><p>正在检查模型与检查点配置……</p></div></div>;
-  if (!configurationReady) return <div className="page-wrap"><div className="assistant-unavailable assistant-configuration-unavailable"><ShieldCheck size={28} /><h2>成本助手运行环境未就绪</h2><p>功能开关已开启，但运行时配置不完整。系统只检查配置是否存在，不会显示或记录密钥内容。</p><ul aria-label="缺少的配置">{configurationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul><p>请由系统维护人员在服务端环境中补齐配置并重启/重新加载服务，再刷新此页面。</p></div></div>;
+  if (!configurationReady) return <div className="page-wrap assistant-page"><header className="assistant-page-header"><div><h1>成本助手</h1><p>围绕当前项目查询已授权台账、解释差异并整理数据依据。当前为只读试点。</p></div></header><div className="assistant-unavailable assistant-configuration-unavailable"><ShieldCheck size={28} /><h2>成本助手运行环境未就绪</h2><p>功能开关已开启，但运行时配置不完整。系统只检查配置是否存在，不会显示或记录密钥内容。</p><ul aria-label="缺少的配置">{configurationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul><p>请由系统维护人员在服务端环境中补齐配置并重启/重新加载服务，再刷新此页面。</p></div></div>;
 
   return <div className="page-wrap assistant-page">
     <header className="assistant-page-header">

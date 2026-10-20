@@ -8,6 +8,7 @@ import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton, ProjectSummaryReportButton } from '../components/ReportLaunchButton';
 import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import { currentDateInputValue, dateInputToIso } from '../components/Ui';
+import { confirmAction, promptAction } from '../components/ConfirmDialog';
 
 type SettlementType = 'FINAL' | 'ADJUSTMENT';
 type SettlementStatus = 'DRAFT' | 'SUBMITTED' | 'INTERNAL_APPROVED' | 'COUNTERPARTY_CONFIRMED' | 'POSTED' | 'REJECTED';
@@ -105,10 +106,10 @@ export default function OwnerFinancePage() {
   }), [data?.receivables, search, view]);
 
   async function act(settlement: OwnerSettlement, action: 'SUBMIT' | 'APPROVE' | 'REJECT' | 'POST') {
-    if (action === 'POST' && !window.confirm(`确认过账 ${settlement.settlementNo}？这将生成正式应收账款，过账后须通过调整单更正。`)) return;
+    if (action === 'POST' && !(await confirmAction({ title: '确认过账结算单', description: `确认过账 ${settlement.settlementNo}？这将生成正式应收账款，过账后须通过调整单更正。`, confirmText: '确认过账', tone: 'danger' }))) return;
     let reason: string | undefined;
     if (action === 'REJECT') {
-      reason = window.prompt('请填写退回原因（至少 3 个字符）：')?.trim();
+      reason = (await promptAction({ title: '退回结算单', description: '请填写退回原因，至少 3 个字符。', inputLabel: '退回原因', placeholder: '至少 3 个字符', minLength: 3, multiline: true, confirmText: '退回', tone: 'danger' }))?.trim();
       if (!reason || reason.length < 3) return;
     }
     await mutation.mutateAsync({ settlement, action, reason });

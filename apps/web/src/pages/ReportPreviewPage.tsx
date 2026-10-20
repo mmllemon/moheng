@@ -316,7 +316,7 @@ export default function ReportPreviewPage() {
       )
     : { mergeByStart: new Map<string, { rowSpan: number; colSpan: number }>(), covered: new Set<string>() };
 
-  if (!isStudio && !reportKey) return <div className="page-wrap"><ErrorBlock message="缺少报表类型或综合报表模板编号。请从报表中心重新进入预览。" retry={() => navigate('/reports')} /></div>;
+  if (!isStudio && !reportKey) return <div className="page-wrap"><PageHeader title="报表预览" subtitle="从报表中心选择台账或模板后进入预览；此路由不单独承载报表参数。" actions={<Button variant="secondary" onClick={() => navigate('/reports')}><ArrowLeft size={15} />返回报表中心</Button>} /><ErrorBlock message="缺少报表类型或综合报表模板编号。请从报表中心重新进入预览。" retry={() => navigate('/reports')} /></div>;
   return <div className="page-wrap report-export-preview-page">
     <style>{`@media print { @page { size: ${printPaper} ${printOrientation}; margin: 10mm; } }`}</style>
     <PageHeader eyebrow="REPORTS / PREVIEW" title="报表预览" subtitle="核对实际数据、模板版本、统计范围与输出样式后，再确认生成 XLSX。预览不会修改业务台账；导出任务执行时会重新读取业务数据，如数据随后变化，最终文件数值可能与当前预览不同。" actions={<><Button variant="secondary" onClick={goBack}><ArrowLeft size={15}/>返回</Button><Button variant="secondary" onClick={() => { void (isStudio ? studioPreviewQuery.refetch() : standardPreviewQuery.refetch()); }}><RefreshCw size={15}/>刷新预览</Button><Button variant="secondary" onClick={() => void printReport()} disabled={printBusy || printPending || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Printer size={15}/>{printBusy ? '正在准备打印…' : printPending ? '正在打开打印…' : '打印 / PDF'}</Button><Button onClick={() => void exportXlsx()} disabled={exportBusy || loading || Boolean(errorQuery) || missingProjectScope || missingPartyScope}><Download size={15}/>{exportBusy ? '正在生成…' : '确认并导出 XLSX'}</Button></>} />

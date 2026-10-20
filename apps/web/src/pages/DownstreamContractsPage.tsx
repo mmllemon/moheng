@@ -4,14 +4,15 @@ import { Fragment, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, Banknote, ClipboardCheck, FilePlus2, FileSignature, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Banknote, ClipboardCheck, FilePlus2, FileSignature, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
 import { z } from 'zod';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
+import { confirmThen } from '../components/ConfirmDialog';
 
 type DownstreamContractType = 'LABOR_SUBCONTRACT' | 'PROFESSIONAL_SUBCONTRACT' | 'MATERIAL_PURCHASE' | 'EQUIPMENT_LEASE' | 'SERVICE' | 'OTHER';
 type DownstreamContractStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'SETTLED' | 'TERMINATED';
@@ -129,6 +130,7 @@ function PaymentDialog({ projectId, contract, onClose, onNotice }: { projectId: 
 }
 
 export default function DownstreamContractsPage() {
+  const navigate = useNavigate();
   const projectId = useUiStore((state) => state.selectedProjectId)!; const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false); const [editing, setEditing] = useState<DownstreamContract | null>(null); const [amending, setAmending] = useState<DownstreamContract | null>(null); const [planning, setPlanning] = useState<DownstreamContract | null>(null); const [paying, setPaying] = useState<DownstreamContract | null>(null); const [expanded, setExpanded] = useState<string | null>(null);
   const [notice, setNotice] = useState(''); const [error, setError] = useState('');
@@ -149,7 +151,7 @@ export default function DownstreamContractsPage() {
   if (query.error) return <div className="page-wrap"><ErrorBlock message={(query.error as Error).message} retry={() => void query.refetch()} /></div>;
   const rows = query.data?.items ?? []; const summary = query.data?.summary;
   return <div className="page-wrap">
-    <PageHeader eyebrow="PROJECT COST / COMMITMENTS" title="分供合同台账" subtitle="统一管理分包、材料采购、机械租赁与服务合同；合同金额、实际成本和现金支付分别核算。" actions={<><ProjectLedgerReportButton reportKey="downstream-contracts" /><Button onClick={() => setCreating(true)}><Plus size={16} />新增分供合同</Button></>} />
+    <PageHeader eyebrow="PROJECT COST / COMMITMENTS" title="分供合同台账" subtitle="统一管理分包、材料采购、机械租赁与服务合同；合同金额、实际成本和现金支付分别核算。" actions={<><ProjectLedgerReportButton reportKey="downstream-contracts" /><Button variant="secondary" onClick={() => navigate('/cost/downstream?view=finance')}>结算与应付账款<ArrowRight size={14} /></Button><Button onClick={() => setCreating(true)}><Plus size={16} />新增分供合同</Button></>} />
     {notice && <div className="success-notice">{notice}<button className="icon-button" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></button></div>}{error && <div className="form-alert">{error}</div>}
     <div className="change-summary-grid downstream-summary-grid">
       <div className="change-summary"><span className="change-summary-label">分供合同数</span><strong>{summary?.contractCount ?? 0}</strong><small>含草稿及历史合同</small></div>
@@ -180,16 +182,16 @@ export default function DownstreamContractsPage() {
                         <button className="table-action" onClick={() => setExpanded(expanded === row.id ? null : row.id)}><ClipboardCheck size={13} />{expanded === row.id ? '收起台账' : '查看台账'}</button>
                         {row.status === 'DRAFT' && <>
                           <button className="table-action" onClick={() => setEditing(row)}><FileSignature size={13} />编辑草稿</button>
-                          <button className="table-action" disabled={changeStatus.isPending} onClick={() => { if (window.confirm(`确认将“${row.contractNo}”激活为执行中合同？激活后原始合同金额将锁定。`)) changeStatus.mutate({ contract: row, status: 'ACTIVE' }); }}><BadgeCheck size={13} />激活合同</button>
+                          <button className="table-action" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确认将“${row.contractNo}”激活为执行中合同？激活后原始合同金额将锁定。`, () => changeStatus.mutate({ contract: row, status: 'ACTIVE' }), { title: '激活分供合同', confirmText: '激活' }); }}><BadgeCheck size={13} />激活合同</button>
                         </>}
                         {['ACTIVE', 'COMPLETED'].includes(row.status) && <>
                           <button className="table-action" onClick={() => setAmending(row)}><FilePlus2 size={13} />补充协议</button>
                           <button className="table-action" onClick={() => setPlanning(row)}><Plus size={13} />付款计划</button>
                         </>}
                         {['ACTIVE', 'COMPLETED', 'SETTLED'].includes(row.status) && <button className="table-action" onClick={() => setPaying(row)}><Banknote size={13} />登记支付/退款</button>}
-                        {row.status === 'ACTIVE' && <button className="table-action" disabled={changeStatus.isPending} onClick={() => { if (window.confirm(`确认将“${row.contractNo}”标记为完工待结算？`)) changeStatus.mutate({ contract: row, status: 'COMPLETED' }); }}><BadgeCheck size={13} />标记完工</button>}
+                        {row.status === 'ACTIVE' && <button className="table-action" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确认将“${row.contractNo}”标记为完工待结算？`, () => changeStatus.mutate({ contract: row, status: 'COMPLETED' }), { title: '标记完工待结算', confirmText: '标记完工' }); }}><BadgeCheck size={13} />标记完工</button>}
                         {row.status === 'COMPLETED' && <Link className="table-action" to="/cost/downstream?view=finance"><BadgeCheck size={13} />办理最终结算</Link>}
-                        {['DRAFT', 'ACTIVE', 'COMPLETED'].includes(row.status) && <button className="table-action table-action-danger" disabled={changeStatus.isPending} onClick={() => { if (window.confirm(`确定终止“${row.contractNo}”？请先核对未付款、履约及补偿责任。`)) changeStatus.mutate({ contract: row, status: 'TERMINATED' }); }}><X size={13} />终止</button>}
+                        {['DRAFT', 'ACTIVE', 'COMPLETED'].includes(row.status) && <button className="table-action table-action-danger" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确定终止“${row.contractNo}”？请先核对未付款、履约及补偿责任。`, () => changeStatus.mutate({ contract: row, status: 'TERMINATED' }), { title: '终止分供合同', tone: 'danger', confirmText: '终止合同' }); }}><X size={13} />终止</button>}
                       </div>
                     </td>
                   </tr>

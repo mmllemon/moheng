@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Check, ChevronDown, Plus, Search, X } from 'lucide-react';
 import { api, ApiError } from '../api';
@@ -74,22 +75,22 @@ export default function BusinessPartyPicker({
     </div>
     {open && <>
       <button type="button" className="business-party-dismiss" aria-label="关闭单位选择" onClick={() => { setOpen(false); setCreateOpen(false); }} />
-      <div className="business-party-results">
+      <div className="business-party-results">{!createOpen && <>
         {lookup.isLoading && <div className="business-party-empty">正在搜索单位档案…</div>}
         {rows.map((party) => <button type="button" className="business-party-result" key={party.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { onChange(party.id, party.name, party); setSearch(party.name); setOpen(false); setCreateOpen(false); }}>
           <span className="business-party-result-icon"><Building2 size={16} /></span><span className="business-party-result-copy"><strong>{party.name}</strong><small>{party.creditCode || '未登记统一社会信用代码'} · {party.roles.map((role) => roleNames[role]).join('、') || '往来单位'}</small></span>{value === party.id && <Check size={15} className="business-party-selected" />}
         </button>)}
         {!lookup.isLoading && !rows.length && <div className="business-party-empty">暂未找到匹配单位。</div>}
         {!createOpen && <button type="button" className="business-party-create-trigger" onClick={() => { setCreateOpen(true); setError(''); }}><Plus size={15} />新建往来单位档案</button>}
-        {createOpen && <form className="business-party-create-form" onSubmit={createParty}>
-          <div className="business-party-create-heading"><strong>快速建立单位档案</strong><button type="button" className="icon-button" aria-label="关闭新建表单" onClick={() => setCreateOpen(false)}><X size={14} /></button></div>
+        </>}{createOpen && createPortal(<div className="modal-backdrop party-quick-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setCreateOpen(false); }}><div className="dialog party-quick-dialog" role="dialog" aria-modal="true" aria-labelledby="party-quick-title"><div className="dialog-header"><div><h2 id="party-quick-title">快速建立单位档案</h2><p>保存后会立即回填到当前字段。</p></div><button type="button" className="icon-button" aria-label="关闭" onClick={() => setCreateOpen(false)} disabled={saving}><X size={16} /></button></div><form className="business-party-create-form" onSubmit={createParty}>
+          
           <div className="field"><label>单位全称 <b>*</b></label><input value={search} onChange={(e) => { setSearch(e.target.value); onChange(null, e.target.value); }} required minLength={2} maxLength={200} /></div>
           <div className="field"><label>统一社会信用代码</label><input value={creditCode} onChange={(e) => setCreditCode(e.target.value)} maxLength={64} placeholder="有则填写，用于去重核验" /></div>
           <div className="form-grid two-cols"><div className="field"><label>联系人</label><input value={contactName} onChange={(e) => setContactName(e.target.value)} maxLength={120} /></div><div className="field"><label>联系电话</label><input value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={80} /></div><div className="field span-2"><label>注册地址/联系地址</label><input value={address} onChange={(e) => setAddress(e.target.value)} maxLength={500} /></div></div>
           <div className="business-party-role-hints">建档角色：{roles.map((role) => roleNames[role]).join('、')}</div>
           {error && <div className="form-alert">{error}</div>}
-          <div className="business-party-create-actions"><Button type="button" variant="secondary" size="sm" onClick={() => setCreateOpen(false)} disabled={saving}>取消</Button><Button type="submit" size="sm" disabled={saving}><Plus size={14} />{saving ? '保存中…' : '保存并关联'}</Button></div>
-        </form>}
+          <div className="dialog-footer"><Button type="button" variant="secondary" onClick={() => setCreateOpen(false)} disabled={saving}>取消</Button><Button type="submit" disabled={saving}><Plus size={14} />{saving ? '保存中…' : '保存并关联'}</Button></div>
+        </form></div></div>, document.body)}
       </div>
     </>}
     {selected && <div className="business-party-selected-details">

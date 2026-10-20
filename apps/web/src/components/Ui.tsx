@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight, Plus, Search, type LucideIcon } from 'lucide-react';
 
-export function PageHeader({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: string; actions?: ReactNode; eyebrow?: string }) {
+export function PageHeader({ title, subtitle, context, actions }: { title: string; subtitle?: string; context?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
   return <div className="page-header">
-    <div><div className="eyebrow">{eyebrow ?? '项目管理'}</div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
+    <div><h1>{title}</h1>{context ? <div className="page-context">{context}</div> : subtitle && <p>{subtitle}</p>}</div>
     {actions && <div className="page-actions">{actions}</div>}
   </div>;
 }

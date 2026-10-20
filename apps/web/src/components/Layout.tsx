@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Building2, BookOpen, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, ClipboardList, FileText, FolderKanban,
-  HandCoins, LayoutDashboard, LogOut, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
+  HandCoins, LayoutDashboard, LogOut, Menu, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
   ArrowUpRight, Command, CornerDownLeft, Keyboard, X, History, BellRing, FileSpreadsheet, Users,
   ShieldCheck, UserRound, ServerCog,
 } from 'lucide-react';
@@ -13,6 +13,8 @@ import { useAuthStore, useUiStore } from '../auth-store';
 import type { Project } from '../types';
 import { LoadingBlock, StatusBadge } from './Ui';
 import BrandMark from './BrandMark';
+import ConfirmHost from './ConfirmDialog';
+import FocusTrap from './FocusTrap';
 import UiPreferencesBar from './UiPreferencesBar';
 import { useAnimatedPresence } from './useAnimatedPresence';
 
@@ -68,6 +70,7 @@ export default function Layout() {
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
   const commandInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,6 +82,24 @@ export default function Layout() {
   }, [projects, selectedProjectId, setSelectedProjectId]);
 
   const activeProject = projects.find((project) => project.id === selectedProjectId);
+  useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth > 940) setMobileNavOpen(false); };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  useEffect(() => {
+    const closeTopDialog = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (document.querySelector('.date-picker-popover, .select-popover, .quick-action-panel, .account-menu')) return;
+      const backdrop = document.querySelector<HTMLElement>('.modal-backdrop');
+      if (!backdrop) return;
+      const closeButton = backdrop.querySelector<HTMLButtonElement>('.dialog-header .icon-button, .dialog-header button[aria-label*="关闭"], .dialog-close');
+      if (closeButton) { closeButton.click(); event.preventDefault(); }
+    };
+    document.addEventListener('keydown', closeTopDialog);
+    return () => document.removeEventListener('keydown', closeTopDialog);
+  }, []);
   const quickItems = useMemo<QuickItem[]>(() => {
     const text = quickSearch.trim().toLocaleLowerCase();
     const pages = [...navigation.filter((item) => !item.adminOnly || user?.role === 'ADMIN'), ...(user?.role === 'ADMIN' ? systemNavigation.filter((item) => item.to !== '/system') : []), ...costWorkspacePages.filter((page) => page.to !== '/cost')]
@@ -158,6 +179,7 @@ export default function Layout() {
   const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/system') || location.pathname === '/audit-logs' || location.pathname === '/account/security' || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/notifications', '/projects'].includes(location.pathname);
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const isSystemArea = user?.role === 'ADMIN' && (location.pathname.startsWith('/system') || location.pathname === '/audit-logs');
+
   const costPageLabel = location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
 
@@ -169,8 +191,9 @@ export default function Layout() {
   }
 
   return <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
-    <aside className="sidebar" aria-label="主导航">
-      <div className="brand"><BrandMark />{!collapsed && <div className="brand-word"><strong>墨衡</strong><span>ENGINEERING BUSINESS DESK</span></div>}</div>
+    <button type="button" className="mobile-nav-backdrop" aria-label="关闭主导航" onClick={() => setMobileNavOpen(false)} style={{ display: mobileNavOpen ? 'block' : 'none' }} />
+    <aside className={'sidebar' + (mobileNavOpen ? ' mobile-nav-open' : '')} id="main-navigation" aria-label="主导航">
+      <div className="brand"><BrandMark />{!collapsed && <div className="brand-word"><strong>墨衡</strong><span>工程经营管理</span></div>}</div>
       <div className="side-label">{!collapsed && '工作空间'}</div>
       <div className="sidebar-navigation">
         {navigationGroups.filter((group) => group !== '系统管理' || user?.role === 'ADMIN').map((group) => <div className="nav-group" key={group}>
@@ -191,10 +214,13 @@ export default function Layout() {
 
     <div className="main-shell">
       <header className="topbar">
+        <button type="button" className="mobile-nav-trigger" aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={18} /> : <Menu size={18} />}</button>
         <div className="breadcrumb"><span>工程经营管理</span><span className="crumb-separator">/</span><strong>{currentPageLabel}</strong><span className="environment-pill"><i />工作区</span></div>
         <div className="topbar-tools">
+          {isGlobalContext && <span className="topbar-scope">全公司<ChevronDown size={12} /></span>}
+          {!isGlobalContext && <div className="topbar-project"><SelectField value={selectedProjectId ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)} aria-label="切换当前项目">{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</SelectField></div>}
           <button type="button" className="command-trigger" onClick={openCommandPalette} aria-haspopup="dialog" aria-label="打开全局搜索和命令面板">
-            <Search size={15} /><span>搜索项目、业务模块…</span><kbd><Command size={10} /> K</kbd>
+            <Search size={15} /><span>搜索清单、项目、单位…</span><kbd><Command size={10} /> K</kbd>
           </button>
           <span className="topbar-divider" />
           <button type="button" className={`topbar-notice-link ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} title="待办与预警" aria-label="打开待办与预警"><BellRing size={17} /><span>待办</span></button>
@@ -248,6 +274,8 @@ export default function Layout() {
       </nav>}
       <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
       <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>施工单位成本管理 <i /> v2.19.0-rc.2</span></footer>
+      <FocusTrap />
+      <ConfirmHost />
     </div>
 
     {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>

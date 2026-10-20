@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectSummaryReportButton } from '../components/ReportLaunchButton';
-import { Button, ErrorBlock, formatDate, formatMoney, formatWan, LoadingBlock, MetricCard, PageHeader, StatusBadge, percentage } from '../components/Ui';
+import { Button, ErrorBlock, formatDate, formatMoney, LoadingBlock, MetricCard, PageHeader, StatusBadge, percentage } from '../components/Ui';
 import type { Analysis, ChangeRecord, ProgressBill, Project } from '../types';
 
 type ProjectDetail = Project & { mainContract?: { id: string; contractNo: string; name: string; amount: number; signedAt?: string | null } | null };
@@ -46,9 +46,9 @@ export default function ProjectOverviewPage() {
     tooltip: { trigger: 'axis', valueFormatter: (value: number) => formatMoney(value) },
     // Reserve room for long currency tick labels; containLabel prevents clipping at the panel edge.
     grid: { left: 68, right: 18, top: 22, bottom: 34, containLabel: true },
-    xAxis: { type: 'category', data: analysis.monthlyActualCost.map((row) => row.month), axisLine: { lineStyle: { color: '#e7ebf2' } }, axisTick: { show: false }, axisLabel: { color: '#8792a4', fontSize: 11 } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#edf0f5', type: 'dashed' } }, axisLabel: { color: '#8792a4', margin: 10, hideOverlap: true, formatter: (v: number) => v >= 100000000 ? `${(v / 100000000).toFixed(1)}亿` : v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}万` : v.toLocaleString('zh-CN') } },
-    series: [{ name: '实际发生成本', type: 'bar', data: analysis.monthlyActualCost.map((row) => row.amount), barMaxWidth: 26, itemStyle: { color: '#536bd5', borderRadius: [4, 4, 0, 0] } }],
+    xAxis: { type: 'category', data: analysis.monthlyActualCost.map((row) => row.month), axisLine: { lineStyle: { color: '#ded8ca' } }, axisTick: { show: false }, axisLabel: { color: '#5b6359', fontSize: 11 } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#ece7db', type: 'dashed' } }, axisLabel: { color: '#5b6359', margin: 10, hideOverlap: true, formatter: (v: number) => v >= 100000000 ? `${(v / 100000000).toFixed(1)}亿` : v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}万` : v.toLocaleString('zh-CN') } },
+    series: [{ name: '实际发生成本', type: 'bar', data: analysis.monthlyActualCost.map((row) => row.amount), barMaxWidth: 26, itemStyle: { color: '#2c5a51', borderRadius: 0 } }],
   };
 
   return <div className="page-wrap project-overview-page">
@@ -59,10 +59,10 @@ export default function ProjectOverviewPage() {
     </section>
 
     <section className="metric-grid project-metric-grid">
-      <MetricCard label="当前有效合同额" value={formatWan(analysis.contractAmount)} detail={project.mainContract ? `主合同 ${project.mainContract.contractNo}` : '尚未建立主合同'} icon={Banknote} tone="blue" />
-      <MetricCard label="目标成本" value={formatWan(analysis.targetCost)} detail="末级目标成本清单合计" icon={ClipboardList} tone="purple" />
-      <MetricCard label="实际发生成本" value={formatWan(analysis.actualCost)} detail={analysis.targetCost <= 0 ? '尚未建立目标成本' : costVariance > 0 ? `超目标 ${formatMoney(costVariance, 0)}` : `较目标 ${formatMoney(Math.abs(costVariance), 0)} ${costVariance < 0 ? '节余' : '差异为零'}`} icon={Wallet} tone={analysis.targetCost <= 0 ? 'blue' : costVariance > 0 ? 'orange' : 'green'} />
-      <MetricCard label="累计已收款" value={formatWan(analysis.billSummary.paidAmount)} detail={`申报 ${formatMoney(analysis.billSummary.totalSubmitted, 0)}`} icon={HandCoins} tone="green" />
+      <MetricCard label="当前有效合同额" value={formatMoney(analysis.contractAmount, 0)} detail={project.mainContract ? `主合同 ${project.mainContract.contractNo}` : '尚未建立主合同'} icon={Banknote} tone="blue" />
+      <MetricCard label="目标成本" value={formatMoney(analysis.targetCost, 0)} detail="末级目标成本清单合计" icon={ClipboardList} tone="purple" />
+      <MetricCard label="实际发生成本" value={formatMoney(analysis.actualCost, 0)} detail={analysis.targetCost <= 0 ? '尚未建立目标成本' : costVariance > 0 ? `超目标 ${formatMoney(costVariance, 0)}` : `较目标 ${formatMoney(Math.abs(costVariance), 0)} ${costVariance < 0 ? '节余' : '差异为零'}`} icon={Wallet} tone={analysis.targetCost <= 0 ? 'blue' : costVariance > 0 ? 'orange' : 'green'} />
+      <MetricCard label="累计已收款" value={formatMoney(analysis.billSummary.paidAmount, 0)} detail={`申报 ${formatMoney(analysis.billSummary.totalSubmitted, 0)}`} icon={HandCoins} tone="green" />
     </section>
 
     <section className="project-brief-grid">

@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Clock3, Globe, Monitor, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone, UserRoundX } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useAuthStore } from '../auth-store';
 import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { confirmThen } from '../components/ConfirmDialog';
 
 type AuthSessionRow = {
   id: string; userId: string; ipAddress: string | null; userAgent: string | null; createdAt: string; lastSeenAt: string; expiresAt: string;
@@ -39,6 +41,8 @@ export default function SystemSecurityPage() {
     onSuccess: async () => { await Promise.all([queryClient.invalidateQueries({ queryKey: ['security-sessions'] }), queryClient.invalidateQueries({ queryKey: ['security-events'] })]); },
   });
 
+  const [visibleSessions, setVisibleSessions] = useState(15);
+  const [visibleEvents, setVisibleEvents] = useState(15);
   if (user?.role !== 'ADMIN') return <div className="page-wrap"><PageHeader eyebrow="SYSTEM / SECURITY" title="安全中心" subtitle="登录事件与会话控制仅对系统管理员开放。" /><EmptyState title="没有管理权限" description="请使用系统管理员账号登录后查看安全事件。" /></div>;
   if (sessionsQuery.isLoading || eventsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在加载登录安全信息…" /></div>;
   if (sessionsQuery.error || eventsQuery.error) return <div className="page-wrap"><ErrorBlock message={((sessionsQuery.error ?? eventsQuery.error) as Error).message} retry={() => { void sessionsQuery.refetch(); void eventsQuery.refetch(); }} /></div>;
@@ -59,26 +63,26 @@ export default function SystemSecurityPage() {
     {revokeMutation.error && <div className="form-alert">{revokeMutation.error instanceof ApiError ? revokeMutation.error.message : '撤销会话失败'}</div>}
     <section className="panel security-panel">
       <div className="panel-heading"><div><h3>登录会话</h3><p>撤销会话会立即阻止该会话后续 API 请求和刷新令牌。当前登录会话不能从这里撤销。</p></div><span className="table-count">{activeSessions} 个有效</span></div>
-      {!sessions.length ? <EmptyState title="暂无会话记录" description="成功登录后，设备会话将显示在这里。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>用户 / 设备</th><th>来源 IP</th><th>最近活动</th><th>创建 / 到期</th><th>状态</th><th>操作</th></tr></thead><tbody>{sessions.map((session) => <tr key={session.id}>
+      {!sessions.length ? <EmptyState title="暂无会话记录" description="成功登录后，设备会话将显示在这里。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>用户 / 设备</th><th>来源 IP</th><th>最近活动</th><th>创建 / 到期</th><th>状态</th><th>操作</th></tr></thead><tbody>{sessions.slice(0, visibleSessions).map((session) => <tr key={session.id}>
         <td><strong className="table-primary-text">{session.user?.name ?? '未知账号'}</strong><small className="table-subtext">{session.user?.email ?? '账号关联不可用'}</small><small className="table-subtext"><Smartphone size={12} /> {userAgentLabel(session.userAgent)}{session.isCurrent ? ' · 当前会话' : ''}</small></td>
         <td><span className="security-ip"><Globe size={13} />{session.ipAddress || '未识别'}</span></td>
         <td>{displayDate(session.lastSeenAt)}</td>
         <td><small className="table-subtext">创建 {displayDate(session.createdAt)}</small><small className="table-subtext">到期 {displayDate(session.expiresAt)}</small></td>
         <td>{session.isValid ? <StatusBadge status="ACTIVE" /> : <span className="status-badge status-gray"><span className="status-dot" />{session.revokeReason ? '已撤销' : '已过期'}</span>}</td>
-        <td>{session.isValid ? <Button size="sm" variant="danger" disabled={session.isCurrent || revokeMutation.isPending} onClick={() => { if (window.confirm(`确定撤销 ${session.user?.name ?? '该用户'} 的这个登录会话吗？`)) revokeMutation.mutate(session.id); }}><UserRoundX size={13} />撤销</Button> : <span className="table-subtext">—</span>}</td>
-      </tr>)}</tbody></table></div>}
+        <td>{session.isValid ? <Button size="sm" variant="danger" disabled={session.isCurrent || revokeMutation.isPending} onClick={() => { confirmThen(`确定撤销 ${session.user?.name ?? '该用户'} 的这个登录会话吗？`, () => revokeMutation.mutate(session.id), { title: '撤销登录会话', tone: 'danger', confirmText: '撤销会话' }); }}><UserRoundX size={13} />撤销</Button> : <span className="table-subtext">—</span>}</td>
+      </tr>)}</tbody></table></div>}{sessions.length > visibleSessions && <div className="load-more-row"><span>已显示 {Math.min(visibleSessions, sessions.length)} / {sessions.length} 条</span><button type="button" className="button button-secondary button-small" onClick={() => setVisibleSessions((count) => count + 20)}>显示更多会话</button></div>}
     </section>
 
     <section className="panel security-panel">
       <div className="panel-heading"><div><h3>安全事件</h3><p>记录登录成败、MFA、密码修改、账号状态变化、令牌重放和管理员会话撤销。</p></div><span className="table-count">最近 {events.length} 条</span></div>
-      {!events.length ? <EmptyState title="暂无安全事件" description="登录和安全管理操作将在此记录。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>时间</th><th>事件</th><th>账号</th><th>来源 IP</th><th>结果</th><th>详情</th></tr></thead><tbody>{events.map((event) => <tr key={event.id}>
+      {!events.length ? <EmptyState title="暂无安全事件" description="登录和安全管理操作将在此记录。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>时间</th><th>事件</th><th>账号</th><th>来源 IP</th><th>结果</th><th>详情</th></tr></thead><tbody>{events.slice(0, visibleEvents).map((event) => <tr key={event.id}>
         <td>{displayDate(event.createdAt)}</td>
         <td><strong className="table-primary-text">{actionLabels[event.action] ?? event.action}</strong><small className="table-subtext">{event.user?.name ?? '未知/未关联账号'}</small></td>
         <td>{event.accountEmail ?? '—'}</td>
         <td>{event.ipAddress ?? '—'}</td>
         <td><StatusBadge status={event.outcome === 'ALLOWED' ? 'ACTIVE' : event.outcome === 'DENIED' || event.outcome === 'BLOCKED' ? 'REJECTED' : 'UNDER_REVIEW'} /></td>
         <td><details className="security-event-details"><summary><Clock3 size={13} />查看</summary><pre>{JSON.stringify(event.details ?? {}, null, 2)}</pre>{event.sessionId && <small>会话：{event.sessionId}</small>}{event.userAgent && <small>{event.userAgent}</small>}</details></td>
-      </tr>)}</tbody></table></div>}
+      </tr>)}</tbody></table></div>}{events.length > visibleEvents && <div className="load-more-row"><span>已显示 {Math.min(visibleEvents, events.length)} / {events.length} 条</span><button type="button" className="button button-secondary button-small" onClick={() => setVisibleEvents((count) => count + 20)}>显示更多事件</button></div>}
     </section>
     <div className="data-note"><span className="note-mark"><AlertTriangle size={14} /></span><span>安全事件最多保留 180 天，登录尝试计数按策略清理。此页面不是地理定位工具；IP 地址可能因代理、运营商网络或移动网络而变化，不能单独作为认定真实位置或身份的证据。</span></div>
   </div>;
