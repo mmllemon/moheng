@@ -60,6 +60,9 @@ export async function resolveBusinessParty(
   const matches = await tx.businessParty.findMany({ where: { normalizedName }, orderBy: [{ identityVerified: 'desc' }, { updatedAt: 'desc' }], take: 2 });
   if (matches.length > 1) throw new Error('BUSINESS_PARTY_NAME_AMBIGUOUS');
   const existing = matches[0];
+  // An unverified legacy/provisional name is not legal-identity evidence. Do not
+  // silently attach a new contract to it based on display text alone.
+  if (existing && existing.identityVerified !== true) throw new Error('BUSINESS_PARTY_IDENTITY_UNVERIFIED');
   if (existing) {
     if (existing.status !== 'ACTIVE') throw new Error('BUSINESS_PARTY_INACTIVE');
     const roles = [...new Set([...existing.roles, input.role])];
