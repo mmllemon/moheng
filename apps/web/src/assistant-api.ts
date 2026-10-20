@@ -41,6 +41,11 @@ export type AssistantRunSummary = {
   startedAt: string | null;
   finishedAt: string | null;
   lastEventSequence: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+  usageStatus: 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE' | string;
+  usageCapturedAt: string | null;
 };
 export type AssistantConversationDetail = AssistantConversationSummary & {
   ownerUserId: string;

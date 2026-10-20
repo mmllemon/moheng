@@ -114,6 +114,10 @@ test('isolated PostgreSQL assistant recovery + injected fake provider success co
     await prisma.backgroundJob.updateMany({ where: { id: claimed.id, status: 'RUNNING' }, data: { status: 'SUCCEEDED', finishedAt: new Date(), lockedAt: null, lockedBy: null } });
     const s3Run = await prisma.assistantRun.findUniqueOrThrow({ where: { id: s3.run.id } });
     assert.equal(s3Run.status, 'COMPLETED');
+    assert.equal(s3Run.usageStatus, 'UNAVAILABLE');
+    assert.equal(s3Run.inputTokens, null);
+    assert.equal(s3Run.outputTokens, null);
+    assert.equal(s3Run.totalTokens, null);
     assert.deepEqual(toolCalls.map((call) => call.toolId), ['cost_variance']);
     const s3Messages = await prisma.assistantMessage.findMany({ where: { conversationId: s3.conversation.id }, orderBy: { createdAt: 'asc' } });
     assert.equal(s3Messages.length, 2);
@@ -124,6 +128,27 @@ test('isolated PostgreSQL assistant recovery + injected fake provider success co
     assert.deepEqual(s3Events.map((event) => event.sequence), [1, 2, 3, 4, 5]);
     assert.doesNotMatch(JSON.stringify(s3Events.map((event) => ({ type: event.type, payload: event.payload }))), new RegExp(FAKE_PROVIDER_PRIVATE_MARKER));
     assert.doesNotMatch(JSON.stringify(s3Events.map((event) => event.payload)), /100000\.00|999999\.00|899999\.00/);
+    // S8: complete provider-reported usage is persisted on the run, never inferred from text.
+    const s8 = await makeRun({ label: 'S8-token-usage', status: 'QUEUED', job: { status: 'QUEUED', attempts: 0, maxAttempts: 1 } });
+    const s8Claimed = await claimNextBackgroundJob(`assistant-usage-gate-${suffix}`, 900);
+    assert.ok(s8Claimed, 'usage test job should be claimed');
+    assert.equal(s8Claimed.id, s8.jobId);
+    const usageHandler = createAssistantAgentRunJobHandler({
+      runAssistantTurn: async () => ({
+        text: '仅用于 token 用量持久化验收的回答。',
+        tokenUsage: { status: 'COMPLETE', inputTokens: 321, outputTokens: 87, totalTokens: 408 },
+      }),
+    });
+    await usageHandler(s8Claimed);
+    await prisma.backgroundJob.updateMany({ where: { id: s8Claimed.id, status: 'RUNNING' }, data: { status: 'SUCCEEDED', finishedAt: new Date(), lockedAt: null, lockedBy: null } });
+    const s8Run = await prisma.assistantRun.findUniqueOrThrow({ where: { id: s8.run.id } });
+    assert.equal(s8Run.status, 'COMPLETED');
+    assert.equal(s8Run.usageStatus, 'COMPLETE');
+    assert.equal(s8Run.inputTokens, 321);
+    assert.equal(s8Run.outputTokens, 87);
+    assert.equal(s8Run.totalTokens, 408);
+    assert.ok(s8Run.usageCapturedAt instanceof Date);
+
     const s3Audit = await prisma.auditLog.findMany({ where: { entity: 'AssistantRun', entityId: s3.run.id } });
     assert.equal(s3Audit.filter((row) => row.action === 'ASSISTANT_RUN_COMPLETED').length, 1);
 
