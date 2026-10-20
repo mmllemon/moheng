@@ -1,8 +1,10 @@
 # AI 助手实施与准入
 
+状态校准：2026-10-20。本次核对的业务代码基线为 `551d154de6a43344637bbcf745152e08d07be620`；PR #17 的项目级用量摘要与 PR #18 的经营链路修复已合入 `main`。相关 Assistant runtime 和 Prisma 7 migration CI 在精确 PR 头提交上通过；这不等于真实模型供应商 E2E 或完整浏览器验收已完成。
+
 ## 1. 当前实现状态
 
-运行时必须保持可替换：LangGraph/provider SDKs are isolated behind 墨衡自己的 `AssistantRuntime` 适配层；LangGraph 和 PostgreSQL checkpoint 通过该层接入，业务工具只调用墨衡自有只读服务。Pi Durable/SQLite 的实验探针不证明 Pi Durable 自带 PostgreSQL adapter，也不作为当前 API 的生产存储基座。助手 UI 不绑定 LangGraph 内部协议。
+运行时必须保持可替换：LangGraph/provider SDK 与墨衡自己的 `AssistantRuntime` 适配层隔离；LangGraph 和 PostgreSQL checkpoint 通过该层接入，业务工具只调用墨衡自有只读服务。Pi Durable/SQLite 的实验探针不证明 Pi Durable 自带 PostgreSQL adapter，也不作为当前 API 的生产存储基座。助手 UI 不绑定 LangGraph 内部协议。
 
 交互参考只借鉴一般的会话导航、中文输入法与滚动体验；open-claude-ui 仅作为交互研究参考，不复制 Claude 商标/品牌文案、专有二进制或视觉资产。
 
@@ -11,7 +13,7 @@
 源码中已有：
 - LangGraph.js + PostgreSQL `PostgresSaver` 运行时适配，位于 `apps/api/src/assistant/runtime/langgraph-adapter.ts`。
 - 会话、消息、运行记录、持久化事件、SSE 重放/心跳、取消请求和 requestId 幂等 API。
-- 助手消息提交失败后提供重试入口并复用原 `requestId`，以便网络响应丢失时重放同一任务而不是重复创建运行；运行终态失败时可用新 `requestId` 重新提交原问题，前端连接中断而服务端任务仍活动时可重连同一运行。对应逻辑已加入静态回归契约，仍需自动化工作流和后续实操验收。
+- 助手消息提交失败后提供重试入口并复用原 `requestId`，以便网络响应丢失时重放同一任务而不是重复创建运行；运行终态失败时可用新 `requestId` 重新提交原问题，前端连接中断而服务端任务仍活动时可重连同一运行。相应静态/运行态契约已纳入 Assistant runtime 与 Prisma 7 migration 工作流并通过对应 PR 头提交的 CI；目标浏览器中的真实交互仍需继续验收。
 - 持久化后台任务处理与陈旧 run 收敛。
 - 长时间运行的助手任务必须进入 PostgreSQL 持久化 `BackgroundJob` 队列，由后台 worker 处理；不得把模型执行放在 HTTP 请求生命周期内。助手 `AssistantRun` 状态与队列任务状态分别记录，并通过幂等终态转换、取消检查和陈旧任务收敛保持一致。
 - `/cost/assistant` 第一版工作台，包含会话列表、消息流、工具状态、来源摘要与局限说明。
@@ -54,16 +56,25 @@ checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKP
 6. 回答应说明工具、数据范围、生成时间与限制；不得夸大证据精确度。
 7. Prompt/模型输出/API key 不进入普通日志；持久化内容遵守数据最小化与保留政策。
 
-## 5. 产品开发清单
+## 5. 当前开发状态与待办
 
-- [ ] 配置状态与错误指引：模型 ID/凭据/checkpoint 未配置时显示可理解的原因；不在状态或错误响应中泄漏密钥。
-- [ ] 完整问答闭环：空结果、模型超时、工具失败、限流、取消、重试和持久化终态一致。
-- [ ] SSE 重连/事件回放：断线后从持久化序号恢复，不重复消息、不覆盖新会话。
-- [ ] 可解释来源：工具、字段/实体、范围、生成时间及口径/局限。
-- [ ] 体验打磨：空白会话、建议问题、中文输入法、长消息滚动、窄屏、键盘导航、错误重试。
-- [ ] fake provider E2E、真实 provider 的受控 E2E；验证并发、重启恢复、越权/提示注入，并确认 `MainContract`、`Change`、`CostEntry`、`DownstreamContract`、`ProgressBill`、`OwnerReceivable` 六张业务表零变化。
-- [ ] 明确 token/成本上限、请求/项目限流、超时、数据保留/删除和告警。
-- [ ] 造价/成本人员只读试点并记录回答口径问题；完成独立生产准入评审。
+### 已合入主干的能力
+
+- [x] 配置就绪诊断与错误 endpoint 拒绝入队；状态接口不回显 API 密钥或完整 endpoint。
+- [x] 持久化会话/运行/事件、SSE 回放与心跳、取消请求、requestId 幂等、失败重试和陈旧 run 收敛。
+- [x] 上下文预算、每用户最多 2 个活动任务、滚动 60 秒最多 6 次新提交、每次模型请求 1,800-token 输出上限、45 秒超时和最多 1 次 SDK 重试的代码配置。
+- [x] 只读业务工具、服务端项目权限复核、事件/日志敏感信息契约。
+- [x] 供应商报告 token 的 COMPLETE/PARTIAL/UNAVAILABLE 分类；未知值不按字符估算。
+- [x] 项目范围近 30 天用量摘要：按当前认证用户及授权项目读取；展示活动/终态任务数和完整/部分/未知用量，不计算或虚构费用。
+
+### 仍需在开发阶段继续验证
+
+- [ ] 浏览器中覆盖配置未就绪、空结果、错误/限流、取消、失败重试、断线重连、来源面板和用量摘要。
+- [ ] 在隔离数据库中补齐会话/项目隔离与业务表无写入的运行态回归；使用 fake provider 验证工具调用与恢复边界。
+- [ ] 在授权测试环境连接真实模型供应商，核验 token 元数据格式、真实取消/超时行为与费用/账单边界；不在聊天中传递密钥。
+- [ ] 完成中文输入法、长消息滚动、窄屏、键盘导航和错误引导等体验检查。
+
+生产/正式启用仍须独立准入：`ASSISTANT_POC_ENABLED` 保持默认关闭；以上自动化通过不等于真实 provider E2E、安全/隐私准入或生产启用批准。
 
 ## 6. 模型供应商与启用
 
