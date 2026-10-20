@@ -2,7 +2,7 @@
 
 墨衡面向施工单位的项目经营与经济成本管理，覆盖项目、合同、变更签证、目标成本、实际成本、结算、应收应付、收付款、往来单位、经营分析、报表与只读 AI 助手。
 
-> **包版本与集成候选：** 根/API/Web 的包版本仍为 `2.19.0-rc.2`；报表与产品完善的集成候选位于 [`feat/v2.20.0-product-completion-squashed`](https://github.com/mmllemon/moheng/pull/4)，当前仍为 Draft，尚未合并发布。Prisma 7 迁移已整合进该候选；若选择 PR #4，不应再独立合并历史迁移 PR。当前头提交的自动化状态以 [PR #4 Checks](https://github.com/mmllemon/moheng/pull/4/checks) 为准。系统仍处于 RC，产品完整度、UI/浏览器验收及 AI 真实模型端到端须按路线图逐项完成。
+> **当前集成状态：** v2.20 产品完善已通过 [PR #4](https://github.com/mmllemon/moheng/pull/4) 合并到 `main`，后续报表打印修复也已通过 [PR #6](https://github.com/mmllemon/moheng/pull/6) 合并；Prisma 7 迁移已纳入主分支。根/API/Web 的包版本仍为 `2.19.0-rc.2`，尚未发布正式版本，项目仍处于 RC。最近一次 AI token 用量功能的 [PR #16](https://github.com/mmllemon/moheng/pull/16) 在合并前的精确头提交 `fd20433bfa59ac6e8a3c1a51f52fa0f2aa205607` 上通过 Assistant runtime gates 与 Prisma 7 migration gates；这不替代后续主分支新提交的 CI 结果。真实浏览器/Windows 验收、脱敏业务数据迁移核对及 AI 真实供应商 E2E 仍未完成。
 
 ## 技术栈
 
