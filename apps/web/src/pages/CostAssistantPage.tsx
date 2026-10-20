@@ -9,6 +9,7 @@ import {
   createAssistantConversation,
   getAssistantConversation,
   getAssistantStatus,
+  getAssistantUsageSummary,
   listAssistantConversations,
   watchAssistantRun,
   type AssistantConversationDetail,
@@ -48,6 +49,9 @@ export default function CostAssistantPage() {
   const [toolTrace, setToolTrace] = useState<ToolTrace[]>([]);
   const [runErrorCode, setRunErrorCode] = useState<string | null>(null);
   const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
+  const [usageSummary, setUsageSummary] = useState<Awaited<ReturnType<typeof getAssistantUsageSummary>> | null>(null);
+  const [usageSummaryError, setUsageSummaryError] = useState(false);
+  const [loadingUsageSummary, setLoadingUsageSummary] = useState(false);
   const watchers = useRef(new Map<string, WatchEntry>());
   const selectedConversationRef = useRef<string | null>(null);
   const selectedProjectRef = useRef<string | null>(null);
@@ -89,6 +93,33 @@ export default function CostAssistantPage() {
       return list[0]?.id ?? null;
     });
   }, [featureEnabled, includeArchived, selectedProjectId]);
+
+  const refreshUsageSummary = useCallback(async () => {
+    const projectId = selectedProjectId;
+    if (!projectId || featureEnabled !== true) {
+      setUsageSummary(null);
+      setUsageSummaryError(false);
+      setLoadingUsageSummary(false);
+      return;
+    }
+    setLoadingUsageSummary(true);
+    setUsageSummaryError(false);
+    try {
+      const summary = await getAssistantUsageSummary(projectId);
+      if (selectedProjectRef.current === projectId) setUsageSummary(summary);
+    } catch {
+      if (selectedProjectRef.current === projectId) {
+        setUsageSummary(null);
+        setUsageSummaryError(true);
+      }
+    } finally {
+      if (selectedProjectRef.current === projectId) setLoadingUsageSummary(false);
+    }
+  }, [featureEnabled, selectedProjectId]);
+
+  useEffect(() => {
+    void refreshUsageSummary();
+  }, [refreshUsageSummary]);
 
   useEffect(() => {
     let alive = true;
@@ -177,7 +208,7 @@ export default function CostAssistantPage() {
     })();
     watchers.current.set(runId, { conversationId, controller, promise });
     return promise;
-  }, [refreshConversationList]);
+  }, [refreshConversationList, refreshUsageSummary]);
 
   useEffect(() => {
     let alive = true;
@@ -291,6 +322,26 @@ export default function CostAssistantPage() {
       <aside className="assistant-evidence-rail">
         <div className="assistant-evidence-header"><div><span className="assistant-section-kicker">TRACE & EVIDENCE</span><h2>分析依据</h2></div><FileSearch size={17} /></div>
         <div className="assistant-scope-card"><span className="assistant-evidence-label">授权数据范围</span><strong>{selectedProject?.name ?? '当前项目'}</strong><p>服务端逐次复核项目权限。模型不能自行更改项目范围。</p></div>
+        <div className="assistant-evidence-section assistant-usage-summary">
+          <div className="assistant-subsection-heading"><h3>近 {usageSummary?.windowDays ?? 30} 天模型用量</h3><span>{usageSummary ? '按当前用户统计' : 'Token'}</span></div>
+          {loadingUsageSummary
+            ? <p className="assistant-muted-copy">正在读取用量统计……</p>
+            : usageSummaryError
+              ? <p className="assistant-muted-copy" role="status">用量统计暂不可用；不会用估算值替代实际用量。</p>
+              : usageSummary && <>
+                <div className="assistant-usage-metrics">
+                  <div><span>已结束任务</span><strong>{formatTokenCount(usageSummary.terminalRuns)}</strong></div>
+                  <div><span>进行中</span><strong>{formatTokenCount(usageSummary.activeRuns)}</strong></div>
+                  <div><span>完整用量</span><strong>{formatTokenCount(usageSummary.completeRuns)}</strong></div>
+                </div>
+                <div className="assistant-usage-totals">
+                  <div><span>输入</span><strong>{usageSummary.tokens ? formatTokenCount(usageSummary.tokens.inputTokens) : '未知'}</strong></div>
+                  <div><span>输出</span><strong>{usageSummary.tokens ? formatTokenCount(usageSummary.tokens.outputTokens) : '未知'}</strong></div>
+                  <div><span>合计</span><strong>{usageSummary.tokens ? formatTokenCount(usageSummary.tokens.totalTokens) : '未知'}</strong></div>
+                </div>
+                <p className="assistant-muted-copy">已结束任务统计近 30 天；进行中任务反映当前全部活动任务。只汇总供应商完整报告的 token 数，不推算费用。完整 {formatTokenCount(usageSummary.completeRuns)} 次；部分缺失 {formatTokenCount(usageSummary.partialRuns)} 次；供应商未提供 {formatTokenCount(usageSummary.unavailableRuns)} 次。</p>
+              </>}
+        </div>
         <div className="assistant-evidence-section"><div className="assistant-subsection-heading"><h3>执行状态</h3>{runStatus && <span className={`assistant-run-badge status-${runStatus.toLowerCase()}`}>{runStatusLabel(runStatus)}</span>}</div>
           {!runStatus && <p className="assistant-muted-copy">提交问题后，这里会显示工具执行阶段与状态。</p>}
           {runStatus && <div className="assistant-run-status-line"><span className={`assistant-run-status-mark status-${runStatus.toLowerCase()}`} />{runStatusLabel(runStatus)}{activeRunId && <small>运行 {activeRunId.slice(0, 8)}</small>}</div>}
@@ -311,6 +362,10 @@ export default function CostAssistantPage() {
       </aside>
     </section>
   </div>;
+}
+
+function formatTokenCount(value: number) {
+  return new Intl.NumberFormat('zh-CN').format(value);
 }
 
 function formatRelativeDate(value: string) {

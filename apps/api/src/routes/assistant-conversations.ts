@@ -9,6 +9,7 @@ import { appendAssistantRunEvent } from '../lib/assistant-run-events.js';
 import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
 import { isAssistantBaseUrlValid } from '../lib/assistant-config.js';
 import { assertAssistantUserRunAdmission, MAX_ACTIVE_ASSISTANT_RUNS_PER_USER, MAX_ASSISTANT_SUBMISSIONS_PER_USER_PER_MINUTE } from '../lib/assistant-submission-policy.js';
+import { buildAssistantUsageSummary, ASSISTANT_USAGE_SUMMARY_WINDOW_DAYS } from '../lib/assistant-usage-summary.js';
 
 const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
   if (process.env.ASSISTANT_POC_ENABLED !== 'true') {
@@ -64,6 +65,41 @@ function parseAfterSequence(request: FastifyRequest): number | null {
 const sleep = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
 
 export async function assistantConversationRoutes(app: FastifyInstance) {
+  app.get('/usage-summary', {
+    preHandler: [featureGate, authRequired],
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const query = z.object({ projectId: z.string().trim().min(1).max(100) }).strict().safeParse(request.query);
+    if (!query.success) return failure(reply, 400, 'ASSISTANT_USAGE_SUMMARY_QUERY_INVALID', '项目用量查询条件无效');
+    const actor = authUser(request);
+    const { projectId } = query.data;
+    if (!(await canAccessProject(actor.sub, actor.role, projectId, undefined, 'PROJECT_READ'))) {
+      return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在或无权访问');
+    }
+
+    const periodEnd = new Date();
+    const periodStart = new Date(periodEnd.getTime() - ASSISTANT_USAGE_SUMMARY_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+    const [groups, activeRuns] = await Promise.all([
+      prisma.assistantRun.groupBy({
+        by: ['usageStatus'],
+        where: {
+          ownerUserId: actor.sub,
+          projectId,
+          createdAt: { gte: periodStart, lte: periodEnd },
+          status: { in: ['COMPLETED', 'FAILED', 'CANCELLED'] },
+        },
+        _count: { _all: true },
+        _sum: { inputTokens: true, outputTokens: true, totalTokens: true },
+      }),
+      // Active work is a current-state metric, not a 30-day creation-window metric.
+      prisma.assistantRun.count({
+        where: { ownerUserId: actor.sub, projectId, status: { in: ['QUEUED', 'RUNNING'] } },
+      }),
+    ]);
+
+    return success(buildAssistantUsageSummary({ projectId, periodStart, periodEnd, activeRuns, groups }));
+  });
+
   app.get('/conversations', {
     preHandler: [featureGate, authRequired],
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
