@@ -339,7 +339,7 @@ export default function CostAssistantPage() {
                   <div><span>输出</span><strong>{usageSummary.tokens ? formatTokenCount(usageSummary.tokens.outputTokens) : '未知'}</strong></div>
                   <div><span>合计</span><strong>{usageSummary.tokens ? formatTokenCount(usageSummary.tokens.totalTokens) : '未知'}</strong></div>
                 </div>
-                <p className="assistant-muted-copy">只汇总供应商完整报告的 token 数，不推算费用。完整 {formatTokenCount(usageSummary.completeRuns)} 次；部分缺失 {formatTokenCount(usageSummary.partialRuns)} 次；供应商未提供 {formatTokenCount(usageSummary.unavailableRuns)} 次。</p>
+                <p className="assistant-muted-copy">已结束任务统计近 30 天；进行中任务反映当前全部活动任务。只汇总供应商完整报告的 token 数，不推算费用。完整 {formatTokenCount(usageSummary.completeRuns)} 次；部分缺失 {formatTokenCount(usageSummary.partialRuns)} 次；供应商未提供 {formatTokenCount(usageSummary.unavailableRuns)} 次。</p>
               </>}
         </div>
         <div className="assistant-evidence-section"><div className="assistant-subsection-heading"><h3>执行状态</h3>{runStatus && <span className={`assistant-run-badge status-${runStatus.toLowerCase()}`}>{runStatusLabel(runStatus)}</span>}</div>
