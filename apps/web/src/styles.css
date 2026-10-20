@@ -3047,3 +3047,12 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 /* Maintain WCAG AA contrast for primary actions in the dark theme. */
 :root[data-theme-name="obsidian"] .button-primary { background: var(--accent-600); border-color: var(--accent-600); }
 :root[data-theme-name="obsidian"] .button-primary:hover:not(:disabled) { filter: brightness(.92); }
+
+
+/* Compact, theme-token-based project assistant usage summary. */
+.assistant-usage-metrics,.assistant-usage-totals { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:8px 0; }
+.assistant-usage-metrics > div,.assistant-usage-totals > div { display:flex; min-width:0; flex-direction:column; gap:5px; padding:8px 6px; border:1px solid var(--line); border-radius:7px; background:var(--surface); }
+.assistant-usage-metrics span,.assistant-usage-totals span { color:var(--text-muted); font-size:var(--text-2xs); }
+.assistant-usage-metrics strong,.assistant-usage-totals strong { color:var(--text-primary); font-size:12px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.assistant-usage-totals { padding-top:8px; border-top:1px solid var(--line); }
+.assistant-usage-summary .assistant-muted-copy { margin-bottom:0; }
