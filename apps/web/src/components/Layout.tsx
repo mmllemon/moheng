@@ -29,6 +29,7 @@ const navigation: NavigationItem[] = [
   { to: '/projects/members', label: '项目成员与权限', icon: Users, group: '项目管理', end: true },
   { to: '/system', label: '系统管理', icon: SlidersHorizontal, group: '系统管理', end: false, adminOnly: true },
 ];
+const assistantNavigationItem: NavigationItem = { to: '/cost/assistant', label: '成本助手', icon: Sparkles, group: '工作台', end: true };
 const systemNavigation: NavigationItem[] = [
   { to: '/system', label: '概览', icon: LayoutDashboard, group: '系统管理', end: true, adminOnly: true },
   { to: '/system/accounts', label: '账号管理', icon: UserCog, group: '系统管理', end: true, adminOnly: true },
@@ -72,6 +73,7 @@ export default function Layout() {
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [assistantEnabled, setAssistantEnabled] = useState(false);
   const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
   const commandInputRef = useRef<HTMLInputElement>(null);
 
@@ -83,6 +85,12 @@ export default function Layout() {
   }, [projects, selectedProjectId, setSelectedProjectId]);
 
   const activeProject = projects.find((project) => project.id === selectedProjectId);
+  useEffect(() => {
+    let current = true;
+    api.get<{ enabled: boolean }>('/assistant-poc/status').then((status) => { if (current) setAssistantEnabled(Boolean(status.enabled)); }).catch(() => { if (current) setAssistantEnabled(false); });
+    return () => { current = false; };
+  }, [user?.id]);
+  const navigationWithAssistant = assistantEnabled ? [...navigation, assistantNavigationItem] : navigation;
   useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
   useEffect(() => {
     const onResize = () => { if (window.innerWidth > 940) setMobileNavOpen(false); };
@@ -115,7 +123,7 @@ export default function Layout() {
 
   const quickItems = useMemo<QuickItem[]>(() => {
     const text = quickSearch.trim().toLocaleLowerCase();
-    const pages = [...navigation.filter((item) => !item.adminOnly || user?.role === 'ADMIN'), ...(user?.role === 'ADMIN' ? systemNavigation.filter((item) => item.to !== '/system') : []), ...costWorkspacePages.filter((page) => page.to !== '/cost')]
+    const pages = [...navigationWithAssistant.filter((item) => !item.adminOnly || user?.role === 'ADMIN'), ...(user?.role === 'ADMIN' ? systemNavigation.filter((item) => item.to !== '/system') : []), ...costWorkspacePages.filter((page) => page.to !== '/cost')]
       .filter((item) => (!text || item.label.toLocaleLowerCase().includes(text)))
       .map((item) => ({ kind: 'page' as const, id: item.to, title: item.label, sub: '页面直达', to: item.to }));
     const projectItems = projects
@@ -193,7 +201,7 @@ export default function Layout() {
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const isSystemArea = user?.role === 'ADMIN' && (location.pathname.startsWith('/system') || location.pathname === '/audit-logs');
 
-  const costPageLabel = location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
+  const costPageLabel = location.pathname === '/cost/assistant' ? '成本助手' : location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
 
   async function logout() {
@@ -211,7 +219,7 @@ export default function Layout() {
       <div className="sidebar-navigation">
         {navigationGroups.filter((group) => group !== '系统管理' || user?.role === 'ADMIN').map((group) => <div className="nav-group" key={group}>
           {!collapsed && <div className="nav-group-title">{group}</div>}
-          {navigation.filter((item) => item.group === group && (!item.adminOnly || user?.role === 'ADMIN')).map((item) => {
+          {navigationWithAssistant.filter((item) => item.group === group && (!item.adminOnly || user?.role === 'ADMIN')).map((item) => {
             const Icon = item.icon;
             return <NavLink key={item.to} to={item.to} end={item.end ?? false} title={collapsed ? item.label : undefined} aria-label={item.label} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
               <Icon size={18} strokeWidth={1.8} /><span>{item.label}</span>
