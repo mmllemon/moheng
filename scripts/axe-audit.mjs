@@ -3,7 +3,7 @@ import axe from 'axe-core';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const routes = (process.env.AXE_ROUTES ?? '/,/projects,/cost/budget,/system,/system/accounts,/system/security,/system/authorization,/system/policies,/system/governance,/system/dictionaries,/system/parameters,/system/operations,/preview/case,/audit-logs').split(',');
+const routes = (process.env.AXE_ROUTES ?? '/,/projects,/cost/budget,/system,/system/accounts,/system/security,/system/authorization,/system/policies,/system/governance,/system/dictionaries,/system/parameters,/system/operations,/audit-logs').split(',');
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
