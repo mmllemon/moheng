@@ -520,3 +520,79 @@
 .pv-tb-divider { width: 1px; height: 16px; margin: 0 4px; background: color-mix(in srgb, var(--pv-border) 70%, transparent); }
 .pv-sidebar { border-radius: 12px; border-color: rgba(0, 0, 0, 0.08); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03); }
 .theme-preview[data-theme="midnight-contrast"] .pv-sidebar { border-color: rgba(255, 255, 255, 0.12); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.24), 0 1px 4px rgba(0, 0, 0, 0.18); }
+/* Exact 1.1.35 measurements from the running renderer CDP:
+   aside 6px inset / 240px / 12.89px radius; titlebar is three transparent islands. */
+.pv-titlebar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 8;
+  display: block;
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  pointer-events: none;
+}
+.theme-preview[data-theme="warm-paper"] .pv-titlebar { background: transparent; background-image: none; }
+.pv-titlebar-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 55px;
+  height: 44px;
+  padding: 11px 0 0 11px;
+  display: flex;
+  align-items: flex-start;
+  pointer-events: auto;
+}
+.pv-titlebar-frame {
+  position: absolute;
+  left: 253px;
+  right: 8px;
+  top: 7px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.pv-titlebar-center {
+  position: static;
+  transform: none;
+  max-width: calc(100% - 80px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pv-text-2);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+.pv-titlebar-actions { position: absolute; right: 0; top: 3px; display: flex; align-items: center; gap: 1px; pointer-events: auto; }
+.pv-body { height: 100%; }
+.pv-sidebar {
+  width: 240px;
+  flex: 0 0 240px;
+  height: calc(100% - 12px);
+  align-self: center;
+  margin: 6px 0 6px 6px;
+  padding-top: 34px;
+  background-color: #F4F0EA;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12.8863px;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+.theme-preview[data-theme="midnight-contrast"] .pv-sidebar { background-color: var(--pv-sidebar); border-color: rgba(255, 255, 255, 0.12); box-shadow: 0 4px 32px rgba(0, 0, 0, 0.26); }
+.pv-sidebar .pv-brand { padding-top: 2px; }
+.pv-content { padding-top: 52px; }
+@media (max-width: 900px) {
+  .pv-titlebar-frame { left: 230px; right: 6px; }
+  .pv-sidebar { width: 224px; flex-basis: 224px; height: calc(100% - 10px); margin: 5px 0 5px 5px; }
+}
+@media (max-width: 680px) {
+  .pv-titlebar-frame { left: 54px; right: 8px; }
+  .pv-titlebar-center { max-width: calc(100% - 76px); }
+  .pv-sidebar { display: none; }
+  .pv-content { padding-top: 48px; }
+}
