@@ -172,7 +172,7 @@ function contentToText(content: unknown): string {
 export async function runLangGraphAssistantTurn(
   input: LangGraphAssistantTurn,
   dependencies: Partial<AssistantRuntimeTestDependencies> = {},
-): Promise<string> {
+): Promise<AssistantRuntimeResult> {
   // Dependency injection is an in-process test seam only; public API inputs cannot select providers/tools.
   const runtime = { ...productionDependencies, ...dependencies };
   const saver = runtime.createSaver(input.checkpointUrl, { schema: checkpointSchema });
