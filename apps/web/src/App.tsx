@@ -9,6 +9,7 @@ const ReportStudioPage = lazy(() => import('./pages/ReportStudioPage'));
 const ReportPreviewPage = lazy(() => import('./pages/ReportPreviewPage'));
 const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'));
 const AssistantProviderPage = lazy(() => import('./pages/AssistantProviderPage'));
+const ThemePreviewPage = lazy(() => import('./pages/ThemePreviewPage'));
 const SystemSecurityPage = lazy(() => import('./pages/SystemSecurityPage'));
 const AccountSecurityPage = lazy(() => import('./pages/AccountSecurityPage'));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
@@ -94,6 +95,8 @@ function LegacySettingsUsersRedirect() {
 export default function App() {
   return <Suspense fallback={<div className="full-screen-loading"><LoadingBlock label="正在加载页面…" /></div>}><Routes>
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/preview/themes" element={<Navigate to="/preview/themes/warm-paper" replace />} />
+    <Route path="/preview/themes/:theme" element={<ThemePreviewPage />} />
     <Route path="/account/security-step" element={<AccountSecurityStepPage />} />
     <Route element={<ProtectedRoute />}>
       <Route path="/" element={<Layout />}>
