@@ -188,12 +188,12 @@ export default function Layout() {
   }, [commandPaletteOpen, quickItems, activeCommandIndex]);
 
   const isGlobalOverview = location.pathname === '/';
-  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/system') || location.pathname === '/audit-logs' || location.pathname === '/account/security' || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/notifications', '/projects'].includes(location.pathname);
+  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/system') || location.pathname === '/audit-logs' || location.pathname === '/account/security' || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || location.pathname.startsWith('/preview') || ['/notifications', '/projects'].includes(location.pathname);
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const isSystemArea = user?.role === 'ADMIN' && (location.pathname.startsWith('/system') || location.pathname === '/audit-logs');
 
   const costPageLabel = location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
-  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
+  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/account/security' ? '个人中心与账号安全' : location.pathname === '/preview/case' ? '变更签证案卷预览' : '工作台');
 
   async function logout() {
     try { await api.logout(); } catch { /* The local session is cleared even if the network is unavailable. */ }
