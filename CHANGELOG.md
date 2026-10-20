@@ -1,5 +1,7 @@
 ## v2.19.0-rc.2 Prisma 7 security migration candidate（2026-10-17）
 
+> **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
+
 ### 2026-10-20 增量开发（已合入 main，未正式发布）
 
 - [PR #17](https://github.com/mmllemon/moheng/pull/17) 已合并项目上下文中的近 30 天 AI 用量摘要：按当前认证用户与授权项目聚合，区分活动任务、已结束运行以及 COMPLETE/PARTIAL/UNAVAILABLE 用量；只有完整且一致的供应商 token 元数据参与累计，不按字符数推算 token 或费用。
@@ -10,7 +12,7 @@
 
 ### v2.20.0 product completion — merged to main, not released
 
-> Source integration status: merged to `main` on 2026-10-19 as commit `08696e5bc5fb106c10aae5b796616b25c159aa52`. This is **not a formal release**: package versions remain `2.19.0-rc.2`, no GitHub Release has been published, and production rollout remains blocked on the real-environment acceptance and authorized owner sign-offs documented in the acceptance review.
+> Source integration status: merged to `main` on 2026-10-19 as commit `08696e5bc5fb106c10aae5b796616b25c159aa52`. This is **not a formal release**: package versions remain `2.19.0-rc.2`, no GitHub Release has been published, and production deployment has not been approved. Real deployment, historical-data reconciliation (if such data exists), and formal business/audit sign-off are later-stage gates after the relevant environment and materials exist, not current development prerequisites.
 
 - Consolidated repository documentation into one current index and four-phase roadmap; archived the historical defect review and summarized old RC acceptance records rather than keeping repeated versioned design documents.
 - Added styled `报表预览` overview sheets to both standard XLSX exports and Report Studio XLSX exports, including report scope, filters/template version, worksheet directory, row limit and truncation warnings.
