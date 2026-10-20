@@ -145,7 +145,8 @@ export default function ThemePreviewPage() {
     <div className={'pv-window' + (view === 'settings' ? ' has-modal' : '')}>
       <header className="pv-titlebar">
         <div className="pv-titlebar-left"><button type="button" className="pv-tb-toggle" aria-label="切换侧栏"><PanelLeft size={15} /></button></div>
-        <div className="pv-titlebar-controls"><button type="button" className="pv-wc" aria-label="最小化"><Minus size={12} /></button><button type="button" className="pv-wc" aria-label="最大化"><Square size={10} /></button><button type="button" className="pv-wc is-close" aria-label="关闭"><X size={12} /></button></div>
+        <div className="pv-titlebar-center">金融城5号配电项目 <span>·</span> 经营总览</div>
+        <div className="pv-titlebar-controls"><button type="button" className="pv-tb-icon" aria-label="项目文件"><FolderKanban size={15} /></button><button type="button" className="pv-tb-icon" aria-label="文档"><FileText size={15} /></button><span className="pv-tb-divider" /><button type="button" className="pv-wc" aria-label="最小化"><Minus size={12} /></button><button type="button" className="pv-wc" aria-label="最大化"><Square size={10} /></button><button type="button" className="pv-wc is-close" aria-label="关闭"><X size={12} /></button></div>
       </header>
       <div className="pv-body">
       <aside className="pv-sidebar">

@@ -509,3 +509,14 @@
   .pv-settings-scrim { padding: 0; }
   .pv-settings-modal { width: 100%; height: 100%; }
 }
+/* Exact 1.1.35 shell cues: float-panel sidebar and document title in the titlebar. */
+.pv-titlebar { background: color-mix(in srgb, var(--pv-bg) 94%, transparent); border-bottom-color: color-mix(in srgb, var(--pv-border) 45%, transparent); }
+.theme-preview[data-theme="warm-paper"] .pv-titlebar { background-color: var(--pv-bg); background-image: url("/textures/paper-grain.png"); background-size: 180px 180px; background-blend-mode: multiply; }
+.pv-titlebar-center { display: block; max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--pv-text-2); font-size: 10px; letter-spacing: 0.02em; }
+.pv-titlebar-center span { margin: 0 5px; color: var(--pv-faint); }
+.pv-titlebar-controls { gap: 1px; }
+.pv-tb-icon { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 4px; background: transparent; color: var(--pv-muted); }
+.pv-tb-icon:hover { background: color-mix(in srgb, var(--pv-text) 6%, transparent); color: var(--pv-text); }
+.pv-tb-divider { width: 1px; height: 16px; margin: 0 4px; background: color-mix(in srgb, var(--pv-border) 70%, transparent); }
+.pv-sidebar { border-radius: 12px; border-color: rgba(0, 0, 0, 0.08); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03); }
+.theme-preview[data-theme="midnight-contrast"] .pv-sidebar { border-color: rgba(255, 255, 255, 0.12); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.24), 0 1px 4px rgba(0, 0, 0, 0.18); }
