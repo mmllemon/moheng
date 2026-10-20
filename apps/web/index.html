@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="warm-paper">
+<html lang="zh-CN" data-theme="warm-paper" data-paper-texture="rice">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,6 +17,13 @@
           document.documentElement.dataset.density = prefs.density === "compact" ? "compact" : "comfortable";
           document.documentElement.dataset.motion = prefs.reduceMotion ? "reduced" : "full";
           document.documentElement.dataset.contentWidth = prefs.wideContent ? "wide" : "standard";
+          var texture = prefs.paperTexture === "off" || prefs.paperTexture === "cotton" || prefs.paperTexture === "fine" ? prefs.paperTexture : "rice";
+          if (texture === "off") document.documentElement.removeAttribute("data-paper-texture");
+          else document.documentElement.dataset.paperTexture = texture;
+          var strength = Number(prefs.paperTextureStrength);
+          if (!isFinite(strength)) strength = 1;
+          strength = Math.min(1.5, Math.max(0.5, strength));
+          document.documentElement.style.setProperty("--paper-texture-strength", String(strength));
         } catch (error) { /* Default theme remains warm paper. */ }
       })();
     </script>

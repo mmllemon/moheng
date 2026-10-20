@@ -68,6 +68,24 @@
   --z-popover: 9000;
   --z-toast: 9500;
   --z-top: 10000;
+
+  /* Hana PaperTextureLayer：3 种原版纸纹与 5 档强度 */
+  --paper-texture-peak: 0.09;
+  --paper-texture-strength: 1;
+  --paper-texture-tile-size: 1024px, 720px, 256px;
+}
+
+html[data-paper-texture="rice"] {
+  --paper-texture-mask-hi: url("/textures/hana/rice-mottle-hi.png"), url("/textures/hana/rice-fiber-hi.png"), url("/textures/hana/grain-hi.png");
+  --paper-texture-mask-lo: url("/textures/hana/rice-mottle-lo.png"), url("/textures/hana/rice-fiber-lo.png"), url("/textures/hana/grain-lo.png");
+}
+html[data-paper-texture="cotton"] {
+  --paper-texture-mask-hi: url("/textures/hana/cotton-mottle-hi.png"), url("/textures/hana/cotton-fiber-hi.png"), url("/textures/hana/grain-hi.png");
+  --paper-texture-mask-lo: url("/textures/hana/cotton-mottle-lo.png"), url("/textures/hana/cotton-fiber-lo.png"), url("/textures/hana/grain-lo.png");
+}
+html[data-paper-texture="fine"] {
+  --paper-texture-mask-hi: url("/textures/hana/fine-mottle-hi.png"), url("/textures/hana/fine-fiber-hi.png"), url("/textures/hana/grain-hi.png");
+  --paper-texture-mask-lo: url("/textures/hana/fine-mottle-lo.png"), url("/textures/hana/fine-fiber-lo.png"), url("/textures/hana/grain-lo.png");
 }
 
 /* ---------- Hana 暖纸（当前 1.1.35 默认主题） ---------- */
@@ -96,8 +114,6 @@ html[data-theme="warm-paper"] {
   --overlay-light: rgba(42, 38, 34, 0.05);
   --overlay-medium: rgba(42, 38, 34, 0.08);
   --overlay-strong: rgba(42, 38, 34, 0.15);
-  --paper-texture-blend: multiply;
-  --paper-texture-opacity: 1;
   --select-arrow: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6F73' fill='none' stroke-width='1.35' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 
@@ -127,8 +143,6 @@ html[data-theme="plain-white"] {
   --overlay-light: rgba(30, 28, 24, 0.045);
   --overlay-medium: rgba(30, 28, 24, 0.075);
   --overlay-strong: rgba(30, 28, 24, 0.14);
-  --paper-texture-blend: multiply;
-  --paper-texture-opacity: 0.55;
 }
 
 /* ---------- 青夜：Hana midnight-contrast ---------- */
@@ -157,8 +171,6 @@ html[data-theme="midnight"] {
   --overlay-light: rgba(255, 255, 255, 0.07);
   --overlay-medium: rgba(255, 255, 255, 0.11);
   --overlay-strong: rgba(255, 255, 255, 0.18);
-  --paper-texture-blend: screen;
-  --paper-texture-opacity: 0.16;
   --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.22);
   --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.26);
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -243,17 +255,35 @@ body {
   text-rendering: optimizeLegibility;
   user-select: text;
 }
-body::before {
+/* Hana 原版纸纹：hi/lo 双层遮罩，强度改变表面明度差而不是整体透明度 */
+body::before,
+body::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("/textures/paper-rice.png"), url("/textures/paper-fiber.png"), url("/textures/paper-grain.png");
-  background-size: 1024px 1024px, 720px 720px, 256px 256px;
-  background-repeat: repeat, repeat, repeat;
-  opacity: var(--paper-texture-opacity, 1);
-  mix-blend-mode: var(--paper-texture-blend, multiply);
+  display: none;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+  -webkit-mask-size: var(--paper-texture-tile-size);
+  mask-size: var(--paper-texture-tile-size);
+}
+html[data-paper-texture] body::before,
+html[data-paper-texture] body::after { display: block; }
+body::before {
+  background-color: var(--bg);
+  background: oklch(from var(--bg) calc(l + var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-hi);
+  mask-image: var(--paper-texture-mask-hi);
+}
+body::after {
+  background-color: var(--bg);
+  background: oklch(from var(--bg) calc(l - var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-lo);
+  mask-image: var(--paper-texture-mask-lo);
 }
 #root { position: relative; z-index: 1; min-height: 100vh; height: 100%; }
 
@@ -319,15 +349,33 @@ button, input, select, textarea { font-family: var(--font-ui); }
   color: var(--text);
   transition: transform var(--duration-slow) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
 }
-.app-sidebar::before {
+.app-sidebar::before,
+.app-sidebar::after {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
-  background-image: url("/textures/paper-rice.png"), url("/textures/paper-fiber.png");
-  background-size: 1024px 1024px, 720px 720px;
-  opacity: calc(var(--paper-texture-opacity, 1) * 0.5);
-  mix-blend-mode: var(--paper-texture-blend, multiply);
+  display: none;
+  border-radius: inherit;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+  -webkit-mask-size: var(--paper-texture-tile-size);
+  mask-size: var(--paper-texture-tile-size);
+}
+html[data-paper-texture] .app-sidebar::before,
+html[data-paper-texture] .app-sidebar::after { display: block; }
+.app-sidebar::before {
+  background: oklch(from var(--sidebar-bg) calc(l + var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-hi);
+  mask-image: var(--paper-texture-mask-hi);
+}
+.app-sidebar::after {
+  background: oklch(from var(--sidebar-bg) calc(l - var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-lo);
+  mask-image: var(--paper-texture-mask-lo);
 }
 .app-sidebar > * { position: relative; z-index: 1; }
 .sidebar-toolbar-spacer { flex: 1; }
@@ -1286,6 +1334,49 @@ button, input, select, textarea { font-family: var(--font-ui); }
 .appearance-theme small { display: flex; align-items: center; gap: 3px; color: var(--text-muted); font-size: 8.5px; }
 .appearance-footnote { display: flex; align-items: center; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); color: var(--text-muted); font-size: 9px; line-height: 1.45; }
 .appearance-theme.is-active small { color: color-mix(in srgb, var(--accent) 75%, var(--text-muted)); }
+.appearance-texture-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-bottom: 2px; }
+.appearance-texture-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  cursor: pointer;
+  transition: background var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
+}
+.appearance-texture-choice:hover { background: var(--overlay-light); color: var(--text); }
+.appearance-texture-choice.is-active { background: var(--accent-light); border-color: color-mix(in srgb, var(--accent) 28%, transparent); color: var(--accent); font-weight: 600; }
+.appearance-texture-mark { width: 14px; height: 14px; flex: 0 0 14px; overflow: hidden; border: 1px solid var(--border); border-radius: 3px; background-color: var(--bg-card); background-size: 28px 28px; opacity: 0.85; }
+.texture-rice { background-image: url("/textures/hana/rice-mottle-hi.png"); }
+.texture-cotton { background-image: url("/textures/hana/cotton-mottle-hi.png"); }
+.texture-fine { background-image: url("/textures/hana/fine-mottle-hi.png"); }
+.texture-off { background-image: linear-gradient(135deg, transparent 42%, var(--border-strong) 43%, var(--border-strong) 57%, transparent 58%); background-size: auto; }
+.appearance-strength-row { gap: 12px; }
+.appearance-range {
+  width: 92px;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  flex: 0 0 92px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.appearance-range:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 58%, transparent); outline-offset: 3px; border-radius: 99px; }
+.appearance-range:disabled { opacity: 0.35; cursor: not-allowed; }
+.appearance-range::-webkit-slider-runnable-track { height: 3px; border-radius: 99px; background: var(--overlay-strong); }
+.appearance-range::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; margin-top: -5px; border: 2px solid var(--bg-card); border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.appearance-range::-moz-range-track { height: 3px; border-radius: 99px; background: var(--overlay-strong); }
+.appearance-range::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid var(--bg-card); border-radius: 50%; background: var(--accent); }
+.appearance-popover { max-height: calc(100vh - 56px); overflow-y: auto; }
 .appearance-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 32px; padding: 5px 0; border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
 .appearance-row strong { display: block; color: var(--text); font-size: 11px; font-weight: 500; }
 .appearance-row small { display: block; margin-top: 1px; color: var(--text-muted); font-size: 9px; }
@@ -1486,16 +1577,33 @@ button, input, select, textarea { font-family: var(--font-ui); }
   box-shadow: var(--shadow-2xl);
   animation: hana-dialog-in 0.2s var(--ease-out);
 }
-.settings-window::before {
+.settings-window::before,
+.settings-window::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image: url("/textures/paper-rice.png"), url("/textures/paper-fiber.png");
-  background-size: 1024px 1024px, 720px 720px;
-  opacity: calc(var(--paper-texture-opacity, 1) * 0.5);
-  mix-blend-mode: var(--paper-texture-blend, multiply);
+  display: none;
+  border-radius: inherit;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+  -webkit-mask-size: var(--paper-texture-tile-size);
+  mask-size: var(--paper-texture-tile-size);
+}
+html[data-paper-texture] .settings-window::before,
+html[data-paper-texture] .settings-window::after { display: block; }
+.settings-window::before {
+  background: oklch(from var(--bg) calc(l + var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-hi);
+  mask-image: var(--paper-texture-mask-hi);
+}
+.settings-window::after {
+  background: oklch(from var(--bg) calc(l - var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-lo);
+  mask-image: var(--paper-texture-mask-lo);
 }
 .settings-header, .settings-body { position: relative; z-index: 1; }
 .settings-header {

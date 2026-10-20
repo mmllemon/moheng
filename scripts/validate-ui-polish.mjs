@@ -57,8 +57,8 @@ check('Hana 1.1.35 paper / ink / seal tokens are present',
   hana.includes('--bg: #f8f4ed') && hana.includes('--text: #3b3d3f') && hana.includes('--accent: #466b80') && hana.includes('--sidebar-bg: #f4f0ea'));
 check('V6 serif and brush fonts are declared',
   v6.includes('MH Serif SC') && v6.includes('MH Serif') && v6.includes('MH Brush') && v6.includes('notoserifsc.woff2'));
-check('Hana three-layer paper texture is wired to the body',
-  hana.includes('/textures/paper-rice.png') && hana.includes('/textures/paper-fiber.png') && hana.includes('/textures/paper-grain.png'));
+check('Hana original rice / cotton / fine textures are wired',
+  hana.includes('rice-mottle-hi.png') && hana.includes('cotton-mottle-hi.png') && hana.includes('fine-mottle-hi.png') && hana.includes('--paper-texture-strength'));
 check('legacy styles are isolated in a cascade layer',
   legacy.trimStart().startsWith('@layer legacy') && legacy.trimEnd().endsWith('}'));
 check('legacy !important declarations are removed for predictable overrides',

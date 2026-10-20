@@ -29,14 +29,22 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 
 ## 3. 材质
 
-纸纹分三层，均是可平铺的中性噪点，不携带第三方图片资产：
+纸纹直接采用 Hana 1.1.35 安装版原版资产，放在 `/textures/hana/`：
 
-- `/textures/paper-rice.png`：1024px 云斑，峰值 alpha 约 0.086
-- `/textures/paper-fiber.png`：720px 纤维
-- `/textures/paper-grain.png`：256px 颗粒
+- `rice`：宣纸，长纤维 + 云斑
+- `cotton`：棉纸，短纤维 + 柔絮
+- `fine`：细纸，低对比细颗粒
 
-`body::before` 固定铺三层，`mix-blend-mode: multiply`；青夜主题改用 `screen` 并降到 0.16 不透明度。
-纸纹只铺在背景和侧栏，不进入表格单元格，避免数字发灰。
+每种纸纹由三层原版遮罩合成：`mottle`（云斑）、`fiber`（纤维）、`grain`（颗粒），
+平铺尺寸分别为 1024 / 720 / 256px。界面用 `data-paper-texture="rice|cotton|fine"` 切换；
+`off` 时移除该属性。
+
+明暗层 `::before` / `::after` 使用同一组 hi/lo 遮罩，按
+`--paper-texture-peak: 0.09` 和 `--paper-texture-strength: 0.5–1.5` 改变纸面明度差，
+而不是把整层纹理调透明。默认强度 1；0.5 更轻，1.5 更明显。
+
+纸纹只铺在页面底纸、侧栏和设置窗，不进入表格单元格，避免数字发灰。
+这些原版纹理的再分发需确认 Hana 的授权范围；若仓库对外公开，请在上线前完成素材授权复核。
 
 ## 4. 色彩与主题
 
