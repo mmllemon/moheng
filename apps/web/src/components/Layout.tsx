@@ -3,15 +3,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Building2, BookOpen, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, ClipboardList, FileText, FolderKanban,
-  HandCoins, LayoutDashboard, LogOut, Menu, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
-  ArrowUpRight, Command, CornerDownLeft, Keyboard, X, History, BellRing, FileSpreadsheet, Users,
-  ShieldCheck, UserRound, ServerCog, Sparkles,
+  Building2, BookOpen, ChevronRight, ClipboardList, FileText, FolderKanban,
+  HandCoins, LayoutDashboard, LogOut, Menu, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, History, ReceiptText,
+  ArrowUpRight, Command, CornerDownLeft, Keyboard, X, BellRing, FileSpreadsheet, Users,
+  ShieldCheck, UserRound, ServerCog, Sparkles, PanelLeft, PanelLeftClose, Plus,
 } from 'lucide-react';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
 import type { Project } from '../types';
-import { LoadingBlock, StatusBadge } from './Ui';
+
 import BrandMark from './BrandMark';
 import ConfirmHost from './ConfirmDialog';
 import FocusTrap from './FocusTrap';
@@ -43,7 +43,13 @@ const systemNavigation: NavigationItem[] = [
   { to: '/system/operations', label: '运维备份', icon: ServerCog, group: '系统管理', end: true, adminOnly: true },
   { to: '/audit-logs', label: '操作追溯', icon: History, group: '系统管理', end: true, adminOnly: true },
 ];
-const navigationGroups: NavigationItem['group'][] = ['经营中心', '工作台', '项目管理', '系统管理'];
+const systemGroups = [
+  { label: '系统', items: systemNavigation.slice(0, 3) },
+  { label: '权限与规则', items: systemNavigation.slice(3, 5) },
+  { label: '组织与数据', items: systemNavigation.slice(5, 8) },
+  { label: '智能与运维', items: systemNavigation.slice(8) },
+];
+const primaryGroups: NavigationItem['group'][] = ['经营中心', '工作台', '项目管理'];
 const costWorkspacePages = [
   { to: '/cost', label: '项目驾驶舱' },
   { to: '/cost/contracts', label: '业主主合同' },
@@ -74,6 +80,7 @@ export default function Layout() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
+  const [settingsSearch, setSettingsSearch] = useState('');
   const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
   const commandInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,7 +100,7 @@ export default function Layout() {
   const navigationWithAssistant = assistantEnabled ? [...navigation, assistantNavigationItem] : navigation;
   useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth > 940) setMobileNavOpen(false); };
+    const onResize = () => { if (window.innerWidth > 900) setMobileNavOpen(false); };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -134,12 +141,8 @@ export default function Layout() {
     return [...pages, ...projectItems].slice(0, 10);
   }, [projects, quickSearch, user?.role]);
 
-  useEffect(() => {
-    setActiveCommandIndex(0);
-  }, [quickSearch]);
-  useEffect(() => {
-    if (commandPaletteOpen) commandInputRef.current?.focus();
-  }, [commandPaletteOpen]);
+  useEffect(() => { setActiveCommandIndex(0); }, [quickSearch]);
+  useEffect(() => { if (commandPaletteOpen) commandInputRef.current?.focus(); }, [commandPaletteOpen]);
 
   function openCommandPalette() {
     setQuickActionsOpen(false);
@@ -170,7 +173,6 @@ export default function Layout() {
         return;
       }
       if (event.key === 'Escape') { setQuickActionsOpen(false); return; }
-
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
       const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -196,13 +198,29 @@ export default function Layout() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [commandPaletteOpen, quickItems, activeCommandIndex]);
 
-  const isGlobalOverview = location.pathname === '/';
-  const isGlobalContext = isGlobalOverview || location.pathname.startsWith('/system') || location.pathname === '/audit-logs' || location.pathname === '/account/security' || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/notifications', '/projects'].includes(location.pathname);
+  const isGlobalContext = location.pathname === '/' || location.pathname === '/audit-logs' || location.pathname === '/account/security' || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/notifications', '/projects', '/projects/members'].includes(location.pathname);
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const isSystemArea = user?.role === 'ADMIN' && (location.pathname.startsWith('/system') || location.pathname === '/audit-logs');
-
   const costPageLabel = location.pathname === '/cost/assistant' ? '成本助手' : location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
-  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
+  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
+  const visibleSystemGroups = systemGroups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !settingsSearch.trim() || item.label.toLocaleLowerCase().includes(settingsSearch.trim().toLocaleLowerCase())),
+  })).filter((group) => group.items.length);
+
+
+  useEffect(() => {
+    if (!isSystemArea) return;
+    setSettingsSearch('');
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.querySelector('.date-picker-popover, .select-popover, .modal-backdrop, .command-palette-layer.is-visible')) {
+        event.preventDefault();
+        navigate('/');
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isSystemArea, navigate]);
 
   async function logout() {
     try { await api.logout(); } catch { /* The local session is cleared even if the network is unavailable. */ }
@@ -213,96 +231,129 @@ export default function Layout() {
 
   return <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
     <button type="button" className="mobile-nav-backdrop" aria-label="关闭主导航" onClick={() => setMobileNavOpen(false)} style={{ display: mobileNavOpen ? 'block' : 'none' }} />
-    <aside className={'sidebar' + (mobileNavOpen ? ' mobile-nav-open' : '')} id="main-navigation" aria-label="主导航" data-focus-trap={mobileNavOpen ? 'modal' : undefined}>
-      <div className="brand"><BrandMark />{!collapsed && <div className="brand-word"><strong>墨衡</strong><span>工程经营管理</span></div>}</div>
-      <div className="side-label">{!collapsed && '工作空间'}</div>
-      <div className="sidebar-navigation">
-        {navigationGroups.filter((group) => group !== '系统管理' || user?.role === 'ADMIN').map((group) => <div className="nav-group" key={group}>
-          {!collapsed && <div className="nav-group-title">{group}</div>}
-          {navigationWithAssistant.filter((item) => item.group === group && (!item.adminOnly || user?.role === 'ADMIN')).map((item) => {
-            const Icon = item.icon;
-            return <NavLink key={item.to} to={item.to} end={item.end ?? false} title={collapsed ? item.label : undefined} aria-label={item.label} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-              <Icon size={18} strokeWidth={1.8} /><span>{item.label}</span>
-            </NavLink>;
-          })}
-        </div>)}
-        <div className="sidebar-grow" />
+    <aside className={'app-sidebar' + (mobileNavOpen ? ' mobile-nav-open' : '')} id="main-navigation" aria-label="主导航" data-focus-trap={mobileNavOpen ? 'modal' : undefined}>
+      <div className="app-sidebar-titlebar">
+        <button type="button" className="sidebar-toggle" onClick={toggleSidebar} title={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}</button>
+        <button type="button" className="sidebar-toggle" onClick={openCommandPalette} title="搜索与命令" aria-label="打开全局搜索"><Search size={16} /></button>
+        <span className="sidebar-toolbar-spacer" />
       </div>
-      {!collapsed && <button type="button" className="sidebar-note" onClick={() => navigate('/cost')} title="查看当前项目驾驶舱" aria-label="项目驾驶舱 查看当前项目经营摘要"><span className="sidebar-note-icon"><LayoutDashboard size={16} /></span><span className="sidebar-note-copy"><strong>项目驾驶舱</strong><span>查看当前项目经营摘要</span></span><ChevronRight size={15} /></button>}
-      <button type="button" className="collapse-button" onClick={toggleSidebar} title={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <ChevronsRight size={17} /> : <><ChevronsLeft size={17} /><span>收起导航</span></>}</button>
-      <div className="user-panel"><div className="avatar">{user?.name?.slice(0, 1) ?? '管'}</div>{!collapsed && <><div className="user-meta"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div><button title="退出登录" aria-label="退出登录" className="icon-button logout-button" onClick={logout}><LogOut size={16} /></button></>}</div>
+      <div className="app-sidebar-profile">
+        <span className="sidebar-brand-mark"><BrandMark /></span>
+        <div className="sidebar-wordmark"><strong>墨衡</strong><span>工程经营管理</span></div>
+        <button type="button" className="sidebar-profile-action" onClick={() => navigate('/projects')} title="项目档案" aria-label="打开项目档案"><FolderKanban size={14} /></button>
+      </div>
+      <div className="app-sidebar-scroll">
+        <nav aria-label="业务导航">
+          {primaryGroups.map((group) => <div className="sidebar-nav-group" key={group}>
+            <div className="sidebar-group-title"><span>{group}</span></div>
+            {navigationWithAssistant.filter((item) => item.group === group && (!item.adminOnly || user?.role === 'ADMIN')).map((item) => {
+              const Icon = item.icon;
+              return <NavLink key={item.to} to={item.to} end={item.end ?? false} title={item.label} aria-label={item.label} className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}>
+                <Icon size={16} strokeWidth={1.65} /><span>{item.label}</span>
+              </NavLink>;
+            })}
+          </div>)}
+        </nav>
+        <section className="sidebar-projects" aria-label="快速切换项目">
+          <div className="sidebar-group-title"><span>项目</span><button type="button" className="sidebar-project-all" onClick={() => navigate('/projects')} aria-label="管理项目"><Plus size={12} /></button></div>
+          <div className="sidebar-project-list">
+            {projectsQuery.isLoading ? <div className="sidebar-project-empty">正在加载项目…</div> : projects.length === 0 ? <div className="sidebar-project-empty">暂无可访问项目</div> : projects.slice(0, 4).map((project) => <button type="button" key={project.id} className={`sidebar-project ${project.id === activeProject?.id ? 'is-active' : ''}`} onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }} title={`${project.name} · ${project.code}`}>
+              <span className="sidebar-project-mark">{project.name.slice(0, 1)}</span>
+              <span className="sidebar-project-copy"><strong>{project.name}</strong><small>{project.code}</small></span>
+            </button>)}
+          </div>
+          {projects.length > 4 && <button type="button" className="sidebar-project-all" onClick={() => navigate('/projects')}>查看全部 {projects.length} 个项目<ChevronRight size={11} /></button>}
+        </section>
+      </div>
+      <div className="app-sidebar-footer">
+        {user?.role === 'ADMIN' && <NavLink to="/system" className={({ isActive }) => `sidebar-nav-link sidebar-settings-link ${isActive ? 'active' : ''}`}><SlidersHorizontal size={15} strokeWidth={1.65} /><span>系统设置</span><span className="sidebar-settings-tag">ADMIN</span></NavLink>}
+        <div className="sidebar-user-row">
+          <div className="sidebar-user-avatar">{user?.name?.slice(0, 1) ?? '管'}</div>
+          <div className="sidebar-user-copy"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div>
+          <div className="sidebar-footer-actions">
+            <button title="退出登录" aria-label="退出登录" className="sidebar-footer-icon" onClick={logout}><LogOut size={15} /></button>
+          </div>
+        </div>
+      </div>
     </aside>
 
-    <div className="main-shell">
-      <header className="topbar">
-        <button type="button" className="mobile-nav-trigger" aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={18} /> : <Menu size={18} />}</button>
-        <div className="breadcrumb"><span>工程经营管理</span><span className="crumb-separator">/</span><strong>{currentPageLabel}</strong><span className="environment-pill"><i />工作区</span></div>
-        <div className="topbar-tools">
-          {isGlobalContext && <span className="topbar-scope">全公司<ChevronDown size={12} /></span>}
-          {!isGlobalContext && <div className="topbar-project"><SelectField value={selectedProjectId ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)} aria-label="切换当前项目">{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</SelectField></div>}
-          <button type="button" className="command-trigger" onClick={openCommandPalette} aria-haspopup="dialog" title="打开全局搜索和命令面板">
-            <Search size={15} /><span>搜索清单、项目、单位…</span><kbd><Command size={10} /> K</kbd>
-          </button>
-          <span className="topbar-divider" />
-          <button type="button" className={`topbar-notice-link ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} title="待办与预警" aria-label="打开待办与预警"><BellRing size={17} /><span>待办</span></button>
-          <div className="quick-actions-wrap">
-            <button type="button" className={`notification-button ${quickActionsOpen ? 'is-active' : ''}`} title="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} onClick={() => { setCommandPaletteOpen(false); setQuickActionsOpen((open) => !open); }}><Zap size={18} /></button>
-            {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
-            {quickActionsPresence.mounted && <div className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="menu" aria-label="快捷操作菜单" aria-hidden={!quickActionsOpen} data-focus-trap={quickActionsOpen ? 'popover' : undefined}>
+    <div className="app-main">
+      <header className="app-titlebar">
+        {collapsed && <button type="button" className="titlebar-icon titlebar-restore" onClick={toggleSidebar} title="展开导航" aria-label="展开导航"><PanelLeft size={17} /></button>}
+        <button type="button" className="titlebar-icon titlebar-mobile-menu" aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={17} /> : <Menu size={17} />}</button>
+        <div className="titlebar-context">
+          <span className="titlebar-wordmark">MOHENG</span><span className="titlebar-separator">/</span><strong>{currentPageLabel}</strong>
+          {!isGlobalContext && activeProject && <><span className="titlebar-separator">·</span><span className="titlebar-project-code">{activeProject.code}</span></>}
+        </div>
+        <div className="titlebar-actions">
+          {isGlobalContext ? <span className="titlebar-global-scope"><i />全公司</span> : <div className="titlebar-project"><SelectField value={selectedProjectId ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)} aria-label="切换当前项目">{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</SelectField></div>}
+          <div className="titlebar-cluster">
+            <button type="button" className="titlebar-icon" onClick={openCommandPalette} title="搜索与命令（⌘K）" aria-label="打开全局搜索"><Search size={15} /></button>
+            <button type="button" className={`titlebar-icon ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} title="待办与预警" aria-label="打开待办与预警"><BellRing size={15} /></button>
+            <div className="quick-actions-wrap">
+              <button type="button" className={`titlebar-icon ${quickActionsOpen ? 'is-active' : ''}`} title="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} onClick={() => { setCommandPaletteOpen(false); setAccountMenuOpen(false); setQuickActionsOpen((open) => !open); }}><Zap size={15} /></button>
+              {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
+              {quickActionsPresence.mounted && <div className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="menu" aria-label="快捷操作菜单" aria-hidden={!quickActionsOpen} data-focus-trap={quickActionsOpen ? 'popover' : undefined}>
                 <div className="quick-action-heading"><strong>快捷操作</strong><span>跳转到常用业务模块</span></div>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/costs'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Wallet size={16} /></span><span><strong>新增成本记录</strong><small>登记人工、材料、机械及其他费用</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/progress-bills'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><HandCoins size={16} /></span><span><strong>进度款管理</strong><small>业主申报、审批与回款登记</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/owner-finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={16} /></span><span><strong>竣工结算与应收</strong><small>最终结算、应收余额与到账核销</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><FileText size={16} /></span><span><strong>分供合同与付款</strong><small>分包/采购/租赁合同与支付台账</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream?view=finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={16} /></span><span><strong>结算与应付账款</strong><small>确认结算、应付核销、质保金与发票核对</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/changes'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Workflow size={16} /></span><span><strong>变更签证</strong><small>查看送审与核定状态</small></span><ChevronRight size={16} className="quick-action-arrow" /></button>
-            </div>}
-          </div>
-          <UiPreferencesBar />
-          <div className="account-menu-wrap">
-            <button type="button" className={`topbar-user ${accountMenuOpen ? 'is-open' : ''}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} onClick={() => setAccountMenuOpen((open) => !open)}>
-              <div className="avatar avatar-small">{user?.name?.slice(0, 1) ?? '用'}</div><span>{user?.name ?? '用户'}</span><ChevronDown size={13} className="topbar-user-chevron" />
-            </button>
-            {accountMenuOpen && <>
-              <button type="button" className="account-menu-dismiss" aria-label="关闭账号菜单" onClick={() => setAccountMenuOpen(false)} />
-              <div className="account-menu" role="menu" aria-label="个人账号菜单" data-focus-trap={accountMenuOpen ? 'popover' : undefined}>
-                <div className="account-menu-identity"><strong>{user?.name ?? '用户'}</strong><span>{user?.email ?? ''}</span><small>{user?.role === 'ADMIN' ? '系统管理员' : '普通成员'}</small></div>
-                <button type="button" role="menuitem" onClick={() => { navigate('/account/security'); setAccountMenuOpen(false); }}><UserRound size={15} /><span>个人中心与账号安全</span></button>
-                {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={() => { navigate('/system/security'); setAccountMenuOpen(false); }}><ShieldCheck size={15} /><span>登录安全中心</span></button>}
-                <button type="button" role="menuitem" className="account-menu-logout" onClick={() => { setAccountMenuOpen(false); void logout(); }}><LogOut size={15} /><span>退出登录</span></button>
-              </div>
-            </>}
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/costs'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Wallet size={15} /></span><span><strong>新增成本记录</strong><small>登记人工、材料、机械及其他费用</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/progress-bills'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><HandCoins size={15} /></span><span><strong>进度款管理</strong><small>业主申报、审批与回款登记</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/owner-finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={15} /></span><span><strong>竣工结算与应收</strong><small>最终结算、应收余额与到账核销</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><FileText size={15} /></span><span><strong>分供合同与付款</strong><small>分包 / 采购 / 租赁合同与支付台账</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream?view=finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={15} /></span><span><strong>结算与应付账款</strong><small>确认结算、应付核销、质保金与发票核对</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
+                <button type="button" role="menuitem" onClick={() => { navigate('/cost/changes'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Workflow size={15} /></span><span><strong>变更签证</strong><small>查看送审与核定状态</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
+              </div>}
+            </div>
+            <UiPreferencesBar compact />
+            <div className="account-menu-wrap">
+              <button type="button" className={`titlebar-avatar ${accountMenuOpen ? 'is-active' : ''}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} aria-label={`账号菜单：${user?.name ?? '用户'}`} title={user?.name ?? '账号'} onClick={() => { setQuickActionsOpen(false); setAccountMenuOpen((open) => !open); }}><UserRound size={15} strokeWidth={1.7} /></button>
+              {accountMenuOpen && <>
+                <button type="button" className="account-menu-dismiss" aria-label="关闭账号菜单" onClick={() => setAccountMenuOpen(false)} />
+                <div className="account-menu" role="menu" aria-label="个人账号菜单" data-focus-trap={accountMenuOpen ? 'popover' : undefined}>
+                  <div className="account-menu-identity"><strong>{user?.name ?? '用户'}</strong><span>{user?.email ?? ''}</span><small>{user?.role === 'ADMIN' ? '系统管理员' : '普通成员'}</small></div>
+                  <button type="button" role="menuitem" onClick={() => { navigate('/account/security'); setAccountMenuOpen(false); }}><UserRound size={15} /><span>个人中心与账号安全</span></button>
+                  {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={() => { navigate('/system/security'); setAccountMenuOpen(false); }}><ShieldCheck size={15} /><span>登录安全中心</span></button>}
+                  {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={() => { navigate('/system'); setAccountMenuOpen(false); }}><SlidersHorizontal size={15} /><span>系统设置</span></button>}
+                  <button type="button" role="menuitem" className="account-menu-logout" onClick={() => { setAccountMenuOpen(false); void logout(); }}><LogOut size={15} /><span>退出登录</span></button>
+                </div>
+              </>}
+            </div>
           </div>
         </div>
       </header>
-      {location.pathname !== '/projects' && <div className={`project-context-bar ${isGlobalContext ? 'global-context-bar' : ''}`}>
-        {isGlobalContext ? <>
-          <div className="context-left"><span className="context-pulse" /><Globe2 size={15} /><strong>{isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '公司往来单位视图' : location.pathname === '/audit-logs' ? '全局操作追溯' : location.pathname.startsWith('/reports') ? '全局报表中心' : location.pathname === '/notifications' ? '跨项目待办与预警' : location.pathname === '/system' ? '系统管理概览' : location.pathname === '/system/accounts' ? '系统账号管理' : location.pathname === '/system/security' ? '登录安全中心' : location.pathname === '/system/dictionaries' ? '统一基础字典' : location.pathname === '/system/parameters' ? '统一参数配置' : location.pathname === '/system/governance' ? '组织与规则治理' : location.pathname === '/system/operations' ? '运行维护与备份' : location.pathname === '/system/authorization' ? '授权复核' : location.pathname === '/system/policies' ? '权限与流程策略' : location.pathname === '/audit-logs' ? '操作追溯' : location.pathname === '/account/security' ? '个人中心与账号安全' : '全局经营视图'}</strong><span className="global-context-divider" />{isPartyDetail || location.pathname === '/parties' ? '单位业务按项目权限聚合' : location.pathname === '/audit-logs' ? '按项目权限控制记录可见范围' : location.pathname.startsWith('/reports') ? '按项目权限筛选、设计版式与导出台账' : location.pathname === '/notifications' ? '服务端汇总当前有权访问的事项' : location.pathname === '/system' ? '公司级管理概览与风险事项' : location.pathname === '/system/accounts' ? '公司级登录身份，不代表项目访问授权' : location.pathname === '/system/security' ? '登录事件、设备会话与远程访问风险' : location.pathname === '/system/dictionaries' ? '统一分类编码与选项管理' : location.pathname === '/system/parameters' ? '版本化参数、显式发布与回滚' : location.pathname === '/system/governance' ? '部门岗位、审批规则、集成凭据与数据质量' : location.pathname === '/system/operations' ? '运行状态、备份校验与隔离恢复演练' : location.pathname === '/system/authorization' ? '现行权限基线、跨项目范围与授权复核' : location.pathname === '/system/policies' ? '服务端角色权限策略与版本化内部审批流程' : location.pathname === '/audit-logs' ? '公司级业务操作与责任追溯' : location.pathname === '/account/security' ? '仅管理当前账号的登录凭据' : '全部可访问项目'}</div>
-          <div className="context-right">{location.pathname === '/audit-logs' ? '可筛选、查看变更快照并导出' : location.pathname.startsWith('/reports') ? 'XLSX / CSV 只读快照 · 不回写业务数据' : location.pathname === '/notifications' ? '动态待办 · 完成业务后自动更新' : location.pathname === '/system' ? '首页提供状态与风险摘要，详细管理页面由侧边导航直达' : location.pathname === '/system/accounts' ? '仅系统管理员可创建和查看账号' : location.pathname === '/system/security' ? '仅系统管理员可查看和撤销其他会话' : location.pathname === '/system/dictionaries' ? '停用保留历史，变更写入审计' : location.pathname === '/system/parameters' ? '草稿不生效；发布后按范围解析' : location.pathname === '/system/governance' ? '变更内部审批和外部确认保持分离' : location.pathname === '/system/operations' ? '运维操作需要目标环境验证' : location.pathname === '/system/authorization' ? '复核记录留痕；不在此页直接授予权限' : location.pathname === '/system/policies' ? '草稿不生效；发布后由 API 实际执行' : location.pathname === '/audit-logs' ? '仅系统管理员可访问公司级审计视图' : location.pathname === '/account/security' ? '修改密码后所有旧会话都会失效' : `统计范围：${user?.role === 'ADMIN' ? '公司全部项目' : '当前账号有权限访问的所有项目'}`}</div>
-        </> : <>
-          <div className="context-left"><span className="context-pulse" /><span>当前项目</span>{projectsQuery.isLoading ? <LoadingBlock label="加载项目" /> : <div className="project-switcher"><SelectField className="project-context-select" aria-label="切换当前项目" value={activeProject?.id ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)}><option value="">请选择项目</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></div>}{activeProject && <StatusBadge status={activeProject.status} />}</div>
-          <div className="context-right">数据范围：{activeProject ? activeProject.code : '请选择项目'} <span className="context-separator">·</span> 项目级视图</div>
-        </>}
-      </div>}
-      {isSystemArea && <nav className="system-workspace-nav" aria-label="系统管理二级导航">
-        {systemNavigation.map((item) => {
-          const Icon = item.icon;
-          const active = item.to === '/system' ? location.pathname === '/system' : location.pathname === item.to;
-          return <NavLink key={item.to} to={item.to} end={item.end ?? false} aria-current={active ? 'page' : undefined} className={`system-workspace-tab ${active ? 'active' : ''}`}>
-            <Icon size={15} strokeWidth={1.8} /><span>{item.label}</span>
-          </NavLink>;
-        })}
-      </nav>}
-      <main className="content-area"><div className="route-transition" key={location.pathname}><Outlet /></div></main>
-      <footer className="app-footer"><span>墨衡 · 施工单位成本管理</span><span>施工单位成本管理 <i /> v2.19.0-rc.2</span></footer>
+
+      <main className="app-content" aria-hidden={isSystemArea ? true : undefined}>
+        {isSystemArea ? <div className="settings-underlay" aria-hidden="true" /> : <div className="route-transition" key={location.pathname}><Outlet /></div>}
+      </main>
       <FocusTrap />
       <ConfirmHost />
     </div>
 
+    {isSystemArea && <div className="settings-overlay" role="presentation">
+      <section className="settings-window" role="dialog" aria-modal="true" aria-label="系统设置" data-focus-trap="modal">
+        <button type="button" className="settings-close settings-close-floating" onClick={() => navigate('/')} aria-label="关闭设置"><X size={16} /></button>
+        <div className="settings-body">
+          <nav className="settings-nav" aria-label="系统设置导航">
+            <div className="settings-search"><Search size={14} /><input value={settingsSearch} onChange={(event) => setSettingsSearch(event.target.value)} placeholder="搜索设置" aria-label="搜索设置" type="search" /></div>
+            <div className="settings-groups">
+              {visibleSystemGroups.length ? visibleSystemGroups.map((group) => <section className="settings-group" key={group.label}>
+                <h2>{group.label}</h2>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isCurrent = item.to === '/system' ? location.pathname === '/system' : location.pathname === item.to;
+                  return <NavLink key={item.to} to={item.to} end={item.end ?? false} data-autofocus={isCurrent ? 'true' : undefined} className={({ isActive }) => `settings-nav-link ${isActive ? 'active' : ''}`}><Icon size={15} strokeWidth={1.6} /><span>{item.label}</span></NavLink>;
+                })}
+              </section>) : <div className="settings-nav-empty">没有匹配的设置</div>}
+            </div>
+          </nav>
+          <div className="settings-content"><div className="route-transition" key={location.pathname}><Outlet /></div></div>
+        </div>
+      </section>
+    </div>}
+
     {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>
       <button type="button" className="command-palette-backdrop" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)} />
       <section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
-        <div className="command-palette-search"><Search size={18} /><input ref={commandInputRef} value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="输入项目名称、编号或业务模块…" aria-label="搜索项目或业务页面" /><kbd>ESC</kbd><button type="button" className="command-close" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)}><X size={16} /></button></div>
+        <div className="command-palette-search"><Search size={18} /><input ref={commandInputRef} value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="搜索项目名称、编号或业务模块…" aria-label="搜索项目或业务页面" /><kbd>ESC</kbd><button type="button" className="command-close" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)}><X size={16} /></button></div>
         <div className="command-palette-body">
           <div className="command-palette-heading"><div><span className="command-kicker"><Command size={12} /> MOHENG COMMAND</span><h2 id="command-palette-title">快速访问</h2></div><span className="command-result-count">{quickItems.length} 项</span></div>
           {quickItems.length ? <div className="command-results" role="listbox" aria-label="搜索结果">

@@ -6,6 +6,7 @@ import App from './App';
 import './styles.css';
 import './styles/legacy.css';
 import './styles/v6.css';
+import './styles/hana.css';
 
 const queryClient = new QueryClient({ defaultOptions: {
   queries: { staleTime: 15_000, refetchOnWindowFocus: false, retry: 1 },

@@ -2,7 +2,7 @@ import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, ChevronRight, CircleAlert, ClipboardCheck, Download, Plus } from 'lucide-react';
+import { ArrowRight, ChevronRight, CircleAlert, ClipboardCheck, Download, FolderKanban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
@@ -23,7 +23,7 @@ type DashboardData = {
   recentActivities: { id: string; action: string; entity: string; entityId: string; actor: string; projectName: string; createdAt: string }[];
 };
 
-const activityLabel: Record<string, string> = { CREATE: '新增记录', UPDATE: '更新资料', UPSERT: '更新合同', STATUS_CHANGE: '状态变更', PAYMENT_REGISTERED: '登记到账', IMPORT_CSV: '批量导入', ARCHIVE: '归档记录', PAYMENT_RECORDED: '登记付款', PAYMENT_REFUND_RECORDED: '登记退款', ASSISTANT_CONVERSATION_CREATED: '创建分析会话', ASSISTANT_RUN_STARTED: '发起分析', ASSISTANT_RUN_COMPLETED: '完成分析', REPORT_STUDIO_TEMPLATE_CREATED: '创建报表模板', REPORT_STUDIO_TEMPLATE_UPDATED: '更新报表模板', OWNER_ADVANCE_RECEIVED: '登记预付款到账', OWNER_SETTLEMENT_DRAFT_CREATED: '创建竣工结算草稿', OWNER_SETTLEMENT_CONFIRMED: '确认竣工结算', OWNER_RECEIPT_REGISTERED: '登记业主到账', CREATE_DRAFT: '创建草稿', AUTO_CREATE_FROM_BUSINESS_RECORD: '业务记录自动建档', INTERNAL_STATUS_CHANGE: '内部状态变更', PROJECT_CREATED: '创建项目', DOWNSTREAM_CONTRACT_CREATED: '创建分供合同' };
+const activityLabel: Record<string, string> = { CREATE: '新增记录', UPDATE: '更新资料', UPSERT: '更新合同', STATUS_CHANGE: '状态变更', PAYMENT_REGISTERED: '登记到账', IMPORT_CSV: '批量导入', ARCHIVE: '归档记录', PAYMENT_RECORDED: '登记付款', PAYMENT_REFUND_RECORDED: '登记退款', ASSISTANT_CONVERSATION_CREATED: '创建分析会话', ASSISTANT_RUN_STARTED: '发起分析', ASSISTANT_RUN_COMPLETED: '完成分析', ASSISTANT_READ_ONLY_TOOL_SUCCEEDED: '只读工具调用', ASSISTANT_READ_ONLY_TOOL_FAILED: '只读工具失败', REPORT_STUDIO_TEMPLATE_CREATED: '创建报表模板', REPORT_STUDIO_TEMPLATE_UPDATED: '更新报表模板', OWNER_ADVANCE_RECEIVED: '登记预付款到账', OWNER_SETTLEMENT_DRAFT_CREATED: '创建竣工结算草稿', OWNER_SETTLEMENT_CONFIRMED: '确认竣工结算', OWNER_RECEIPT_REGISTERED: '登记业主到账', CREATE_DRAFT: '创建草稿', AUTO_CREATE_FROM_BUSINESS_RECORD: '业务记录自动建档', INTERNAL_STATUS_CHANGE: '内部状态变更', PROJECT_CREATED: '创建项目', DOWNSTREAM_CONTRACT_CREATED: '创建分供合同' };
 const sortLabels = { contract: '合同额', remain: '成本余量', recovery: '回款率' } as const;
 type SortKey = keyof typeof sortLabels;
 
@@ -82,7 +82,7 @@ export default function DashboardPage() {
     <PageHeader
       title="经营总览"
       context={<><span className="page-context-dot" /><span>全公司</span><span>·</span><span>{totals.projectCount} 个项目</span><span>·</span><span>数据截至 {asOf}</span></>}
-      actions={<><Button variant="secondary" onClick={exportMonth}><Download size={15} />导出月报</Button><Button onClick={() => navigate('/projects')}><Plus size={15} />新建项目</Button></>}
+      actions={<><Button variant="secondary" onClick={exportMonth}><Download size={15} />导出月报</Button><Button onClick={() => navigate('/projects')}><FolderKanban size={15} />项目档案</Button></>}
     />
     {data!.projects.length === 0 ? <EmptyState title="还没有可访问的项目" description="创建项目或请管理员为你的账号分配项目权限。" action={() => navigate('/projects')} /> : <>
       <section className="v6-hero" aria-label="组合概况">
@@ -117,7 +117,7 @@ export default function DashboardPage() {
       <section className="v6-block v6-log" aria-label="近期变动">
         <div className="v6-block-head"><div><h2>近期变动</h2></div><div className="ov-head-tools"><DatePicker className="ov-date" value={logDate} onChange={(event) => setLogDate(event.target.value)} aria-label="筛选变动日期" />{currentUser?.role === 'ADMIN' && <button type="button" className="v6-block-link inline" onClick={() => navigate('/audit-logs')}>操作日志<ArrowRight size={14} /></button>}</div></div>
         <div className="v6-log-list">
-          {logActivities.length === 0 ? <div className="v6-empty">该日期没有变动记录</div> : logActivities.slice(0, 8).map((activity) => <div className="v6-log-row" key={activity.id}><time>{new Date(activity.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time><div><strong>{activityLabel[activity.action] ?? activity.action}</strong><span>{activity.projectName} · {activity.entity} · {activity.actor}</span></div><span className="v6-log-date">—</span></div>)}
+          {logActivities.length === 0 ? <div className="v6-empty">该日期没有变动记录</div> : logActivities.slice(0, 8).map((activity) => <div className="v6-log-row" key={activity.id}><time>{new Date(activity.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time><div><strong>{activityLabel[activity.action] ?? activity.action}</strong><span>{activity.projectName} · {activity.entity} · {activity.actor}</span></div></div>)}
         </div>
       </section>
 

@@ -11,6 +11,7 @@ function check(label, condition) {
   else { failures.push(label); console.log('FAIL ' + label); }
 }
 
+const hana = await read('apps/web/src/styles/hana.css');
 const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap, systemTabs, securityPage, policiesPage, governancePage, parametersPage, accountsPage] = await Promise.all([
   read('apps/web/src/styles/v6.css'),
   read('apps/web/src/styles/legacy.css'),
@@ -52,12 +53,12 @@ check('release metadata uses ' + expectedVersion,
   && webPackage.version === expectedVersion
   && appInfo.includes("APP_VERSION = '" + expectedVersion + "'"));
 
-check('V6 paper/ink/seal tokens are present',
-  v6.includes('--paper:#f8f6ef') && v6.includes('--ink:#1d2522') && v6.includes('--seal:#a23a2a') && v6.includes('--bronze:#8b6a3e'));
+check('Hana 1.1.35 paper / ink / seal tokens are present',
+  hana.includes('--bg: #f8f4ed') && hana.includes('--text: #3b3d3f') && hana.includes('--accent: #466b80') && hana.includes('--sidebar-bg: #f4f0ea'));
 check('V6 serif and brush fonts are declared',
   v6.includes('MH Serif SC') && v6.includes('MH Serif') && v6.includes('MH Brush') && v6.includes('notoserifsc.woff2'));
-check('xuan paper texture is wired to the body',
-  v6.includes('/textures/xuan-1024.webp') && v6.includes('background-blend-mode:multiply'));
+check('Hana three-layer paper texture is wired to the body',
+  hana.includes('/textures/paper-rice.png') && hana.includes('/textures/paper-fiber.png') && hana.includes('/textures/paper-grain.png'));
 check('legacy styles are isolated in a cascade layer',
   legacy.trimStart().startsWith('@layer legacy') && legacy.trimEnd().endsWith('}'));
 check('legacy !important declarations are removed for predictable overrides',
@@ -65,19 +66,19 @@ check('legacy !important declarations are removed for predictable overrides',
 check('V6 stylesheet does not depend on !important',
   !v6.includes('!important'));
 check('entrypoint loads tailwind, legacy and V6 in order',
-  main.includes("import './styles.css';") && main.includes("import './styles/legacy.css';") && main.includes("import './styles/v6.css';"));
+  main.includes("import './styles.css';") && main.includes("import './styles/legacy.css';") && main.includes("import './styles/v6.css';") && main.includes("import './styles/hana.css';"));
 
 check('brand mark is the carved vermilion seal with 墨',
   brand.includes('mhSealRough') && brand.includes('feTurbulence') && brand.includes('墨</text>'));
 check('sidebar brand uses the brush wordmark and Chinese subtitle',
   layout.includes('BrandMark') && layout.includes('<strong>墨衡</strong>') && layout.includes('工程经营管理'));
 check('mobile navigation drawer trigger and backdrop are present',
-  layout.includes('mobile-nav-trigger') && layout.includes('mobile-nav-backdrop') && layout.includes('mobileNavOpen'));
+  layout.includes('titlebar-mobile-menu') && layout.includes('mobile-nav-backdrop') && layout.includes('mobileNavOpen'));
 check('active cost tab auto-scrolls into view',
   costLayout.includes('cost-workspace-tab.active') && costLayout.includes('scrollTo'));
 
-check('active cost tab has the hand-drawn vermilion ring',
-  v6.includes('.cost-workspace-tab.active::before') && v6.includes('data:image/svg+xml'));
+check('active cost tab suppresses the legacy hand-drawn ring',
+  hana.includes('.cost-workspace-tab.active::before { display: none'));
 check('checkbox uses the brush check treatment',
   v6.includes('input[type=checkbox]:checked') && v6.includes('a23a2a'));
 check('date picker selected day has the brush ring',
@@ -98,10 +99,12 @@ check('key routes still exist',
   ['assistant', 'budget', 'analysis', 'projects', 'reports', 'system'].every((route) => appSource.includes(route)));
 const designExists = await access(join(root, 'docs/设计系统-v6-文房.md')).then(() => true).catch(() => false);
 const componentExists = await access(join(root, 'docs/组件库-v6-文房.md')).then(() => true).catch(() => false);
+const hanaDocExists = await access(join(root, 'docs/设计系统-hana.md')).then(() => true).catch(() => false);
+check('Hana design system document is present', hanaDocExists);
 check('legacy radii are flattened for the whole repo',
   !/border-radius:\s*(7px|8px|9px|10px|12px|16px)/.test(legacy));
-check('project selector is unified in the topbar, not the old context bar',
-  layout.includes('!isGlobalContext && <div className="topbar-project"') && v6.includes('@media (min-width:941px){.project-context-bar{display:none}}'));
+check('project selector lives in the Hana titlebar, not the old context bar',
+  layout.includes('className="titlebar-project"') && layout.includes('titlebar-global-scope') && !layout.includes('project-context-bar'));
 check('budget uses the preview ledger drawer and filter segments',
   budget.includes('ldg-drawer') && budget.includes('ldg-segments'));
 check('analysis uses the instrument grid',
@@ -113,7 +116,7 @@ check('native confirm/prompt are removed from all pages', nativeDialogs === 0);
 check('confirm host and global focus trap are mounted', layout.includes('ConfirmHost') && layout.includes('FocusTrap'));
 check('confirm host provides promise-based confirm and prompt', confirmHost.includes('confirmAction') && confirmHost.includes('promptAction'));
 check('focus trap cycles Tab and inerts the background', focusTrap.includes('onKeyDown') && focusTrap.includes("setAttribute('inert'"));
-check('danger token is not self-referential', v6.includes('--danger:#a23a2a'));
+check('danger token is not self-referential', hana.includes('--danger: #8b2c1f') && !hana.includes('--warning: var(--warning)'));
 check('system governance pages share the local tab workbench', systemTabs.includes("role=\"tablist\"") && [securityPage, policiesPage, governancePage, parametersPage].every((page) => page.includes('SystemTabs')) && v6.includes('.sys-tabs'));
 check('accounts page uses the split create/list workbench', accountsPage.includes('sys-split') && accountsPage.includes('sys-split-main'));
 check('mobile nav and transient menus are focus-trapped', layout.includes("data-focus-trap={mobileNavOpen ? 'modal' : undefined}") && layout.includes("data-focus-trap={quickActionsOpen ? 'popover' : undefined}") && layout.includes("data-focus-trap={accountMenuOpen ? 'popover' : undefined}"));

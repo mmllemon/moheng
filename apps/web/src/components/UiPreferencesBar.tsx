@@ -1,50 +1,31 @@
-import { useEffect, useRef, useState } from 'react';
-import { Check, LayoutDashboard, Monitor, Palette, RotateCcw, Settings2, SlidersHorizontal, Type, Zap, X } from 'lucide-react';
-import { useUiStore } from '../auth-store';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Check, Palette, RotateCcw, SlidersHorizontal, Type, X } from 'lucide-react';
+import { applyUiPreferences, useUiStore, type UiTheme } from '../auth-store';
 import { useAnimatedPresence } from './useAnimatedPresence';
 
-const themeChoices = [
-  { value: 'ivory' as const, label: '象牙雅白', short: '象牙', swatch: 'theme-swatch-ivory', note: '温润、中性、适合日常经营' },
-  { value: 'champagne' as const, label: '香槟曜金', short: '曜金', swatch: 'theme-swatch-champagne', note: '低饱和暖色、稳重细腻' },
-  { value: 'obsidian' as const, label: '黑曜极光', short: '黑曜', swatch: 'theme-swatch-obsidian', note: '深色低眩光、适合夜间工作' },
-  { value: 'glacier' as const, label: '冰川天青', short: '冰川', swatch: 'theme-swatch-glacier', note: '清透冷色、信息层次清楚' },
+const themeChoices: Array<{ value: UiTheme; label: string; note: string; bg: string; sidebar: string; card: string }> = [
+  { value: 'warm-paper', label: '暖纸', note: 'Hana 默认', bg: '#f8f4ed', sidebar: '#f4f0ea', card: '#fcfaf5' },
+  { value: 'plain-white', label: '素白', note: '清透', bg: '#fbfaf7', sidebar: '#f3f1ec', card: '#ffffff' },
+  { value: 'midnight', label: '青夜', note: '低光', bg: '#26343d', sidebar: '#202c34', card: '#30414b' },
 ];
 
-export default function UiPreferencesBar() {
+export default function UiPreferencesBar({ compact = false }: { compact?: boolean }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const presence = useAnimatedPresence(open, 190);
+  const presence = useAnimatedPresence(open, 150);
   const theme = useUiStore((state) => state.theme);
   const density = useUiStore((state) => state.density);
-  const accent = useUiStore((state) => state.accent);
   const reduceMotion = useUiStore((state) => state.reduceMotion);
   const wideContent = useUiStore((state) => state.wideContent);
   const setTheme = useUiStore((state) => state.setTheme);
   const setDensity = useUiStore((state) => state.setDensity);
-  const setAccent = useUiStore((state) => state.setAccent);
   const toggleReduceMotion = useUiStore((state) => state.toggleReduceMotion);
   const toggleWideContent = useUiStore((state) => state.toggleWideContent);
   const reset = useUiStore((state) => state.resetUiPreferences);
 
   useEffect(() => {
-    const root = document.documentElement;
-    const media = window.matchMedia?.('(prefers-color-scheme: dark)');
-    const applyTheme = () => {
-      const resolved = 'ivory';
-      // Theme rendering uses one canonical attribute; legacy data-theme selectors
-      // created competing CSS cascades and could leave stale backgrounds after switches.
-      root.dataset.themeName = resolved;
-      root.dataset.themePreference = 'ivory';
-      root.dataset.density = density;
-      root.dataset.accent = 'theme';
-      root.dataset.motion = reduceMotion ? 'reduced' : 'full';
-      root.dataset.contentWidth = wideContent ? 'wide' : 'standard';
-    };
-    applyTheme();
-    if (theme !== 'system' || !media) return;
-    media.addEventListener?.('change', applyTheme);
-    return () => media.removeEventListener?.('change', applyTheme);
-  }, [theme, density, accent, reduceMotion, wideContent]);
+    applyUiPreferences({ theme, density, accent: 'theme', reduceMotion, wideContent });
+  }, [theme, density, reduceMotion, wideContent]);
 
   useEffect(() => {
     if (!open) return;
@@ -62,50 +43,59 @@ export default function UiPreferencesBar() {
     };
   }, [open]);
 
-  return <div className="ui-preferences-wrap" ref={wrapperRef}>
+  return <div className="appearance-wrap" ref={wrapperRef}>
     <button
       type="button"
-      className={`ui-preferences-trigger ${open ? 'is-active' : ''}`}
-      aria-label="界面设置"
-      title="界面与交互设置"
+      className={`titlebar-icon ${open ? 'is-active' : ''}`}
+      aria-label="外观与显示设置"
+      title="外观与显示设置"
       aria-haspopup="dialog"
       aria-expanded={open}
       onClick={() => setOpen((current) => !current)}
-    ><Settings2 size={17} /><span>界面设置</span></button>
-    {presence.mounted && <section className={`ui-preferences-popover ${presence.visible ? 'is-visible' : 'is-closing'}`} role="dialog" aria-label="界面与交互设置" aria-hidden={!open}>
-      <header className="ui-pref-popover-header">
-        <div><span className="ui-pref-popover-kicker">MOHENG / PERSONALIZE</span><h2>界面与交互</h2><p>仅影响当前浏览器的显示偏好</p></div>
-        <button type="button" className="icon-button" onClick={() => setOpen(false)} aria-label="关闭界面设置"><X size={16} /></button>
+    ><Palette size={16} strokeWidth={1.65} /><span className="sr-only">{compact ? '外观设置' : '外观与显示设置'}</span></button>
+    {presence.mounted && <section className={`appearance-popover ${presence.visible ? 'is-visible' : 'is-closing'}`} role="dialog" aria-label="外观与显示设置" aria-hidden={!open}>
+      <header className="appearance-head">
+        <div><h2>外观与显示</h2><p>只影响当前浏览器，不改动业务数据</p></div>
+        <button type="button" className="icon-button" onClick={() => setOpen(false)} aria-label="关闭外观设置"><X size={15} /></button>
       </header>
-      <div className="ui-pref-popover-content">
-        <section className="ui-pref-popover-section">
-          <div className="ui-pref-section-heading"><span><Palette size={14} />材质主题</span><small>THEME</small></div>
-          <div className="ui-theme-grid" role="group" aria-label="材质主题">
-            {themeChoices.map((choice) => <button key={choice.value} type="button" className={`ui-theme-card ${theme === choice.value ? 'active' : ''}`} aria-pressed={theme === choice.value} onClick={() => setTheme(choice.value)}>
-              <span className={`ui-theme-preview ${choice.swatch}`}><i /><i /><i /></span>
-              <span className="ui-theme-card-copy"><strong>{choice.label}</strong><small>{choice.note}</small></span>
-              <span className="ui-theme-card-check">{theme === choice.value && <Check size={13} />}</span>
-            </button>)}
+      <div className="appearance-body">
+        <div className="appearance-label"><span>纸张</span><span>{themeChoices.find((choice) => choice.value === theme)?.note}</span></div>
+        <div className="appearance-themes" role="group" aria-label="纸张主题">
+          {themeChoices.map((choice) => <button
+            key={choice.value}
+            type="button"
+            className={`appearance-theme ${theme === choice.value ? 'is-active' : ''}`}
+            aria-pressed={theme === choice.value}
+            onClick={() => setTheme(choice.value)}
+          >
+            <span className="appearance-theme-swatch" style={{ '--theme-bg': choice.bg, '--theme-sidebar': choice.sidebar, '--theme-card': choice.card } as CSSProperties} />
+            <strong>{choice.label}</strong>
+            <small>{theme === choice.value ? <><Check size={9} /> 使用中</> : choice.note}</small>
+          </button>)}
+        </div>
+
+        <div className="appearance-label"><span>工作区</span><SlidersHorizontal size={12} /></div>
+        <div className="appearance-row">
+          <span><strong>信息密度</strong><small>表格与表单的行距</small></span>
+          <div className="appearance-segment" role="group" aria-label="信息密度">
+            <button type="button" className={density === 'comfortable' ? 'is-active' : ''} aria-pressed={density === 'comfortable'} onClick={() => setDensity('comfortable')}>舒朗</button>
+            <button type="button" className={density === 'compact' ? 'is-active' : ''} aria-pressed={density === 'compact'} onClick={() => setDensity('compact')}>紧凑</button>
           </div>
-          <button type="button" className={`ui-system-theme-row ${theme === 'system' ? 'active' : ''}`} aria-pressed={theme === 'system'} onClick={() => setTheme('system')}><span className="ui-system-theme-icon"><Monitor size={15} /></span><span><strong>跟随系统</strong><small>自动适配系统浅色或深色外观</small></span><span className="ui-theme-card-check">{theme === 'system' && <Check size={13} />}</span></button>
-        </section>
-        <section className="ui-pref-popover-section">
-          <div className="ui-pref-section-heading"><span><SlidersHorizontal size={14} />工作区</span><small>LAYOUT</small></div>
-          <div className="ui-pref-setting-row"><span className="ui-pref-setting-icon"><Type size={15} /></span><span className="ui-pref-setting-copy"><strong>信息密度</strong><small>按工作习惯调整表格与卡片间距</small></span><div className="ui-segmented ui-segmented-small" role="group" aria-label="界面密度"><button type="button" className={density === 'comfortable' ? 'active' : ''} aria-pressed={density === 'comfortable'} onClick={() => setDensity('comfortable')}>舒朗</button><button type="button" className={density === 'compact' ? 'active' : ''} aria-pressed={density === 'compact'} onClick={() => setDensity('compact')}>紧凑</button></div></div>
-          <button type="button" className={`ui-pref-setting-row ui-pref-row-button ${wideContent ? 'active' : ''}`} aria-pressed={wideContent} onClick={toggleWideContent}><span className="ui-pref-setting-icon"><LayoutDashboard size={15} /></span><span className="ui-pref-setting-copy"><strong>宽屏工作区</strong><small>减少两侧留白，显示更多业务列</small></span><span className={`ui-switch ${wideContent ? 'is-on' : ''}`}><i /></span></button>
-        </section>
-        <section className="ui-pref-popover-section">
-          <div className="ui-pref-section-heading"><span><Zap size={14} />交互偏好</span><small>INTERACTION</small></div>
-          <div className="ui-pref-accent-row"><span><strong>强调色</strong><small>用于主操作、选中态与聚焦提示</small></span><div className="ui-accent-palette" role="group" aria-label="强调色">
-            <button type="button" className={`ui-accent-dot accent-theme ${accent === 'theme' ? 'active' : ''}`} aria-label="跟随主题色" aria-pressed={accent === 'theme'} title="跟随主题色" onClick={() => setAccent('theme')}>{accent === 'theme' && <Check size={11} />}</button>
-            <button type="button" className={`ui-accent-dot accent-indigo ${accent === 'indigo' ? 'active' : ''}`} aria-label="靛青强调色" aria-pressed={accent === 'indigo'} title="靛青强调色" onClick={() => setAccent('indigo')}>{accent === 'indigo' && <Check size={11} />}</button>
-            <button type="button" className={`ui-accent-dot accent-jade ${accent === 'jade' ? 'active' : ''}`} aria-label="青玉强调色" aria-pressed={accent === 'jade'} title="青玉强调色" onClick={() => setAccent('jade')}>{accent === 'jade' && <Check size={11} />}</button>
-            <button type="button" className={`ui-accent-dot accent-cinnabar ${accent === 'cinnabar' ? 'active' : ''}`} aria-label="朱砂强调色" aria-pressed={accent === 'cinnabar'} title="朱砂强调色" onClick={() => setAccent('cinnabar')}>{accent === 'cinnabar' && <Check size={11} />}</button>
-          </div></div>
-          <button type="button" className={`ui-pref-setting-row ui-pref-row-button ${reduceMotion ? 'active' : ''}`} aria-pressed={reduceMotion} onClick={toggleReduceMotion}><span className="ui-pref-setting-icon"><Zap size={15} /></span><span className="ui-pref-setting-copy"><strong>减少动效</strong><small>保留必要状态反馈，降低位移与过渡</small></span><span className={`ui-switch ${reduceMotion ? 'is-on' : ''}`}><i /></span></button>
-        </section>
+        </div>
+        <div className="appearance-row">
+          <span><strong>宽屏内容</strong><small>减少两侧留白，显示更多列</small></span>
+          <button type="button" className={`ui-switch ${wideContent ? 'is-on' : ''}`} role="switch" aria-checked={wideContent} aria-label="宽屏内容" onClick={toggleWideContent}><i /></button>
+        </div>
+        <div className="appearance-row">
+          <span><strong>减少动效</strong><small>保留必要状态反馈</small></span>
+          <button type="button" className={`ui-switch ${reduceMotion ? 'is-on' : ''}`} role="switch" aria-checked={reduceMotion} aria-label="减少动效" onClick={toggleReduceMotion}><i /></button>
+        </div>
+        <div className="appearance-row">
+          <span><strong>恢复默认</strong><small>暖纸、舒朗、标准宽度</small></span>
+          <button type="button" className="panel-header-action" onClick={reset}><RotateCcw size={12} />重置</button>
+        </div>
+        <div className="appearance-footnote"><Type size={11} />界面字号跟随系统显示设置，不在此处缩小。</div>
       </div>
-      <footer className="ui-pref-popover-footer"><span>显示设置与业务数据相互独立</span><button type="button" className="ui-pref-reset" onClick={reset}><RotateCcw size={13} /><span>恢复默认</span></button></footer>
     </section>}
   </div>;
 }

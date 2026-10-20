@@ -1,12 +1,25 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="warm-paper">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f5f7fb" />
+    <meta name="theme-color" content="#f8f4ed" />
     <link rel="icon" type="image/svg+xml" href="/moheng-mark.svg" />
     <meta name="description" content="施工单位项目成本与合同管理工作台" />
     <title>墨衡 · 工程经营管理</title>
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem("moheng:ui-preferences");
+          var prefs = raw ? JSON.parse(raw) : {};
+          var theme = prefs.theme === "plain-white" || prefs.theme === "midnight" ? prefs.theme : "warm-paper";
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.dataset.density = prefs.density === "compact" ? "compact" : "comfortable";
+          document.documentElement.dataset.motion = prefs.reduceMotion ? "reduced" : "full";
+          document.documentElement.dataset.contentWidth = prefs.wideContent ? "wide" : "standard";
+        } catch (error) { /* Default theme remains warm paper. */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

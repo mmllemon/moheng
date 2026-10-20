@@ -23,6 +23,7 @@ const shortcuts = [
 export default function ProjectOverviewPage() {
   const navigate = useNavigate();
   const projectId = useUiStore((state) => state.selectedProjectId);
+  const themeName = useUiStore((state) => state.theme);
   const projectQuery = useQuery({ queryKey: ['project-detail', projectId], queryFn: () => api.get<ProjectDetail>(`/projects/${projectId}`), enabled: Boolean(projectId) });
   const analysisQuery = useQuery({ queryKey: ['analysis', projectId], queryFn: () => api.get<Analysis>(`/projects/${projectId}/analysis/three-way`), enabled: Boolean(projectId) });
   const billsQuery = useQuery({ queryKey: ['progress-bills', projectId], queryFn: () => api.get<ProgressBill[]>(`/projects/${projectId}/progress-bills`), enabled: Boolean(projectId) });
@@ -42,28 +43,32 @@ export default function ProjectOverviewPage() {
   const pendingBills = bills.filter((bill) => !['PAID', 'REJECTED'].includes(bill.status));
   const pendingChanges = changes.filter((change) => ['SUBMITTED', 'UNDER_REVIEW'].includes(change.status));
   const costVariance = analysis.actualCost - analysis.targetCost;
+  // ECharts 只认实际颜色值；从当前 Hana 主题 token 读取，切换青夜/素白时同步重绘。
+  const chartStyle = getComputedStyle(document.documentElement);
+  const token = (name: string, fallback: string) => chartStyle.getPropertyValue(name).trim() || fallback;
+  const chartAccentRgb = token('--accent-rgb', '83, 125, 150');
   const monthlyOption = {
     tooltip: {
       trigger: 'axis',
       confine: true,
       className: 'v6-chart-tooltip',
-      backgroundColor: '#fbf7ec',
-      borderColor: '#d6cdb9',
+      backgroundColor: token('--bg-card', '#fcfaf5'),
+      borderColor: token('--border', 'rgba(122,96,88,.18)'),
       borderWidth: 1,
       padding: 0,
-      textStyle: { color: '#1d2522', fontFamily: "'Noto Serif SC', serif", fontSize: 11 },
-      extraCssText: 'border-radius:2px;padding:8px 10px;box-shadow:0 10px 28px rgba(48,42,30,.14);',
+      textStyle: { color: token('--text', '#3b3d3f'), fontFamily: token('--font-ui', 'sans-serif'), fontSize: 11 },
+      extraCssText: 'border-radius:8px;padding:8px 10px;box-shadow:0 8px 24px rgba(20,18,14,.14);',
       formatter: (params: unknown) => {
         const point = (Array.isArray(params) ? params[0] : params) as { axisValue?: string; value?: number } | undefined;
         return '<div class="v6-chart-tooltip-inner"><span>' + (point?.axisValue ?? '') + '</span><strong>' + formatMoney(Number(point?.value ?? 0)) + '</strong><small>实际发生成本</small></div>';
       },
-      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(162,58,42,.06)' } },
+      axisPointer: { type: 'shadow', shadowStyle: { color: `rgba(${chartAccentRgb},.07)` } },
     },
     // Reserve room for long currency tick labels; containLabel prevents clipping at the panel edge.
     grid: { left: 68, right: 18, top: 22, bottom: 34, containLabel: true },
-    xAxis: { type: 'category', data: analysis.monthlyActualCost.map((row) => row.month), axisLine: { lineStyle: { color: '#ded8ca' } }, axisTick: { show: false }, axisLabel: { color: '#5b6359', fontSize: 11 } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#ece7db', type: 'dashed' } }, axisLabel: { color: '#5b6359', margin: 10, hideOverlap: true, formatter: (v: number) => v >= 100000000 ? `${(v / 100000000).toFixed(1)}亿` : v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}万` : v.toLocaleString('zh-CN') } },
-    series: [{ name: '实际发生成本', type: 'bar', data: analysis.monthlyActualCost.map((row) => row.amount), barMaxWidth: 26, itemStyle: { color: '#2c5a51', borderRadius: 0 } }],
+    xAxis: { type: 'category', data: analysis.monthlyActualCost.map((row) => row.month), axisLine: { lineStyle: { color: token('--border', '#d8cfbe') } }, axisTick: { show: false }, axisLabel: { color: token('--text-muted', '#6b6f73'), fontSize: 11 } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: token('--border', '#e8e3d7'), type: 'dashed' } }, axisLabel: { color: token('--text-muted', '#6b6f73'), margin: 10, hideOverlap: true, formatter: (v: number) => v >= 100000000 ? `${(v / 100000000).toFixed(1)}亿` : v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}万` : v.toLocaleString('zh-CN') } },
+    series: [{ name: '实际发生成本', type: 'bar', data: analysis.monthlyActualCost.map((row) => row.amount), barMaxWidth: 26, itemStyle: { color: token('--accent', '#537d96'), borderRadius: 2 } }],
   };
 
   return <div className="page-wrap project-overview-page">
@@ -81,7 +86,7 @@ export default function ProjectOverviewPage() {
     </section>
 
     <section className="project-brief-grid">
-      <article className="panel project-cost-trend-panel"><div className="panel-heading"><div><h3>月度实际成本</h3><p>最近六个月 · 仅统计已录入且未归档的成本</p></div><span className="chart-mini-label">金额：元</span></div><ReactECharts option={monthlyOption} style={{ height: 270 }} notMerge lazyUpdate /><div className="project-chart-bottom"><span>基准预计利润率</span><strong className={(analysis.forecastProfitMargin ?? 0) >= 0 ? 'text-success' : 'text-danger'}>{percentage(analysis.forecastProfitMargin)}</strong><small>当前按目标成本简化估算，非完整 EAC 预测</small></div></article>
+      <article className="panel project-cost-trend-panel"><div className="panel-heading"><div><h3>月度实际成本</h3><p>最近六个月 · 仅统计已录入且未归档的成本</p></div><span className="chart-mini-label">金额：元</span></div><ReactECharts key={themeName} option={monthlyOption} style={{ height: 270 }} notMerge lazyUpdate /><div className="project-chart-bottom"><span>基准预计利润率</span><strong className={(analysis.forecastProfitMargin ?? 0) >= 0 ? 'text-success' : 'text-danger'}>{percentage(analysis.forecastProfitMargin)}</strong><small>当前按目标成本简化估算，非完整 EAC 预测</small></div></article>
       <article className="panel project-attention-panel"><div className="panel-heading"><div><h3>待跟进业务</h3><p>本项目尚需推进的业务记录</p></div><CircleAlert size={18} className="heading-muted-icon" /></div>
         <button className="project-attention-row" onClick={() => navigate('/cost/progress-bills')}><span className="attention-icon"><CalendarClock size={16} /></span><span><strong>进度款待跟进</strong><small>未到账或仍处于流转中的申报</small></span><b>{pendingBills.length}</b><ArrowRight size={14} /></button>
         <button className="project-attention-row" onClick={() => navigate('/cost/changes')}><span className="attention-icon"><AlertTriangle size={16} /></span><span><strong>变更签证待跟进</strong><small>已提交或审核中的变更</small></span><b>{pendingChanges.length}</b><ArrowRight size={14} /></button>

@@ -24,7 +24,7 @@ const failures = [];
 const routeResults = [];
 for (const route of routes) {
   const before = pageErrors.length;
-  await page.goto(BASE + route, { waitUntil: 'networkidle' });
+  await page.evaluate((nextRoute) => { window.history.pushState(null, '', nextRoute); window.dispatchEvent(new PopStateEvent('popstate')); }, route);
   await page.waitForTimeout(450);
   const result = await page.evaluate(() => {
     const viewport = window.innerWidth;
@@ -45,7 +45,7 @@ for (const route of routes) {
     };
   });
   const errors = pageErrors.slice(before);
-  const failed = result.scrollWidth > result.viewport + 1 || result.rounded > 0 || errors.length > 0;
+  const failed = result.scrollWidth > result.viewport + 1 || errors.length > 0;
   if (failed) failures.push({ route, ...result, errors });
   routeResults.push({ route, ...result, errors });
   console.log(route, 'sw=' + result.scrollWidth, 'rounded=' + result.rounded, 'tabs=' + result.tabs, 'errors=' + errors.length);
@@ -83,8 +83,8 @@ async function popoverCheck(triggerSelector, panelSelector) {
   const closed = await page.locator(panelSelector).count() === 0;
   if (!inside || !closed) failures.push({ check: panelSelector, inside, closed });
 }
-await popoverCheck('.topbar-user', '.account-menu');
-await popoverCheck('.notification-button', '.quick-action-panel');
+await popoverCheck('.titlebar-avatar', '.account-menu');
+await popoverCheck('.quick-actions-wrap .titlebar-icon', '.quick-action-panel');
 
 // Mobile navigation focus trap.
 const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN', storageState: await context.storageState() });
@@ -92,7 +92,7 @@ const mobilePage = await mobile.newPage();
 await mobilePage.goto(BASE + '/', { waitUntil: 'networkidle' });
 await mobilePage.waitForTimeout(500);
 const mobileOverflow = await mobilePage.evaluate(() => (document.scrollingElement?.scrollWidth ?? 0) - window.innerWidth);
-await mobilePage.locator('.mobile-nav-trigger').click();
+await mobilePage.locator('.titlebar-mobile-menu').click();
 await mobilePage.waitForTimeout(300);
 let mobileTrap = true;
 for (let index = 0; index < 6; index += 1) {
@@ -102,8 +102,39 @@ for (let index = 0; index < 6; index += 1) {
 }
 await mobilePage.keyboard.press('Escape');
 await mobilePage.waitForTimeout(300);
-const mobileClosed = await mobilePage.evaluate(() => !document.querySelector('.sidebar.mobile-nav-open'));
+const mobileClosed = await mobilePage.evaluate(() => !document.querySelector('.app-sidebar.mobile-nav-open'));
 if (mobileOverflow > 1 || !mobileTrap || !mobileClosed) failures.push({ check: 'mobile-nav', mobileOverflow, mobileTrap, mobileClosed });
+
+await page.evaluate(() => {
+  window.history.pushState(null, '', '/system');
+  window.dispatchEvent(new PopStateEvent('popstate'));
+});
+await page.waitForSelector('.app-sidebar', { timeout: 5000 }).catch(() => {});
+await page.waitForSelector('.settings-window', { timeout: 5000 }).catch(() => {});
+await page.waitForTimeout(600);
+const shellAudit = await page.evaluate(() => {
+  const rect = (selector) => {
+    const element = document.querySelector(selector);
+    if (!element) return null;
+    const box = element.getBoundingClientRect();
+    return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
+  };
+  return {
+    sidebar: rect('.app-sidebar'),
+    titlebar: rect('.app-titlebar'),
+    main: rect('.app-main'),
+    settings: rect('.settings-window'),
+    settingsNav: rect('.settings-nav'),
+  };
+});
+const shellOk = shellAudit.sidebar?.x === 6
+  && shellAudit.sidebar?.y === 6
+  && shellAudit.sidebar?.width === 240
+  && shellAudit.titlebar?.height === 44
+  && shellAudit.main?.x === 246
+  && (shellAudit.settings?.width ?? 0) >= 1000
+  && shellAudit.settingsNav?.width === 208;
+if (!shellOk) failures.push({ check: 'hana-shell-metrics', shellAudit });
 
 console.log('\nSUMMARY');
 console.log(JSON.stringify({ routes: routeResults.length, failures }, null, 2));

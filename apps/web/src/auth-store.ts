@@ -20,7 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearSession: () => set({ accessToken: null, user: null, restrictedFlow: null }),
 }));
 
-export type UiTheme = 'ivory' | 'champagne' | 'obsidian' | 'glacier' | 'system';
+export type UiTheme = 'warm-paper' | 'plain-white' | 'midnight';
 export type UiDensity = 'comfortable' | 'compact';
 export type UiAccent = 'theme' | 'indigo' | 'jade' | 'cinnabar';
 
@@ -32,14 +32,14 @@ type UiPreferences = {
   wideContent: boolean;
 };
 const UI_PREFERENCES_KEY = 'moheng:ui-preferences';
-const defaultUiPreferences: UiPreferences = { theme: 'ivory', density: 'comfortable', accent: 'theme', reduceMotion: false, wideContent: false };
+const defaultUiPreferences: UiPreferences = { theme: 'warm-paper', density: 'comfortable', accent: 'theme', reduceMotion: false, wideContent: false };
 function readUiPreferences(): UiPreferences {
   try {
     const raw = localStorage.getItem(UI_PREFERENCES_KEY);
     if (!raw) return defaultUiPreferences;
-    const value = JSON.parse(raw) as Partial<UiPreferences> & { theme?: UiTheme | 'light' | 'dark' };
-    const savedTheme: string | undefined = value.theme;
-    const theme: UiTheme = savedTheme === 'dark' ? 'obsidian' : savedTheme === 'champagne' || savedTheme === 'obsidian' || savedTheme === 'glacier' || savedTheme === 'system' ? savedTheme : 'ivory';
+    const value = JSON.parse(raw) as Partial<UiPreferences> & { theme?: string };
+    const savedTheme = value.theme;
+    const theme: UiTheme = savedTheme === 'plain-white' || savedTheme === 'midnight' ? savedTheme : 'warm-paper';
     return {
       theme,
       density: value.density === 'compact' ? 'compact' : 'comfortable',
@@ -51,6 +51,21 @@ function readUiPreferences(): UiPreferences {
 }
 function persistUiPreferences(value: UiPreferences) {
   try { localStorage.setItem(UI_PREFERENCES_KEY, JSON.stringify(value)); } catch { /* Preferences are optional when storage is blocked. */ }
+}
+export function applyUiPreferences(value: UiPreferences) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.dataset.theme = value.theme;
+  root.dataset.density = value.density;
+  root.dataset.motion = value.reduceMotion ? 'reduced' : 'full';
+  root.dataset.contentWidth = value.wideContent ? 'wide' : 'standard';
+  const themeColors = { 'warm-paper': '#f8f4ed', 'plain-white': '#fbfaf7', midnight: '#26343d' } as const;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColors[value.theme]);
+}
+function commitUiPreferences(set: (partial: Partial<UiState>) => void, value: UiPreferences) {
+  persistUiPreferences(value);
+  applyUiPreferences(value);
+  set(value);
 }
 
 type UiState = UiPreferences & {
@@ -75,10 +90,30 @@ export const useUiStore = create<UiState>((set) => ({
     set({ selectedProjectId: id });
   },
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  setTheme: (theme) => set((state) => { const next = { theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent }; persistUiPreferences(next); return { theme }; }),
-  setDensity: (density) => set((state) => { const next = { theme: state.theme, density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent }; persistUiPreferences(next); return { density }; }),
-  setAccent: (accent) => set((state) => { const next = { theme: state.theme, density: state.density, accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent }; persistUiPreferences(next); return { accent }; }),
-  toggleReduceMotion: () => set((state) => { const reduceMotion = !state.reduceMotion; persistUiPreferences({ theme: state.theme, density: state.density, accent: state.accent, reduceMotion, wideContent: state.wideContent }); return { reduceMotion }; }),
-  toggleWideContent: () => set((state) => { const wideContent = !state.wideContent; persistUiPreferences({ theme: state.theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent }); return { wideContent }; }),
-  resetUiPreferences: () => { persistUiPreferences(defaultUiPreferences); set(defaultUiPreferences); },
+  setTheme: (theme) => set((state) => {
+    const next = { theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent };
+    commitUiPreferences(set, next);
+    return { theme };
+  }),
+  setDensity: (density) => set((state) => {
+    const next = { theme: state.theme, density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent };
+    commitUiPreferences(set, next);
+    return { density };
+  }),
+  setAccent: (accent) => set((state) => {
+    const next = { theme: state.theme, density: state.density, accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent };
+    commitUiPreferences(set, next);
+    return { accent };
+  }),
+  toggleReduceMotion: () => set((state) => {
+    const next = { theme: state.theme, density: state.density, accent: state.accent, reduceMotion: !state.reduceMotion, wideContent: state.wideContent };
+    commitUiPreferences(set, next);
+    return { reduceMotion: next.reduceMotion };
+  }),
+  toggleWideContent: () => set((state) => {
+    const next = { theme: state.theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: !state.wideContent };
+    commitUiPreferences(set, next);
+    return { wideContent: next.wideContent };
+  }),
+  resetUiPreferences: () => { commitUiPreferences(set, defaultUiPreferences); },
 }));

@@ -2302,7 +2302,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
   .report-config-actions { justify-content: stretch; }
   .report-config-actions .button { flex: 1 1 auto; }
 }
-@media (prefers-reduced-motion: reduce), :root[data-motion="reduced"] {
+@media (prefers-reduced-motion: reduce) {
   .report-studio-entry-card, .report-report-option, .sidebar-note { transition: none ; }
   .report-studio-entry-card:hover { transform: none; }
 }
