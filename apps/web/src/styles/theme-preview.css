@@ -479,3 +479,33 @@
 @media (max-width: 900px) {
   .pv-sidebar { margin-left: 6px; width: 224px; flex-basis: 224px; height: calc(100% - 12px); }
 }
+/* Desktop titlebar: Hana uses a 44px drag row with window controls. */
+.pv-window { flex-direction: column; }
+.pv-titlebar { position: relative; z-index: 6; flex: 0 0 44px; height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 10px; border-bottom: 1px solid var(--pv-border); background: color-mix(in srgb, var(--pv-bg) 86%, transparent); }
+.theme-preview[data-theme="warm-paper"] .pv-titlebar { background-image: url("/textures/paper-grain.png"); background-size: 180px 180px; background-blend-mode: multiply; }
+.pv-titlebar-left, .pv-titlebar-controls { display: flex; align-items: center; height: 100%; }
+.pv-titlebar-left { gap: 6px; }
+.pv-tb-toggle { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 5px; background: transparent; color: var(--pv-muted); }
+.pv-tb-toggle:hover { background: var(--pv-accent-soft); color: var(--pv-text); }
+.pv-titlebar-brand { color: var(--pv-muted); font-size: 9px; letter-spacing: 0.14em; }
+.pv-titlebar-center { position: absolute; left: 50%; transform: translateX(-50%); color: var(--pv-faint); font-size: 9px; white-space: nowrap; }
+.pv-titlebar-center span { margin: 0 5px; color: var(--pv-border-strong); }
+.pv-titlebar-controls { margin-right: -8px; }
+.pv-wc { width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: transparent; color: var(--pv-muted); }
+.pv-wc:hover { background: color-mix(in srgb, var(--pv-text) 7%, transparent); color: var(--pv-text); }
+.pv-wc.is-close:hover { background: #e81123; color: #fff; }
+.pv-body { flex: 1; min-height: 0; display: flex; }
+.pv-settings-scrim { top: 44px; }
+@media (max-width: 680px) {
+  .pv-titlebar { flex-basis: 40px; height: 40px; }
+  .pv-titlebar-brand, .pv-titlebar-center { display: none; }
+  .pv-settings-scrim { top: 40px; }
+  .pv-wc { width: 38px; height: 40px; }
+}
+/* Hana's settings card sits near the window edge, overlapping the titlebar shadow. */
+.pv-settings-scrim { inset: 0; top: 0; padding: 20px; }
+.pv-settings-modal { width: min(980px, calc(100% - 8px)); height: min(820px, calc(100% - 28px)); }
+@media (max-width: 680px) {
+  .pv-settings-scrim { padding: 0; }
+  .pv-settings-modal { width: 100%; height: 100%; }
+}

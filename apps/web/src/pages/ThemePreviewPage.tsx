@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowRight, Bell, Building2, CalendarDays, ChevronDown, ChevronRight, CircleAlert,
   FileBarChart2, FileText, FolderKanban, HandCoins, LayoutDashboard, PanelLeft,
-  MoreHorizontal, Plus, ReceiptText, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, UserCog, Users, Wallet, X,
+  Minus, MoreHorizontal, Plus, ReceiptText, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Square, UserCog, Users, Wallet, X,
 } from 'lucide-react';
 import '../styles/theme-preview.css';
 
@@ -143,6 +143,11 @@ export default function ThemePreviewPage() {
   const switchTheme = (next: ThemeId) => navigate('/preview/themes/' + next);
   return <div className="theme-preview" data-theme={theme}>
     <div className={'pv-window' + (view === 'settings' ? ' has-modal' : '')}>
+      <header className="pv-titlebar">
+        <div className="pv-titlebar-left"><button type="button" className="pv-tb-toggle" aria-label="切换侧栏"><PanelLeft size={15} /></button></div>
+        <div className="pv-titlebar-controls"><button type="button" className="pv-wc" aria-label="最小化"><Minus size={12} /></button><button type="button" className="pv-wc" aria-label="最大化"><Square size={10} /></button><button type="button" className="pv-wc is-close" aria-label="关闭"><X size={12} /></button></div>
+      </header>
+      <div className="pv-body">
       <aside className="pv-sidebar">
         <div className="pv-brand"><span className="pv-brand-avatar">墨</span><div><strong>墨衡</strong><small>工程经营管理</small></div><button type="button" className="pv-brand-more" aria-label="更多"><MoreHorizontal size={16} /></button></div>
         <div className="pv-sidebar-primary"><button type="button" className="pv-sidebar-new"><Plus size={15} />新建项目</button><button type="button" className="pv-ghost-icon" aria-label="更多"><MoreHorizontal size={16} /></button></div>
@@ -178,6 +183,7 @@ export default function ThemePreviewPage() {
         </header>
         <div className="pv-content"><OverviewPreview /></div>
         <footer className="pv-footer"><span>墨衡 · 施工单位成本管理</span><span>v2.19.0-rc.2</span></footer>
+      </div>
       </div>
       {view === 'settings' && <div className="pv-settings-scrim" onMouseDown={(event) => { if (event.target === event.currentTarget) setView('overview'); }}>
         <div className="pv-settings-modal" role="dialog" aria-modal="true" aria-label="系统设置">
