@@ -9,10 +9,23 @@ const [rootPackage, apiPackage, adapter, events, adapterTests, eventTests, integ
   read('apps/api/src/lib/assistant-recovery.integration.test.ts'), read('scripts/validate-assistant-leaks.mjs'),
   read('.github/workflows/assistant-runtime-gates.yml'),
 ]);
+const tokenUsageSchema = await read('apps/api/prisma/schema.prisma');
+const tokenUsageMigration = await read('apps/api/prisma/migrations/20261020100000_assistant_run_token_usage/migration.sql');
+const tokenUsageWorker = await read('apps/api/src/lib/assistant-agent-run-job.ts');
+const tokenUsageThread = await read('apps/web/src/components/assistant/AssistantThread.tsx');
 const checks = [];
 function check(name, condition) { checks.push({ name, passed: Boolean(condition) }); }
 check('root/API/Web version aligned to the current candidate', rootPackage.version === apiPackage.version && JSON.parse(await read('apps/web/package.json')).version === rootPackage.version);
 check('fake provider is injected in-process with no public environment toggle', adapter.includes('dependencies: Partial<AssistantRuntimeTestDependencies>') && !adapter.includes('ASSISTANT_POC_FAKE_PROVIDER'));
+check('provider token usage is explicit and unknown-by-default with DB consistency constraints',
+  tokenUsageSchema.includes('usageStatus        String   @default("UNAVAILABLE")') &&
+  tokenUsageMigration.includes('AssistantRun_usage_consistency_check') &&
+  adapter.includes('aggregateTokenUsage') && adapter.includes("status: 'PARTIAL'") && adapter.includes("status: 'UNAVAILABLE'"));
+check('usage persistence contains only token counts and statuses, never a price estimate or prompt/answer content',
+  tokenUsageWorker.includes('usageUpdateData(tokenUsage)') &&
+  tokenUsageWorker.includes('usageStatus: tokenUsage?.status ?? \'UNAVAILABLE\'') &&
+  !tokenUsageWorker.includes('estimatedCost') && !tokenUsageWorker.includes('costUsd') &&
+  tokenUsageThread.includes('实际用量未知') && tokenUsageThread.includes('未展示估算总量'));
 check('production factory remains ChatOpenAI + PostgresSaver', adapter.includes('PostgresSaver.fromConnString') && adapter.includes('new ChatOpenAI') && adapter.includes('createAgent'));
 check('tool.completed persists bounded source metadata and fixed limitation copy, never result body', adapter.includes('sources: result.sources.map') && adapter.includes('limitations: result.limitations') && events.includes('ASSISTANT_EVENT_LIMITATION_NOT_ALLOWED') && events.includes('ASSISTANT_SAFE_LIMITATIONS.includes(item)'));
 check('runtime event payload has explicit event/field allowlist and validates before sequence allocation', events.includes('assertSafeAssistantEventPayload(input.type, input.payload)') && events.indexOf('assertSafeAssistantEventPayload(input.type, input.payload)') < events.indexOf('tx.assistantRun.update'));

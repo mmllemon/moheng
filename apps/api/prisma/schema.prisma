@@ -1560,6 +1560,11 @@ model AssistantRun {
   requestHash        String   @db.VarChar(64)
   jobId              String?  @unique @db.VarChar(100)
   status             String   @default("QUEUED") @db.VarChar(20)
+  inputTokens        Int?
+  outputTokens       Int?
+  totalTokens        Int?
+  usageStatus        String   @default("UNAVAILABLE") @db.VarChar(20)
+  usageCapturedAt    DateTime? @db.Timestamptz(3)
   cancelRequestedAt  DateTime? @db.Timestamptz(3)
   lastEventSequence  Int      @default(0)
   errorCode          String?  @db.VarChar(100)
@@ -1576,6 +1581,7 @@ model AssistantRun {
   @@index([conversationId, status, createdAt])
   @@index([ownerUserId, status, createdAt])
   @@index([projectId, status, createdAt])
+  @@index([usageStatus, createdAt])
 }
 
 /// Durable, ordered events consumed by Server-Sent Events clients. Payloads must contain metadata, not secrets or raw prompts.

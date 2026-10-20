@@ -6,7 +6,7 @@ import { appendAssistantRunEvent, type AssistantEventJsonValue } from './assista
 import { PermanentBackgroundJobError } from './background-jobs.js';
 import type { BackgroundJobHandler } from './background-job-types.js';
 import type { AuthUser } from './auth.js';
-import type { LangGraphAssistantTurn } from '../assistant/runtime/langgraph-adapter.js';
+import type { AssistantRuntimeResult, AssistantTokenUsage, LangGraphAssistantTurn } from '../assistant/runtime/langgraph-adapter.js';
 
 const MAX_CONTEXT_MESSAGES = 20;
 
@@ -34,11 +34,25 @@ async function appendEvent(conversationId: string, runId: string, type: string, 
   await prisma.$transaction((tx) => appendAssistantRunEvent(tx, { conversationId, runId, type, payload }));
 }
 
-async function finishCancelled(conversationId: string, runId: string) {
+function usageUpdateData(usage?: AssistantTokenUsage) {
+  if (!usage) return { usageStatus: 'UNAVAILABLE', inputTokens: null, outputTokens: null, totalTokens: null, usageCapturedAt: null };
+  if (usage.status !== 'COMPLETE') {
+    return { usageStatus: usage.status, inputTokens: null, outputTokens: null, totalTokens: null, usageCapturedAt: null };
+  }
+  return {
+    usageStatus: 'COMPLETE',
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    totalTokens: usage.totalTokens,
+    usageCapturedAt: new Date(),
+  };
+}
+
+async function finishCancelled(conversationId: string, runId: string, usage?: AssistantTokenUsage) {
   await prisma.$transaction(async (tx) => {
     const changed = await tx.assistantRun.updateMany({
       where: { id: runId, status: { in: ['QUEUED', 'RUNNING'] } },
-      data: { status: 'CANCELLED', finishedAt: new Date(), errorCode: null },
+      data: { status: 'CANCELLED', finishedAt: new Date(), errorCode: null, ...usageUpdateData(usage) },
     });
     if (changed.count === 1) {
       await appendAssistantRunEvent(tx, { conversationId, runId, type: 'run.cancelled', payload: { runId } });
@@ -71,7 +85,7 @@ async function failRun(conversationId: string, runId: string, code: string) {
   });
 }
 
-type AssistantTurnRunner = (input: LangGraphAssistantTurn) => Promise<string>;
+type AssistantTurnRunner = (input: LangGraphAssistantTurn) => Promise<string | AssistantRuntimeResult>;
 
 /** Test-only in-process seam. Production registry uses the default LangGraph adapter with no injected dependencies. */
 export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?: AssistantTurnRunner } = {}): BackgroundJobHandler {
@@ -156,15 +170,17 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
     // Loading provider/runtime packages only at execution time keeps ordinary API startup independent of Agent code paths.
     const runtime = await import('../assistant/runtime/langgraph-adapter.js');
     const runAssistantTurn = overrides.runAssistantTurn ?? runtime.runLangGraphAssistantTurn;
-    const responseText = await runAssistantTurn({
+    const turnResult = await runAssistantTurn({
       apiKey, modelId, baseURL, checkpointUrl, conversationId, runId, projectId: run.projectId,
       actor, messages: history, contextTruncated,
       signal: cancellationController.signal,
       isCancellationRequested: () => isCancellationRequested(runId),
       emit: (type, payload) => appendEvent(conversationId, runId, type, payload),
     });
+    const responseText = typeof turnResult === 'string' ? turnResult : turnResult.text;
+    const tokenUsage = typeof turnResult === 'string' ? undefined : turnResult.tokenUsage;
     if (await isCancellationRequested(runId)) {
-      await finishCancelled(conversationId, runId);
+      await finishCancelled(conversationId, runId, tokenUsage);
       return;
     }
 
@@ -174,7 +190,7 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
       // unconditional `status = COMPLETED` update.
       const completed = await tx.assistantRun.updateMany({
         where: { id: runId, status: 'RUNNING', cancelRequestedAt: null },
-        data: { status: 'COMPLETED', finishedAt: new Date(), errorCode: null },
+        data: { status: 'COMPLETED', finishedAt: new Date(), errorCode: null, ...usageUpdateData(tokenUsage) },
       });
       if (completed.count !== 1) {
         const current = await tx.assistantRun.findUnique({ where: { id: runId }, select: { status: true, cancelRequestedAt: true } });
@@ -192,7 +208,12 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
       await appendAssistantRunEvent(tx, { conversationId, runId, type: 'run.completed', payload: { runId, messageId: answer.id } });
       await tx.auditLog.create({ data: {
         projectId: run.projectId, userId: user.id, entity: 'AssistantRun', entityId: runId,
-        action: 'ASSISTANT_RUN_COMPLETED', changes: { conversationId, modelId },
+        action: 'ASSISTANT_RUN_COMPLETED', changes: {
+          conversationId, modelId, usageStatus: tokenUsage?.status ?? 'UNAVAILABLE',
+          inputTokens: tokenUsage?.status === 'COMPLETE' ? tokenUsage.inputTokens : null,
+          outputTokens: tokenUsage?.status === 'COMPLETE' ? tokenUsage.outputTokens : null,
+          totalTokens: tokenUsage?.status === 'COMPLETE' ? tokenUsage.totalTokens : null,
+        },
       } });
     });
   } catch {

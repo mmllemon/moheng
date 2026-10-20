@@ -55,6 +55,104 @@ export type LangGraphAssistantTurn = {
   emit: (type: string, payload: Record<string, AssistantEventJsonValue>) => Promise<void>;
 };
 
+export type AssistantTokenUsageStatus = 'COMPLETE' | 'PARTIAL' | 'UNAVAILABLE';
+export type AssistantTokenUsage = {
+  status: AssistantTokenUsageStatus;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+};
+export type AssistantRuntimeResult = {
+  text: string;
+  tokenUsage: AssistantTokenUsage;
+};
+
+const unavailableTokenUsage = (): AssistantTokenUsage => ({
+  status: 'UNAVAILABLE', inputTokens: null, outputTokens: null, totalTokens: null,
+});
+
+type ParsedTokenUsage = {
+  hasReportedUsage: boolean;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+};
+
+function tokenCount(value: unknown): number | null {
+  // Prisma Int columns are PostgreSQL 32-bit integers; reject values we cannot persist safely.
+  return typeof value === 'number' && Number.isSafeInteger(value)
+    && value >= 0 && value <= 2_147_483_647 ? value : null;
+}
+
+function parseTokenUsageObject(
+  candidate: Record<string, unknown>,
+  inputKeys: string[],
+  outputKeys: string[],
+  totalKeys: string[],
+): ParsedTokenUsage {
+  const firstPresent = (keys: string[]) => {
+    const key = keys.find((name) => name in candidate);
+    return key === undefined ? undefined : candidate[key];
+  };
+  const inputRaw = firstPresent(inputKeys);
+  const outputRaw = firstPresent(outputKeys);
+  const totalRaw = firstPresent(totalKeys);
+  return {
+    hasReportedUsage: inputRaw !== undefined || outputRaw !== undefined || totalRaw !== undefined,
+    inputTokens: tokenCount(inputRaw),
+    outputTokens: tokenCount(outputRaw),
+    totalTokens: tokenCount(totalRaw),
+  };
+}
+
+function readMessageTokenUsage(message: Record<string, unknown>): ParsedTokenUsage {
+  const candidates: ParsedTokenUsage[] = [];
+  if (isRecord(message.usage_metadata)) {
+    candidates.push(parseTokenUsageObject(message.usage_metadata, ['input_tokens'], ['output_tokens'], ['total_tokens']));
+  }
+  if (isRecord(message.response_metadata)) {
+    const metadata = message.response_metadata;
+    if (isRecord(metadata.usage)) {
+      candidates.push(parseTokenUsageObject(metadata.usage, ['input_tokens', 'prompt_tokens'], ['output_tokens', 'completion_tokens'], ['total_tokens']));
+    }
+    if (isRecord(metadata.tokenUsage)) {
+      candidates.push(parseTokenUsageObject(metadata.tokenUsage, ['promptTokens', 'inputTokens'], ['completionTokens', 'outputTokens'], ['totalTokens']));
+    }
+  }
+  return candidates.find((item) => item.hasReportedUsage && item.inputTokens !== null && item.outputTokens !== null && item.totalTokens !== null)
+    ?? candidates.find((item) => item.hasReportedUsage)
+    ?? { hasReportedUsage: false, inputTokens: null, outputTokens: null, totalTokens: null };
+}
+
+function aggregateTokenUsage(
+  messages: Array<{ getType?: () => string; type?: string; usage_metadata?: unknown; response_metadata?: unknown }>,
+  initialMessageCount: number,
+): AssistantTokenUsage {
+  const generatedModelMessages = messages.slice(initialMessageCount)
+    .filter((message) => message.getType?.() === 'ai' || message.type === 'ai');
+  if (generatedModelMessages.length === 0) return unavailableTokenUsage();
+
+  const readings = generatedModelMessages.map((message) => readMessageTokenUsage(message));
+  const complete = readings.every((item) =>
+    item.inputTokens !== null && item.outputTokens !== null && item.totalTokens !== null
+      && item.totalTokens === item.inputTokens + item.outputTokens);
+  if (!complete) {
+    return readings.some((item) => item.hasReportedUsage)
+      ? { status: 'PARTIAL', inputTokens: null, outputTokens: null, totalTokens: null }
+      : unavailableTokenUsage();
+  }
+
+  const inputTokens = readings.reduce((sum, item) => sum + item.inputTokens!, 0);
+  const outputTokens = readings.reduce((sum, item) => sum + item.outputTokens!, 0);
+  const totalTokens = readings.reduce((sum, item) => sum + item.totalTokens!, 0);
+  if (![inputTokens, outputTokens, totalTokens].every(Number.isSafeInteger)
+    || inputTokens > 2_147_483_647 || outputTokens > 2_147_483_647 || totalTokens > 2_147_483_647
+    || totalTokens !== inputTokens + outputTokens) {
+    return { status: 'PARTIAL', inputTokens: null, outputTokens: null, totalTokens: null };
+  }
+  return { status: 'COMPLETE', inputTokens, outputTokens, totalTokens };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -74,7 +172,7 @@ function contentToText(content: unknown): string {
 export async function runLangGraphAssistantTurn(
   input: LangGraphAssistantTurn,
   dependencies: Partial<AssistantRuntimeTestDependencies> = {},
-): Promise<string> {
+): Promise<AssistantRuntimeResult> {
   // Dependency injection is an in-process test seam only; public API inputs cannot select providers/tools.
   const runtime = { ...productionDependencies, ...dependencies };
   const saver = runtime.createSaver(input.checkpointUrl, { schema: checkpointSchema });
@@ -127,11 +225,14 @@ export async function runLangGraphAssistantTurn(
       recursionLimit: 12,
       ...(input.signal ? { signal: input.signal } : {}),
     });
-    const messages = (result as { messages?: Array<{ getType?: () => string; type?: string; content?: unknown }> }).messages ?? [];
+    const messages = (result as { messages?: Array<{ getType?: () => string; type?: string; content?: unknown; usage_metadata?: unknown; response_metadata?: unknown }> }).messages ?? [];
     const finalMessage = [...messages].reverse().find((message) => message.getType?.() === 'ai' || message.type === 'ai');
     const responseText = contentToText(finalMessage?.content).trim();
     if (!responseText) throw new Error('ASSISTANT_EMPTY_RESPONSE');
-    return responseText;
+    return {
+      text: responseText,
+      tokenUsage: aggregateTokenUsage(messages, input.messages.length),
+    };
   } finally {
     const close = (saver as { end?: () => Promise<void> }).end;
     if (typeof close === 'function') await close.call(saver).catch(() => undefined);

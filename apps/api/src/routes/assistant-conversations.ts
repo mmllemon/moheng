@@ -126,7 +126,7 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
     if (!conversation) return failure(reply, 404, 'ASSISTANT_CONVERSATION_NOT_FOUND', '会话不存在或无权访问');
     const [messages, runs] = await Promise.all([
       prisma.assistantMessage.findMany({ where: { conversationId: conversation.id }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 100 }),
-      prisma.assistantRun.findMany({ where: { conversationId: conversation.id, ownerUserId: actor.sub }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, requestId: true, status: true, errorCode: true, createdAt: true, startedAt: true, finishedAt: true, lastEventSequence: true } }),
+      prisma.assistantRun.findMany({ where: { conversationId: conversation.id, ownerUserId: actor.sub }, orderBy: { createdAt: 'desc' }, take: 20, select: { id: true, requestId: true, status: true, errorCode: true, createdAt: true, startedAt: true, finishedAt: true, lastEventSequence: true, inputTokens: true, outputTokens: true, totalTokens: true, usageStatus: true, usageCapturedAt: true } }),
     ]);
     return success({ ...conversation, messages: messages.reverse(), runs });
   });
