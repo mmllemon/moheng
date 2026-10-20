@@ -75,6 +75,12 @@ check(rootPkg.version === apiPkg.version && rootPkg.version === webPkg.version, 
 check(['@langchain/core', '@langchain/openai', '@langchain/langgraph-checkpoint-postgres', 'langchain'].every((name) => Boolean(apiPkg.dependencies[name])), 'API must pin required runtime dependencies');
 check(rootPkg.scripts['validate:release-candidate'].includes('validate-assistant-conversations.mjs'), 'assistant session contract must run in release validation');
 
+const tokenUsageMigration = await read('apps/api/prisma/migrations/20261020100000_assistant_run_token_usage/migration.sql');
+const tokenUsageTests = await read('apps/api/src/assistant/runtime/langgraph-adapter.test.ts');
+const tokenUsageIntegration = await read('apps/api/src/lib/assistant-recovery.integration.test.ts');
+const tokenUsageWebApi = await read('apps/web/src/assistant-api.ts');
+const tokenUsageThread = await read('apps/web/src/components/assistant/AssistantThread.tsx');
+const tokenUsageWorker = await read('apps/api/src/lib/assistant-agent-run-job.ts');
 const submissionPolicy = await read('apps/api/src/lib/assistant-submission-policy.ts');
 const submissionPolicyTests = await read('apps/api/src/lib/assistant-submission-policy.test.ts');
 check(routes.includes("assertAssistantUserRunAdmission(tx, actor.sub)") && routes.includes('ASSISTANT_USER_RUN_LIMIT_REACHED') && routes.includes('ASSISTANT_USER_RUN_RATE_LIMIT_REACHED'), 'message submission must enforce cross-conversation active and sliding-window per-user limits');
@@ -83,5 +89,13 @@ check(submissionPolicy.includes('MAX_ASSISTANT_SUBMISSIONS_PER_USER_PER_MINUTE =
 check(submissionPolicyTests.includes('assistant user sliding-window submission limit admits six and rejects the seventh'), 'user submission rate-limit boundary must have unit coverage');
 check((await read('apps/api/src/lib/assistant-recovery.integration.test.ts')).includes('limits concurrent user submissions to six in a rolling minute'), 'isolated PostgreSQL gate must exercise concurrent cross-session rate-limit admission');
 check(submissionPolicyTests.includes('assistant user run limit admits fewer than two active runs and rejects the third') && submissionPolicyTests.includes('rejects invalid counters'), 'user run-cap policy must have boundary unit tests');
+check(schema.includes('inputTokens        Int?') && schema.includes('outputTokens       Int?') && schema.includes('totalTokens        Int?') && schema.includes("usageStatus        String   @default('UNAVAILABLE')") === false && schema.includes('usageStatus        String   @default("UNAVAILABLE")'), 'AssistantRun must persist optional provider token counts with an explicit unknown-by-default status');
+check(tokenUsageMigration.includes('AssistantRun_usageStatus_check') && tokenUsageMigration.includes('AssistantRun_usage_consistency_check') && tokenUsageMigration.includes('AssistantRun_usageStatus_createdAt_idx'), 'token usage migration must constrain status, count consistency and index usage reporting');
+check(runtime.includes('function aggregateTokenUsage') && runtime.includes('usage_metadata') && runtime.includes("status: 'PARTIAL'") && runtime.includes("status: 'UNAVAILABLE'"), 'runtime must derive usage only from provider metadata and distinguish incomplete/unavailable counts');
+check(tokenUsageWorker.includes('...usageUpdateData(tokenUsage)') && tokenUsageWorker.includes("usageStatus: tokenUsage?.status ?? 'UNAVAILABLE'"), 'worker must persist provider usage metadata on terminal runs without logging prompt or answer text');
+check(routes.includes('inputTokens: true, outputTokens: true, totalTokens: true, usageStatus: true, usageCapturedAt: true') && tokenUsageWebApi.includes('usageStatus:') && tokenUsageWebApi.includes('usageCapturedAt:'), 'conversation API must expose the caller-owned run usage summary');
+check(tokenUsageTests.includes('provider token usage is summed across generated model messages') && tokenUsageTests.includes('marked partial when any generated model message omits metrics'), 'runtime tests must verify multi-call aggregation and partial-usage nulling');
+check(tokenUsageIntegration.includes('S8-token-usage') && tokenUsageIntegration.includes("s3Run.usageStatus, 'UNAVAILABLE'"), 'isolated PostgreSQL tests must cover complete usage persistence and unknown usage defaults');
+check(tokenUsageThread.includes('本轮模型用量：输入') && tokenUsageThread.includes('实际用量未知') && tokenUsageThread.includes('未展示估算总量'), 'UI must show verified counts and explicit unknown/partial states without inventing totals');
 
 console.log(JSON.stringify({ gate: 'ASSISTANT_CONVERSATION_API_SSE_STATIC_CONTRACT', result: 'PASS', assertions, runtime: 'LangGraph adapter + PostgreSQL checkpoint schema', productionEnabled: false, caveat: 'Static source contract only; not a TypeScript build, live DB migration, API concurrency test, or model E2E.' }, null, 2));
