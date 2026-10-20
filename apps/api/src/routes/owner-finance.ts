@@ -7,7 +7,7 @@ import { failure, success } from '../lib/http.js';
 import { canAccessProject, denyIfNoProjectAccess } from '../lib/project-access.js';
 import { nextDocumentNumber } from '../lib/document-number.js';
 import { moneyToCents, centsToMoney } from '../lib/contract-amount-math.js';
-import { calculateContractNetOpenCents, calculateOwnerReceivableStatus, calculateOwnerSettlementDelta, calculateReceivableOpenCents, capReceiptCents } from '../lib/owner-settlement-math.js';
+import { calculateContractNetOpenCents, calculateOwnerReceivableStatus, calculateOwnerSettlementDelta, calculateReceivableOpenCents, capReceiptCents, ownerSettlementDeductionError } from '../lib/owner-settlement-math.js';
 import { positiveMoney } from '../lib/validation.js';
 
 const signedMoney = z.number().finite().min(-999999999999999).max(999999999999999);
@@ -219,8 +219,13 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
         const advanceDeduction = moneyToCents(settlement.advanceDeductionAmount);
         const retention = moneyToCents(settlement.retentionAmount);
         const otherDeduction = moneyToCents(settlement.otherDeductionAmount);
-        if (delta <= 0n && (advanceDeduction !== 0n || retention !== 0n || otherDeduction !== 0n)) throw new OwnerFinanceError(400, 'NEGATIVE_DELTA_DEDUCTIONS', '负向调整不允许重复录入预付款扣回、质保金留置或其他扣款');
-        if (advanceDeduction + retention + otherDeduction > delta) throw new OwnerFinanceError(400, 'DEDUCTIONS_EXCEED_DELTA', '预付款扣回、质保金及其他扣款合计不能超过本次正向结算增量');
+        const deductionError = ownerSettlementDeductionError(delta, advanceDeduction, retention, otherDeduction);
+        if (deductionError === 'NEGATIVE_DELTA_DEDUCTIONS') {
+          throw new OwnerFinanceError(400, deductionError, '负向调整不允许重复录入预付款扣回、质保金留置或其他扣款');
+        }
+        if (deductionError === 'DEDUCTIONS_EXCEED_DELTA') {
+          throw new OwnerFinanceError(400, deductionError, '预付款扣回、质保金及其他扣款合计不能超过本次正向结算增量');
+        }
         const advanceRows = await tx.ownerAdvanceMovement.findMany({ where: { mainContractId: main.id }, select: { type: true, amount: true } });
         const advanceBalance = advanceRows.reduce((sum, r) => sum + (r.type === 'RECEIPT' ? moneyToCents(r.amount) : -moneyToCents(r.amount)), 0n);
         if (advanceDeduction > advanceBalance) throw new OwnerFinanceError(400, 'ADVANCE_DEDUCTION_EXCEEDS_BALANCE', '预付款扣回不能超过业主已支付且尚未扣回/退回的预付款余额');

@@ -6,6 +6,23 @@ export function calculateOwnerSettlementDelta(type: OwnerSettlementKind, confirm
   return type === 'FINAL' ? confirmedCents - previousCumulativeCents : confirmedCents;
 }
 
+/**
+ * Validate owner settlement deductions against the signed delta.
+ * Negative/zero deltas are credit adjustments, so ordinary deductions must not
+ * be applied again. The upper-bound check only applies to positive deltas.
+ */
+export function ownerSettlementDeductionError(
+  deltaCents: bigint,
+  advanceDeductionCents: bigint,
+  retentionCents: bigint,
+  otherDeductionCents: bigint,
+): 'NEGATIVE_DELTA_DEDUCTIONS' | 'DEDUCTIONS_EXCEED_DELTA' | null {
+  const deductions = advanceDeductionCents + retentionCents + otherDeductionCents;
+  if (deltaCents <= 0n && deductions !== 0n) return 'NEGATIVE_DELTA_DEDUCTIONS';
+  if (deltaCents > 0n && deductions > deltaCents) return 'DEDUCTIONS_EXCEED_DELTA';
+  return null;
+}
+
 /** A contract's effective open position is signed: positive means owner still owes us; negative means credit/return due. */
 export function calculateContractNetOpenCents(entries: Array<{ netCents: bigint; allocationCents: bigint }>): bigint {
   return entries.reduce((sum, entry) => sum + entry.netCents - entry.allocationCents, 0n);

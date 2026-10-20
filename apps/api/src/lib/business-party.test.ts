@@ -17,7 +17,7 @@ test('maps downstream contract types into party roles', () => {
 });
 
 test('reuses a unique exact-name party and adds the requested role', async () => {
-  const party = { id: 'party-1', name: '华东建设有限公司', normalizedName: '华东建设有限公司', roles: ['OTHER'], status: 'ACTIVE' };
+  const party = { id: 'party-1', name: '华东建设有限公司', normalizedName: '华东建设有限公司', roles: ['OTHER'], status: 'ACTIVE', identityVerified: true };
   let updatedRoles: string[] | undefined;
   const tx = {
     businessParty: {
@@ -93,4 +93,26 @@ test('serializes automatic create and writes a master-data audit record with a d
   assert.equal(auditRows[0]!.data.entityId, 'party-audited');
   assert.equal(auditRows[0]!.data.action, 'AUTO_CREATE_FROM_BUSINESS_RECORD');
   assert.equal(auditRows[0]!.data.projectId, 'project-1');
+});
+
+test('does not automatically reuse a single exact-name party until its legal identity is verified', async () => {
+  const tx = {
+    businessParty: {
+      findMany: async () => [{
+        id: 'legacy-party', name: '华东建设有限公司', normalizedName: '华东建设有限公司',
+        roles: ['OWNER'], status: 'ACTIVE', identityVerified: false,
+      }],
+    },
+  } as never;
+  await assert.rejects(
+    resolveBusinessParty(tx, { name: '华东建设有限公司', role: 'OWNER' }),
+    (error: unknown) => error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED',
+  );
+});
+
+test('an explicitly selected unverified party is an intentional link, not an automatic name merge', async () => {
+  const party = { id: 'legacy-party', name: '华东建设有限公司', roles: ['OWNER'], status: 'ACTIVE', identityVerified: false };
+  const tx = { businessParty: { findUnique: async () => party } } as never;
+  const result = await resolveBusinessParty(tx, { partyId: 'legacy-party', name: '显示文本不同', role: 'OWNER' });
+  assert.deepEqual(result, { id: 'legacy-party', name: '华东建设有限公司' });
 });
