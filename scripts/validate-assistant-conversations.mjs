@@ -99,9 +99,15 @@ check(routes.includes('inputTokens: true, outputTokens: true, totalTokens: true,
 check(tokenUsageTests.includes('provider token usage is summed across generated model messages') && tokenUsageTests.includes('marked partial when any generated model message omits metrics'), 'runtime tests must verify multi-call aggregation and partial-usage nulling');
 check(tokenUsageIntegration.includes('S8-token-usage') && tokenUsageIntegration.includes("s3Run.usageStatus, 'UNAVAILABLE'"), 'isolated PostgreSQL tests must cover complete usage persistence and unknown usage defaults');
 check(tokenUsageThread.includes('本轮模型用量：输入') && tokenUsageThread.includes('实际用量未知') && tokenUsageThread.includes('未展示估算总量'), 'UI must show verified counts and explicit unknown/partial states without inventing totals');
-check(routes.includes("app.get('/usage-summary'") && routes.includes("canAccessProject(actor.sub, actor.role, projectId, undefined, 'PROJECT_READ')") && routes.includes("by: ['usageStatus']") && routes.includes('ownerUserId: actor.sub'), 'project usage summary must be authenticated, owner-scoped and project-authorized');
 const usageSummaryRoute = routes.slice(routes.indexOf("app.get('/usage-summary'"), routes.indexOf("app.get('/conversations'"));
-check(usageSummaryRoute.includes("createdAt: { gte: periodStart, lte: periodEnd }") && !usageSummaryRoute.match(/prisma\.assistantRun\.count\(\s*\{\s*where:[^}]*createdAt/), 'terminal usage is bounded to 30 days while active run count reflects all current active work');
+check(usageSummaryRoute.includes("preHandler: [featureGate, authRequired]") &&
+  usageSummaryRoute.includes("canAccessProject(actor.sub, actor.role, projectId, undefined, 'PROJECT_READ')") &&
+  usageSummaryRoute.includes("by: ['usageStatus']") &&
+  usageSummaryRoute.includes('ownerUserId: actor.sub'),
+  'usage summary route must authenticate, authorize the selected project, and scope runs to the current owner');
+check(usageSummaryRoute.includes("createdAt: { gte: periodStart, lte: periodEnd }") &&
+  !usageSummaryRoute.match(/prisma\.assistantRun\.count\(\s*\{\s*where:[^}]*createdAt/),
+  'terminal usage is bounded to 30 days while active run count reflects all current active work');
 check(usageSummary.includes('ASSISTANT_USAGE_SUMMARY_WINDOW_DAYS = 30') && usageSummary.includes("usageStatus === 'COMPLETE'") && usageSummary.includes('totalTokens === inputTokens + outputTokens'), 'usage summary must use a bounded period and only expose consistent complete token totals');
 check(usageSummaryTests.includes('leaves token totals unknown') && usageSummaryTests.includes('rejects inconsistent aggregate token totals') && usageSummaryTests.includes('zero tokens as a known value'), 'usage summary must cover unknown, inconsistent and zero-token edge cases');
 
