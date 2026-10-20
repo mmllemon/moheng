@@ -6,6 +6,7 @@ import { api } from '../api';
 import { useAuthStore } from '../auth-store';
 import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import SelectField from '../components/SelectField';
+import SystemTabs from '../components/SystemTabs';
 
 type Department = { id: string; code: string; name: string; parentId: string | null; parent: { id: string; code: string; name: string } | null; isActive: boolean; userCount: number; childCount: number };
 type SystemUser = { id: string; name: string; email: string; role: 'ADMIN' | 'USER'; isActive: boolean; departmentId?: string | null; position?: string | null; department?: { id: string; code: string; name: string } | null };
@@ -22,6 +23,7 @@ export default function SystemGovernancePage() {
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
   const [notice, setNotice] = useState('');
+  const [tab, setTab] = useState<'org' | 'rules' | 'integrations' | 'quality'>('org');
   const [departmentCode, setDepartmentCode] = useState('');
   const [departmentName, setDepartmentName] = useState('');
   const [parentId, setParentId] = useState('');
@@ -71,7 +73,9 @@ export default function SystemGovernancePage() {
     <PageHeader eyebrow="SYSTEM MANAGEMENT / GOVERNANCE" title="组织、规则与集成治理" subtitle="管理部门归属、内部审批规则版本、外部凭据与数据质量。公司账号角色和项目角色仍分离；发布规则只控制公司内部变更审批，不改变外部确认金额生效规则。" actions={<button type="button" className="panel-header-action" onClick={() => { void refreshAll(); }}><RefreshCw size={14} />刷新</button>} />
     {notice && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="关闭提示">×</button></div>}
 
-    <section className="panel system-expansion-section">
+    <SystemTabs ariaLabel="组织治理分区" value={tab} onChange={(id) => setTab(id as 'org' | 'rules' | 'integrations' | 'quality')} items={[{ id: 'org', label: '组织与岗位' }, { id: 'rules', label: '审批规则' }, { id: 'integrations', label: '集成凭据' }, { id: 'quality', label: '数据质量' }]} />
+
+    <section className="panel system-expansion-section" hidden={tab !== 'org'}>
       <div className="panel-heading"><div><h3><Building2 size={17} />组织与部门</h3><p>为公司账号增加部门/岗位归属，不替代项目成员授权。</p></div><span className="system-overview-readiness-tag">{departments.length} 个部门</span></div>
       <form className="system-expansion-form system-department-form" onSubmit={(event) => { event.preventDefault(); createDepartment.mutate(); }}>
         <label><span>部门编码</span><input value={departmentCode} onChange={(event) => setDepartmentCode(event.target.value)} maxLength={40} required placeholder="如 ENGINEERING" /></label>
@@ -82,12 +86,12 @@ export default function SystemGovernancePage() {
       <div className="table-scroll"><table className="data-table system-expansion-table"><thead><tr><th>部门</th><th>上级</th><th>账号</th><th>子部门</th><th>状态</th></tr></thead><tbody>{departments.map((item) => <DepartmentRow key={item.id} department={item} saving={patchDepartment.isPending} onPatch={(input) => patchDepartment.mutate(input)} />)}</tbody></table></div>
     </section>
 
-    <section className="panel system-expansion-section">
+    <section className="panel system-expansion-section" hidden={tab !== 'org'}>
       <div className="panel-heading"><div><h3><Users size={17} />账号部门与岗位归属</h3><p>只修改组织字段，不提升公司角色、不授予项目角色。</p></div><span className="system-overview-readiness-tag">{users.length} 个账号</span></div>
       <div className="table-scroll"><table className="data-table system-expansion-table"><thead><tr><th>账号</th><th>公司角色</th><th>部门</th><th>岗位</th><th>操作</th></tr></thead><tbody>{users.map((item) => <OrgUserRow key={item.id} user={item} departments={departmentOptions} saving={saveOrganization.isPending} onSave={(input) => saveOrganization.mutate(input)} />)}</tbody></table></div>
     </section>
 
-    <section className="panel system-expansion-section">
+    <section className="panel system-expansion-section" hidden={tab !== 'rules'}>
       <div className="panel-heading"><div><h3><Workflow size={17} />版本化审批规则</h3><p>创建草稿后显式发布；发布动作会退休旧版本、记录发布人和审计日志。</p></div><StatusBadge status={rulesQuery.data?.effectiveChangeApproval.status === 'PUBLISHED' ? 'ACTIVE' : 'DEFAULT'} /></div>
       <div className="system-effective-rule"><span>当前生效规则</span><strong>{rulesQuery.data?.effectiveChangeApproval.source === 'PUBLISHED' ? `v${rulesQuery.data.effectiveChangeApproval.version}` : '内置默认规则'}</strong><div>{(rulesQuery.data?.effectiveChangeApproval.definition.allowedProjectRoles ?? ['OWNER', 'MANAGER']).map((role) => <em key={role}>{roleNames[role] ?? role}</em>)}</div></div>
       <form className="system-expansion-form" onSubmit={(event) => { event.preventDefault(); createRuleDraft.mutate(); }}>
@@ -98,7 +102,7 @@ export default function SystemGovernancePage() {
       <div className="system-rule-history">{rules.filter((rule) => rule.ruleKey === 'CHANGE_APPROVAL').map((rule) => <article className="system-rule-row" key={rule.id}><div><strong>{rule.name} · v{rule.version}</strong><span>{(rule.definition.allowedProjectRoles ?? []).map((role) => roleNames[role] ?? role).join('、')} · {rule.changeNote ?? '无变更说明'}</span><small>创建：{rule.createdBy.name}{rule.publishedBy ? ` · 发布：${rule.publishedBy.name}` : ''}{rule.publishedAt ? ` · ${new Date(rule.publishedAt).toLocaleString('zh-CN')}` : ''}</small></div><StatusBadge status={rule.status} />{rule.status === 'DRAFT' && <button type="button" className="button-secondary" onClick={() => publishRule.mutate(rule.id)} disabled={publishRule.isPending}>发布版本</button>}</article>)}</div>
     </section>
 
-    <section className="panel system-expansion-section">
+    <section className="panel system-expansion-section" hidden={tab !== 'integrations'}>
       <div className="panel-heading"><div><h3><KeyRound size={17} />集成凭据与投递</h3><p>凭据使用 AES-256-GCM 加密保存；连接测试受 HTTPS 主机白名单约束，投递任务具备幂等键、后台重试与结果追踪。</p></div><span className="system-overview-readiness-tag">{integrations.filter((item) => item.status === 'ACTIVE').length} 个启用集成</span></div>
       <form className="system-expansion-form system-integration-form" onSubmit={(event) => { event.preventDefault(); createIntegration.mutate(); }}>
         <label><span>唯一编码</span><input value={integrationCode} onChange={(event) => setIntegrationCode(event.target.value)} required maxLength={80} placeholder="如 ERP_SYNC" /></label>
@@ -118,7 +122,7 @@ export default function SystemGovernancePage() {
       <div className="data-note"><span className="note-mark">i</span><span>当前通用 REST_API/Webhook JSON 投递已接入后台队列，支持幂等入队与网络/429/5xx 重试。外部端点实际可用性取决于部署白名单、密钥和目标服务；ERP/对象存储业务协议与映射不包含在通用投递中。</span></div>
     </section>
 
-    <section className="panel system-expansion-section">
+    <section className="panel system-expansion-section" hidden={tab !== 'quality'}>
       <div className="panel-heading system-quality-panel-heading"><div><h3><ClipboardCheck size={17} />数据质量巡检</h3><p>只读扫描业务不变量并生成审计记录；不会自动修改财务、合同或审批数据。</p></div><button type="button" className="system-quality-scan-trigger" onClick={() => scanQuality.mutate()} disabled={scanQuality.isPending}><RefreshCw size={14} className={scanQuality.isPending ? 'is-spinning' : ''} />{scanQuality.isPending ? '巡检中…' : '运行巡检'}</button></div>
       {quality && <><div className="system-quality-summary"><div><small>发现总数</small><strong>{quality.summary.total}</strong></div><div><small>错误</small><strong className="quality-error">{quality.summary.errors}</strong></div><div><small>警告</small><strong className="quality-warning">{quality.summary.warnings}</strong></div><div><small>提示</small><strong>{quality.summary.info}</strong></div></div>
         {quality.summary.truncated && <p className="system-quality-truncated">单类结果达到 200 条上限，列表可能不完整；请结合数据库统计或后续分页扫描。</p>}

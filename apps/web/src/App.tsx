@@ -4,17 +4,27 @@ import Layout from './components/Layout';
 import CostWorkspaceLayout from './components/CostWorkspaceLayout';
 import LoginPage from './pages/LoginPage';
 import AccountSecurityStepPage from './pages/AccountSecurityStepPage';
-import SystemSecurityPage from './pages/SystemSecurityPage';
-import AccountSecurityPage from './pages/AccountSecurityPage';
 import DashboardPage from './pages/DashboardPage';
-import AuditLogsPage from './pages/AuditLogsPage';
-import ReportCenterPage from './pages/ReportCenterPage';
-import ReportDesignerPage from './pages/ReportDesignerPage';
 const ReportStudioPage = lazy(() => import('./pages/ReportStudioPage'));
 const ReportPreviewPage = lazy(() => import('./pages/ReportPreviewPage'));
 const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'));
-import NotificationsPage from './pages/NotificationsPage';
-import ProjectMembersPage from './pages/ProjectMembersPage';
+const SystemSecurityPage = lazy(() => import('./pages/SystemSecurityPage'));
+const AccountSecurityPage = lazy(() => import('./pages/AccountSecurityPage'));
+const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
+const ReportCenterPage = lazy(() => import('./pages/ReportCenterPage'));
+const ReportDesignerPage = lazy(() => import('./pages/ReportDesignerPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const ProjectMembersPage = lazy(() => import('./pages/ProjectMembersPage'));
+const UserManagementPage = lazy(() => import('./pages/UserManagementPage'));
+const SystemManagementPage = lazy(() => import('./pages/SystemManagementPage'));
+const SystemGovernancePage = lazy(() => import('./pages/SystemGovernancePage'));
+const SystemOperationsPage = lazy(() => import('./pages/SystemOperationsPage'));
+const SystemDictionariesPage = lazy(() => import('./pages/SystemDictionariesPage'));
+const SystemParametersPage = lazy(() => import('./pages/SystemParametersPage'));
+const SystemAuthorizationPage = lazy(() => import('./pages/SystemAuthorizationPage'));
+const SystemPoliciesPage = lazy(() => import('./pages/SystemPoliciesPage'));
+const BusinessPartiesPage = lazy(() => import('./pages/BusinessPartiesPage'));
+const BusinessPartyDetailPage = lazy(() => import('./pages/BusinessPartyDetailPage'));
 import ProjectOverviewPage from './pages/ProjectOverviewPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ContractsPage from './pages/ContractsPage';
@@ -27,16 +37,6 @@ import CostsPage from './pages/CostsPage';
 import ProgressBillsPage from './pages/ProgressBillsPage';
 import ChangesPage from './pages/ChangesPage';
 import AnalysisPage from './pages/AnalysisPage';
-import UserManagementPage from './pages/UserManagementPage';
-import SystemManagementPage from './pages/SystemManagementPage';
-import SystemGovernancePage from './pages/SystemGovernancePage';
-import SystemOperationsPage from './pages/SystemOperationsPage';
-import SystemDictionariesPage from './pages/SystemDictionariesPage';
-import SystemParametersPage from './pages/SystemParametersPage';
-import SystemAuthorizationPage from './pages/SystemAuthorizationPage';
-import SystemPoliciesPage from './pages/SystemPoliciesPage';
-import BusinessPartiesPage from './pages/BusinessPartiesPage';
-import BusinessPartyDetailPage from './pages/BusinessPartyDetailPage';
 import { useAuthStore, useUiStore } from './auth-store';
 import { api } from './api';
 import { EmptyState, LoadingBlock } from './components/Ui';
@@ -90,7 +90,7 @@ function LegacySettingsUsersRedirect() {
 }
 
 export default function App() {
-  return <Routes>
+  return <Suspense fallback={<div className="full-screen-loading"><LoadingBlock label="正在加载页面…" /></div>}><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/account/security-step" element={<AccountSecurityStepPage />} />
     <Route element={<ProtectedRoute />}>
@@ -147,5 +147,5 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Route>
-  </Routes>;
+  </Routes></Suspense>;
 }

@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
 import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import SystemTabs from '../components/SystemTabs';
 
 type Role = 'OWNER' | 'MANAGER' | 'ESTIMATOR' | 'VIEWER';
 type PermissionKey = string;
@@ -38,6 +39,7 @@ export default function SystemPoliciesPage() {
   const [workflowNote, setWorkflowNote] = useState('建立受控的内部审批流程版本');
   const [notice, setNotice] = useState('');
   const [workflowError, setWorkflowError] = useState('');
+  const [tab, setTab] = useState<'policy' | 'workflow'>('policy');
   const accessQuery = useQuery({ queryKey: ['system-access-policy'], queryFn: () => api.get<AccessResponse>('/system-management/access-policy') });
   const workflowQuery = useQuery({ queryKey: ['system-workflows'], queryFn: () => api.get<WorkflowsResponse>('/system-management/workflows') });
   const rulesQuery = useQuery({ queryKey: ['system-governance-rules'], queryFn: () => api.get<{ items: RuleRow[] }>('/system-management/rules') });
@@ -74,7 +76,9 @@ export default function SystemPoliciesPage() {
     {notice && <div className="notice-inline" role="status">{notice}</div>}
     {accessQuery.data?.current.source === 'INVALID' && <div className="system-policy-warning" role="alert"><AlertTriangle size={16} /><span>当前已发布的权限策略无法解析。服务端会拒绝普通项目成员通过受策略保护的 API；页面中的内置矩阵只是参考，不应直接假定为生效状态。请检查历史策略并从已知有效版本创建回滚草稿。</span></div>}
 
-    <section className="panel system-policy-section">
+    <SystemTabs ariaLabel="权限与流程分区" value={tab} onChange={(id) => setTab(id as 'policy' | 'workflow')} items={[{ id: 'policy', label: '项目权限策略', count: '生效版本' }, { id: 'workflow', label: '变更审批流程', count: '运行版本' }]} />
+
+    <section className="panel system-policy-section" hidden={tab !== 'policy'}>
       <div className="panel-heading"><div><h3><ShieldCheck size={17} />项目角色权限矩阵</h3><p>策略只允许收紧代码定义的权限上限，不允许通过配置新增角色权限；公司级 ADMIN 与项目角色继续分离。</p></div><span className="system-overview-readiness-tag">{accessQuery.data?.current.source === 'PUBLISHED' ? `生效版本 v${accessQuery.data.current.version}` : '内置默认策略'}</span></div>
       <div className="system-policy-warning"><AlertTriangle size={16} /><span>发布策略会立即收紧匹配的服务端 API。修改前先检查项目负责人、审批人和财务经办的最低必要权限；发布后如影响业务，需要从历史版本创建回滚草稿再发布。</span></div>
       <div className="table-scroll"><table className="data-table system-policy-table"><thead><tr><th>权限项</th>{roles.map((role) => <th key={role}>{roleLabels[role]}</th>)}</tr></thead><tbody>{Object.entries(accessQuery.data?.labels ?? {}).map(([key, value]) => { const allowed = policyDraft?.[key] ?? []; const baseline = accessQuery.data?.baselines[key] ?? []; return <tr key={key}><td><strong>{value.label}</strong><small>{value.description}</small><code>{key}</code></td>{roles.map((role) => { const permittedByCode = baseline.includes(role); return <td key={role} className="system-policy-check-cell"><label className={!permittedByCode ? 'is-locked' : ''}><input type="checkbox" checked={allowed.includes(role)} disabled={!permittedByCode || !policyDraft} onChange={(event) => setPolicyDraft((previous) => previous ? { ...previous, [key]: event.target.checked ? [...(previous[key] ?? []), role] : (previous[key] ?? []).filter((item) => item !== role) } : previous)} aria-label={`${value.label}：${roleLabels[role]}`} /><span>{allowed.includes(role) ? '允许' : '禁止'}</span>{!permittedByCode && <LockKeyhole size={11} aria-label="由代码安全边界锁定" />}</label></td>; })}</tr>; })}</tbody></table></div>
@@ -82,7 +86,7 @@ export default function SystemPoliciesPage() {
       <div className="system-rule-history">{items.filter((item) => item.ruleKey === 'PROJECT_ACCESS_POLICY').map((item) => <article className="system-rule-row" key={item.id}><div><strong>项目权限策略 · v{item.version}</strong><span>{item.changeNote ?? '无变更说明'}</span><small>创建：{item.createdBy?.name ?? '未知'}{item.publishedBy ? ` · 发布：${item.publishedBy.name}` : ''}</small></div><StatusBadge status={item.status} />{item.status === 'DRAFT' && <button type="button" className="button-secondary" onClick={() => publish.mutate(item.id)} disabled={publish.isPending}>发布版本</button>}{item.status !== 'DRAFT' && <button type="button" className="button-quiet" onClick={() => rollbackPolicy.mutate(item.id)} disabled={rollbackPolicy.isPending}>复制为回滚草稿</button>}</article>)}</div>
     </section>
 
-    <section className="panel system-policy-section">
+    <section className="panel system-policy-section" hidden={tab !== 'workflow'}>
       <div className="panel-heading"><div><h3><GitBranch size={17} />变更签证内部审批流程</h3><p>当前执行引擎支持受控状态集、项目角色、金额条件及提交人自审批保护。外部业主确认和有效合同额规则独立不变。</p></div><span className="system-overview-readiness-tag">{workflowQuery.data?.effectiveChangeWorkflow.source === 'PUBLISHED' ? `运行版本 v${workflowQuery.data.effectiveChangeWorkflow.version}` : '内置默认流程'}</span></div>
       <div className="system-policy-warning"><AlertTriangle size={16} /><span>此版本已将该流程接入变更签证状态 API。状态集目前受代码约束，不支持任意新增状态或自动生成新业务路由；发布前请确保每个合法状态都有正确的迁移路径。</span></div>
       <form className="system-workflow-editor" onSubmit={(event) => { event.preventDefault(); const definition = parseWorkflow(); if (definition) saveWorkflow.mutate(definition); }}>

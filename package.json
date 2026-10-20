@@ -38,10 +38,14 @@
     "db:validate": "npm run prisma:validate -w @cms/api",
     "test:pi-poc": "npm test --prefix experiments/pi-durable-poc",
     "validate:source-completeness": "node scripts/validate-source-bundle-completeness.mjs",
-    "validate:dependency-security": "node scripts/validate-dependency-security.mjs"
+    "validate:dependency-security": "node scripts/validate-dependency-security.mjs",
+    "ui:axe": "node scripts/axe-audit.mjs",
+    "ui:visual": "node scripts/ui-visual-regression.mjs"
   },
   "devDependencies": {
-    "concurrently": "9.2.0"
+    "axe-core": "^4.14.0",
+    "concurrently": "9.2.0",
+    "playwright-core": "^1.64.1"
   },
   "allowScripts": {
     "@tailwindcss/oxide@4.1.13": true,

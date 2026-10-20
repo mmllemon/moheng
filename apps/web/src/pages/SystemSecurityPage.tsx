@@ -5,6 +5,7 @@ import { api, ApiError } from '../api';
 import { useAuthStore } from '../auth-store';
 import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
+import SystemTabs from '../components/SystemTabs';
 
 type AuthSessionRow = {
   id: string; userId: string; ipAddress: string | null; userAgent: string | null; createdAt: string; lastSeenAt: string; expiresAt: string;
@@ -43,6 +44,7 @@ export default function SystemSecurityPage() {
 
   const [visibleSessions, setVisibleSessions] = useState(15);
   const [visibleEvents, setVisibleEvents] = useState(15);
+  const [tab, setTab] = useState<'sessions' | 'events'>('sessions');
   if (user?.role !== 'ADMIN') return <div className="page-wrap"><PageHeader eyebrow="SYSTEM / SECURITY" title="安全中心" subtitle="登录事件与会话控制仅对系统管理员开放。" /><EmptyState title="没有管理权限" description="请使用系统管理员账号登录后查看安全事件。" /></div>;
   if (sessionsQuery.isLoading || eventsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在加载登录安全信息…" /></div>;
   if (sessionsQuery.error || eventsQuery.error) return <div className="page-wrap"><ErrorBlock message={((sessionsQuery.error ?? eventsQuery.error) as Error).message} retry={() => { void sessionsQuery.refetch(); void eventsQuery.refetch(); }} /></div>;
@@ -60,8 +62,10 @@ export default function SystemSecurityPage() {
       <article className="security-metric"><span className="security-metric-icon"><ShieldCheck size={18} /></span><div><small>公网模式管理员保护</small><strong>HTTPS + MFA</strong><span>需配置 PUBLIC_BASE_URL 与 MFA 密钥</span></div></article>
     </section>
 
+    <SystemTabs ariaLabel="登录安全分区" value={tab} onChange={(id) => setTab(id as 'sessions' | 'events')} items={[{ id: 'sessions', label: '登录会话', count: activeSessions }, { id: 'events', label: '安全事件', count: events.length }]} />
+
     {revokeMutation.error && <div className="form-alert">{revokeMutation.error instanceof ApiError ? revokeMutation.error.message : '撤销会话失败'}</div>}
-    <section className="panel security-panel">
+    <section className="panel security-panel" hidden={tab !== 'sessions'}>
       <div className="panel-heading"><div><h3>登录会话</h3><p>撤销会话会立即阻止该会话后续 API 请求和刷新令牌。当前登录会话不能从这里撤销。</p></div><span className="table-count">{activeSessions} 个有效</span></div>
       {!sessions.length ? <EmptyState title="暂无会话记录" description="成功登录后，设备会话将显示在这里。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>用户 / 设备</th><th>来源 IP</th><th>最近活动</th><th>创建 / 到期</th><th>状态</th><th>操作</th></tr></thead><tbody>{sessions.slice(0, visibleSessions).map((session) => <tr key={session.id}>
         <td><strong className="table-primary-text">{session.user?.name ?? '未知账号'}</strong><small className="table-subtext">{session.user?.email ?? '账号关联不可用'}</small><small className="table-subtext"><Smartphone size={12} /> {userAgentLabel(session.userAgent)}{session.isCurrent ? ' · 当前会话' : ''}</small></td>
@@ -73,7 +77,7 @@ export default function SystemSecurityPage() {
       </tr>)}</tbody></table></div>}{sessions.length > visibleSessions && <div className="load-more-row"><span>已显示 {Math.min(visibleSessions, sessions.length)} / {sessions.length} 条</span><button type="button" className="button button-secondary button-small" onClick={() => setVisibleSessions((count) => count + 20)}>显示更多会话</button></div>}
     </section>
 
-    <section className="panel security-panel">
+    <section className="panel security-panel" hidden={tab !== 'events'}>
       <div className="panel-heading"><div><h3>安全事件</h3><p>记录登录成败、MFA、密码修改、账号状态变化、令牌重放和管理员会话撤销。</p></div><span className="table-count">最近 {events.length} 条</span></div>
       {!events.length ? <EmptyState title="暂无安全事件" description="登录和安全管理操作将在此记录。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>时间</th><th>事件</th><th>账号</th><th>来源 IP</th><th>结果</th><th>详情</th></tr></thead><tbody>{events.slice(0, visibleEvents).map((event) => <tr key={event.id}>
         <td>{displayDate(event.createdAt)}</td>

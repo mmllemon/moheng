@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
 import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import SystemTabs from '../components/SystemTabs';
 
 type ProjectRole = 'OWNER' | 'MANAGER' | 'ESTIMATOR' | 'VIEWER';
 type MatrixModule = { code: string; label: string; allowed: Array<ProjectRole | 'ADMIN'>; note: string };
@@ -37,6 +38,7 @@ function displayDate(value?: string | null) { return value ? new Date(value).toL
 export default function SystemAuthorizationPage() {
   const user = useAuthStore((state) => state.user);
   const client = useQueryClient();
+  const [tab, setTab] = useState<'matrix' | 'reviews'>('matrix');
   const [selectedReviewId, setSelectedReviewId] = useState('');
   const [reviewNote, setReviewNote] = useState('已逐项核对当前授权快照；需要调整的成员授权已转交项目管理人员按既有流程处理。');
   const matrixQuery = useQuery({ queryKey: ['system-authorization-matrix'], queryFn: () => api.get<AccessMatrix>('/system-management/authorization/matrix') });
@@ -58,6 +60,8 @@ export default function SystemAuthorizationPage() {
 
   return <div className="page-wrap system-expansion-page system-authorization-page">
     <PageHeader eyebrow="SYSTEM MANAGEMENT / AUTHORIZATION" title="权限治理与授权复核" subtitle="展示现行服务端角色规则，按项目成员关系复核跨项目访问。该页面不直接授予权限；角色分配仍通过项目管理流程完成。" actions={<button type="button" className="panel-header-action" onClick={() => { void refresh(); }}><RefreshCw size={14} />刷新</button>} />
+    <SystemTabs ariaLabel="授权复核分区" value={tab} onChange={(id) => setTab(id as 'matrix' | 'reviews')} items={[{ id: 'matrix', label: '权限矩阵', count: matrix?.projectRoles.length ?? 0 }, { id: 'reviews', label: '授权复核', count: reviews.length }]} />
+
     {(createReview.error || completeReview.error || detailQuery.error) && <div className="system-expansion-notice is-error" role="alert"><ShieldAlert size={16} /><span>{((createReview.error ?? completeReview.error ?? detailQuery.error) as Error).message}</span></div>}
     {(createReview.data || completeReview.data) && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{completeReview.data ? '授权复核已确认，复核说明与当前快照已写入审计。' : '已生成当前授权快照；请查看发现项并完成复核。'}</span></div>}
 
@@ -65,7 +69,7 @@ export default function SystemAuthorizationPage() {
       <section className="system-authorization-scope-grid">
         {matrix.scopeRules.map((item) => <article className="panel system-authorization-scope-card" key={item.code}><span className="system-authorization-scope-icon"><ShieldCheck size={16} /></span><div><strong>{item.label}</strong><p>{item.detail}</p></div></article>)}
       </section>
-      <section className="panel system-expansion-section">
+    <section className="panel system-expansion-section" hidden={tab !== 'matrix'}>
         <div className="panel-heading"><div><h3><Users size={17} />现行角色权限矩阵</h3><p>只读基线。矩阵按当前项目访问守卫和成员分配约束归纳；实际每次请求仍由具体服务端 API 判权。</p></div><span className="system-overview-readiness-tag">只读政策基线</span></div>
         <div className="system-authorization-company-roles">{matrix.companyRoles.map((role) => <article key={role.role}><strong>{role.label} <code>{role.role}</code></strong><p>{role.description}</p></article>)}</div>
         <div className="table-scroll"><table className="data-table system-expansion-table system-authorization-matrix"><thead><tr><th>项目角色</th><th>读取项目数据</th><th>录入业务数据</th><th>内部审批</th><th>管理成员</th><th>可分配的成员角色</th></tr></thead><tbody>{matrix.projectRoles.map((role) => <tr key={role.role}><td><strong>{role.label}</strong><small><code>{role.role}</code></small></td><td><StatusBadge status={role.read ? 'ACTIVE' : 'INACTIVE'} /></td><td><StatusBadge status={role.record ? 'ACTIVE' : 'INACTIVE'} /></td><td><StatusBadge status={role.approve ? 'ACTIVE' : 'INACTIVE'} /></td><td><StatusBadge status={role.manageMembers ? 'ACTIVE' : 'INACTIVE'} /></td><td>{role.memberAssignment.length ? role.memberAssignment.map((item) => roleNames[item]).join('、') : '—'}</td></tr>)}</tbody></table></div>
@@ -75,12 +79,12 @@ export default function SystemAuthorizationPage() {
       </section>
     </>}
 
-    <section className="panel system-expansion-section">
+    <section className="panel system-expansion-section" hidden={tab !== 'reviews'}>
       <div className="panel-heading"><div><h3><ClipboardCheck size={17} />授权复核记录</h3><p>生成账号、项目与成员角色的时间点快照，列出停用账号仍有项目授权、启用普通账号未分配项目、管理员安全状态和缺少项目负责人的情况。</p></div><button type="button" className="button-secondary" onClick={() => createReview.mutate()} disabled={createReview.isPending}><ClipboardCheck size={14} />{createReview.isPending ? '生成快照中…' : '生成授权快照'}</button></div>
       <div className="system-authorization-review-history"><div className="table-scroll"><table className="data-table system-expansion-table"><thead><tr><th>生成时间</th><th>状态</th><th>账号 / 项目 / 授权</th><th>异常项</th><th>创建人 / 复核人</th><th>操作</th></tr></thead><tbody>{reviews.map((row) => <tr key={row.id} className={selectedReviewId === row.id ? 'is-selected' : ''}><td>{displayDate(row.createdAt)}</td><td><StatusBadge status={row.status === 'REVIEWED' ? 'ACTIVE' : 'PENDING'} /></td><td>{row.summary.totalAccounts} 个账号 / {row.summary.projects} 个项目 / {row.summary.grants} 项授权{row.summary.truncated && <small>快照有截断</small>}</td><td><strong>{row.summary.findings}</strong><small>管理员安全 {row.summary.adminsWithoutMfaOrWithReset} · 停用账号授权 {row.summary.disabledAccountsWithGrants}</small></td><td>{row.createdBy?.name ?? '—'}<small>{row.reviewedBy ? `复核：${row.reviewedBy.name}` : '尚未复核'}</small></td><td><button type="button" className="button-quiet" onClick={() => { setSelectedReviewId(row.id); setReviewNote(row.reviewNote ?? '已逐项核对当前授权快照；需要调整的成员授权已转交项目管理人员按既有流程处理。'); }}>查看快照</button></td></tr>)}{!reviews.length && <tr><td colSpan={6} className="table-empty">还没有授权复核记录。首次生成快照后即可开始审核。</td></tr>}</tbody></table></div></div>
     </section>
 
-    {selectedReviewId && <section className="panel system-expansion-section system-authorization-detail">
+    {selectedReviewId && <section className="panel system-expansion-section system-authorization-detail" hidden={tab !== 'reviews'}>
       {detailQuery.isLoading ? <LoadingBlock label="正在读取授权复核快照…" /> : detailQuery.error ? <ErrorBlock message={(detailQuery.error as Error).message} retry={() => { void detailQuery.refetch(); }} /> : detail ? <>
         <div className="panel-heading"><div><h3>快照详情 · {displayDate(detail.createdAt)}</h3><p>快照只反映生成时刻的授权状态，不会随之后的成员变更而改写。</p></div><StatusBadge status={detail.status === 'REVIEWED' ? 'ACTIVE' : 'PENDING'} /></div>
         {snapshot?.truncated && <p className="system-quality-truncated">本次快照触及记录上限，标记为截断；不能将统计视为全量授权清单。</p>}

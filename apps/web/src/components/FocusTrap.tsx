@@ -17,6 +17,9 @@ function isVisible(element: HTMLElement) {
 function overlayElement(): HTMLElement | null {
   const overlays = Array.from(document.querySelectorAll<HTMLElement>('.ldg-drawer-layer, .modal-backdrop')).filter(isVisible);
   if (overlays.length) return overlays[overlays.length - 1];
+  const marked = Array.from(document.querySelectorAll<HTMLElement>('[data-focus-trap]'))
+    .filter((element) => element.getAttribute('data-focus-trap') !== 'false' && element.getAttribute('aria-hidden') !== 'true' && isVisible(element));
+  if (marked.length) return marked[marked.length - 1];
   const palette = document.querySelector<HTMLElement>('.command-palette-layer.is-visible');
   return palette && isVisible(palette) ? palette : null;
 }
@@ -55,6 +58,7 @@ function initialTarget(overlay: HTMLElement, items: HTMLElement[]) {
 }
 
 function markDialog(overlay: HTMLElement) {
+  if (overlay.getAttribute('data-focus-trap') === 'popover') return;
   const dialog = overlay.matches('.ldg-drawer, .dialog, .command-palette') ? overlay : overlay.querySelector<HTMLElement>('.ldg-drawer, .dialog, .command-palette');
   if (!dialog) return;
   if (!dialog.hasAttribute('role')) dialog.setAttribute('role', 'dialog');
@@ -82,7 +86,7 @@ export default function FocusTrap() {
         for (const sibling of Array.from(parent.children)) {
           if (!(sibling instanceof HTMLElement) || sibling === node) continue;
           if (['SCRIPT', 'STYLE', 'LINK', 'META', 'TEMPLATE'].includes(sibling.tagName)) continue;
-          if (sibling.matches('.modal-backdrop, .ldg-drawer-layer, .command-palette-layer')) continue;
+          if (sibling.matches('.modal-backdrop, .ldg-drawer-layer, .command-palette-layer, .mobile-nav-backdrop, .quick-action-dismiss, .account-menu-dismiss')) continue;
           if (sibling.matches('.date-picker-popover, .select-popover') || sibling.querySelector('.date-picker-popover, .select-popover')) continue;
           if (sibling.hasAttribute('inert')) continue;
           sibling.setAttribute('inert', '');
@@ -119,7 +123,8 @@ export default function FocusTrap() {
       if (!current && active instanceof HTMLElement && !next.contains(active)) trigger = active;
       current = next;
       markDialog(next);
-      applyInert(next);
+      if (next.getAttribute('data-focus-trap') === 'popover') clearInert();
+      else applyInert(next);
       focusInitial(next);
     };
 
@@ -151,6 +156,8 @@ export default function FocusTrap() {
       if (!overlay) return;
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
+      if (overlay.getAttribute('data-focus-trap') === 'popover') return;
+      if (target.closest('.mobile-nav-backdrop, .quick-action-dismiss, .account-menu-dismiss')) return;
       if (overlay.contains(target) || target.closest('.date-picker-popover, .select-popover')) return;
       const items = focusables(overlay);
       (items[0] ?? overlay).focus();

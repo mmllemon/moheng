@@ -77,6 +77,8 @@ export default function UserManagementPage() {
     {notice && <div className="success-notice"><ShieldCheck size={16} />{notice}<button className="icon-button" aria-label="关闭提示" onClick={() => setNotice('')}><X size={14} /></button></div>}
     {error && <div className="form-alert">{error}<button className="icon-button" aria-label="关闭错误提示" onClick={() => setError('')}><X size={14} /></button></div>}
 
+    <div className="sys-split">
+      <div className="sys-split-side">
     <section className="panel">
       <div className="panel-heading"><div><h3>创建系统账号</h3><p>新建账号默认是普通用户，首次登录强制修改初始密码，不会自动获得任何项目访问权限。</p></div><span className="panel-icon"><UserPlus size={18} /></span></div>
       <form className="form-stack" onSubmit={(event) => { event.preventDefault(); setNotice(''); setError(''); createUser.mutate(); }}>
@@ -95,6 +97,8 @@ export default function UserManagementPage() {
       </form>
     </section>}
 
+      </div>
+      <div className="sys-split-main">
     <section className="panel user-table-panel">
       <div className="panel-heading"><div><h3>系统账号列表</h3><p>项目角色应在“项目管理 → 项目成员与权限”中按项目单独维护；跨项目只读只开放业务读取与报表导出，不授予写入或审批权限。</p></div><span className="table-count">{users.length} 个账号</span></div>
       {!users.length ? <EmptyState title="暂无系统账号" description="创建业务人员账号后，再由有权限的项目管理人员将其加入具体项目。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>账号</th><th>公司级身份</th><th>跨项目数据范围</th><th>账号 / 登录安全</th><th>创建日期</th><th>管理</th></tr></thead><tbody>{users.map((managedUser) => <tr key={managedUser.id}>
@@ -110,6 +114,8 @@ export default function UserManagementPage() {
         </div></td>
       </tr>)}</tbody></table></div>}
     </section>
+      </div>
+    </div>
 
     <div className="data-note"><span className="note-mark">i</span><span>公网部署时系统管理员首次登录必须启用验证器多因素认证。关闭账号、重置密码或从安全中心撤销会话都会立即阻断该会话的后续 API 请求。登录安全事件与 IP/设备信息只能用于受控运维目的。</span></div>
   </div>;

@@ -11,7 +11,7 @@ function check(label, condition) {
   else { failures.push(label); console.log('FAIL ' + label); }
 }
 
-const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap] = await Promise.all([
+const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap, systemTabs, securityPage, policiesPage, governancePage, parametersPage, accountsPage] = await Promise.all([
   read('apps/web/src/styles/v6.css'),
   read('apps/web/src/styles/legacy.css'),
   read('apps/web/src/main.tsx'),
@@ -30,6 +30,12 @@ const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, das
   read('apps/web/src/pages/CostsPage.tsx'),
   read('apps/web/src/components/ConfirmDialog.tsx'),
   read('apps/web/src/components/FocusTrap.tsx'),
+  read('apps/web/src/components/SystemTabs.tsx'),
+  read('apps/web/src/pages/SystemSecurityPage.tsx'),
+  read('apps/web/src/pages/SystemPoliciesPage.tsx'),
+  read('apps/web/src/pages/SystemGovernancePage.tsx'),
+  read('apps/web/src/pages/SystemParametersPage.tsx'),
+  read('apps/web/src/pages/UserManagementPage.tsx'),
 ]);
 const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
@@ -108,6 +114,11 @@ check('confirm host and global focus trap are mounted', layout.includes('Confirm
 check('confirm host provides promise-based confirm and prompt', confirmHost.includes('confirmAction') && confirmHost.includes('promptAction'));
 check('focus trap cycles Tab and inerts the background', focusTrap.includes('onKeyDown') && focusTrap.includes("setAttribute('inert'"));
 check('danger token is not self-referential', v6.includes('--danger:#a23a2a'));
+check('system governance pages share the local tab workbench', systemTabs.includes("role=\"tablist\"") && [securityPage, policiesPage, governancePage, parametersPage].every((page) => page.includes('SystemTabs')) && v6.includes('.sys-tabs'));
+check('accounts page uses the split create/list workbench', accountsPage.includes('sys-split') && accountsPage.includes('sys-split-main'));
+check('mobile nav and transient menus are focus-trapped', layout.includes("data-focus-trap={mobileNavOpen ? 'modal' : undefined}") && layout.includes("data-focus-trap={quickActionsOpen ? 'popover' : undefined}") && layout.includes("data-focus-trap={accountMenuOpen ? 'popover' : undefined}"));
+check('legacy CSS no longer ships obsolete themes', !legacy.includes('data-theme-name'));
+check('browser-level UI gates are present', await access(join(root, 'scripts/ui-visual-regression.mjs')).then(() => true).catch(() => false) && await access(join(root, 'scripts/axe-audit.mjs')).then(() => true).catch(() => false));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {

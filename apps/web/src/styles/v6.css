@@ -821,6 +821,24 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .party-quick-dialog{width:min(500px,calc(100vw - 32px))}
 .party-quick-dialog .business-party-create-form{padding:14px 22px 0;border-top:0;max-height:calc(100dvh - 210px);overflow:auto}
 
+
+
+[hidden]{display:none}
+.audit-filter-heading > span{border-radius:2px}
+
+/* system page local tabs and split workbench */
+.sys-tabs{display:flex;align-items:center;gap:0;margin:16px 0 18px;border-bottom:1px solid var(--line-2);overflow-x:auto;scrollbar-width:none}
+.sys-tabs button{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 15px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--meta);font-size:12px;white-space:nowrap;cursor:pointer}
+.sys-tabs button:hover{color:var(--ink)}
+.sys-tabs button.is-active{color:var(--ink);border-bottom-color:var(--seal);font-weight:600}
+.sys-tabs button small{min-width:18px;padding:1px 5px;border:1px solid var(--line-2);border-radius:2px;color:var(--meta);font-family:var(--num);font-size:10px;line-height:1.4;text-align:center}
+.sys-tabs button.is-active small{color:var(--seal);border-color:rgba(162,58,42,.32)}
+.sys-split{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:24px;align-items:start}
+.sys-split-side{min-width:0;position:sticky;top:84px}
+.sys-split-main{min-width:0}
+.sys-panel-copy{max-width:760px;color:var(--meta);font-size:11.5px;line-height:1.75}
+@media (max-width:1120px){.sys-split{grid-template-columns:1fr}.sys-split-side{position:static}}
+
 /* confirm dialog */
 .confirm-backdrop{z-index:120}
 .confirm-dialog{width:min(460px,calc(100vw - 32px))}
