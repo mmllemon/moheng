@@ -91,8 +91,9 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
         _count: { _all: true },
         _sum: { inputTokens: true, outputTokens: true, totalTokens: true },
       }),
+      // Active work is a current-state metric, not a 30-day creation-window metric.
       prisma.assistantRun.count({
-        where: { ownerUserId: actor.sub, projectId, createdAt: { gte: periodStart, lte: periodEnd }, status: { in: ['QUEUED', 'RUNNING'] } },
+        where: { ownerUserId: actor.sub, projectId, status: { in: ['QUEUED', 'RUNNING'] } },
       }),
     ]);
 
