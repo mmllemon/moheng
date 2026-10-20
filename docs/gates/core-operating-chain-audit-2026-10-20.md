@@ -41,7 +41,7 @@ PR: https://github.com/mmllemon/moheng/pull/18
 
 ## 必须继续闭环的验收项
 
-1. **当前头提交自动化门禁：未核实。** PR #18 最新头 SHA 为 `34199e6e527d6f89b24bbf003c87cbfc66c0dc33`。当前已连接查询没有返回该 SHA 的 workflow runs/statuses；这不是 PASS，也不足以认定源码失败。需要在该精确 SHA 上取得 Assistant runtime gates、Prisma 7 migration gates、完整 API/前端测试与构建的明确结果。
+1. **当前头提交自动化门禁：等待结果。** 在审计记录提交前，代码头 `34199e6e527d6f89b24bbf003c87cbfc66c0dc33` 的首次 workflow/status 查询没有返回结果。随后审计记录被提交，PR #18 头更新为 `20ba234ac08e09f2ad63f03cc73f0fa563aa7aa7`；该 SHA 的 [Assistant runtime gates](https://github.com/mmllemon/moheng/actions/runs/39357146402) 与 [Prisma 7 migration gates](https://github.com/mmllemon/moheng/actions/runs/39357146474) 已启动，首次复查时两个主 job 仍在运行，两个辅助 job 已成功。不能把进行中的工作流记为 PASS。任何后续提交都必须以新头 SHA 重新确认。
 2. **路由级 PostgreSQL 回归：未执行。** 单元测试校验了差额与身份匹配规则，但仍需真实隔离 PostgreSQL 验证完整业主最终结算过账生成负向应收、审计与 posting 原子提交、重新读取后主合同净应收余额正确。
 3. **身份核验链路浏览器验收：未执行。** 需要在 UI 中验证未核验同名主体得到可理解的 409 提示、主体核验/明确选择流程可用，且成本和新合同最终关联到同一预期主体 ID。
 4. **历史数据对账：未关闭。** 用经授权的脱敏代表性数据库快照逐项目对比原合同基线、有效外部变更、已过账业主结算/应收、分供结算/应付与付款/退款分配、实际成本和往来单位关联；差异要附原因码并由业务/审计负责人签认。
