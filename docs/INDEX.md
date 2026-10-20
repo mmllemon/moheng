@@ -32,8 +32,9 @@
 当前与发布链相关的门禁文档包括：
 
 - `prisma7-backup-restore-rehearsal-v1.0.md`
+- `core-operating-chain-audit-2026-10-20.md` — 最新一轮核心经营链路源码审计与修复结果（动态状态以本文件记录的日期和 SHA 为准）。
 - `prisma7-legacy-data-upgrade-rehearsal-v1.0.md`
 - `staging-data-migration-reconciliation-review.md`
 - `staging-data-migration-reconciliation.md`
 
-自动生成的日志、报告与压缩包应由 GitHub Actions artifact 或本地忽略目录保存，不作为源代码文档长期提交。
+自动生成的日志、报告与压缩包应由 GitHub Actions artifact 或本地忽略目录保存，不作为源代码文档长期提交。实验性 PoC 文档和 `docs/archive/` 是按旧源码基线记录的历史材料，保留其历史事实，不用来描述当前主干功能或当前验收状态。
