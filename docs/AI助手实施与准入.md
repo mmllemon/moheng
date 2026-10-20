@@ -4,7 +4,7 @@
 
 ## 1. 当前实现状态
 
-运行时必须保持可替换：LangGraph/provider SDK 与墨衡自己的 `AssistantRuntime` 适配层隔离；LangGraph 和 PostgreSQL checkpoint 通过该层接入，业务工具只调用墨衡自有只读服务。Pi Durable/SQLite 的实验探针不证明 Pi Durable 自带 PostgreSQL adapter，也不作为当前 API 的生产存储基座。助手 UI 不绑定 LangGraph 内部协议。
+运行时必须保持可替换：LangGraph/provider SDKs are isolated behind 墨衡自己的 `AssistantRuntime` 适配层；LangGraph 和 PostgreSQL checkpoint 通过该层接入，业务工具只调用墨衡自有只读服务。Pi Durable/SQLite 的实验探针不证明 Pi Durable 自带 PostgreSQL adapter，也不作为当前 API 的生产存储基座。助手 UI 不绑定 LangGraph 内部协议。
 
 交互参考只借鉴一般的会话导航、中文输入法与滚动体验；open-claude-ui 仅作为交互研究参考，不复制 Claude 商标/品牌文案、专有二进制或视觉资产。
 
@@ -70,7 +70,7 @@ checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKP
 ### 仍需在开发阶段继续验证
 
 - [ ] 浏览器中覆盖配置未就绪、空结果、错误/限流、取消、失败重试、断线重连、来源面板和用量摘要。
-- [ ] 在隔离数据库中补齐会话/项目隔离与业务表无写入的运行态回归；使用 fake provider 验证工具调用与恢复边界。
+- [ ] 在隔离数据库中补齐会话/项目隔离与业务表无写入的运行态回归；使用 fake provider 验证工具调用与恢复边界，并断言 `MainContract`、`Change`、`CostEntry`、`DownstreamContract`、`ProgressBill`、`OwnerReceivable` 六张业务表零变化。
 - [ ] 在授权测试环境连接真实模型供应商，核验 token 元数据格式、真实取消/超时行为与费用/账单边界；不在聊天中传递密钥。
 - [ ] 完成中文输入法、长消息滚动、窄屏、键盘导航和错误引导等体验检查。
 
