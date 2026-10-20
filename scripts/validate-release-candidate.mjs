@@ -382,7 +382,7 @@ check('consolidated documentation preserves unit identity, financial posting and
   architectureRules.includes('检索名称只帮助匹配，不替代法律身份核验') &&
   architectureRules.includes('可选') &&
   architectureRules.includes('负向调整') &&
-  userGuide.includes('浏览器密码管理器') &&
+  architectureRules.includes('浏览器密码管理器') &&
   securityGuide.includes('API key') &&
   releaseStatus.includes('当前开发阶段仍应推进的验证') &&
   releaseStatus.includes('仅在预投产/投产条件具备后执行的门禁'));
