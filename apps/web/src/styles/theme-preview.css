@@ -260,6 +260,40 @@
 .pv-range-track i { display: block; width: 52%; height: 100%; background: var(--pv-accent); border-radius: inherit; }
 .pv-settings-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--pv-border); color: var(--pv-muted); font-size: 7.5px; }
 .pv-settings-footer .pv-button { height: 28px; font-size: 8px; }
+/* System settings uses one rail, not a second rail nested inside the app sidebar. */
+.pv-window.is-settings .pv-sidebar { display: none; }
+.pv-settings-sidebar {
+  width: 220px;
+  flex: 0 0 220px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 11px 14px;
+  background: var(--pv-sidebar);
+  border-right: 1px solid var(--pv-border);
+  overflow: auto;
+}
+.theme-preview[data-theme="warm-paper"] .pv-settings-sidebar { background-image: radial-gradient(rgba(90, 72, 48, 0.07) 0.55px, transparent 0.55px), radial-gradient(rgba(255, 255, 255, 0.18) 0.55px, transparent 0.55px); background-size: 5px 5px, 7px 7px; background-position: 0 0, 2px 3px; }
+.pv-settings-brand { display: flex; align-items: center; gap: 9px; padding: 2px 5px 14px; }
+.pv-settings-brand .pv-logo { width: 28px; height: 28px; font-size: 17px; }
+.pv-settings-brand strong { display: block; font-family: var(--pv-font-serif); font-size: 17px; line-height: 1.1; letter-spacing: 0.08em; color: var(--pv-text); }
+.pv-settings-brand small { display: block; margin-top: 2px; color: var(--pv-muted); font-size: 8px; letter-spacing: 0.1em; }
+.pv-settings-back { height: 28px; display: flex; align-items: center; gap: 4px; margin: 0 3px 12px; padding: 0 6px; border: 0; border-radius: 4px; background: transparent; color: var(--pv-muted); font-size: 9px; }
+.pv-settings-back:hover { background: color-mix(in srgb, var(--pv-text) 4%, transparent); color: var(--pv-text); }
+.pv-settings-sidebar .pv-settings-search { margin: 0 3px 13px; }
+.pv-settings-sidebar .pv-settings-group { margin-top: 14px; }
+.pv-settings-sidebar .pv-settings-group button { min-height: 31px; font-size: 10px; }
+.pv-settings-sidebar .pv-settings-version { margin: auto 8px 0; padding-top: 18px; }
+.pv-content.is-settings { display: flex; overflow: hidden; padding: 0; }
+.pv-content.is-settings .pv-settings-main { flex: 1; width: 100%; max-width: 1120px; height: auto; margin: 0 auto; padding: 30px 42px 48px; overflow: auto; }
+@media (max-width: 900px) {
+  .pv-settings-sidebar { width: 190px; flex-basis: 190px; }
+  .pv-content.is-settings .pv-settings-main { padding: 24px 26px 40px; }
+}
+@media (max-width: 680px) {
+  .pv-settings-sidebar { display: none; }
+  .pv-content.is-settings .pv-settings-main { padding: 18px 14px 32px; }
+}
 /* Readability pass: keep the preview at Hana-like UI scale, not miniature print. */
 .pv-brand strong, .pv-page-head h1, .pv-block-head h2, .pv-setting-head h2, .pv-font-preview span, .pv-hero-amount, .pv-user strong { color: var(--pv-text); }
 .pv-window { color: var(--pv-text); }

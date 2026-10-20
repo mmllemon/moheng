@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  ArrowRight, Bell, Building2, CalendarDays, ChevronDown, ChevronRight, CircleAlert,
+  ArrowRight, Bell, Building2, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, CircleAlert,
   FileBarChart2, FileText, FolderKanban, HandCoins, LayoutDashboard, PanelLeft,
   ReceiptText, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, UserCog, Users, Wallet,
 } from 'lucide-react';
@@ -97,40 +97,43 @@ function ThemeCard({ theme, active, onClick }: { theme: typeof THEMES[number]; a
   </button>;
 }
 
+function SettingsSidebar({ onBack }: { onBack: () => void }) {
+  return <aside className="pv-settings-sidebar">
+    <div className="pv-settings-brand"><span className="pv-logo">墨</span><div><strong>墨衡</strong><small>系统设置</small></div></div>
+    <button type="button" className="pv-settings-back" onClick={onBack}><ChevronLeft size={14} />返回工作区</button>
+    <div className="pv-settings-search"><Search size={14} /><span>搜索设置</span></div>
+    <div className="pv-settings-group"><span>个人偏好</span><button type="button" className="is-active"><SlidersHorizontal size={15} />界面</button><button type="button"><Bell size={15} />通知</button><button type="button"><ShieldCheck size={15} />安全</button></div>
+    <div className="pv-settings-group"><span>组织与权限</span><button type="button"><UserCog size={15} />账号管理</button><button type="button"><Users size={15} />成员与权限</button><button type="button"><ShieldCheck size={15} />授权复核</button><button type="button"><SlidersHorizontal size={15} />权限与流程</button></div>
+    <div className="pv-settings-group"><span>平台</span><button type="button"><Settings2 size={15} />基础配置</button><button type="button"><FileText size={15} />操作追溯</button><button type="button"><FileBarChart2 size={15} />运维备份</button><button type="button"><Sparkles size={15} />AI 助手 <i className="pv-beta">BETA</i></button></div>
+    <div className="pv-settings-version">墨衡 · v2.19.0-rc.2</div>
+  </aside>;
+}
+
 function SettingsPreview({ theme, onThemeChange }: { theme: ThemeId; onThemeChange: (theme: ThemeId) => void }) {
   const texture = theme === 'midnight-contrast' ? '关闭' : '宣纸';
-  return <div className="pv-settings">
-    <aside className="pv-settings-nav">
-      <div className="pv-settings-search"><Search size={14} /><span>搜索设置</span></div>
-      <div className="pv-settings-group"><span>个人偏好</span><button type="button" className="is-active"><SlidersHorizontal size={15} />界面</button><button type="button"><Bell size={15} />通知</button><button type="button"><ShieldCheck size={15} />安全</button></div>
-      <div className="pv-settings-group"><span>组织与权限</span><button type="button"><UserCog size={15} />账号管理</button><button type="button"><Users size={15} />成员与权限</button><button type="button"><ShieldCheck size={15} />授权复核</button></div>
-      <div className="pv-settings-group"><span>平台</span><button type="button"><Settings2 size={15} />基础配置</button><button type="button"><FileText size={15} />操作追溯</button><button type="button"><Sparkles size={15} />AI 助手 <i className="pv-beta">BETA</i></button></div>
-      <div className="pv-settings-version">墨衡 · v2.19.0-rc.2</div>
-    </aside>
-    <div className="pv-settings-main">
-      <div className="pv-page-head settings-head"><div><span className="pv-eyebrow">SETTINGS / APPEARANCE</span><h1>界面</h1><p>选择主题、字体与阅读密度；所有偏好会立即预览。</p></div></div>
-      <section className="pv-setting-section">
-        <div className="pv-setting-head"><h2>主题</h2><p>用纸色、墨色和一处强调色决定整个工作区的气质。</p></div>
-        <div className="pv-theme-grid">{THEMES.map((item) => <ThemeCard key={item.id} theme={item} active={theme === item.id} onClick={() => onThemeChange(item.id)} />)}</div>
-      </section>
-      <section className="pv-setting-section">
-        <div className="pv-setting-head"><h2>字体与排版</h2><p>正文使用衬线体，金额和编号使用等宽数字。</p></div>
-        <div className="pv-font-preview"><span>永和九年，岁在癸丑。</span><small>墨衡 · 工程经营管理 · 数字 0123456789</small></div>
-        <div className="pv-setting-rows">
-          <div className="pv-setting-row"><div><strong>正文字号</strong><small>影响表格、表单和说明文字</small></div><div className="pv-segment"><button type="button">小</button><button type="button" className="is-active">标准</button><button type="button">大</button></div></div>
-          <div className="pv-setting-row"><div><strong>表格密度</strong><small>控制项目台账和明细表的行高</small></div><div className="pv-segment"><button type="button" className="is-active">舒适</button><button type="button">紧凑</button></div></div>
-          <div className="pv-setting-row"><div><strong>内容宽度</strong><small>控制设置页和阅读内容的最大宽度</small></div><div className="pv-segment"><button type="button">窄</button><button type="button" className="is-active">标准</button><button type="button">宽</button></div></div>
-        </div>
-      </section>
-      <section className="pv-setting-section">
-        <div className="pv-setting-head"><h2>外观</h2><p>纸张纹理只影响表面，不改变业务信息的对比度。</p></div>
-        <div className="pv-setting-rows">
-          <div className="pv-setting-row"><div><strong>纸张纹理</strong><small>为画布、侧栏和卡片叠加轻微纸纹</small></div><div className="pv-segment">{['关闭', '宣纸', '棉纸', '细颗粒'].map((item) => <button type="button" className={texture === item ? 'is-active' : ''} key={item}>{item}</button>)}</div></div>
-          <div className="pv-setting-row"><div><strong>纹理强度</strong><small>1 最轻，5 最明显</small></div><div className="pv-range"><div className="pv-range-track"><i /></div><span>1</span><span>3</span><span>5</span></div></div>
-        </div>
-      </section>
-      <div className="pv-settings-footer"><span>设置仅影响当前账号，不改变公司级权限与业务数据。</span><button type="button" className="pv-button primary">保存偏好</button></div>
-    </div>
+  return <div className="pv-settings-main">
+    <div className="pv-page-head settings-head"><div><span className="pv-eyebrow">SETTINGS / APPEARANCE</span><h1>界面</h1><p>选择主题、字体与阅读密度；所有偏好会立即预览。</p></div></div>
+    <section className="pv-setting-section">
+      <div className="pv-setting-head"><h2>主题</h2><p>用纸色、墨色和一处强调色决定整个工作区的气质。</p></div>
+      <div className="pv-theme-grid">{THEMES.map((item) => <ThemeCard key={item.id} theme={item} active={theme === item.id} onClick={() => onThemeChange(item.id)} />)}</div>
+    </section>
+    <section className="pv-setting-section">
+      <div className="pv-setting-head"><h2>字体与排版</h2><p>正文使用衬线体，金额和编号使用等宽数字。</p></div>
+      <div className="pv-font-preview"><span>永和九年，岁在癸丑。</span><small>墨衡 · 工程经营管理 · 数字 0123456789</small></div>
+      <div className="pv-setting-rows">
+        <div className="pv-setting-row"><div><strong>正文字号</strong><small>影响表格、表单和说明文字</small></div><div className="pv-segment"><button type="button">小</button><button type="button" className="is-active">标准</button><button type="button">大</button></div></div>
+        <div className="pv-setting-row"><div><strong>表格密度</strong><small>控制项目台账和明细表的行高</small></div><div className="pv-segment"><button type="button" className="is-active">舒适</button><button type="button">紧凑</button></div></div>
+        <div className="pv-setting-row"><div><strong>内容宽度</strong><small>控制设置页和阅读内容的最大宽度</small></div><div className="pv-segment"><button type="button">窄</button><button type="button" className="is-active">标准</button><button type="button">宽</button></div></div>
+      </div>
+    </section>
+    <section className="pv-setting-section">
+      <div className="pv-setting-head"><h2>外观</h2><p>纸张纹理只影响表面，不改变业务信息的对比度。</p></div>
+      <div className="pv-setting-rows">
+        <div className="pv-setting-row"><div><strong>纸张纹理</strong><small>为画布、侧栏和卡片叠加轻微纸纹</small></div><div className="pv-segment">{['关闭', '宣纸', '棉纸', '细颗粒'].map((item) => <button type="button" className={texture === item ? 'is-active' : ''} key={item}>{item}</button>)}</div></div>
+        <div className="pv-setting-row"><div><strong>纹理强度</strong><small>1 最轻，5 最明显</small></div><div className="pv-range"><div className="pv-range-track"><i /></div><span>1</span><span>3</span><span>5</span></div></div>
+      </div>
+    </section>
+    <div className="pv-settings-footer"><span>设置仅影响当前账号，不改变公司级权限与业务数据。</span><button type="button" className="pv-button primary">保存偏好</button></div>
   </div>;
 }
 
@@ -142,7 +145,7 @@ export default function ThemePreviewPage() {
   const meta = THEMES.find((item) => item.id === theme)!;
   const switchTheme = (next: ThemeId) => navigate('/preview/themes/' + next);
   return <div className="theme-preview" data-theme={theme}>
-    <div className="pv-window">
+    <div className={"pv-window" + (view === 'settings' ? ' is-settings' : '')}>
       <aside className="pv-sidebar">
         <div className="pv-brand"><span className="pv-logo">墨</span><div><strong>墨衡</strong><small>工程经营管理</small></div></div>
         <div className="pv-workspace"><span>工程经营管理</span><ChevronDown size={13} /></div>
@@ -154,6 +157,7 @@ export default function ThemePreviewPage() {
         </nav>
         <div className="pv-sidebar-footer"><button type="button" className="pv-user"><span className="pv-avatar">系</span><span><strong>系统管理员</strong><small>系统管理员</small></span><ChevronRight size={14} /></button><button type="button" className="pv-collapse"><PanelLeft size={16} /></button></div>
       </aside>
+      {view === 'settings' && <SettingsSidebar onBack={() => setView('overview')} />}
       <div className="pv-main">
         <header className="pv-topbar">
           <div className="pv-breadcrumb">工程经营管理 <span>/</span> <strong>{view === 'overview' ? '经营总览' : '系统设置'}</strong></div>
