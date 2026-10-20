@@ -77,7 +77,7 @@ const readmeVersionMatches = readme.includes(rootPackage.version);
 check(changelogVersionMatches, 'CHANGELOG must start with current candidate version; expected=## v' + rootPackage.version + ', actual=' + JSON.stringify(changelog.slice(0, 70)));
 check(readmeVersionMatches, 'README must mention current candidate version; expected=' + rootPackage.version + ', found=' + readme.includes(rootPackage.version));
 check(apiClient.includes('getAssistantUsageSummary') && apiClient.includes("usage-summary?"), 'assistant UI client must use the server project usage-summary endpoint');
-check(page.includes('近 {usageSummary?.windowDays ?? 30} 天模型用量') && page.includes('formatTokenCount(usageSummary.tokens.totalTokens)') && page.includes('不会用估算值替代实际用量'), 'AI workspace must show project-scoped token totals and keep unknown usage explicit');
+check(page.includes('近 {usageSummary?.windowDays ?? 30} 天模型用量') && page.includes('formatTokenCount(usageSummary.tokens.totalTokens)') && page.includes('不会用估算值替代实际用量') && page.includes('已结束任务统计近 30 天；进行中任务反映当前全部活动任务'), 'AI workspace must show provider-reported totals, unknown usage, and distinct activity windows');
 check(css.includes('.assistant-usage-metrics') && css.includes('.assistant-usage-totals'), 'project usage summary must use shared theme surfaces and numeric summary styles');
 check(apiClient.includes('parseAssistantSseBlock') && apiClient.includes('assistant-sse-parser.mjs'), 'SSE parser must be an isolated pure module');
 check(rootPackage.scripts['validate:release-candidate'].includes('assistant-sse-parser.test.mjs'), 'pure SSE parser unit tests must run in the release validation chain');
