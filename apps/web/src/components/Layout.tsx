@@ -6,7 +6,7 @@ import {
   Building2, BookOpen, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, ClipboardList, FileText, FolderKanban,
   HandCoins, LayoutDashboard, LogOut, Menu, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, Globe2, ReceiptText,
   ArrowUpRight, Command, CornerDownLeft, Keyboard, X, History, BellRing, FileSpreadsheet, Users,
-  ShieldCheck, UserRound, ServerCog,
+  ShieldCheck, UserRound, ServerCog, Sparkles,
 } from 'lucide-react';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
@@ -38,6 +38,7 @@ const systemNavigation: NavigationItem[] = [
   { to: '/system/governance', label: '组织规则', icon: Workflow, group: '系统管理', end: true, adminOnly: true },
   { to: '/system/dictionaries', label: '基础字典', icon: BookOpen, group: '系统管理', end: true, adminOnly: true },
   { to: '/system/parameters', label: '参数配置', icon: SlidersHorizontal, group: '系统管理', end: true, adminOnly: true },
+  { to: '/system/assistant', label: 'AI 助手', icon: Sparkles, group: '系统管理', end: true, adminOnly: true },
   { to: '/system/operations', label: '运维备份', icon: ServerCog, group: '系统管理', end: true, adminOnly: true },
   { to: '/audit-logs', label: '操作追溯', icon: History, group: '系统管理', end: true, adminOnly: true },
 ];

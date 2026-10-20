@@ -22,7 +22,7 @@
 - `project_operating_overview` 包含分供付款/退款合计和最近流水样本，且与应付、实际成本分开；当流水扫描超过 10,000 条时，付款/退款合计返回不可用并说明限制。
 - `cost_variance` 在目标成本项扫描超过 10,000 条时返回 `INDETERMINATE`，偏差额与偏差百分比为空；不得用部分目标成本计算一个看似完整的偏差。
 
-这些实现不能被表述为完整生产 AI 已交付。当前功能开关 `ASSISTANT_POC_ENABLED` 必须保持关闭，直到真实模型 E2E、浏览器交互、权限/安全、成本控制、恢复与只读内测完成并独立批准。
+这些实现不能被表述为完整生产 AI 已交付。当前仍为受控 POC：生产默认关闭，管理员可在隔离测试环境通过 `/system/assistant` 启用；真实模型 E2E、浏览器交互、权限/安全、成本控制、恢复与只读内测完成并独立批准前，不得作为正式生产能力发布。
 
 ## 2. 模型调用边界
 
@@ -38,9 +38,24 @@
 | `ASSISTANT_POC_MODEL_ID` | 具体模型 ID |
 | `OPENAI_BASE_URL` | 可选 OpenAI-compatible 服务地址；留空时使用 SDK 默认地址 |
 | `ASSISTANT_CHECKPOINT_DATABASE_URL` | 可选独立 checkpoint 连接；未设置时使用 `DATABASE_URL` |
-| `ASSISTANT_POC_ENABLED` | 显式功能开关；默认关闭 |
+| `ASSISTANT_POC_ENABLED` | 无数据库配置时的环境变量回退开关；默认关闭 |
+| `ASSISTANT_ENCRYPTION_KEY` | 可视化配置保存供应商 API Key 所需的独立 AES-256-GCM 密钥（64 位十六进制）|
 
 checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKPOINT_SETUP_ALLOW=true` 后运行 `npm run assistant:checkpoint:setup -w @cms/api`。普通 HTTP 请求不得执行 DDL。
+
+### 3.1 可视化供应商配置（2026-10-20）
+
+管理员可在 `/system/assistant` 配置 OpenAI 兼容供应商：
+
+- 填写供应商名称、接口地址与 API Key；
+- “拉取供应商模型”会由服务端请求 `{baseUrl}/models`，密钥不进入浏览器 localStorage，也不回显；
+- 从实时返回的模型列表选择模型，也允许手动填写；
+- “保存配置”将 API Key 用 `ASSISTANT_ENCRYPTION_KEY` 加密后写入 `AssistantProviderConfig`；
+- “测试连接并刷新模型”只验证 `/models` 可达，不代表具体模型已通过 tool calling、金额口径与越权拒绝验收；
+- 配置写入数据库后优先于环境变量；没有数据库行时才回退到 `OPENAI_API_KEY` / `ASSISTANT_POC_MODEL_ID` / `OPENAI_BASE_URL`；
+- 页面同时显示检查点连接串、`moheng_assistant` schema、后台 worker 与加密保险库的就绪状态。
+
+当前本地验证已用 mock provider 验证“拉取模型 → 选择 → 加密保存 → 状态生效”链路；mock 配置已在验证后清空，真实供应商仍需授权人员在受控环境填写真实密钥。
 
 不得将任何真实 API key/数据库口令写入源码、文档、CI artifacts、普通日志或审计变化字段。状态接口只允许返回是否就绪，不得返回秘密原文。
 
@@ -74,7 +89,7 @@ checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKP
 - [ ] 在授权测试环境连接真实模型供应商，核验 token 元数据格式、真实取消/超时行为与费用/账单边界；不在聊天中传递密钥。
 - [ ] 完成中文输入法、长消息滚动、窄屏、键盘导航和错误引导等体验检查。
 
-生产/正式启用仍须独立准入：`ASSISTANT_POC_ENABLED` 保持默认关闭；以上自动化通过不等于真实 provider E2E、安全/隐私准入或生产启用批准。
+生产/正式启用仍须独立准入：生产默认关闭，且应先完成真实 provider E2E、安全/隐私准入和只读内测；以上自动化通过不等于生产启用批准。
 
 ## 6. 模型供应商与启用
 

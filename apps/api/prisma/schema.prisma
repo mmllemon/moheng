@@ -1515,6 +1515,27 @@ model BackgroundJob {
 
 
 /// Persistent, owner-scoped conversation metadata for the opt-in read-only assistant.
+/// Singleton UI-managed provider config for the read-only assistant. The API key is encrypted at rest.
+model AssistantProviderConfig {
+  id                  String    @id @default("default") @db.VarChar(40)
+  name                String    @default("OpenAI 兼容供应商") @db.VarChar(120)
+  baseUrl             String?   @db.VarChar(1000)
+  modelId             String?   @db.VarChar(200)
+  apiKeyCiphertext    String?
+  apiKeyIv            String?   @db.VarChar(32)
+  apiKeyAuthTag       String?   @db.VarChar(32)
+  keyVersion          Int       @default(1)
+  enabled             Boolean   @default(false)
+  lastModelsFetchedAt DateTime? @db.Timestamptz(3)
+  lastModelCount      Int?
+  lastTestAt          DateTime? @db.Timestamptz(3)
+  lastTestStatus      String?   @db.VarChar(40)
+  lastTestSummary     String?   @db.VarChar(500)
+  updatedById         String?   @db.VarChar(100)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
+}
+
 model AssistantConversation {
   id            String   @id @default(cuid())
   ownerUserId   String

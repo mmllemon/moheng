@@ -1,13 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import { z } from 'zod';
 import { authRequired, authUser } from '../lib/auth.js';
-import { getAssistantRuntimeConfigurationStatus } from '../lib/assistant-config.js';
+import { getAssistantRuntimeStatus, loadAssistantRuntimeConfig } from '../lib/assistant-provider-config.js';
 import { failure, success } from '../lib/http.js';
 import { ASSISTANT_READ_ONLY_TOOL_IDS, AssistantReadOnlyToolError, runAssistantReadOnlyTool } from '../lib/assistant-read-only-tools.js';
 import { assistantConversationRoutes } from './assistant-conversations.js';
 
 const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
-  if (process.env.ASSISTANT_POC_ENABLED !== 'true') {
+  const runtime = await loadAssistantRuntimeConfig();
+  if (!runtime.enabled) {
     return reply.code(404).send(failure(reply, 404, 'ROUTE_NOT_FOUND', '接口不存在'));
   }
 };
@@ -32,7 +33,7 @@ export async function assistantPocRoutes(app: FastifyInstance) {
   // Availability is intentionally distinct from the gated tool/run APIs so the UI can hide the entry point when disabled.
   // This reports the feature switch and configuration-presence booleans only; it never returns secrets, raw model IDs, URLs, or database connection strings. It does not probe provider reachability.
   app.get('/status', { preHandler: [authRequired], config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async () =>
-    success(getAssistantRuntimeConfigurationStatus()),
+    success(await getAssistantRuntimeStatus()),
   );
 
   app.get('/tools', {

@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage';
 const ReportStudioPage = lazy(() => import('./pages/ReportStudioPage'));
 const ReportPreviewPage = lazy(() => import('./pages/ReportPreviewPage'));
 const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'));
+const AssistantProviderPage = lazy(() => import('./pages/AssistantProviderPage'));
 const SystemSecurityPage = lazy(() => import('./pages/SystemSecurityPage'));
 const AccountSecurityPage = lazy(() => import('./pages/AccountSecurityPage'));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
@@ -130,6 +131,7 @@ export default function App() {
         <Route path="system/dictionaries" element={<AdminOnly><SystemDictionariesPage /></AdminOnly>} />
         <Route path="system/parameters" element={<AdminOnly><SystemParametersPage /></AdminOnly>} />
         <Route path="system/accounts" element={<AdminOnly><UserManagementPage /></AdminOnly>} />
+        <Route path="system/assistant" element={<AdminOnly><AssistantProviderPage /></AdminOnly>} />
         <Route path="projects/members" element={<NeedProject><ProjectMembersPage /></NeedProject>} />
         <Route path="account/security" element={<AccountSecurityPage />} />
         <Route path="system/members" element={<Navigate to="/projects/members" replace />} />

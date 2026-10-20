@@ -12,6 +12,8 @@ import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
 import { decryptIntegrationSecret, encryptIntegrationSecret } from '../lib/integration-vault.js';
+import { decryptAssistantProviderKey, encryptAssistantProviderKey, isCheckpointSchemaReady, publicAssistantProviderConfig } from '../lib/assistant-provider-config.js';
+import { AssistantProviderError, fetchAssistantProviderModels, normalizeProviderBaseUrl } from '../lib/assistant-provider-client.js';
 import { encryptBackupFile, decryptBackupFile, parseBackupKeyRing } from '../lib/backup-encryption.js';
 import { requestIntegrationEndpoint, IntegrationHttpError } from '../lib/integration-http.js';
 import { PROJECT_PERMISSION_BASELINES, PROJECT_PERMISSION_LABELS, defaultProjectPermissionPolicy, parseProjectPermissionPolicy } from '../lib/access-policy.js';
@@ -47,6 +49,17 @@ const integrationCreate = z.object({
   endpointUrl: z.string().trim().url().max(1000).refine((value) => new URL(value).protocol === 'https:', '集成地址必须使用 HTTPS').optional().or(z.literal('')),
   description: z.string().trim().max(1000).optional(),
   secret: z.string().min(1).max(4096),
+});
+const assistantProviderPatch = z.object({
+  name: z.string().trim().min(1).max(120).optional(),
+  baseUrl: z.string().trim().max(1000).optional(),
+  modelId: z.string().trim().max(200).optional(),
+  apiKey: z.string().min(1).max(4096).optional(),
+  enabled: z.boolean().optional(),
+}).refine((value) => Object.keys(value).length > 0, '至少提供一个要修改的字段');
+const assistantProviderLookup = z.object({
+  baseUrl: z.string().trim().max(1000).optional(),
+  apiKey: z.string().max(4096).optional(),
 });
 const accessPolicyDraft = z.object({
   changeNote: z.string().trim().min(1).max(1000),
@@ -726,6 +739,101 @@ export async function systemManagementRoutes(app: FastifyInstance) {
   app.get('/integrations', async () => {
     const rows = await prisma.integrationCredential.findMany({ orderBy: [{ status: 'asc' }, { name: 'asc' }] });
     return success(rows.map(publicIntegration));
+  });
+
+  app.get('/assistant-provider', async () => {
+    const [row, checkpointSchemaReady] = await Promise.all([prisma.assistantProviderConfig.findUnique({ where: { id: 'default' } }), isCheckpointSchemaReady()]);
+    return success(publicAssistantProviderConfig(row, checkpointSchemaReady));
+  });
+
+  app.put('/assistant-provider', async (request, reply) => {
+    const actor = authUser(request);
+    const parsed = assistantProviderPatch.safeParse(request.body);
+    if (!parsed.success) return failure(reply, 400, 'ASSISTANT_PROVIDER_INPUT_INVALID', 'AI 助手配置参数有误', parsed.error.flatten());
+    if (parsed.data.baseUrl) {
+      try { normalizeProviderBaseUrl(parsed.data.baseUrl); }
+      catch (error) {
+        if (error instanceof AssistantProviderError) return failure(reply, error.statusCode, error.code, error.message);
+        throw error;
+      }
+    }
+    const current = await prisma.assistantProviderConfig.findUnique({ where: { id: 'default' } });
+    const nextVersion = parsed.data.apiKey ? (current?.keyVersion ?? 0) + 1 : (current?.keyVersion ?? 1);
+    let encrypted: ReturnType<typeof encryptAssistantProviderKey> | null = null;
+    if (parsed.data.apiKey) {
+      try { encrypted = encryptAssistantProviderKey(parsed.data.apiKey, nextVersion); }
+      catch (error) {
+        if (error instanceof Error && error.message === 'ASSISTANT_VAULT_NOT_CONFIGURED') return failure(reply, 503, 'ASSISTANT_VAULT_NOT_CONFIGURED', '服务端未配置 ASSISTANT_ENCRYPTION_KEY，无法安全保存模型密钥');
+        throw error;
+      }
+    }
+    const name = parsed.data.name ?? current?.name ?? 'OpenAI 兼容供应商';
+    const baseUrl = parsed.data.baseUrl !== undefined ? (parsed.data.baseUrl || null) : (current?.baseUrl ?? null);
+    const modelId = parsed.data.modelId !== undefined ? (parsed.data.modelId || null) : (current?.modelId ?? null);
+    const enabled = parsed.data.enabled ?? current?.enabled ?? false;
+    const row = await prisma.$transaction(async (tx) => {
+      const saved = await tx.assistantProviderConfig.upsert({
+        where: { id: 'default' },
+        create: {
+          id: 'default', name, baseUrl, modelId, enabled, updatedById: actor.sub, keyVersion: encrypted ? nextVersion : 1,
+          ...(encrypted ? { apiKeyCiphertext: encrypted.ciphertext, apiKeyIv: encrypted.iv, apiKeyAuthTag: encrypted.authTag } : {}),
+        },
+        update: {
+          name, baseUrl, modelId, enabled, updatedById: actor.sub,
+          ...(encrypted ? { keyVersion: nextVersion, apiKeyCiphertext: encrypted.ciphertext, apiKeyIv: encrypted.iv, apiKeyAuthTag: encrypted.authTag } : {}),
+        },
+      });
+      await tx.auditLog.create({ data: { userId: actor.sub, entity: 'AssistantProviderConfig', entityId: saved.id, action: 'ASSISTANT_PROVIDER_CONFIG_UPDATED', changes: { name, baseUrl, modelId, enabled, apiKeyConfigured: Boolean(encrypted) || Boolean(current?.apiKeyCiphertext), keyVersion: saved.keyVersion } } });
+      return saved;
+    });
+    return success(publicAssistantProviderConfig(row, await isCheckpointSchemaReady()));
+  });
+
+  app.post('/assistant-provider/models', { config: { rateLimit: { max: 10, timeWindow: '15 minutes' } } }, async (request, reply) => {
+    const actor = authUser(request);
+    const parsed = assistantProviderLookup.safeParse(request.body ?? {});
+    if (!parsed.success) return failure(reply, 400, 'ASSISTANT_PROVIDER_INPUT_INVALID', '模型拉取参数有误', parsed.error.flatten());
+    const row = await prisma.assistantProviderConfig.findUnique({ where: { id: 'default' } });
+    const baseUrl = parsed.data.baseUrl?.trim() || row?.baseUrl?.trim() || '';
+    let apiKey = parsed.data.apiKey?.trim();
+    if (!apiKey && row?.apiKeyCiphertext && row.apiKeyIv && row.apiKeyAuthTag) {
+      try { apiKey = decryptAssistantProviderKey({ ciphertext: row.apiKeyCiphertext, iv: row.apiKeyIv, authTag: row.apiKeyAuthTag }, row.keyVersion); }
+      catch { apiKey = undefined; }
+    }
+    if (!apiKey) return failure(reply, 409, 'ASSISTANT_PROVIDER_KEY_MISSING', '请先填写模型服务密钥，或在保存配置后再拉取模型');
+    try {
+      const result = await fetchAssistantProviderModels({ baseUrl, apiKey });
+      if (row) await prisma.assistantProviderConfig.update({ where: { id: row.id }, data: { lastModelsFetchedAt: new Date(), lastModelCount: result.models.length } });
+      await prisma.auditLog.create({ data: { userId: actor.sub, entity: 'AssistantProviderConfig', entityId: 'default', action: 'ASSISTANT_PROVIDER_MODELS_FETCHED', changes: { baseUrl, modelCount: result.models.length, apiKeyStored: false } } });
+      return success({ models: result.models, latencyMs: result.latencyMs });
+    } catch (error) {
+      if (error instanceof AssistantProviderError) return failure(reply, error.statusCode, error.code, error.message);
+      throw error;
+    }
+  });
+
+  app.post('/assistant-provider/test', { config: { rateLimit: { max: 10, timeWindow: '15 minutes' } } }, async (request, reply) => {
+    const actor = authUser(request);
+    const row = await prisma.assistantProviderConfig.findUnique({ where: { id: 'default' } });
+    if (!row?.baseUrl) return failure(reply, 409, 'ASSISTANT_PROVIDER_URL_MISSING', '请先保存供应商地址');
+    let apiKey: string | undefined;
+    if (row.apiKeyCiphertext && row.apiKeyIv && row.apiKeyAuthTag) {
+      try { apiKey = decryptAssistantProviderKey({ ciphertext: row.apiKeyCiphertext, iv: row.apiKeyIv, authTag: row.apiKeyAuthTag }, row.keyVersion); }
+      catch { apiKey = undefined; }
+    }
+    if (!apiKey) return failure(reply, 409, 'ASSISTANT_PROVIDER_KEY_MISSING', '请先保存模型服务密钥');
+    try {
+      const result = await fetchAssistantProviderModels({ baseUrl: row.baseUrl, apiKey });
+      const updated = await prisma.assistantProviderConfig.update({ where: { id: row.id }, data: { lastTestAt: new Date(), lastTestStatus: 'SUCCEEDED', lastTestSummary: 'MODELS_OK_' + result.models.length, lastModelsFetchedAt: new Date(), lastModelCount: result.models.length } });
+      await prisma.auditLog.create({ data: { userId: actor.sub, entity: 'AssistantProviderConfig', entityId: row.id, action: 'ASSISTANT_PROVIDER_TEST_SUCCEEDED', changes: { baseUrl: row.baseUrl, modelId: row.modelId, modelCount: result.models.length, latencyMs: result.latencyMs, apiKeyStored: false } } });
+      return success({ provider: publicAssistantProviderConfig(updated, await isCheckpointSchemaReady()), models: result.models, latencyMs: result.latencyMs, message: '供应商连接成功；这只验证模型列表可达，不代表具体模型已通过工具调用验收' });
+    } catch (error) {
+      const code = error instanceof AssistantProviderError ? error.code : 'ASSISTANT_PROVIDER_TEST_FAILED';
+      const message = error instanceof AssistantProviderError ? error.message : '供应商连接测试失败';
+      await prisma.assistantProviderConfig.update({ where: { id: row.id }, data: { lastTestAt: new Date(), lastTestStatus: 'FAILED', lastTestSummary: code } }).catch(() => undefined);
+      await prisma.auditLog.create({ data: { userId: actor.sub, entity: 'AssistantProviderConfig', entityId: row.id, action: 'ASSISTANT_PROVIDER_TEST_FAILED', changes: { baseUrl: row.baseUrl, code, apiKeyStored: false } } }).catch(() => undefined);
+      return failure(reply, error instanceof AssistantProviderError ? error.statusCode : 502, code, message);
+    }
   });
 
   app.post('/integrations', async (request, reply) => {

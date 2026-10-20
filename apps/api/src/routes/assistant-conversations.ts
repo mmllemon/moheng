@@ -8,11 +8,13 @@ import { prisma } from '../lib/prisma.js';
 import { appendAssistantRunEvent } from '../lib/assistant-run-events.js';
 import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
 import { isAssistantBaseUrlValid } from '../lib/assistant-config.js';
+import { loadAssistantRuntimeConfig } from '../lib/assistant-provider-config.js';
 import { assertAssistantUserRunAdmission, MAX_ACTIVE_ASSISTANT_RUNS_PER_USER, MAX_ASSISTANT_SUBMISSIONS_PER_USER_PER_MINUTE } from '../lib/assistant-submission-policy.js';
 import { buildAssistantUsageSummary, ASSISTANT_USAGE_SUMMARY_WINDOW_DAYS } from '../lib/assistant-usage-summary.js';
 
 const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
-  if (process.env.ASSISTANT_POC_ENABLED !== 'true') {
+  const runtime = await loadAssistantRuntimeConfig();
+  if (!runtime.enabled) {
     return reply.code(404).send(failure(reply, 404, 'ROUTE_NOT_FOUND', '接口不存在'));
   }
 };
@@ -222,7 +224,8 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
           if (previous.requestHash !== requestHash) throw new Error('ASSISTANT_IDEMPOTENCY_CONFLICT');
           return { runId: previous.id, status: previous.status, idempotentReplay: true };
         }
-        if (!process.env.OPENAI_API_KEY?.trim() || (!process.env.ASSISTANT_CHECKPOINT_DATABASE_URL?.trim() && !process.env.DATABASE_URL?.trim()) || !process.env.ASSISTANT_POC_MODEL_ID?.trim() || !isAssistantBaseUrlValid(process.env.OPENAI_BASE_URL)) {
+        const runtime = await loadAssistantRuntimeConfig();
+        if (!runtime.apiKey || !runtime.checkpointUrl || !runtime.modelId || !isAssistantBaseUrlValid(runtime.baseUrl)) {
           throw new Error('ASSISTANT_RUNTIME_NOT_CONFIGURED');
         }
         const active = await tx.assistantRun.findFirst({ where: { conversationId: conversation.id, status: { in: ['QUEUED', 'RUNNING'] } }, select: { id: true } });

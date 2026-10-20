@@ -1,6 +1,7 @@
 import { prisma } from './prisma.js';
 import { buildAssistantHistoryWithinBudget } from './assistant-context-budget.js';
 import { isAssistantBaseUrlValid } from './assistant-config.js';
+import { loadAssistantRuntimeConfig } from './assistant-provider-config.js';
 import { canAccessProject } from './project-access.js';
 import { appendAssistantRunEvent, type AssistantEventJsonValue } from './assistant-run-events.js';
 import { PermanentBackgroundJobError } from './background-jobs.js';
@@ -101,14 +102,15 @@ export function createAssistantAgentRunJobHandler(overrides: { runAssistantTurn?
   if (run.status === 'CANCELLED' || run.cancelRequestedAt || run.status === 'COMPLETED') return;
   if (run.status !== 'QUEUED') throw new PermanentBackgroundJobError('ASSISTANT_RUN_STATE_INVALID');
 
-  if (process.env.ASSISTANT_POC_ENABLED !== 'true') {
+  const runtime = await loadAssistantRuntimeConfig();
+  if (!runtime.enabled) {
     await failRun(conversationId, runId, 'ASSISTANT_DISABLED');
     throw new PermanentBackgroundJobError('ASSISTANT_DISABLED');
   }
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const modelId = process.env.ASSISTANT_POC_MODEL_ID?.trim();
-  const baseURL = process.env.OPENAI_BASE_URL?.trim() || undefined;
-  const checkpointUrl = process.env.ASSISTANT_CHECKPOINT_DATABASE_URL?.trim() || process.env.DATABASE_URL?.trim();
+  const apiKey = runtime.apiKey;
+  const modelId = runtime.modelId;
+  const baseURL = runtime.baseUrl;
+  const checkpointUrl = runtime.checkpointUrl;
   if (!apiKey || !modelId || !checkpointUrl || !isAssistantBaseUrlValid(baseURL)) {
     await failRun(conversationId, runId, 'ASSISTANT_RUNTIME_NOT_CONFIGURED');
     throw new PermanentBackgroundJobError('ASSISTANT_RUNTIME_NOT_CONFIGURED');
