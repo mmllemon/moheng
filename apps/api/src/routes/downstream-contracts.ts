@@ -177,6 +177,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
       return reply.code(201).send(success(serialiseContract(row)));
     } catch (error) {
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选往来单位不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选往来单位已停用或归档，不能用于新合同');
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return failure(reply, 409, 'DOWNSTREAM_CONTRACT_NO_EXISTS', '该项目下合同编号已存在，或单位档案发生并发重复创建，请刷新后重试');
@@ -227,6 +228,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
       return success(serialiseContract(updated));
     } catch (error) {
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选往来单位不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选往来单位已停用或归档，不能用于新合同');
       if (error instanceof Error && error.message === 'DOWNSTREAM_CONTRACT_NOT_FOUND') return failure(reply, 404, 'DOWNSTREAM_CONTRACT_NOT_FOUND', '下游合同不存在');
@@ -297,6 +299,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
       return reply.code(201).send(success({ ...row, amount: money(row.amount) }));
     } catch (error) {
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选往来单位不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选往来单位已停用或归档，不能用于新合同');
       if (error instanceof Error && error.message === 'DOWNSTREAM_CONTRACT_NOT_FOUND') return failure(reply, 404, 'DOWNSTREAM_CONTRACT_NOT_FOUND', '下游合同不存在');
@@ -335,6 +338,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
       return reply.code(201).send(success({ ...plan, plannedAmount: money(plan.plannedAmount) }));
     } catch (error) {
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选往来单位不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选往来单位已停用或归档，不能用于新合同');
       if (error instanceof Error && error.message === 'DOWNSTREAM_CONTRACT_NOT_FOUND') return failure(reply, 404, 'DOWNSTREAM_CONTRACT_NOT_FOUND', '下游合同不存在');
@@ -455,6 +459,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
       return reply.code(201).send(success({ ...saved, amount: money(saved.amount) }));
     } catch (error) {
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选往来单位不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选往来单位已停用或归档，不能用于新合同');
       if (error instanceof Error && error.message === 'DOWNSTREAM_CONTRACT_NOT_FOUND') return failure(reply, 404, 'DOWNSTREAM_CONTRACT_NOT_FOUND', '下游合同不存在');
