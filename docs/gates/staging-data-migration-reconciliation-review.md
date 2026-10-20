@@ -1,5 +1,7 @@
 # Review: staging data migration reconciliation report
 
+> **历史证据说明：** 本文是 2026-10-18 对特定报告提交的复核快照。文中“current RC.2 head”、Actions run #40 和未勾选项目均指当时的代码、合成夹具与后续投产验证计划，不是 2026-10-20 当前主干状态，也不代表当前墨衡有真实历史数据需要人员签认。该报告及其 CI 只使用自建合成台账夹具和隔离 PostgreSQL。当前开发任务与后续阶段边界见[开发阶段验证与后续投产门禁](../发布与迁移验收.md)。
+
 Reviewed report commit: `83cb10702efdf0129047feeaee6993a4aa9c8ca8`
 
 Source report: `docs/gates/staging-data-migration-reconciliation.md`
@@ -43,15 +45,15 @@ The committed query files are in `scripts/gates/staging-fixtures/`:
 
 The queries set the test schema as their session `search_path` and contain SELECT statements only. Fixture seeding and schema reset must only run on a disposable test database; never run them against a non-disposable database.
 
-## Current gate status (verified 2026-10-18)
+## Gate status snapshot (verified 2026-10-18)
 
 - [x] Self-contained runner applies real migration prefixes in historical order and inserts legacy-shaped rows before the relevant backfills.
 - [x] Current-head GitHub Actions run [#40](https://github.com/mmllemon/moheng/actions/runs/39091162665) passed the main migration job (including build, API smoke, tests, backup/restore rehearsal and dependency audit) and the populated-legacy/STG-shaped reconciliation job.
 - [x] The run published the `prisma7-pr-gates` and `prisma7-legacy-upgrade-evidence` artifacts. These contain test evidence, not a user staging dump.
 - [x] Synthetic acceptance cases verify that STG-01 uses the externally confirmed 1,200,000 amount rather than the 1,500,000 internal-approved amount; STG-02 follows the signed main-contract baseline then the effective decrease; and STG-03 remains at its baseline.
-- [ ] Run the migration/reconciliation review against a sanitized, representative **user staging snapshot** and compare every project's before/after contract amounts and reconciliation reasons. Synthetic fixtures are not a substitute.
-- [ ] Have an authorized reviewer resolve or formally accept as exceptions the duplicate same-name party, missing historical actor evidence, and any unrecoverable `internalApprovedById` / `externalRecordedById` values.
-- [ ] Execute login, authorization, report preview/XLSX export, background-job, backup and restore smoke checks on the actual deployment topology, and document the forward-fix/restore procedure.
+- [ ] **Later pre-production gate, only if a real historical ledger/snapshot is supplied and authorized for migration:** run migration/reconciliation against a sanitized representative user staging snapshot and compare each project's before/after amounts/reasons. This is not a current development blocker when such data does not exist.
+- [ ] **Later data-acceptance gate, only for findings reproduced in real user data:** have the authorized reviewer resolve or formally accept exceptions for same-name parties, missing actor evidence and unrecoverable `internalApprovedById` / `externalRecordedById` values. The STG identifiers in this report are synthetic fixtures.
+- [ ] **Later deployment gate:** execute login, authorization, report preview/XLSX export, background-job, backup and restore smoke checks on the selected target topology, and document the forward-fix/restore procedure.
 - [ ] If claiming that the protected `public` schema was untouched in a particular rehearsal, capture before/after fingerprints for that schema; row counts alone are insufficient.
 
 ## Release boundary
