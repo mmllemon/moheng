@@ -24,12 +24,14 @@
   --radius-sm: 5px;
   --radius-md: 8px;
   --radius-lg: 12px;
+  --corner-radius-scale: 1;
+  --border-width: 1px;
   --radius-input: 6px;
-  --radius-card: 8px;
+  --radius-card-base: 8px;
   --radius: 5px;
-  --radius-control: 8px;
+  --radius-control: calc(var(--radius-input) * var(--corner-radius-scale));
   --radius-lg-v6: 8px;
-  --radius-card: 14px;
+  --radius-card: calc(var(--radius-card-base) * var(--corner-radius-scale));
   --card-border: color-mix(in srgb, var(--border) 78%, transparent);
 
   --fs-title: 1rem;
@@ -81,6 +83,9 @@
   --paper-texture-peak: 0.09;
   --paper-texture-strength: 1;
   --paper-texture-tile-size: 1024px, 720px, 256px;
+}
+@supports (corner-shape: squircle) {
+  :root { --corner-radius-scale: 1.8408964152537137; }
 }
 
 html[data-heading-font="sans"] { --font-heading: var(--font-ui); }
@@ -3192,7 +3197,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 }
 
 /* 卡片内部分隔线统一：1px 粗，距卡片边缘 20px */
-:root { --card-divider-width: 1px; --card-divider-inset: 20px; }
+:root { --card-divider-width: var(--border-width, 1px); --card-divider-inset: var(--space-16); }
 .ldg-stats > div + div::before,
 .cost-type-card + .cost-type-card::before,
 .bill-summary + .bill-summary::before,
@@ -3262,12 +3267,33 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   .system-authorization-stats > div + div::before { display: none; }
 }
 
-/* 所有输入类控件使用标准圆角，避免 squircle 把 8px 压方 */
+/* 控件圆角走 Hana token：6px × corner-radius-scale */
+.table-toolbar .toolbar-search,
+.report-field .date-picker-trigger,
+.ldg-search,
+.toolbar-search,
+.business-party-input-wrap,
+.settings-search { border-radius: var(--radius-control) !important; }
+
+/* 表格卡内缩统一使用 Hana --space-16 */
+.ldg-toolbar { padding-left: var(--space-16); padding-right: var(--space-16); }
+.ldg-toolbar::after,
+.panel.data-table-panel.panel-detached > .table-toolbar::after,
+.table-toolbar::after { left: var(--space-16); right: var(--space-16); }
+.panel.data-table-panel.panel-detached > .table-toolbar { padding-left: var(--space-16); padding-right: var(--space-16); }
+.ldg-table,
+.projects-table,
+.ds-section-card .data-table,
+.panel.panel-detached > .table-scroll .data-table,
+.panel.data-table-panel.panel-detached > .table-scroll .data-table { width: calc(100% - 32px); margin-left: var(--space-16); margin-right: var(--space-16); }
+.owner-contract-detail-grid { padding-left: var(--space-16); padding-right: var(--space-16); }
+
+/* Hana：radius token × 1.84 + squircle；不支持时回退标准圆角 */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 textarea,
-select { corner-shape: round !important; }
+select { corner-shape: squircle !important; }
 
-/* Hana 使用标准圆角，不用 squircle；交互控件统一 32px / 8px */
+/* Hana 交互控件圆角：--radius-input 6px × corner-radius-scale 1.84 */
 .button,
 .select-control-trigger,
 .date-picker-trigger,
@@ -3280,8 +3306,8 @@ select { corner-shape: round !important; }
 .assistant-field > input,
 .settings-row-control input,
 .settings-row-control select,
-.settings-row-control textarea { corner-shape: round; }
-.button { border-radius: var(--radius-control); }
+.settings-row-control textarea { corner-shape: squircle; }
+.button { border-radius: calc(var(--radius-sm) * var(--corner-radius-scale)); corner-shape: squircle; }
 
 /* 统一交互控件：32px 高、8px 圆角 */
 .select-control-trigger,
