@@ -1,0 +1,309 @@
+
+/* =============================================================
+   统计指标区（统一规范）
+   -------------------------------------------------------------
+   依据：Hana 1.1.35 官方卡片规范 hana-card-style.css 的 .hs-metrics / .hs-metric
+   核心思路：不做"卡片"，只做排版分隔——无背景、无边框、无圆角、无阴影，
+   只用 border-left 竖线分隔。首项不画左线、末项不留右内边距。
+
+   注意：选择器统一加 html 前缀提高特异度，否则会被 hana.css 里的
+   .downstream-summary-grid .change-summary:nth-child(odd) 等双类规则压过。
+   ============================================================= */
+
+/* 指标区容器：等分网格，minmax(0,1fr) 保证不被内容撑破 */
+html .change-summary-grid,
+html .bill-summary-grid,
+html .owner-finance-metrics,
+html .downstream-summary-grid,
+html .security-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0;
+  padding: var(--space-16) 0;
+  margin: var(--space-16) 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+/* 指标项：竖线分隔，无卡片外观 */
+html .change-summary,
+html .bill-summary,
+html .owner-metric,
+html .security-metric {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: 0 var(--space-16);
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+/* 首项不画左线；末项不留右内边距。用双类提高特异度压过旧规则 */
+html .change-summary-grid > .change-summary:first-child,
+html .bill-summary-grid > .bill-summary:first-child,
+html .owner-finance-metrics > .owner-metric:first-child,
+html .downstream-summary-grid > .change-summary:first-child,
+html .security-metrics > .security-metric:first-child,
+html .change-summary-grid > :first-child,
+html .bill-summary-grid > :first-child,
+html .owner-finance-metrics > :first-child,
+html .downstream-summary-grid > :first-child,
+html .security-metrics > :first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+html .change-summary-grid > :last-child,
+html .bill-summary-grid > :last-child,
+html .owner-finance-metrics > :last-child,
+html .downstream-summary-grid > :last-child,
+html .security-metrics > :last-child {
+  padding-right: 0;
+}
+
+/* 强调项：不再用背景色区分，靠数值颜色 */
+html .change-summary-emphasis,
+html .owner-metric-primary {
+  background: transparent;
+}
+html .change-summary-emphasis strong,
+html .owner-metric-primary strong {
+  color: var(--accent);
+}
+
+/* 标签：10px / 400 / muted */
+html .change-summary.change-summary > span:first-child,
+html .bill-summary.bill-summary > span:first-child,
+html .owner-metric.owner-metric > span:first-child,
+html .security-metric.security-metric > span:first-child {
+  display: block;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* 数值：26px / 600 / 1.15，等宽数字 */
+html .change-summary.change-summary strong,
+html .bill-summary.bill-summary strong,
+html .owner-metric.owner-metric > strong,
+html .security-metric.security-metric > strong {
+  display: block;
+  margin: var(--space-6) 0 0;
+  color: var(--text);
+  font-family: var(--font-num, var(--num));
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* 数值单位：12px / 500 / muted */
+html .change-summary strong small,
+html .change-summary strong span,
+html .bill-summary strong small,
+html .owner-metric > strong small,
+html .security-metric > strong small {
+  margin-left: var(--space-4);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* 说明文字：9.5px / muted */
+html .change-summary small,
+html .bill-summary small,
+html .owner-metric > small,
+html .security-metric > small {
+  display: block;
+  margin: var(--space-4) 0 0;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+/* 窄视口：两列 */
+@media (max-width: 1080px) {
+  html .change-summary-grid,
+  html .bill-summary-grid,
+  html .owner-finance-metrics,
+  html .downstream-summary-grid,
+  html .security-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: var(--space-16);
+  }
+  html .change-summary-grid > :nth-child(odd),
+  html .bill-summary-grid > :nth-child(odd),
+  html .owner-finance-metrics > :nth-child(odd),
+  html .downstream-summary-grid > :nth-child(odd),
+  html .security-metrics > :nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  html .change-summary-grid > :nth-child(even),
+  html .bill-summary-grid > :nth-child(even),
+  html .owner-finance-metrics > :nth-child(even),
+  html .downstream-summary-grid > :nth-child(even),
+  html .security-metrics > :nth-child(even) {
+    padding-right: 0;
+    border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  }
+}
+
+/* 变体 C：icon + div(small + strong + span) 结构（security-metric 等）
+   同样遵循指标规范：数值 26px/600/tabular-nums，标签 10px/muted */
+html .security-metric.security-metric > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+html .security-metric.security-metric > div > small:first-child {
+  display: block;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+html .security-metric.security-metric > div > strong {
+  display: block;
+  margin: var(--space-6) 0 0;
+  color: var(--text);
+  font-family: var(--font-num, var(--num));
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+html .security-metric.security-metric > div > span {
+  display: block;
+  margin: var(--space-4) 0 0;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+html .security-metric.security-metric > .security-metric-icon {
+  flex: 0 0 auto;
+  margin-bottom: var(--space-6);
+  color: var(--text-muted);
+}
+
+/* 变体 B：icon + 内容区（system-overview-metric / notice-summary-card / audit-summary-card）
+   同样遵循指标规范。这些卡片通常是"图标 + 标题 + 数值 + 说明"的横向结构。 */
+html .system-overview-metric,
+html .notice-summary-card,
+html .audit-summary-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: 0 var(--space-16);
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+html .system-overview-metric:first-child,
+html .notice-summary-card:first-child,
+html .audit-summary-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+html .system-overview-metric:last-child,
+html .notice-summary-card:last-child,
+html .audit-summary-card:last-child {
+  padding-right: 0;
+}
+
+/* 这些卡里的数值统一 26px */
+html .system-overview-metric strong,
+html .notice-summary-card strong,
+html .audit-summary-card strong {
+  display: block;
+  margin: var(--space-6) 0 0;
+  color: var(--text);
+  font-family: var(--font-num, var(--num));
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+/* 标签与说明 */
+html .system-overview-metric small,
+html .notice-summary-card small,
+html .audit-summary-card small {
+  display: block;
+  margin: var(--space-4) 0 0;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+
+/* 对应容器：去掉卡片外观，改用上下分隔线 */
+html .system-overview-metrics,
+html .notice-summary-grid,
+html .audit-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0;
+  padding: var(--space-16) 0;
+  margin: var(--space-16) 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+/* 变体 D：.panel 同时是指标卡（system-overview-metric）
+   这类卡片带了 .panel 的背景与边框，需要显式清除才能与其它指标统一。 */
+html article.panel.system-overview-metric {
+  padding: 0 var(--space-16);
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+html article.panel.system-overview-metric:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+html article.panel.system-overview-metric:last-child { padding-right: 0; }
+html article.panel.system-overview-metric > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+html article.panel.system-overview-metric > div > strong {
+  display: block;
+  margin: var(--space-6) 0 0;
+  color: var(--text);
+  font-family: var(--font-num, var(--num));
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+html article.panel.system-overview-metric > div > small {
+  display: block;
+  margin: var(--space-4) 0 0;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.45;
+}

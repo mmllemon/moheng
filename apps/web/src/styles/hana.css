@@ -2932,13 +2932,14 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   align-items: flex-start;
   gap: var(--space-10);
   min-width: 0;
-  padding: var(--space-14) var(--space-16);
+  padding: 0 var(--space-16);
   border: 0;
-  border-left: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: 0;
   background: transparent;
 }
-.settings-content .security-metric:first-child { border-left: 0; }
+.settings-content .security-metric:first-child { padding-left: 0; border-left: 0; }
+.settings-content .security-metric:last-child { padding-right: 0; }
 .security-metric-icon { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: var(--radius-md); background: var(--overlay-subtle); color: var(--text-muted); }
 .security-metric small { display: block; color: var(--text-muted); font-size: 10px; }
 .security-metric strong { display: block; margin: 3px 0; font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; line-height: 1.15; }
@@ -3218,17 +3219,8 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.downstream-summary-grid .change-summary,
-.change-summary-grid .change-summary,
-.bill-summary-grid .change-summary,
-.owner-finance-metrics .change-summary {
-  min-width: 0;
-  padding: var(--space-14) var(--space-16);
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
+/* 统计卡片的基础布局已统一到 stat-metrics.css（按 Hana .hs-metric 规范）。
+   此处不再重复声明 border/padding，否则会覆盖统一规范里的竖线分隔。 */
 .downstream-summary-grid .change-summary:first-child { padding-left: 16px; border-left: 0; }
 .downstream-summary-grid .change-summary-label { color: var(--text-muted); font-size: 10px; letter-spacing: 0.04em; }
 .downstream-summary-grid .change-summary strong { margin-top: 5px; font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; line-height: 1.15; }
