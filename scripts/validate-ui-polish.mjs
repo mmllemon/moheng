@@ -145,6 +145,7 @@ check('settings search matches Hana translucent field', hana.includes('.settings
 check('settings scrollbar is a 4px window-edge overlay', layout.includes('settings-scrollbar') && hana.includes('.settings-scrollbar') && hana.includes('width: 4px') && layout.includes('bar.addEventListener') && layout.includes('onPointerDown'));
 check('metric cards stretch to equal heights', hana.includes('grid-auto-rows: 1fr') && hana.includes('height: 100%'));
 check('business party picker is a keyboard combobox', (await read('apps/web/src/components/BusinessPartyPicker.tsx')).includes('role="combobox"') && hana.includes('.business-party-results') && hana.includes('border-radius: 12px'));
+check('report and project entry cards stretch to equal heights', hana.includes('.report-studio-entry-grid') && hana.includes('.project-shortcut-card') && hana.includes('align-self: stretch'));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {

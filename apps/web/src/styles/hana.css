@@ -3064,6 +3064,24 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
 
+/* 并排入口卡统一等高；按钮类 grid item 默认不会自动拉伸 */
+.report-studio-entry-grid,
+.project-shortcut-grid,
+.report-catalog-grid,
+.settings-theme-grid,
+.settings-icon-grid,
+.settings-font-grid,
+.quick-action-grid,
+.appearance-themes { align-items: stretch; grid-auto-rows: 1fr; }
+.report-studio-entry-card,
+.project-shortcut-card,
+.report-catalog-card,
+.settings-theme-card,
+.settings-icon-card,
+.settings-font-card,
+.quick-action-item,
+.appearance-theme { align-self: stretch; height: 100%; }
+
 /* 报表中心：标准台账 */
 .report-standard-workspace .report-category-tabs {
   display: flex;
