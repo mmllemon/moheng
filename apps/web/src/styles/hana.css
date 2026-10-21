@@ -1177,7 +1177,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   border-radius: var(--radius-card);
   background: var(--bg-card);
 }
-.projects-ledger-page .projects-kpi-strip > div { padding: 14px 16px; border-left: 1px solid color-mix(in srgb, var(--card-border) 72%, transparent); }
+.projects-ledger-page .projects-kpi-strip > div { padding: 14px 16px; }
 .projects-ledger-page .projects-kpi-strip > div:first-child { padding-left: 16px; border-left: 0; }
 .projects-ledger-page .projects-ledger-layout { gap: 24px; }
 .projects-ledger-page .projects-ledger {
@@ -3048,7 +3048,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   min-width: 0;
   padding: 14px 16px;
   border: 0;
-  border-left: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
