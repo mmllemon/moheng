@@ -25,6 +25,7 @@ export default function BusinessPartyPicker({
   const queryClient = useQueryClient();
   const [search, setSearch] = useState(name ?? '');
   const [open, setOpen] = useState(false);
+  const [selectedParty, setSelectedParty] = useState<BusinessPartyOption | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
   const listboxId = useId();
   const [createOpen, setCreateOpen] = useState(false);
@@ -35,6 +36,7 @@ export default function BusinessPartyPicker({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => { setSearch(name ?? ''); }, [name]);
+  useEffect(() => { if (!value) setSelectedParty(null); }, [value]);
   const lookup = useQuery({
     queryKey: ['business-party-lookup', search.trim()],
     queryFn: () => api.get<BusinessPartyOption[]>(`/parties?search=${encodeURIComponent(search.trim())}`),
@@ -42,13 +44,14 @@ export default function BusinessPartyPicker({
     staleTime: 20_000,
   });
   const rows = lookup.data ?? [];
-  const selected = rows.find((p) => p.id === value);
+  const selected = selectedParty ?? rows.find((p) => p.id === value) ?? null;
   
   function editName(next: string) {
-    setSearch(next); setOpen(true); setActiveIndex(-1); setError('');
+    setSearch(next); setSelectedParty(null); setOpen(true); setActiveIndex(-1); setError('');
     onChange(null, next);
   }
   function selectParty(party: BusinessPartyOption) {
+    setSelectedParty(party);
     onChange(party.id, party.name, party);
     setSearch(party.name); setOpen(false); setCreateOpen(false); setActiveIndex(-1);
   }
@@ -94,7 +97,7 @@ export default function BusinessPartyPicker({
           else if (event.key === 'Escape') { setOpen(false); setActiveIndex(-1); }
         }}
       />
-      {value && <button type="button" className="business-party-clear" title="清除单位关联" aria-label="清除单位关联" onClick={() => { setSearch(''); onChange(null, ''); }}><X size={14} /></button>}
+      {value && <button type="button" className="business-party-clear" title="清除单位关联" aria-label="清除单位关联" onClick={() => { setSearch(''); setSelectedParty(null); onChange(null, ''); }}><X size={14} /></button>}
       <button type="button" className="business-party-chevron" aria-label={open ? '收起单位列表' : '展开单位列表'} aria-expanded={open} onClick={() => { setOpen((current) => !current); setActiveIndex(-1); }}><ChevronDown size={14} /></button>
     </div>
     {open && <>
