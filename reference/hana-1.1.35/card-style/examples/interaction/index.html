@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hana Card Style · 交互与反馈</title>
+<script type="application/json" data-card-manifest>{"spec":"1.0","display":{"preferredWidthPx":720,"styleProfile":"custom"}}</script>
+<link rel="stylesheet" href="../../hana-card-style.css">
+</head>
+<body class="hs-page">
+<main class="hs-shell">
+
+  <header>
+    <p class="hs-eyebrow">Hana Card Style · 交互与反馈</p>
+    <h1 class="hs-title">让信息可以被探索</h1>
+    <p class="hs-lead">切换视角、调整参数，再得到清楚的回应。</p>
+  </header>
+
+  <!-- 1 · 参数探索：Tabs / 滑杆 / 选择框 / 勾选。
+       控件行为由 mount() 接上；本页的计算是这张卡自己的业务。 -->
+  <section class="hs-section" aria-labelledby="explore-title">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="explore-title">参数探索</h2>
+      <span class="hs-caption">Tabs · 滑杆 · 选择框 · 勾选</span>
+    </div>
+
+    <div class="hs-tabs" data-hs-tabs role="tablist" aria-label="阅读安排视角">
+      <button class="hs-tab" type="button" role="tab" data-hs-tab="plan" aria-selected="true">调整安排</button>
+      <button class="hs-tab" type="button" role="tab" data-hs-tab="detail" aria-selected="false">计算说明</button>
+    </div>
+
+    <div data-hs-panel="plan">
+      <div class="hs-form-grid">
+        <div class="hs-field">
+          <div class="hs-range-caption">
+            <label class="hs-field-label" for="minutes">每次阅读</label>
+            <output for="minutes" id="minutes-value">30 分钟</output>
+          </div>
+          <input class="hs-slider" id="minutes" type="range" min="10" max="90" step="5" value="30" data-hs-range aria-describedby="minutes-hint">
+          <div class="hs-range-ends" id="minutes-hint"><span>10 分钟</span><span>90 分钟</span></div>
+        </div>
+        <div class="hs-field">
+          <span class="hs-field-label" id="days-label">持续时间</span>
+          <div class="hs-select" data-hs-select>
+            <select id="days" class="hs-select__native" aria-labelledby="days-label">
+              <option value="7">一周 · 7 天</option>
+              <option value="14" selected>两周 · 14 天</option>
+              <option value="28">四周 · 28 天</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <label class="hs-check hs-rest"><input type="checkbox" id="rest" checked>每周预留两天休息</label>
+    </div>
+
+    <div data-hs-panel="detail" class="hs-explanation" hidden>
+      <dl class="hs-kv">
+        <dt>持续周期</dt><dd id="detail-days">14 天</dd>
+        <dt>安排次数</dt><dd id="detail-sessions">10 次</dd>
+        <dt>每次时长</dt><dd id="detail-minutes">30 分钟</dd>
+      </dl>
+      <p class="hs-copy">总时长＝每次分钟数 × 安排次数 ÷ 60。这里按完整周计算，没有连接真实日历。</p>
+    </div>
+
+    <div class="hs-highlight hs-result" aria-live="polite" aria-atomic="true">
+      <div>
+        <span class="hs-label">预计阅读总时长</span>
+        <output class="hs-result-value"><span id="hours">5</span><small>小时</small></output>
+      </div>
+      <p class="hs-result-note" id="equation">30 分钟 × 10 次<br>两周里的一个小安排</p>
+    </div>
+
+    <div class="hs-actions">
+      <button class="hs-button hs-button--primary" type="button" id="apply">
+        <svg class="hs-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10"/></svg>应用到本卡
+      </button>
+      <button class="hs-button" type="button" id="reset">重置</button>
+      <button class="hs-button hs-button--quiet" type="button" disabled>同步日历未接入</button>
+    </div>
+    <p class="hs-applied" id="apply-message" role="status">仅预览，尚未应用。</p>
+  </section>
+
+  <!-- 2 · 状态与反馈：正常 / 空 / 加载 / 错误，用右侧选择框切换 -->
+  <section class="hs-section" aria-labelledby="feedback-title">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="feedback-title">状态与反馈</h2>
+      <div class="hs-select hs-select--end hs-state-select" data-hs-select>
+        <select id="feedback-select" class="hs-select__native" aria-label="切换反馈状态示例">
+          <option value="ready">正常状态</option>
+          <option value="empty">空状态</option>
+          <option value="loading">加载状态</option>
+          <option value="error">错误状态</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="feedback-ready" class="hs-feedback hs-feedback--ready" role="status">
+      <svg class="hs-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+      <div class="hs-feedback-content">
+        <p class="hs-feedback-title">准备好了</p>
+        <p class="hs-feedback-copy">内容可用，控件可以继续操作。这是本地状态示例。</p>
+      </div>
+    </div>
+    <div id="feedback-empty" class="hs-feedback" role="status" hidden>
+      <svg class="hs-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4zM8 7V4h8v3M9 12h6"/></svg>
+      <div class="hs-feedback-content">
+        <p class="hs-feedback-title">还没有内容</p>
+        <p class="hs-feedback-copy">空状态说明缺少什么，并给出一个清楚的下一步。</p>
+        <button type="button" class="hs-button" id="fill-demo">填入示例</button>
+      </div>
+    </div>
+    <div id="feedback-loading" class="hs-feedback" role="status" aria-busy="true" hidden>
+      <svg class="hs-icon hs-spin" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+      <div class="hs-feedback-content">
+        <p class="hs-feedback-title">正在整理…</p>
+        <p class="hs-feedback-copy">这是加载外观演示，没有发起请求；可用上方选择框切换。</p>
+        <button type="button" class="hs-button" disabled>处理中</button>
+      </div>
+    </div>
+    <div id="feedback-error" class="hs-feedback hs-feedback--error" role="alert" hidden>
+      <svg class="hs-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg>
+      <div class="hs-feedback-content">
+        <p class="hs-feedback-title">暂时无法完成</p>
+        <p class="hs-feedback-copy">错误说明原因与恢复方式。这里模拟一次失败，重试会恢复正常示例。</p>
+        <button type="button" class="hs-button" id="retry-demo">重试演示</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="hs-section">
+    <details class="hs-disclosure">
+      <summary>这些交互会不会调用 Agent？</summary>
+      <div class="hs-disclosure-body">这张示例卡里的切换、计算和按钮都只作用于本卡，不调用模型，不创建真实任务或提醒，也不保存到日历。刷新后会回到初始示例。需要唤醒 Agent 或持久化时，由卡片自己声明对应的宿主接入。</div>
+    </details>
+  </section>
+
+  <p class="hs-footer">示例数据 · 本地交互，不调用模型，不发起网络请求<br>圆角使用 corner-shape: squircle；不支持的浏览器回退为普通圆角，功能不受影响。</p>
+
+</main>
+<script src="../../hana-card-style.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* 控件增强：Tabs、选择框、滑杆的外观与键盘行为。 */
+  HanaCardStyle.mount(document.querySelector('.hs-page'));
+
+  /* 以下都是这张卡自己的业务：把参数换算成预计总时长。 */
+  var byId = function (id) { return document.getElementById(id); };
+  var minutes = byId('minutes'), days = byId('days'), rest = byId('rest'), message = byId('apply-message');
+  var applied = null;
+
+  function model() {
+    var m = Number(minutes.value), d = Number(days.value);
+    var sessions = rest.checked ? d / 7 * 5 : d;
+    return { minutes: m, days: d, sessions: sessions, hours: Number((m * sessions / 60).toFixed(2)), rest: rest.checked };
+  }
+  function key(state) { return [state.minutes, state.days, state.rest].join('/'); }
+
+  function render() {
+    var state = model();
+    byId('minutes-value').textContent = state.minutes + ' 分钟';
+    byId('hours').textContent = String(state.hours);
+    byId('equation').textContent = state.minutes + ' 分钟 × ' + state.sessions + ' 次 · ' + state.days + ' 天';
+    byId('detail-days').textContent = state.days + ' 天';
+    byId('detail-sessions').textContent = state.sessions + ' 次';
+    byId('detail-minutes').textContent = state.minutes + ' 分钟';
+    message.textContent = applied === null ? '仅预览，尚未应用。'
+      : applied === key(state) ? '已应用到本卡：' + state.minutes + ' 分钟 × ' + state.sessions + ' 次。'
+        : '参数已变化，尚未应用新安排。';
+  }
+
+  minutes.addEventListener('input', render);
+  days.addEventListener('change', render);
+  rest.addEventListener('change', render);
+
+  byId('apply').addEventListener('click', function () {
+    applied = key(model());
+    render();
+  });
+
+  var feedback = byId('feedback-select');
+  var states = ['ready', 'empty', 'loading', 'error'];
+  /* 面板显隐与“改值并通知原生 change”分开，避免在自己的 change 监听里再次派发。 */
+  function renderFeedback(value) {
+    states.forEach(function (state) { byId('feedback-' + state).hidden = state !== value; });
+  }
+  function setFeedback(value) {
+    feedback.value = value;
+    renderFeedback(value);
+    feedback.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  feedback.addEventListener('change', function () { renderFeedback(feedback.value); });
+  byId('fill-demo').addEventListener('click', function () { setFeedback('ready'); });
+  byId('retry-demo').addEventListener('click', function () { setFeedback('ready'); });
+
+  byId('reset').addEventListener('click', function () {
+    minutes.value = '30';
+    days.value = '14';
+    rest.checked = true;
+    applied = null;
+    minutes.dispatchEvent(new Event('input', { bubbles: true }));
+    days.dispatchEvent(new Event('change', { bubbles: true }));
+    setFeedback('ready');
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

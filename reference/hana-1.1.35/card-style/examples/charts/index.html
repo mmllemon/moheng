@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hana Card Style · 图表</title>
+<script type="application/json" data-card-manifest>{"spec":"1.0","display":{"preferredWidthPx":720,"styleProfile":"custom"}}</script>
+<link rel="stylesheet" href="../../hana-card-style.css">
+</head>
+<body class="hs-page">
+<main class="hs-shell">
+
+  <header>
+    <p class="hs-eyebrow">Hana Card Style · 图表</p>
+    <h1 class="hs-title">让变化有迹可循</h1>
+    <p class="hs-lead">看趋势，也看各项之间的差别。以下均为示例数据。</p>
+  </header>
+
+  <!-- 1 · 折线图：SVG 由 renderLineChart 按数据生成，含图例、读数、空态与数据表 -->
+  <section class="hs-section" aria-labelledby="trend-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="trend-heading">每天的阅读时长</h2>
+      <span class="hs-caption">单位：分钟 · 示例数据</span>
+    </div>
+    <div data-chart="trend"></div>
+  </section>
+
+  <!-- 2 · 横向条形图：坐标从 0 起，长度按数值线性换算 -->
+  <section class="hs-section" aria-labelledby="bars-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="bars-heading">各活动的阅读时长</h2>
+      <span class="hs-caption">单位：分钟 · 示例数据</span>
+    </div>
+    <div data-chart="bars"></div>
+  </section>
+
+  <!-- 3 · 面积图：与折线图同一套数据、同一套坐标，只是把线下方填上淡色 -->
+  <section class="hs-section" aria-labelledby="area-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="area-heading">每周的阅读累计</h2>
+      <span class="hs-caption">单位：页 · 示例数据</span>
+    </div>
+    <div data-chart="area"></div>
+  </section>
+
+  <!-- 4 · 柱状图：每个标签一组，每个系列一根；负值从零基线往下 -->
+  <section class="hs-section" aria-labelledby="columns-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="columns-heading">每季度的收入与支出</h2>
+      <span class="hs-caption">单位：千元 · 示例数据</span>
+    </div>
+    <div data-chart="columns"></div>
+  </section>
+
+  <!-- 5 · 堆叠柱状图：同一根柱里各段相加成合计；数据不能正负混合 -->
+  <section class="hs-section" aria-labelledby="stacked-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="stacked-heading">各月阅读时间的构成</h2>
+      <span class="hs-caption">单位：小时 · 示例数据</span>
+    </div>
+    <div data-chart="stacked"></div>
+  </section>
+
+  <!-- 6 · 百分比堆叠：normalize 把每根柱归一到 100% -->
+  <section class="hs-section" aria-labelledby="stacked-percent-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="stacked-percent-heading">各月阅读时间的占比</h2>
+      <span class="hs-caption">同一份数据，normalize: true</span>
+    </div>
+    <div data-chart="stacked-percent"></div>
+  </section>
+
+  <!-- 7 · 饼图与环形图：一个系列，扇区按给定顺序排列，百分比写在扇区上 -->
+  <section class="hs-section" aria-labelledby="pie-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="pie-heading">一周时间花在哪里</h2>
+      <span class="hs-caption">单位：小时 · 示例数据</span>
+    </div>
+    <div data-chart="pie"></div>
+  </section>
+
+  <section class="hs-section" aria-labelledby="donut-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="donut-heading">阅读来源</h2>
+      <span class="hs-caption">单位：本 · 示例数据</span>
+    </div>
+    <div data-chart="donut"></div>
+  </section>
+
+  <!-- 8 · renderChart：按 spec.kind 选图，同一份 labels + series 换 kind 即换图；minWidth: 0 让图完全跟随容器宽度 -->
+  <section class="hs-section" aria-labelledby="dispatch-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="dispatch-heading">按 kind 切换图表</h2>
+      <span class="hs-caption">
+        <label for="kind-select">图表类型</label>
+        <select id="kind-select" class="hs-select" style="width:auto">
+          <option value="column">柱状图</option>
+          <option value="stacked">堆叠柱状图</option>
+          <option value="line">折线图</option>
+          <option value="area">面积图</option>
+          <option value="bar">横向条形图</option>
+          <option value="pie">饼图</option>
+          <option value="donut">环形图</option>
+        </select>
+      </span>
+    </div>
+    <div data-chart="dispatch"></div>
+  </section>
+
+  <p class="hs-footer">示例数据 · 本地渲染，不调用模型<br>数据色与界面强调色分开；圆角使用 corner-shape: squircle，不支持的浏览器回退为普通圆角。</p>
+
+</main>
+<script src="../../hana-card-style.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* 两份示例数据；换成真实数据时，结构与校验规则不变。 */
+  HanaCardStyle.renderLineChart(document.querySelector('[data-chart="trend"]'), {
+    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    series: [
+      { id: 'this', label: '本周', values: [20, 30, 25, 40, 35, 50, 45] },
+      { id: 'last', label: '上周', values: [15, 25, 20, 30, 25, 35, 30] }
+    ],
+    unit: '分钟',
+    title: '每天的阅读分钟数：本周与上周对比',
+    ariaLabel: '7 天阅读分钟数趋势图，窄屏时可横向滚动'
+  });
+
+  HanaCardStyle.renderBarChart(document.querySelector('[data-chart="bars"]'), {
+    items: [
+      { label: '阅读', value: 120 },
+      { label: '整理', value: 75 },
+      { label: '写作', value: 50 }
+    ],
+    unit: '分钟',
+    title: '各活动的阅读分钟数',
+    ariaLabel: '各活动阅读分钟数条形图，窄屏时可横向滚动'
+  });
+
+  var months = ['一月', '二月', '三月', '四月', '五月', '六月'];
+
+  HanaCardStyle.renderAreaChart(document.querySelector('[data-chart="area"]'), {
+    labels: ['第 1 周', '第 2 周', '第 3 周', '第 4 周', '第 5 周'],
+    series: [
+      { id: 'novel', label: '小说', values: [40, 95, 150, 190, 260] },
+      { id: 'essay', label: '随笔', values: [20, 45, 60, 110, 125] }
+    ],
+    unit: '页',
+    title: '每周累计阅读页数：小说与随笔'
+  });
+
+  HanaCardStyle.renderColumnChart(document.querySelector('[data-chart="columns"]'), {
+    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+    series: [
+      { id: 'income', label: '收入', values: [120, 150, 135, 180] },
+      { id: 'cost', label: '支出', values: [90, 110, 140, 120] },
+      { id: 'net', label: '结余', values: [30, 40, -5, 60] }
+    ],
+    unit: '千元',
+    title: '每季度的收入、支出与结余'
+  });
+
+  var hours = {
+    labels: months,
+    series: [
+      { id: 'read', label: '阅读', values: [12, 14, 10, 16, 18, 15] },
+      { id: 'write', label: '写作', values: [6, 8, 9, 7, 10, 12] },
+      { id: 'organize', label: '整理', values: [3, 4, 2, 5, 4, 3] }
+    ],
+    unit: '小时'
+  };
+
+  HanaCardStyle.renderStackedColumnChart(document.querySelector('[data-chart="stacked"]'), {
+    labels: hours.labels, series: hours.series, unit: hours.unit,
+    title: '各月阅读、写作与整理的小时数'
+  });
+
+  HanaCardStyle.renderStackedColumnChart(document.querySelector('[data-chart="stacked-percent"]'), {
+    labels: hours.labels, series: hours.series, unit: hours.unit, normalize: true,
+    title: '各月三类活动的时间占比'
+  });
+
+  HanaCardStyle.renderPieChart(document.querySelector('[data-chart="pie"]'), {
+    labels: ['阅读', '写作', '整理', '散步'],
+    series: [{ id: 'time', label: '时间', values: [18, 10, 4, 3] }],
+    unit: '小时',
+    title: '一周时间的分配'
+  });
+
+  HanaCardStyle.renderDonutChart(document.querySelector('[data-chart="donut"]'), {
+    labels: ['纸质书', '电子书', '网页文章', '有声书'],
+    series: [{ id: 'books', label: '数量', values: [14, 9, 22, 5] }],
+    unit: '本',
+    title: '阅读来源的构成'
+  });
+
+  /* renderChart 只看 spec.kind，其余字段沿用同一份数据形状。 */
+  var kindSelect = document.getElementById('kind-select');
+  var dispatchHost = document.querySelector('[data-chart="dispatch"]');
+  var dispatched = null;
+  function drawDispatched() {
+    if (dispatched) dispatched.destroy();
+    dispatched = HanaCardStyle.renderChart(dispatchHost, {
+      kind: kindSelect.value,
+      labels: ['周一', '周二', '周三', '周四', '周五'],
+      series: kindSelect.value === 'bar' || kindSelect.value === 'pie' || kindSelect.value === 'donut'
+        ? [{ id: 'm', label: '分钟', values: [30, 45, 20, 60, 40] }]
+        : [
+            { id: 'm', label: '阅读', values: [30, 45, 20, 60, 40] },
+            { id: 'w', label: '写作', values: [15, 20, 35, 10, 25] }
+          ],
+      unit: '分钟',
+      minWidth: 0
+    });
+  }
+  kindSelect.addEventListener('change', drawDispatched);
+  drawDispatched();
+})();
+</script>
+</body>
+</html>

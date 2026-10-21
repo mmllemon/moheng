@@ -4,6 +4,7 @@
 墨衡保留工程经营管理的业务密度，但外壳、纸张、排版、控件、弹层与设置工作区统一到 Hana 的设计语言。
 
 > 状态（2026-10-21）：当前唯一有效界面规范；UI 收口基线 `eec9677`。落地与例外见 [UI 验收 Hana](UI-验收-hana.md)，V6/Pro-Tier 文档已移入 `docs/archive/`，不再作为实现依据。
+> 同日按 `reference/hana-1.1.35/` 字节精确快照（renderer 可读层）逐条复校 §2/§3/§4/§6；口径标注见各行「依据」列，快照来源见其 README。✅ = CSS/HTML 快照内直接可证；⚠ = DOM 运行时实测值，快照中未检索到对应规则（多藏于压缩 chunk，无法复证）。
 
 ## 1. 设计北极星
 
@@ -12,20 +13,22 @@
 
 ## 2. 实测基准
 
-| 项目 | Hana 1.1.35 实测 | 墨衡落地 |
-| --- | --- | --- |
-| 页面纸色 | `#F8F4ED` | 同值 |
-| 卡片纸色 | `#FCFAF5` | 同值 |
-| 侧栏纸色 | `#F4F0EA` | 同值 |
-| 主墨色 | `#3B3D3F` | 同值 |
-| 侧栏尺寸 | 240 × calc(100vh − 12)，left/top 6 | 同值 |
-| 侧栏圆角 | 7 × 1.8409 = 12.886 | 13px，圆角矩形 |
-| 侧栏边界 | 1px rgba(0,0,0,.08) | 1px 主题 overlay |
-| 侧栏阴影 | 0 4px 32px rgba(0,0,0,.05) | 同值 |
-| 标题层 | 44px，透明，不占内容纸面 | 同值 |
-| 设置窗 | 960 × 722；导航 208；内容 670 | 同值 |
-| 字号 | title 16 / body 14.4 / ui 13.1 / caption 12.5 / hint 11.2 | 13px 基准，关键正文 12–14 |
-| 动效 | 0.1 / 0.15 / 0.25s | 同值 |
+| 项目 | Hana 1.1.35 实测 | 墨衡落地 | 依据 |
+| --- | --- | --- | --- |
+| 页面纸色 | `#F8F4ED` | 同值 | ✅ `themes/warm-paper.css` `--bg` |
+| 卡片纸色 | `#FCFAF5` | 同值 | ✅ `warm-paper.css` `--bg-card` |
+| 侧栏纸色 | `#F4F0EA` | 同值 | ✅ `warm-paper.css` `--sidebar-bg` |
+| 主墨色 | `#3B3D3F` | 同值 | ✅ `warm-paper.css` `--text` |
+| 侧栏宽度 | 240px（另有 `--jian-sidebar-width: 260px` 供笺侧栏） | 同值 | ✅ `styles.css` `--sidebar-width: 240px` |
+| 侧栏定位 | calc(100vh − 12)，left/top 6 | 同值 | ⚠ DOM 实测，CSS 快照未检索到对应规则 |
+| 侧栏圆角 | 7 × 1.8409 = 12.886 | 13px，圆角矩形 | ✅ 系数见 `themes/continuous-corners.css` `--corner-radius-scale: 1.8408964152537137`；7px 基数为 ⚠ DOM 实测 |
+| 侧栏边界 | 1px rgba(0,0,0,.08) | 1px 主题 overlay | ⚠ DOM 实测 |
+| 侧栏阴影 | 0 4px 32px rgba(0,0,0,.05) | 同值 | ⚠ 压缩 chunk 中存在同值阴影，未能归因到侧栏 |
+| 标题层 | 44px，透明，不占内容纸面 | 同值 | ✅ `styles.css` `--titlebar-h: 44px` |
+| 设置窗 | 960 × min(840, 100vh − 48)；导航 208px | 同值 | ✅ `SettingsModalShell` chunk 内 960px / 208px |
+| 设置窗内容列 | 实测 722（770 高窗口得 670px 内容） | 同值 | ⚠ CSS 无 670px 定值，内容列由 calc 派生；722/670 为 DOM 实测 |
+| 字号 | rem 六档：title 1 / body .9 / ui .82 / caption .78 / hint .7 / micro .62（root 16px ≈ 16 / 14.4 / 13.1 / 12.5 / 11.2 / 9.9） | 13px 基准，关键正文 12–14 | ✅ `styles.css` `--fs-title` 至 `--fs-micro`（注意还有第六档 micro，本文档旧版漏记） |
+| 动效 | 0.1 / 0.15 / 0.25s | 同值 | ✅ `styles.css` `--duration-instant/fast/slow`，源码注释语义与三档分工一致 |
 
 Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macOS 红黄绿，也不放 min/max/close。
 
@@ -38,11 +41,12 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 - `fine`：细纸，低对比细颗粒
 
 每种纸纹由三层原版遮罩合成：`mottle`（云斑）、`fiber`（纤维）、`grain`（颗粒），
-平铺尺寸分别为 1024 / 720 / 256px。界面用 `data-paper-texture="rice|cotton|fine"` 切换；
+平铺尺寸分别为 1024 / 720 / 256px ✅（`styles.css` `--paper-texture-mottle/fiber/grain-tile`）。界面用 `data-paper-texture="rice|cotton|fine"` 切换；
 `off` 时移除该属性。
 
 明暗层 `::before` / `::after` 使用同一组 hi/lo 遮罩，按
-`--paper-texture-peak: 0.09` 和 `--paper-texture-strength: 0.5–1.5` 改变纸面明度差，
+`--paper-texture-peak: 0.09`（✅ `styles.css`，注明烘进 alpha）和 `--paper-texture-strength: 0.5–1.5`
+（⚠ 运行时默认区间：由 JS 层内联注入，CSS 快照无此规则，区间来自 Hana 设置 UI 而非样式表）改变纸面明度差，
 而不是把整层纹理调透明。默认强度 1；0.5 更轻，1.5 更明显。
 
 纸纹只铺在页面底纸、侧栏和设置窗，不进入表格单元格，避免数字发灰。
@@ -51,6 +55,10 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 这些原版纹理的再分发需确认 Hana 的授权范围；若仓库对外公开，请在上线前完成素材授权复核。
 
 ## 4. 色彩与主题
+
+下表是**墨衡落地 token**（数值维持现状）。与 Hana 1.1.35 的对应关系经快照复校修正：暖纸 ↔ `themes/warm-paper.css`；
+青夜 ↔ `themes/midnight-contrast.css`（**不是** `midnight.css`——后者是浅一号夜蓝 `--bg: #3B4A54`，勿混用）；
+素白在 Hana 1.1.35 中**没有对应主题**（最接近的是 `high-contrast` `#FAF8F7` 与 `new-warm-paper` `#F5EFE4`），按墨衡自制主题对待，不得再引用为 Hana 实测。
 
 | 语义 | 暖纸 | 素白 | 青夜 |
 | --- | --- | --- | --- |
@@ -61,7 +69,10 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 | `--text-muted` | #5F6367 | #5F6367 | #B7C8D3 |
 | `--accent` | #466B80 | #466B80 | #E6B1C4 |
 
-- Hana 原始 accent 为 `#537D96`；墨衡统一压深到 `#466B80`，让 10–12px 文字、链接和主按钮达到 WCAG AA（4.5:1），色相仍是远山青。
+- Hana `--text-muted` 实测值：warm-paper 为 `#6B6F73`，midnight-contrast 为 `#D3E0E8`。表中 #5F6367 / #B7C8D3 旧版记作"Hana 实测"，复校不成立——
+  若为墨衡刻意压深的自制选择则保留原值，但口径改为自制 token；若要跟齐 Hana，另行改 `apps/web` 的样式变量并复跑对比度验收。
+- 青夜除 `--text-muted` 外五项（bg / card / sidebar / text / accent）与 `midnight-contrast.css` 逐值吻合 ✅；暖纸前四行与 `warm-paper.css` 吻合 ✅。
+- Hana 原始 accent 为 `#537D96`（✅ `warm-paper.css`，hover `#456A80`）；墨衡统一压深到 `#466B80`，让 10–12px 文字、链接和主按钮达到 WCAG AA（4.5:1），色相仍是远山青。
 - 语义色只用于状态：成功 `--green`、危险 `--danger`、提示 `--warning`。不要用装饰色表达状态。
 - 青夜主题的主按钮文字改用深墨 `--on-accent`，避免粉底白字对比不足。
 
@@ -84,6 +95,9 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 - 全局搜索收进图标，通过 `⌘K` 打开命令面板，不再常驻一条 300px 搜索框。
 - 项目切换收进标题层；全局页面显示“全公司”。
 - 页脚版本号移除，版本只在设置/关于出现。
+- Hana 的卡片圆角按平台分叉：`html[data-platform="win32"]:not([data-windows-card-radius="off"])` 施加
+  `--panel-card-radius: min(var(--radius-lg), 7px)`（✅ 快照 `styles.css`），Windows 桌面端把卡片圆角封顶 7px；
+  墨衡是 Web 不会命中该分支，现状等价于 Hana 非 win32 观感。若墨衡将来打包桌面端，需重新决定是否复刻这一封顶。
 
 ## 6. 页面与组件
 
@@ -97,7 +111,7 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 - 选择器：触发器 32px 高、11.05px 圆角、纸白底 + 1px 边框，悬停/展开转 accent；弹层 14.7px 圆角、4px 内边距，选项 30px/7.36px 圆角，悬停 accent-light，选中 accent 文字。日期选择器使用同一半径与边框。
 - 设置行：左侧 13px/600 标签 + 10.5px muted 说明，右侧 220–340px 控件；行高至少 56px，分隔线左右各内缩 16px。审计筛选、运维备份、AI 助手、账号创建均改用这一结构，不再用 3–5 列表单硬塞进 670px。
 - 设置搜索：32px 高、11.05px 圆角、5% 墨色底 + 1px 透明边界；10px 左侧搜索图标，右侧 20px 圆形清空按钮；输入后切换为两行搜索结果（标题 + 分组路径），并按 Hana 的搜索索引方式补充语义别名：输入“主题”命中界面，“备份”命中运维备份，“模型”命中 AI 助手，“字典”命中基础字典，不再只匹配导航标题。
-- 交互半径：统一为三级 token，禁止页面写死 2/3/5/7/8/10/12px：控件 `--radius-control`（6×1.8409≈11.05），按钮/导航 `--radius-action`（5×1.8409≈9.20），行内小操作 `--radius-compact`（4×1.8409≈7.36）。卡片使用 `--radius-card`（8×1.8409≈14.73）。输入框、下拉、搜索壳、按钮和分段按钮一律 `corner-shape: round`，不再混用 squircle。
+- 交互半径：统一为三级 token，禁止页面写死 2/3/5/7/8/10/12px：控件 `--radius-control`（6×1.8409≈11.05），按钮/导航 `--radius-action`（5×1.8409≈9.20），行内小操作 `--radius-compact`（4×1.8409≈7.36）。卡片使用 `--radius-card`（8×1.8409≈14.73）。输入框、下拉、搜索壳、按钮和分段按钮一律 `corner-shape: round`，不再混用 squircle。系数 1.8409 本身 ✅ 实证（`continuous-corners.css`，squircle 支持时生效，否则回退 1）；各档基数 6/5/4/8 为 ⚠ DOM 实测。
 - 状态 token：`--state-hover-bg`（4% 墨色）、`--state-hover-bg-strong`（7%）、`--state-selected-bg`（7% accent）、`--state-selected-border`（18% accent）、`--state-focus-bg`（4% accent）、`--state-focus-ring`（52% accent）。列表/表格/命令项/会话行共用，禁止再写 `#f6f1e5`、bronze 首列竖条或 hover 改 padding。
 - 卡片 inset：`--card-inset: var(--space-16)`。卡片正文、汇总格、提示条、列表行、空状态至少 16px 横向内缩；表头/表格通过 16px 外边距而不是把首个单元格贴到卡片边缘。
 - 概览指标卡：grid 统一 align-items: stretch + grid-auto-rows: 1fr，卡片 height: 100%；文字长短不再造成卡片高低不一。
@@ -115,8 +129,8 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 
 系统管理不再占用主内容区，而是覆盖式设置窗：
 
-- 960 × min(840, 100vh − 48)，20px 圆角，纸纹；770px 高的窗口自然得到 722px。
-- 208px 导航；36px 行高，32px 搜索；内容 670px。
+- 960 × min(840, 100vh − 48)，20px 圆角，纸纹；770px 高的窗口自然得到 722px（✅ 960/208 见 SettingsModalShell chunk；722/670 为 DOM 实测，见 §2）。
+- 208px 导航；36px 行高，32px 搜索；内容 670px（⚠ 实测）。
 - 主题卡 218 × 72；分段控件 32px；纹理强度为 5 档步进条；开关 36 × 20。
 - 应用图标卡 4 列：透明底、68px 预览、14px 圆角；选中项 11% 墨底，名称转 accent；页签 favicon 同步更新。
 - 标题字体卡 3 列：至少 72px 高，上部是字体预览，下部是名称与用途；选中项 accent 边框 + 内描边。

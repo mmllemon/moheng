@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hana Card Style · 数据色盘</title>
+<script type="application/json" data-card-manifest>{"spec":"1.0","display":{"preferredWidthPx":720,"styleProfile":"custom"}}</script>
+<link rel="stylesheet" href="../../hana-card-style.css">
+</head>
+<body class="hs-page">
+<main class="hs-shell">
+
+  <header>
+    <p class="hs-eyebrow">Hana Card Style · 数据色盘</p>
+    <h1 class="hs-title">让多条曲线各自清楚</h1>
+    <p class="hs-lead">界面强调色与数据色分开；以下是六个数据色。</p>
+  </header>
+
+  <!-- 1 · 六系列折线：曲线由 renderLineChart 生成，legend:false 把选择权交给下方色盘 -->
+  <section class="hs-section" aria-labelledby="pal-chart-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="pal-chart-heading">六个系列的示例走势</h2>
+      <span class="hs-caption">单位：示例指数 · 示例数据</span>
+    </div>
+    <div data-chart="palette"></div>
+  </section>
+
+  <!-- 2 · 色盘：3 × 2，原生 button + aria-pressed；强调一个系列时其余淡出 -->
+  <section class="hs-section" aria-labelledby="pal-cells-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="pal-cells-heading">六个数据色</h2>
+      <span class="hs-caption">界面强调色仍用 --hs-accent</span>
+    </div>
+
+    <div class="hs-pal-cells" role="group" aria-label="选择要强调的系列">
+      <button type="button" class="hs-pal-cell" data-series="A" aria-pressed="false">
+        <span class="hs-pal-head"><span class="hs-pal-chip" aria-hidden="true"></span><span class="hs-pal-name">A · 蓝</span><span class="hs-pal-hex">#416F98</span></span>
+        <svg class="hs-pal-key" width="44" height="8" viewBox="0 0 44 8" aria-hidden="true"><line x1="2" y1="4" x2="42" y2="4"/></svg>
+      </button>
+      <button type="button" class="hs-pal-cell" data-series="B" aria-pressed="false">
+        <span class="hs-pal-head"><span class="hs-pal-chip" aria-hidden="true"></span><span class="hs-pal-name">B · 赭</span><span class="hs-pal-hex">#A86F35</span></span>
+        <svg class="hs-pal-key" width="44" height="8" viewBox="0 0 44 8" aria-hidden="true"><line x1="2" y1="4" x2="42" y2="4"/></svg>
+      </button>
+      <button type="button" class="hs-pal-cell" data-series="C" aria-pressed="false">
+        <span class="hs-pal-head"><span class="hs-pal-chip" aria-hidden="true"></span><span class="hs-pal-name">C · 青绿</span><span class="hs-pal-hex">#3C7E78</span></span>
+        <svg class="hs-pal-key" width="44" height="8" viewBox="0 0 44 8" aria-hidden="true"><line x1="2" y1="4" x2="42" y2="4"/></svg>
+      </button>
+      <button type="button" class="hs-pal-cell" data-series="D" aria-pressed="false">
+        <span class="hs-pal-head"><span class="hs-pal-chip" aria-hidden="true"></span><span class="hs-pal-name">D · 紫</span><span class="hs-pal-hex">#8A6593</span></span>
+        <svg class="hs-pal-key" width="44" height="8" viewBox="0 0 44 8" aria-hidden="true"><line x1="2" y1="4" x2="42" y2="4"/></svg>
+      </button>
+      <button type="button" class="hs-pal-cell" data-series="E" aria-pressed="false">
+        <span class="hs-pal-head"><span class="hs-pal-chip" aria-hidden="true"></span><span class="hs-pal-name">E · 砖红</span><span class="hs-pal-hex">#B45F50</span></span>
+        <svg class="hs-pal-key" width="44" height="8" viewBox="0 0 44 8" aria-hidden="true"><line x1="2" y1="4" x2="42" y2="4"/></svg>
+      </button>
+      <button type="button" class="hs-pal-cell" data-series="F" aria-pressed="false">
+        <span class="hs-pal-head"><span class="hs-pal-chip" aria-hidden="true"></span><span class="hs-pal-name">F · 橄榄</span><span class="hs-pal-hex">#6D7843</span></span>
+        <svg class="hs-pal-key" width="44" height="8" viewBox="0 0 44 8" aria-hidden="true"><line x1="2" y1="4" x2="42" y2="4"/></svg>
+      </button>
+    </div>
+
+    <output class="hs-pal-output" id="pal-output" aria-live="polite">当前强调：无　六条曲线同时显示。</output>
+    <p class="hs-caption">更多曲线可分组或交互筛选，不无限加颜色；色弱辨识还需线型、标签配合。</p>
+    <p class="hs-caption">本页未做色觉无障碍认证，线型与 A–F 编号只是辅助手段。</p>
+  </section>
+
+  <p class="hs-footer">示例数据 · 本地交互，不调用模型<br>数据色与界面强调色分开。圆角使用 corner-shape: squircle；不支持的浏览器回退为普通圆角。</p>
+
+</main>
+<script src="../../hana-card-style.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var NAMES = { A: '蓝', B: '赭', C: '青绿', D: '紫', E: '砖红', F: '橄榄' };
+  var COLOR = { A: '#416F98', B: '#A86F35', C: '#3C7E78', D: '#8A6593', E: '#B45F50', F: '#6D7843' };
+  var ORDER = ['A', 'B', 'C', 'D', 'E', 'F'];
+  var host = document.querySelector('[data-chart="palette"]');
+  var output = document.getElementById('pal-output');
+  var cells = Array.prototype.slice.call(document.querySelectorAll('.hs-pal-cell'));
+
+  /* 六个系列共用同一份示例数据；色值只用于说明，图上颜色来自 CSS 变量。 */
+  HanaCardStyle.renderLineChart(host, {
+    labels: ['阶段1', '阶段2', '阶段3', '阶段4', '阶段5'],
+    series: [
+      { id: 'A', label: 'A · ' + NAMES.A, values: [20, 35, 31, 55, 70] },
+      { id: 'B', label: 'B · ' + NAMES.B, values: [65, 58, 68, 72, 85] },
+      { id: 'C', label: 'C · ' + NAMES.C, values: [35, 48, 43, 35, 50] },
+      { id: 'D', label: 'D · ' + NAMES.D, values: [80, 68, 60, 58, 65] },
+      { id: 'E', label: 'E · ' + NAMES.E, values: [10, 25, 22, 30, 40] },
+      { id: 'F', label: 'F · ' + NAMES.F, values: [48, 40, 50, 44, 56] }
+    ],
+    unit: '示例指数',
+    legend: false,
+    title: '六个系列的示例指数走势',
+    ariaLabel: '六系列折线图，窄屏时可横向滚动'
+  });
+
+  /* 强调：只把选中的系列留在前台，其余淡出；这是本页自己的交互，不属于渲染器。 */
+  var marks = Array.prototype.slice.call(host.querySelectorAll('.hs-series, .hs-pt-dot'));
+  var active = null;
+
+  function setActive(id) {
+    active = id;
+    marks.forEach(function (node) {
+      var owner = node.getAttribute('data-series');
+      var dim = !!id && owner !== id;
+      if (dim) node.classList.add('is-dim');
+      else node.classList.remove('is-dim');
+    });
+    cells.forEach(function (cell) {
+      cell.setAttribute('aria-pressed', String(cell.getAttribute('data-series') === id));
+    });
+    output.textContent = id
+      ? '当前强调：' + id + ' · ' + NAMES[id] + '（' + COLOR[id] + '）　其余曲线淡出；再点一次恢复全部。'
+      : '当前强调：无　六条曲线同时显示。';
+  }
+
+  cells.forEach(function (cell) {
+    cell.addEventListener('click', function () {
+      var id = cell.getAttribute('data-series');
+      setActive(id === active ? null : id);
+    });
+  });
+
+  setActive(null);
+})();
+</script>
+</body>
+</html>

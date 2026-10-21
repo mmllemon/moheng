@@ -1,0 +1,251 @@
+/*
+ * 内容区字体对比度：9 / 11 / 15 / 17 四档的正文墨色覆盖。
+ * 由 node scripts/content-contrast-css.mjs 从各主题定稿值计算生成，勿手改。
+ * 默认档 13 不产生覆盖，继续使用主题自己的 --content-chat-ink / --content-document-ink。
+ */
+
+/* warm-paper */
+
+[data-theme="warm-paper"][data-content-contrast="9"],
+:root:not([data-theme])[data-content-contrast="9"] {
+    --content-chat-ink: #354459;
+    --content-document-ink: #454648;
+}
+
+[data-theme="warm-paper"][data-content-contrast="11"],
+:root:not([data-theme])[data-content-contrast="11"] {
+    --content-chat-ink: #28374C;
+    --content-document-ink: #38393B;
+}
+
+[data-theme="warm-paper"][data-content-contrast="15"],
+:root:not([data-theme])[data-content-contrast="15"] {
+    --content-chat-ink: #121F33;
+    --content-document-ink: #222325;
+}
+
+[data-theme="warm-paper"][data-content-contrast="17"],
+:root:not([data-theme])[data-content-contrast="17"] {
+    --content-chat-ink: #061225;
+    --content-document-ink: #17181A;
+}
+
+/* midnight */
+
+[data-theme="midnight"][data-content-contrast="9"] {
+    --content-chat-ink: #C0CAD0;
+    --content-document-ink: #C6CFD5;
+}
+
+[data-theme="midnight"][data-content-contrast="11"] {
+    --content-chat-ink: #D4DEE4;
+    --content-document-ink: #DBE4E9;
+}
+
+[data-theme="midnight"][data-content-contrast="15"] {
+    --content-chat-ink: #EAF4FA;
+    --content-document-ink: #EEF7FD;
+}
+
+[data-theme="midnight"][data-content-contrast="17"] {
+    --content-chat-ink: #EFF9FF;
+    --content-document-ink: #F0F9FF;
+}
+
+/* high-contrast */
+
+[data-theme="high-contrast"][data-content-contrast="9"] {
+    --content-chat-ink: #2F4051;
+    --content-document-ink: #35383A;
+}
+
+[data-theme="high-contrast"][data-content-contrast="11"] {
+    --content-chat-ink: #223243;
+    --content-document-ink: #282A2C;
+}
+
+[data-theme="high-contrast"][data-content-contrast="15"] {
+    --content-chat-ink: #0A1929;
+    --content-document-ink: #0E1012;
+}
+
+[data-theme="high-contrast"][data-content-contrast="17"] {
+    --content-chat-ink: #000816;
+    --content-document-ink: #000000;
+}
+
+/* grass-aroma */
+
+[data-theme="grass-aroma"][data-content-contrast="9"] {
+    --content-chat-ink: #31473B;
+    --content-document-ink: #3D4841;
+}
+
+[data-theme="grass-aroma"][data-content-contrast="11"] {
+    --content-chat-ink: #253A2E;
+    --content-document-ink: #303B34;
+}
+
+[data-theme="grass-aroma"][data-content-contrast="15"] {
+    --content-chat-ink: #0D2218;
+    --content-document-ink: #1A241E;
+}
+
+[data-theme="grass-aroma"][data-content-contrast="17"] {
+    --content-chat-ink: #02150B;
+    --content-document-ink: #0F1813;
+}
+
+/* contemplation */
+
+[data-theme="contemplation"][data-content-contrast="9"] {
+    --content-chat-ink: #313E47;
+    --content-document-ink: #3E454B;
+}
+
+[data-theme="contemplation"][data-content-contrast="11"] {
+    --content-chat-ink: #243139;
+    --content-document-ink: #31383E;
+}
+
+[data-theme="contemplation"][data-content-contrast="15"] {
+    --content-chat-ink: #0B171E;
+    --content-document-ink: #1B2127;
+}
+
+[data-theme="contemplation"][data-content-contrast="17"] {
+    --content-chat-ink: #000409;
+    --content-document-ink: #0F141A;
+}
+
+/* absolutely */
+
+[data-theme="absolutely"][data-content-contrast="9"] {
+    --content-chat-ink: #413F3C;
+    --content-document-ink: #413F3C;
+}
+
+[data-theme="absolutely"][data-content-contrast="11"] {
+    --content-chat-ink: #34322F;
+    --content-document-ink: #34322F;
+}
+
+[data-theme="absolutely"][data-content-contrast="15"] {
+    --content-chat-ink: #1C1A17;
+    --content-document-ink: #1C1A17;
+}
+
+[data-theme="absolutely"][data-content-contrast="17"] {
+    --content-chat-ink: #0C0A08;
+    --content-document-ink: #0C0A08;
+}
+
+/* delve */
+
+[data-theme="delve"][data-content-contrast="9"] {
+    --content-chat-ink: #363636;
+    --content-document-ink: #363636;
+}
+
+[data-theme="delve"][data-content-contrast="11"] {
+    --content-chat-ink: #282828;
+    --content-document-ink: #282828;
+}
+
+[data-theme="delve"][data-content-contrast="15"] {
+    --content-chat-ink: #0F0F0F;
+    --content-document-ink: #0F0F0F;
+}
+
+[data-theme="delve"][data-content-contrast="17"] {
+    --content-chat-ink: #000000;
+    --content-document-ink: #000000;
+}
+
+/* deep-think */
+
+[data-theme="deep-think"][data-content-contrast="9"] {
+    --content-chat-ink: #38383A;
+    --content-document-ink: #38383A;
+}
+
+[data-theme="deep-think"][data-content-contrast="11"] {
+    --content-chat-ink: #2A2A2D;
+    --content-document-ink: #2A2A2D;
+}
+
+[data-theme="deep-think"][data-content-contrast="15"] {
+    --content-chat-ink: #111113;
+    --content-document-ink: #111113;
+}
+
+[data-theme="deep-think"][data-content-contrast="17"] {
+    --content-chat-ink: #000000;
+    --content-document-ink: #000000;
+}
+
+/* new-warm-paper */
+
+[data-theme="new-warm-paper"][data-content-contrast="9"] {
+    --content-chat-ink: #403C38;
+    --content-document-ink: #403C38;
+}
+
+[data-theme="new-warm-paper"][data-content-contrast="11"] {
+    --content-chat-ink: #332F2A;
+    --content-document-ink: #332F2A;
+}
+
+[data-theme="new-warm-paper"][data-content-contrast="15"] {
+    --content-chat-ink: #181511;
+    --content-document-ink: #181511;
+}
+
+[data-theme="new-warm-paper"][data-content-contrast="17"] {
+    --content-chat-ink: #040301;
+    --content-document-ink: #040301;
+}
+
+/* midnight-contrast */
+
+[data-theme="midnight-contrast"][data-content-contrast="9"] {
+    --content-chat-ink: #C2CBCF;
+    --content-document-ink: #C9CFD3;
+}
+
+[data-theme="midnight-contrast"][data-content-contrast="11"] {
+    --content-chat-ink: #D6DFE4;
+    --content-document-ink: #DEE4E8;
+}
+
+[data-theme="midnight-contrast"][data-content-contrast="15"] {
+    --content-chat-ink: #ECF6FB;
+    --content-document-ink: #F2F8FC;
+}
+
+[data-theme="midnight-contrast"][data-content-contrast="17"] {
+    --content-chat-ink: #F1FAFF;
+    --content-document-ink: #F5FBFF;
+}
+
+/* coral */
+
+[data-theme="coral"][data-content-contrast="9"] {
+    --content-chat-ink: #2D445F;
+    --content-document-ink: #2D445F;
+}
+
+[data-theme="coral"][data-content-contrast="11"] {
+    --content-chat-ink: #213751;
+    --content-document-ink: #213751;
+}
+
+[data-theme="coral"][data-content-contrast="15"] {
+    --content-chat-ink: #091F37;
+    --content-document-ink: #091F37;
+}
+
+[data-theme="coral"][data-content-contrast="17"] {
+    --content-chat-ink: #001229;
+    --content-document-ink: #001229;
+}

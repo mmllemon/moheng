@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' file:">
+    <title>Browser</title>
+    <link rel="stylesheet" href="themes/continuous-corners.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --space-4: 0.25rem;
+            --space-6: 0.375rem;
+            --space-8: 0.5rem;
+            --panel-edge-gap: 7px;
+            --panel-card-bg: var(--bg-card, var(--bg));
+            --panel-card-radius: var(--radius-lg, 12px);
+            --panel-card-border: 1px solid rgba(0, 0, 0, 0.08);
+            --panel-card-shadow: none;
+            --radius-sm: 5px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --card-titlebar-h: 36px;
+            --card-top-inset: var(--panel-edge-gap);
+            --card-top-btn-size: 24px;
+            --browser-titlebar-height: var(--card-titlebar-h);
+            --browser-sidebar-width: 196px;
+            --browser-sidebar-strip-width: 0px;
+            --browser-content-gap: 6px;
+            --browser-web-frame-inset: 1px;
+            --browser-frame-left-hidden: var(--panel-edge-gap);
+            --browser-frame-left-visible: calc(var(--panel-edge-gap) + var(--browser-sidebar-width) + var(--browser-content-gap));
+            --browser-frame-top: var(--browser-titlebar-height);
+            --chalkboard-titlebar-action-bg: color-mix(in srgb, var(--panel-card-bg) 96%, transparent);
+            --chalkboard-titlebar-action-border: var(--panel-card-border);
+            --chalkboard-titlebar-action-radius: calc(var(--panel-card-radius) - 2px);
+            --chalkboard-titlebar-action-gap: 4px;
+            --chalkboard-titlebar-action-padding: 0;
+            --chalkboard-titlebar-action-shadow: none;
+            --titlebar-action-bg: var(--chalkboard-titlebar-action-bg);
+            --titlebar-action-border: var(--chalkboard-titlebar-action-border);
+            --titlebar-action-radius: var(--chalkboard-titlebar-action-radius);
+            --titlebar-action-shadow: var(--chalkboard-titlebar-action-shadow);
+        }
+        html,
+        body {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background: var(--panel-card-bg);
+            color: var(--text);
+            font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+        }
+        button,
+        input {
+            font: inherit;
+        }
+        .browser-card {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background: var(--panel-card-bg);
+            color: var(--text);
+        }
+        .browser-titlebar {
+            height: var(--browser-titlebar-height);
+            padding: 0 8px;
+            display: grid;
+            /* 左岛 · 会话标识（无标识时该列自然塌陷）· 地址栏 · 右岛 */
+            grid-template-columns: auto auto minmax(200px, 1fr) auto;
+            align-items: center;
+            gap: 8px;
+            background: var(--panel-card-bg);
+            -webkit-app-region: drag;
+            position: relative;
+            z-index: 4;
+        }
+        /* 会话标识：说明这个 viewer 正在看哪个会话的浏览器。窄标题栏里
+           先于地址栏让位，省略号收尾，本身仍属可拖拽区域。 */
+        .browser-session-label {
+            min-width: 0;
+            max-width: 132px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+            line-height: 1;
+            color: var(--text-light);
+        }
+        .browser-titlebar button,
+        .browser-titlebar input,
+        .browser-titlebar form {
+            -webkit-app-region: no-drag;
+        }
+        .detachedActionIsland {
+            --titlebar-action-bg: var(--chalkboard-titlebar-action-bg);
+            --titlebar-action-border: var(--chalkboard-titlebar-action-border);
+            --titlebar-action-radius: var(--chalkboard-titlebar-action-radius);
+            --titlebar-action-shadow: var(--chalkboard-titlebar-action-shadow);
+            -webkit-app-region: no-drag;
+            position: relative;
+            isolation: isolate;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: var(--chalkboard-titlebar-action-gap);
+            padding: var(--chalkboard-titlebar-action-padding);
+        }
+        .detachedActionIsland::before {
+            content: '';
+            display: none;
+            position: absolute;
+            top: -2px;
+            bottom: -2px;
+            left: -2px;
+            right: -2px;
+            z-index: -1;
+            background: var(--titlebar-action-bg, var(--bg));
+            border: var(--titlebar-action-border, var(--panel-card-border));
+            border-radius: calc(var(--titlebar-action-radius, var(--radius-md)) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            box-shadow: var(--titlebar-action-shadow, none);
+            pointer-events: none;
+        }
+        .browser-titlebar-left {
+            justify-self: start;
+            z-index: 6;
+        }
+        .browser-titlebar-right {
+            justify-self: end;
+        }
+        .tileTopBtn,
+        .tileCloseBtn {
+            width: var(--card-top-btn-size);
+            height: var(--card-top-btn-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            padding: 0;
+            border: none;
+            border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: default;
+            transition:
+                background var(--duration-instant, 0.1s) var(--ease-out, ease-out),
+                color var(--duration-instant, 0.1s) var(--ease-out, ease-out);
+            -webkit-app-region: no-drag;
+        }
+        .tileTopBtn:hover,
+        .tileCloseBtn:hover {
+            background: var(--overlay-light);
+            color: var(--text);
+        }
+        .tileTopBtn:active,
+        .tileCloseBtn:active {
+            background: color-mix(in srgb, var(--text-muted) 14%, transparent);
+        }
+        .tileTopBtn.disabled,
+        .tileTopBtn:disabled {
+            opacity: 0.34;
+            pointer-events: none;
+        }
+        .tileTopBtn[data-tone='accent'] {
+            color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+        .tileTopBtn[data-tone='accent']:hover {
+            color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 15%, transparent);
+        }
+        .tileTopBtn svg,
+        .tileCloseBtn svg {
+            width: 14px;
+            height: 14px;
+            display: block;
+        }
+        .browser-stop-btn {
+            color: var(--coral, var(--danger, var(--accent)));
+        }
+        .browser-stop-btn:hover {
+            color: var(--coral, var(--danger, var(--accent)));
+            background: color-mix(in srgb, var(--coral, var(--danger, var(--accent))) 12%, transparent);
+        }
+        .browser-address-form {
+            height: 28px;
+            min-width: 0;
+            max-width: 860px;
+            justify-self: stretch;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 10px;
+            border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+            border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            background: #fff;
+            color: var(--text-muted);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--panel-card-bg) 72%, transparent);
+            transition:
+                border-color var(--duration-instant, 0.1s) var(--ease-out, ease-out),
+                background var(--duration-instant, 0.1s) var(--ease-out, ease-out),
+                box-shadow var(--duration-instant, 0.1s) var(--ease-out, ease-out);
+            -webkit-app-region: no-drag;
+        }
+        .browser-address-form:focus-within {
+            border-color: color-mix(in srgb, var(--accent) 46%, var(--border));
+            background: #fff;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+            color: var(--text);
+        }
+        .browser-address-icon {
+            width: 14px;
+            height: 14px;
+            flex: 0 0 auto;
+            color: var(--text-muted);
+        }
+        .browser-address-input {
+            width: 100%;
+            min-width: 0;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 12px;
+            line-height: 1;
+        }
+        .browser-address-input::placeholder {
+            color: var(--text-light);
+        }
+        .browser-web-frame {
+            position: absolute;
+            top: var(--browser-frame-top);
+            left: var(--browser-frame-left-hidden);
+            right: var(--panel-edge-gap);
+            bottom: var(--panel-edge-gap);
+            z-index: 1;
+            border: var(--panel-card-border);
+            border-radius: calc(max(2px, calc(var(--panel-card-radius) - 5px)) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            background: var(--panel-card-bg);
+            box-shadow: var(--panel-card-shadow);
+            pointer-events: none;
+            transition: none;
+        }
+        .browser-card[data-sidebar-state='pinned'] .browser-web-frame {
+            left: var(--browser-frame-left-visible);
+        }
+        /* 浏览器 tab 的 <webview> 宿主：全部 tab 常驻 DOM，仅激活 tab 可见。
+           frame 本身是 pointer-events:none 的镶边层，webview 需显式恢复交互；
+           隐藏一律走 visibility（display:none 会冻结 guest，禁止使用）。 */
+        .browser-web-frame webview.browser-guest-webview {
+            position: absolute;
+            inset: var(--browser-web-frame-inset);
+            display: flex;
+            pointer-events: auto;
+            border-radius: calc(max(2px, calc(var(--panel-card-radius) - 6px)) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            overflow: hidden;
+            background: #fff;
+        }
+        /* 空标签组：浏览器仍然活着，只是这个会话没有打开的页面。frame 是
+           pointer-events:none 的镶边层，这里必须显式恢复交互，否则新建
+           标签页按钮点不动。 */
+        .browser-empty-state {
+            pointer-events: auto;
+            position: absolute;
+            inset: var(--browser-web-frame-inset);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+        }
+        .browser-empty-text {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1;
+            color: var(--text-light);
+        }
+        .browser-empty-action {
+            padding: 6px 16px;
+            border: var(--panel-card-border);
+            border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            background: transparent;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 12px;
+            line-height: 1;
+            cursor: default;
+            transition: background 0.12s;
+        }
+        .browser-empty-action:hover {
+            background: var(--overlay-light);
+        }
+        .browser-sidebar-zone {
+            position: absolute;
+            top: var(--browser-frame-top);
+            left: var(--panel-edge-gap);
+            bottom: var(--panel-edge-gap);
+            z-index: 3;
+            width: var(--browser-sidebar-strip-width);
+            min-width: var(--browser-sidebar-strip-width);
+            overflow: visible;
+            -webkit-app-region: drag;
+            transition: none;
+        }
+        .browser-sidebar-zone[data-sidebar-visible='true'] {
+            width: var(--browser-sidebar-width);
+        }
+        .browser-sidebar {
+            width: var(--browser-sidebar-width);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+            border: var(--panel-card-border);
+            border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            background: var(--panel-card-bg);
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.04),
+                0 1px 4px rgba(0, 0, 0, 0.03);
+            opacity: 0;
+            transform: translateX(calc(-100% - var(--panel-edge-gap)));
+            pointer-events: none;
+            transition: none;
+        }
+        .browser-sidebar-zone[data-sidebar-visible='true'] .browser-sidebar {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        .browser-sidebar button,
+        .browser-tab-close {
+            -webkit-app-region: no-drag;
+        }
+        .browser-sidebar-header {
+            flex: 0 0 36px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            padding: 6px 8px 6px 10px;
+            border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+        }
+        .browser-sidebar-title {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1;
+            user-select: none;
+        }
+        .sidebar-new-tab-btn {
+            margin-left: auto;
+        }
+        .browser-tab-list {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 6px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scrollbar-width: none;
+        }
+        .browser-tab-list::-webkit-scrollbar {
+            display: none;
+        }
+        .browser-tab {
+            position: relative;
+            width: 100%;
+            min-width: 0;
+            height: 32px;
+            flex: 0 0 32px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 7px;
+            border: 0;
+            border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1)); corner-shape: squircle;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: default;
+            transition:
+                background var(--duration-instant, 0.1s) var(--ease-out, ease-out),
+                color var(--duration-instant, 0.1s) var(--ease-out, ease-out);
+            -webkit-app-region: no-drag;
+        }
+        .browser-tab:hover {
+            background: var(--overlay-light);
+            color: var(--text);
+        }
+        .browser-tab.active {
+            color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 9%, transparent);
+        }
+        .browser-tab-icon {
+            flex: 0 0 16px;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+        .browser-tab.active .browser-tab-icon {
+            color: var(--accent);
+        }
+        .browser-tab-icon svg {
+            width: 15px;
+            height: 15px;
+        }
+        .browser-tab-title {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: left;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .browser-tab-close {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%; corner-shape: round;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            color: var(--text-light);
+            opacity: 0;
+            transition:
+                opacity var(--duration-instant, 0.1s) var(--ease-out, ease-out),
+                color var(--duration-instant, 0.1s) var(--ease-out, ease-out),
+                background var(--duration-instant, 0.1s) var(--ease-out, ease-out);
+        }
+        .browser-tab:hover .browser-tab-close,
+        .browser-tab:focus-visible .browser-tab-close,
+        .browser-tab.active .browser-tab-close {
+            opacity: 0.72;
+        }
+        .browser-tab-close:hover {
+            opacity: 1;
+            color: var(--text);
+            background: var(--overlay-light);
+        }
+        .browser-tab-close svg {
+            width: 12px;
+            height: 12px;
+        }
+    </style>
+  <script type="module" crossorigin src="./assets/browser-viewer-b-OGckha.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/index-DEPTMosq.js">
+  <link rel="modulepreload" crossorigin href="./assets/preview-paper-texture-preference-Biho93xM.js">
+  <link rel="modulepreload" crossorigin href="./assets/bootstrap-DHGmVS8f.js">
+  <link rel="modulepreload" crossorigin href="./assets/theme-registry-BTJmVriA.js">
+  <link rel="modulepreload" crossorigin href="./assets/error-bus-BmWciEdQ.js">
+  <link rel="modulepreload" crossorigin href="./assets/user-theme-bootstrap-Df6izpuH.js">
+  <link rel="modulepreload" crossorigin href="./assets/use-animate-presence-D92d5Gcz.js">
+  <link rel="modulepreload" crossorigin href="./assets/AnimationPrimitives-O85oXpjE.js">
+  <link rel="modulepreload" crossorigin href="./assets/compose-card-DzeGBaDm.js">
+  <link rel="modulepreload" crossorigin href="./assets/content-contrast-preference-DX4FPV9J.js">
+  <link rel="modulepreload" crossorigin href="./assets/appearance-sync-C7L6F-fl.js">
+  <link rel="modulepreload" crossorigin href="./assets/document-font-bootstrap-CVOhtVZR.js">
+  <link rel="stylesheet" crossorigin href="./assets/compose-card-dxMuEBYQ.css">
+  <link rel="stylesheet" crossorigin href="./assets/AnimationPrimitives-alJC4Pbo.css">
+  <link rel="stylesheet" crossorigin href="./assets/browser-viewer-C7dW5ur6.css">
+</head>
+<body>
+    <div id="react-root"></div>
+    <script src="lib/i18n.js"></script>
+    <script src="lib/theme.js"></script>
+    <script src="modules/platform.js"></script>
+</body>
+</html>

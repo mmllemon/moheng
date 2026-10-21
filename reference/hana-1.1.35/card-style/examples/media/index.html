@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hana Card Style · 图片与布局</title>
+<script type="application/json" data-card-manifest>{"spec":"1.0","display":{"preferredWidthPx":720,"styleProfile":"custom"}}</script>
+<link rel="stylesheet" href="../../hana-card-style.css">
+</head>
+<body class="hs-page">
+<main class="hs-shell">
+
+  <header>
+    <p class="hs-eyebrow">Hana Card Style · 图片与布局</p>
+    <h1 class="hs-title">让图片找到合适的位置</h1>
+    <p class="hs-lead">同一套图组可以成为主图、侧图或多个视角。</p>
+  </header>
+
+  <!-- 1 · 横幅：满阅读宽度，21:9，8px 连续曲率圆角 -->
+  <section class="hs-section" aria-labelledby="hs-banner-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="hs-banner-heading">主图</h2>
+      <span class="hs-caption">满阅读宽度 · 21 : 9</span>
+    </div>
+    <figure class="hs-media-figure hs-banner">
+      <div class="hs-media-frame">
+        <img src="assets/nature-01.jpg" width="900" height="387" alt="林间溪流、苔石与柔和的绿荫">
+      </div>
+      <figcaption class="hs-media-caption">横幅 · 为内容建立氛围</figcaption>
+    </figure>
+  </section>
+
+  <!-- 2 · 侧图：文字为主，小图在右 -->
+  <section class="hs-section">
+    <div class="hs-side">
+      <div class="hs-side-text">
+        <h2 class="hs-heading">文字为主时，图片轻一点</h2>
+        <p class="hs-copy">侧图留在标题或章节旁，不挤占正文。</p>
+      </div>
+      <figure class="hs-media-figure">
+        <div class="hs-media-frame">
+          <img src="assets/reading-01.jpg" width="900" height="600" alt="窗边摊开的一本书，旁边放着一杯茶">
+        </div>
+        <figcaption class="hs-media-caption">侧图</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 3 · 图组：三个原生按钮切换同一组图的排法。
+       四张图静态在 DOM，靠 data-layout 与 hidden 控制；行为由 mount() 接上。 -->
+  <section class="hs-section" aria-labelledby="hs-group-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="hs-group-heading">一套图组，三种排法</h2>
+      <span class="hs-caption">切换只发生在本卡</span>
+    </div>
+    <div class="hs-media-group" data-hs-media-group data-layout="feature">
+      <div class="hs-flow" role="group" aria-label="图组的排布方式">
+        <button type="button" class="hs-button" data-hs-layout="pair" aria-pressed="false">双图</button>
+        <button type="button" class="hs-button" data-hs-layout="feature" aria-pressed="true">一大两小</button>
+        <button type="button" class="hs-button" data-hs-layout="grid" aria-pressed="false">四图</button>
+      </div>
+      <div class="hs-media-grid">
+        <figure class="hs-media-figure" data-hs-media-item data-key="reading" data-in="pair feature grid">
+          <div class="hs-media-frame">
+            <img src="assets/reading-01.jpg" width="900" height="600" alt="窗边摊开的一本书，旁边放着一杯茶">
+            <span class="hs-media-chip">书桌旁</span>
+          </div>
+        </figure>
+        <figure class="hs-media-figure" data-hs-media-item data-key="art" data-in="pair feature grid">
+          <div class="hs-media-frame">
+            <img src="assets/art-01.jpg" width="900" height="600" alt="画室里的画架、颜料与柔和光线">
+            <span class="hs-media-chip">色彩</span>
+          </div>
+        </figure>
+        <figure class="hs-media-figure" data-hs-media-item data-key="travel" data-in="feature grid">
+          <div class="hs-media-frame">
+            <img src="assets/travel-02.jpg" width="900" height="387" alt="黄昏港口、停泊的船与水面">
+            <span class="hs-media-chip">途中</span>
+          </div>
+        </figure>
+        <figure class="hs-media-figure" data-hs-media-item data-key="nature" data-in="grid">
+          <div class="hs-media-frame">
+            <img src="assets/nature-01.jpg" width="900" height="387" alt="林间溪流、苔石与柔和的绿荫">
+            <span class="hs-media-chip">林间</span>
+          </div>
+        </figure>
+      </div>
+      <p class="hs-caption" data-hs-media-status>当前显示 3 张图</p>
+    </div>
+  </section>
+
+  <p class="hs-footer">示例数据与预制备插画 · 切换仅在本卡发生<br>插画为 AI 生成的氛围图，随包携带。圆角使用 corner-shape: squircle；不支持的浏览器回退为普通圆角。</p>
+
+</main>
+<script src="../../hana-card-style.js"></script>
+<script>
+(function () {
+  'use strict';
+  HanaCardStyle.mount(document.querySelector('.hs-page'));
+})();
+</script>
+</body>
+</html>

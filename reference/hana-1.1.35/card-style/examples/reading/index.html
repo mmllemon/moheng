@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hana Card Style · 阅读与数据</title>
+<script type="application/json" data-card-manifest>{"spec":"1.0","display":{"preferredWidthPx":720,"styleProfile":"custom"}}</script>
+<link rel="stylesheet" href="../../hana-card-style.css">
+</head>
+<body class="hs-page">
+<main class="hs-shell">
+
+  <!-- 1 · 页头：眉题、衬线标题、导语。最上方内容落在 48px 内边距之下。 -->
+  <header>
+    <p class="hs-eyebrow">Hana Card Style · 阅读与数据</p>
+    <h1 class="hs-title">把一件事，讲得清楚</h1>
+    <p class="hs-lead">标题、指标、表格与重点块，可以自由组合。</p>
+  </header>
+
+  <!-- 2 · 三项指标：三列连续，极淡分隔，不给每项套卡 -->
+  <section class="hs-section" aria-labelledby="hs-metrics-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="hs-metrics-heading">一眼看到的三个数</h2>
+      <span class="hs-caption">示例数据</span>
+    </div>
+    <div class="hs-metrics">
+      <div class="hs-metric"><span class="hs-metric__value">12<span class="hs-metric__unit">份资料</span></span></div>
+      <div class="hs-metric"><span class="hs-metric__value">3<span class="hs-metric__unit">个方向</span></span></div>
+      <div class="hs-metric"><span class="hs-metric__value">5<span class="hs-metric__unit">份已整理</span></span></div>
+    </div>
+  </section>
+
+  <!-- 3 · 一小段正文 + 重点浅色块（无左侧竖线） -->
+  <section class="hs-section">
+    <div class="hs-stack">
+      <p class="hs-copy">先说明结论，再让细节有地方可看；指标给体量，表格交代进度。</p>
+      <div class="hs-highlight">
+        <span class="hs-label">核心发现</span>
+        <p class="hs-copy">已整理的 5 份资料，都来自界面设计方向。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · 正常可读的淡表格 -->
+  <section class="hs-section" aria-labelledby="hs-progress-heading">
+    <div class="hs-section-head">
+      <h2 class="hs-heading" id="hs-progress-heading">方向与进度</h2>
+      <span class="hs-caption">共 12 份资料</span>
+    </div>
+    <div class="hs-table-region" tabindex="0" role="region" aria-label="方向与资料进度表，可横向滚动">
+      <table class="hs-table">
+        <thead>
+          <tr>
+            <th scope="col">方向</th>
+            <th scope="col">资料数</th>
+            <th scope="col">状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">界面设计</th>
+            <td>5</td>
+            <td><span class="hs-badge hs-badge--good">已整理</span></td>
+          </tr>
+          <tr>
+            <th scope="row">卡片交互</th>
+            <td>4</td>
+            <td><span class="hs-badge hs-badge--pending">待复核</span></td>
+          </tr>
+          <tr>
+            <th scope="row">信息表达</th>
+            <td>3</td>
+            <td>整理中</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5 · 标签与键值；6 · 原生 details 来源与说明（收起/展开/hover 一律透明） -->
+  <section class="hs-section">
+    <div class="hs-stack">
+      <div class="hs-panel hs-stack">
+        <span class="hs-label">内容来源与用途</span>
+        <dl class="hs-kv">
+          <dt>内容来源</dt><dd>示例数据</dd>
+          <dt>展示用途</dt><dd>组件示例</dd>
+        </dl>
+      </div>
+      <details class="hs-disclosure">
+        <summary>来源与说明</summary>
+        <div class="hs-disclosure-body hs-stack">
+          <p>本页文字与数字均为示例数据，只用来展示组件的外观、层次与排版，不对应任何真实结论。</p>
+          <p>正式卡片可以把这段换成真实出处、版本与更新时间，例如研究资料、统计口径或链接。</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <p class="hs-footer">示例数据，仅供组件演示；正文与数字都可替换为真实内容。<br>圆角使用 corner-shape: squircle；不支持的浏览器回退为普通圆角，功能不受影响。</p>
+
+</main>
+</body>
+</html>
