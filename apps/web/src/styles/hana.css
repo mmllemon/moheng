@@ -995,8 +995,7 @@ html .table-action.button {
   padding: 0 var(--space-6);
   font-size: var(--btn-font-sm);
 }
-/* 页头与区块操作强制大档，保证与旁边的主按钮同字号 */
-html .page-actions .button,
+/* 页头与区块操作强制大档，保证与旁边的主按钮同字号 */html .page-actions .button,
 html .page-actions .button-small,
 html .page-actions .button-secondary,
 html .table-heading-actions .button,
@@ -1008,6 +1007,115 @@ html .report-config-actions .button,
 html .assistant-detail-actions .button,
 html .assistant-model-add .button-ghost {
   font-size: var(--btn-font-lg);
+}
+
+/* -------------------------------------------------------------
+   按钮交互状态
+   -------------------------------------------------------------
+   两个问题：
+   1. 全站 70 条 :hover 里只有 4 条写了 :not(:disabled)，
+      禁用按钮悬停时背景仍然从 3% 变为 8%，看起来还能点。
+   2. hover 只改背景，且 .button:hover 把 border-color 置为
+      transparent，边框在悬停时“塌掉”。
+
+   Hana 的做法：.hs-button:hover:not(:disabled) 一律排除禁用态；
+   它的图标按钮是背景 + 边框 + 文字三色联动。
+   这里按这个原则重写按钮的状态层。 */
+html .button,
+html .button-primary,
+html .button-secondary,
+html .button-ghost,
+html .button-danger {
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+/* 禁用按钮：不响应悬停，不接收指针 */
+html .button:disabled,
+html .button-primary:disabled,
+html .button-secondary:disabled,
+html .button-ghost:disabled,
+html .button-danger:disabled,
+html .button[aria-disabled="true"],
+html .button-small:disabled,
+html .button.button-small:disabled,
+html .button-danger.button-small:disabled,
+html .button-secondary.button-small:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  color: var(--text-muted);
+  border-color: transparent;
+}
+html .button:disabled:hover,
+html .button-primary:disabled:hover,
+html .button-secondary:disabled:hover,
+html .button-ghost:disabled:hover,
+html .button-danger:disabled:hover,
+html .button[aria-disabled="true"]:hover,
+html .button.button-small:disabled:hover,
+html .button-danger.button-small:disabled:hover,
+html .button-secondary.button-small:disabled:hover {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  color: var(--text-muted);
+  border-color: transparent;
+}
+
+/* 次按钮：悬停时边框跟着浮现，而不是保持透明 */
+html .button-secondary:not(:disabled):hover {
+  background: var(--overlay-medium);
+  border-color: color-mix(in srgb, var(--text) 11%, transparent);
+  color: var(--text);
+}
+
+/* 幽灵按钮：悬停时补上边框，避免“只剩一块底色” */
+html .button-ghost:not(:disabled):hover {
+  background: var(--overlay-light);
+  border-color: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text);
+}
+
+/* 主按钮：背景与边框同步变色，文字保持 */
+html .button-primary:not(:disabled):hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--on-accent, #fff);
+}
+
+/* 危险按钮：三色一起向红靠 */
+html .button-danger:not(:disabled):hover {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 42%, transparent);
+  color: var(--danger);
+}
+
+/* 下拉触发器（select-control-trigger）的禁用态：不响应悬停 */
+html .select-control-trigger:disabled,
+html .select-control-trigger[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+html .select-control-trigger:disabled:hover,
+html .select-control-trigger[aria-disabled="true"]:hover {
+  border-color: var(--border);
+  background: var(--bg-card);
+  box-shadow: none;
+}
+
+/* 键盘可达性：focus-visible 必须有可见轮廓（鼠标点击不触发） */html .button:focus-visible,
+html .button-primary:focus-visible,
+html .button-secondary:focus-visible,
+html .button-ghost:focus-visible,
+html .button-danger:focus-visible,
+html .icon-button:focus-visible,
+html .table-action:focus-visible,
+html .sidebar-toggle:focus-visible,
+html .sidebar-footer-icon:focus-visible,
+html .titlebar-icon:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  outline-offset: 2px;
 }
 
 /* -------------------------------------------------------------
@@ -4647,7 +4755,7 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
   color: var(--text-muted);
   font-size: 10.5px;
 }
-.overview-page .ov-sort .select-control-trigger:hover { background: var(--overlay-subtle); color: var(--text); }
+.overview-page .ov-sort .select-control-trigger:not(:disabled):hover { background: var(--overlay-subtle); color: var(--text); }
 
 /* Hana 幽灵操作：文字 + 箭头，不用强调色大按钮 */
 .v6-block-link.inline,

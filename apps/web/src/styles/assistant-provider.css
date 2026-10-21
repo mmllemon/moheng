@@ -52,7 +52,8 @@
 .assistant-key-line input { width: 100%; height: 30px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; font-size: 11px; }
 .assistant-key-line input:focus { box-shadow: none; }
 .assistant-inline-button { display: inline-flex; align-items: center; gap: 3px; height: 26px; padding: 0 6px; border: 0; border-radius: 6px; background: var(--overlay-subtle); color: var(--text-muted); font-size: 9.5px; white-space: nowrap; }
-.assistant-inline-button:hover { color: var(--text); background: var(--overlay-light); }
+.assistant-inline-button:not(:disabled):hover { color: var(--text); background: var(--overlay-light); }
+.assistant-inline-button:disabled { opacity: 0.45; cursor: not-allowed; }
 .assistant-inline-button:disabled { opacity: 0.45; }
 .assistant-model-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .assistant-model-line .select-control { flex: 1; min-width: 0; }
