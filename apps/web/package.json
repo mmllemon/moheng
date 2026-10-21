@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
-    "lint": "tsc --noEmit -p tsconfig.app.json"
+    "lint": "tsc --noEmit -p tsconfig.app.json",
+    "test": "npx tsx --test src/components/date-picker-utils.test.ts src/report-export-job.test.ts src/report-preview-format.test.ts src/report-print.test.ts src/report-preview-layout.test.ts src/report-preview-data.test.ts && node --test src/assistant-sse-parser.test.mjs"
   },
   "dependencies": {
     "@assistant-ui/react": "0.15.29",

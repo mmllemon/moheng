@@ -1,0 +1,81 @@
+{
+  "dynPrefixes": [
+    "req-",
+    "local-",
+    "divider-",
+    "heading-",
+    "date-picker-dialog-",
+    "command-result-",
+    "select-options-",
+    "select-option-",
+    "BG-",
+    "r-",
+    "a-",
+    "static-",
+    "row-",
+    "print-",
+    "report-",
+    "custom-",
+    "ui-",
+    "binding-",
+    "region-",
+    "binding-region-",
+    "project-row-",
+    "company-downstream-contract-",
+    "company-owner-receipt-",
+    "company-downstream-payment-",
+    "party-binding-",
+    "party-region-",
+    "party-region-binding-"
+  ],
+  "summary": [
+    {
+      "file": "styles\\assistant-provider.css",
+      "total": 53,
+      "dead": 3,
+      "deadPct": 5.7,
+      "thirdPartyExcluded": 0,
+      "dynamicExcluded": 0
+    },
+    {
+      "file": "styles\\content-contrast.css",
+      "total": 4,
+      "dead": 0,
+      "deadPct": 0,
+      "thirdPartyExcluded": 0,
+      "dynamicExcluded": 0
+    },
+    {
+      "file": "styles\\hana.css",
+      "total": 732,
+      "dead": 91,
+      "deadPct": 12.4,
+      "thirdPartyExcluded": 0,
+      "dynamicExcluded": 2
+    },
+    {
+      "file": "styles\\legacy.css",
+      "total": 1046,
+      "dead": 290,
+      "deadPct": 27.7,
+      "thirdPartyExcluded": 0,
+      "dynamicExcluded": 51
+    },
+    {
+      "file": "styles\\projects-ledger.css",
+      "total": 22,
+      "dead": 1,
+      "deadPct": 4.5,
+      "thirdPartyExcluded": 0,
+      "dynamicExcluded": 0
+    },
+    {
+      "file": "styles\\v6.css",
+      "total": 491,
+      "dead": 138,
+      "deadPct": 28.1,
+      "thirdPartyExcluded": 0,
+      "dynamicExcluded": 16
+    }
+  ]
+}

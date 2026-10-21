@@ -1,4 +1,4 @@
-// 精确验证字重是否真的生效：用中文字符 + 直接量渲染宽度
+// 精确验证可变字重：避开容器宽度上限，用 scrollWidth + 单字测量
 import { chromium } from 'playwright-core';
 
 const BASE = 'http://localhost:5173';
@@ -15,43 +15,41 @@ await page.waitForTimeout(2200);
 const result = await page.evaluate(async () => {
   await document.fonts.ready;
 
-  // 用大量常用汉字，确保覆盖到实际切片
-  const probe = document.createElement('div');
-  probe.textContent = '墨衡工程经营项目合同成本报表审计账户权限治理字典参数运维日志';
+  const probe = document.createElement('span');
+  // 少量汉字，保证不超出视口
+  probe.textContent = '墨衡工程';
   probe.style.cssText =
-    'position:absolute;left:-9999px;top:0;font-family:"MH Serif SC",serif;font-size:48px;white-space:nowrap;letter-spacing:0;';
+    'position:fixed;left:0;top:0;font-family:"MH Serif SC",serif;font-size:64px;white-space:nowrap;visibility:hidden;';
   document.body.appendChild(probe);
 
-  const measure = (weight) => {
-    probe.style.fontWeight = String(weight);
-    return probe.getBoundingClientRect().width;
-  };
+  const measure = () => probe.getBoundingClientRect().width;
+  const rows = {};
+  for (const w of [200, 300, 400, 500, 600, 700, 800, 900]) {
+    probe.style.fontWeight = String(w);
+    rows[w] = Number(measure().toFixed(2));
+  }
 
-  const widths = {};
-  for (const w of [300, 400, 500, 600, 700]) widths[w] = measure(w);
-
-  // 同时测 font-variation-settings 强制轴
+  // 用 font-variation-settings 直接推轴做对照
   probe.style.fontWeight = '400';
-  const base = probe.getBoundingClientRect().width;
-  probe.style.fontVariationSettings = '"wght" 700';
-  const varied = probe.getBoundingClientRect().width;
+  const at400 = measure();
+  probe.style.fontVariationSettings = '"wght" 900';
+  const at900 = measure();
   probe.style.fontVariationSettings = '';
+
+  // 检查字体是否真的被应用（不是回退到 serif）
+  const fontsUsed = [];
+  if (document.fonts.check('64px "MH Serif SC"')) fontsUsed.push('MH Serif SC available');
 
   probe.remove();
 
-  const faces = Array.from(document.fonts)
-    .filter((f) => f.family.includes('MH Serif SC'))
-    .map((f) => ({ weight: f.weight, status: f.status }));
-
   return {
-    widths,
-    distinct: new Set(Object.values(widths).map((w) => w.toFixed(2))).size,
-    baseWidth: base,
-    variedWidth: varied,
-    variationWorks: Math.abs(varied - base) > 0.5,
-    faceCount: faces.length,
-    loadedCount: faces.filter((f) => f.status === 'loaded').length,
-    weightRange: [...new Set(faces.map((f) => f.weight))].sort(),
+    rows,
+    distinctWidths: new Set(Object.values(rows)).size,
+    at400: Number(at400.toFixed(2)),
+    at900: Number(at900.toFixed(2)),
+    variationViaSettings: Math.abs(at900 - at400) > 0.5,
+    fontsUsed,
+    loadedFaces: Array.from(document.fonts).filter((f) => f.family.includes('MH Serif')).map((f) => ({ w: f.weight, s: f.status })),
   };
 });
 

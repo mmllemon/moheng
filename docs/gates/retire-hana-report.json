@@ -1,0 +1,89 @@
+{
+  "removedCount": 16,
+  "removedLines": 208,
+  "removed": [
+    {
+      "selector": ".sidebar-nav-count",
+      "lines": 13
+    },
+    {
+      "selector": ".text-input",
+      "lines": 14
+    },
+    {
+      "selector": ".select-search input",
+      "lines": 12
+    },
+    {
+      "selector": ".appearance-popover",
+      "lines": 15
+    },
+    {
+      "selector": ".appearance-texture-choice",
+      "lines": 16
+    },
+    {
+      "selector": ".appearance-range",
+      "lines": 12
+    },
+    {
+      "selector": ".settings-header",
+      "lines": 9
+    },
+    {
+      "selector": ".settings-theme-card",
+      "lines": 18
+    },
+    {
+      "selector": ".settings-icon-card",
+      "lines": 20
+    },
+    {
+      "selector": ".settings-font-card",
+      "lines": 19
+    },
+    {
+      "selector": ".owner-contract-amount-grid",
+      "lines": 10
+    },
+    {
+      "selector": ".owner-contract-amount-card",
+      "lines": 11
+    },
+    {
+      "selector": ".owner-contract-amount-card + .owner-contract-amount-card::before",
+      "lines": 10
+    },
+    {
+      "selector": ".system-config-field select",
+      "lines": 8
+    },
+    {
+      "selector": ".assistant-model-line > input",
+      "lines": 12
+    },
+    {
+      "selector": "#root .command-trigger input",
+      "lines": 9
+    }
+  ],
+  "skipped": [
+    {
+      "selector": ".field > label, .field-label",
+      "reason": "mixed-live-and-dead"
+    },
+    {
+      "selector": ".project-overview-page .project-identity-panel",
+      "reason": "mixed-live-and-dead"
+    },
+    {
+      "selector": ".project-overview-page .metric-grid",
+      "reason": "mixed-live-and-dead"
+    },
+    {
+      "selector": ".metric-grid .metric-card:first-child",
+      "reason": "mixed-live-and-dead"
+    }
+  ],
+  "skippedCount": 4
+}
