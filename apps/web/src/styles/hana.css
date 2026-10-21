@@ -3108,7 +3108,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .command-trigger { height: var(--control-height) !important; border-radius: var(--radius-control) !important; }
 
 /* 系统设置大标题吸顶 */
-.settings-content .page-header { position: sticky; top: -20px; z-index: 8; margin: -20px -40px 20px; padding: 20px 40px 14px; background: var(--bg-base); }
+.settings-content .page-header { position: sticky; top: -20px; z-index: 8; margin: -20px -40px 20px; padding: 20px 56px 14px 40px; background: var(--bg-base); }
 .settings-window.is-appearance-only .page-header { position: static; margin: 0 0 20px; padding: 0; background: transparent; }
 @media (max-width: 720px) {
   .settings-content .page-header { top: -24px; margin: -24px -18px 18px; padding: 20px 18px 12px; }
