@@ -26,6 +26,8 @@ export type UiDensity = 'comfortable' | 'compact';
 export type UiAccent = 'theme' | 'indigo' | 'jade' | 'cinnabar';
 export type PaperTextureStyle = 'off' | 'rice' | 'cotton' | 'fine';
 export type UiHeadingFont = 'serif' | 'sans' | 'latin';
+export type UiContentContrast = '9' | '11' | '13' | '15' | '17';
+export const CONTENT_CONTRAST_LEVELS: readonly UiContentContrast[] = ['9', '11', '13', '15', '17'] as const;
 
 export const PAPER_TEXTURE_STRENGTHS = [0.5, 0.75, 1, 1.25, 1.5] as const;
 export function normalizePaperTextureStrength(value: number) {
@@ -43,6 +45,7 @@ type UiPreferences = {
   paperTexture: PaperTextureStyle;
   paperTextureStrength: number;
   headingFont: UiHeadingFont;
+  contentContrast: UiContentContrast;
   appIcon: AppIconId;
 };
 const UI_PREFERENCES_KEY = 'moheng:ui-preferences';
@@ -55,6 +58,7 @@ const defaultUiPreferences: UiPreferences = {
   paperTexture: 'rice',
   paperTextureStrength: 1,
   headingFont: 'serif',
+  contentContrast: '13',
   appIcon: 'ink',
 };
 
@@ -76,6 +80,7 @@ function readUiPreferences(): UiPreferences {
       paperTexture,
       paperTextureStrength: normalizePaperTextureStrength(Number(value.paperTextureStrength ?? 1)),
       headingFont,
+      contentContrast: CONTENT_CONTRAST_LEVELS.includes(value.contentContrast as UiContentContrast) ? (value.contentContrast as UiContentContrast) : '13',
       appIcon: normalizeAppIcon(value.appIcon),
     };
   } catch { return defaultUiPreferences; }
@@ -94,6 +99,9 @@ export function applyUiPreferences(value: UiPreferences) {
   root.dataset.contentWidth = value.wideContent ? 'wide' : 'standard';
   root.dataset.headingFont = value.headingFont;
   root.dataset.appIcon = value.appIcon;
+  /* 字体对比度：13 是默认档，不写属性以沿用主题自身 --text */
+  if (value.contentContrast === '13') root.removeAttribute('data-content-contrast');
+  else root.dataset.contentContrast = value.contentContrast;
   if (value.paperTexture === 'off') root.removeAttribute('data-paper-texture');
   else root.dataset.paperTexture = value.paperTexture;
   root.style.setProperty('--paper-texture-strength', String(value.paperTextureStrength));
@@ -121,6 +129,7 @@ type UiState = UiPreferences & {
   setPaperTexture: (texture: PaperTextureStyle) => void;
   setPaperTextureStrength: (strength: number) => void;
   setHeadingFont: (font: UiHeadingFont) => void;
+  setContentContrast: (level: UiContentContrast) => void;
   setAppIcon: (icon: AppIconId) => void;
   resetUiPreferences: () => void;
 };
@@ -135,6 +144,7 @@ function preferencesFromState(state: UiState): UiPreferences {
     paperTexture: state.paperTexture,
     paperTextureStrength: state.paperTextureStrength,
     headingFont: state.headingFont,
+    contentContrast: state.contentContrast,
     appIcon: state.appIcon,
   };
 }
@@ -161,6 +171,7 @@ export const useUiStore = create<UiState>((set) => ({
   setPaperTexture: (paperTexture) => set((state) => updateUiPreferences(set, state, { paperTexture })),
   setPaperTextureStrength: (strength) => set((state) => updateUiPreferences(set, state, { paperTextureStrength: normalizePaperTextureStrength(strength) })),
   setHeadingFont: (headingFont) => set((state) => updateUiPreferences(set, state, { headingFont })),
+  setContentContrast: (contentContrast) => set((state) => updateUiPreferences(set, state, { contentContrast })),
   setAppIcon: (appIcon) => set((state) => updateUiPreferences(set, state, { appIcon })),
   resetUiPreferences: () => { commitUiPreferences(set, defaultUiPreferences); },
 }));

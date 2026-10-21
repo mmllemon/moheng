@@ -132,7 +132,15 @@ Absolutely、delve、deep-think、新暖纸 `new-warm-paper`、青夜·高对比
 - 选择器：触发器 32px 高、11.05px 圆角、纸白底 + 1px 边框，悬停/展开转 accent；弹层 14.7px 圆角、4px 内边距，选项 30px/7.36px 圆角，悬停 accent-light，选中 accent 文字。日期选择器使用同一半径与边框。
 - 设置行：左侧 13px/600 标签 + 10.5px muted 说明，右侧 220–340px 控件；行高至少 56px，分隔线左右各内缩 16px。审计筛选、运维备份、AI 助手、账号创建均改用这一结构，不再用 3–5 列表单硬塞进 670px。
 - 设置搜索：32px 高、11.05px 圆角、5% 墨色底 + 1px 透明边界；10px 左侧搜索图标，右侧 20px 圆形清空按钮；输入后切换为两行搜索结果（标题 + 分组路径），并按 Hana 的搜索索引方式补充语义别名：输入“主题”命中界面，“备份”命中运维备份，“模型”命中 AI 助手，“字典”命中基础字典，不再只匹配导航标题。
-- 交互半径：统一为三级 token，禁止页面写死 2/3/5/7/8/10/12px：控件 `--radius-control`（6×1.8409≈11.05），按钮/导航 `--radius-action`（5×1.8409≈9.20），行内小操作 `--radius-compact`（4×1.8409≈7.36）。卡片使用 `--radius-card`（8×1.8409≈14.73）。输入框、下拉、搜索壳、按钮和分段按钮一律 `corner-shape: round`，不再混用 squircle。系数 1.8409 本身 ✅ 实证（`continuous-corners.css`，squircle 支持时生效，否则回退 1）；各档基数 6/5/4/8 为 ⚠ DOM 实测。
+- 交互半径：统一为三级 token，禁止页面写死 2/3/5/7/8/10/12px：控件 `--radius-control`（6×1.8409≈11.05），按钮/导航 `--radius-action`（5×1.8409≈9.20），行内小操作 `--radius-compact`（4×1.8409≈7.36）。卡片使用 `--radius-card`（8×1.8409≈14.73）。输入框、下拉、搜索壳、按钮和分段按钮一律 `corner-shape: round`，不再混用 squircle。
+
+> **2026-10-21 实测定正**：这句旧口径**与 Hana 实际不符**。快照统计（`reference/hana-1.1.35` 全部 chunk）：
+> input squircle 13 / round 3；textarea squircle 7 / round 0；select squircle 2 / round 0；button squircle 18 / round 0；
+> tab squircle 11 / round 1。全库 squircle 1262 次、round 336 次，而 round 几乎全给了圆形元素
+> （`border-radius: 50%` 的头像、徽标、spinner、关闭圆钮）。
+> 正确结论：**矩形控件用 squircle，圆形元素用 round**；墨衡旧实现按错误口径只落了 62 处 `corner-shape`，
+> 这是与 Hana 形态差异的主因。修法见 [UI 差异诊断](UI差异诊断-hana1135.md)。
+> 系数 1.8409 本身 ✅ 实证（`continuous-corners.css`，squircle 支持时生效，否则回退 1）；各档基数 6/5/4/8 为 ⚠ DOM 实测。
 - 状态 token：`--state-hover-bg`（4% 墨色）、`--state-hover-bg-strong`（7%）、`--state-selected-bg`（7% accent）、`--state-selected-border`（18% accent）、`--state-focus-bg`（4% accent）、`--state-focus-ring`（52% accent）。列表/表格/命令项/会话行共用，禁止再写 `#f6f1e5`、bronze 首列竖条或 hover 改 padding。
 - 卡片 inset：`--card-inset: var(--space-16)`。卡片正文、汇总格、提示条、列表行、空状态至少 16px 横向内缩；表头/表格通过 16px 外边距而不是把首个单元格贴到卡片边缘。
 - 概览指标卡：grid 统一 align-items: stretch + grid-auto-rows: 1fr，卡片 height: 100%；文字长短不再造成卡片高低不一。

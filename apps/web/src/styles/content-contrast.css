@@ -1,0 +1,57 @@
+/* =============================================================
+   内容区字体对比度：四档正文墨色覆盖
+   -------------------------------------------------------------
+   与 Hana 1.1.35 的 content-contrast.css 同构：
+     data-content-contrast = 9 / 11 / 13 / 15 / 17
+     默认 13 不产生覆盖，继续用主题自身的 --text
+   数值取自 reference/hana-1.1.35/themes/content-contrast.css 对应主题的
+   --content-document-ink（墨衡无聊天区，故只保留文档墨色）。
+   切换：document.documentElement.dataset.contentContrast = '9'|'11'|'15'|'17'
+   去掉该属性即回到默认档。
+   ============================================================= */
+
+/* ---------- 暖纸 warm-paper ---------- */
+[data-theme="warm-paper"][data-content-contrast="9"],
+:root:not([data-theme])[data-content-contrast="9"] {
+  --content-ink: #454648;
+}
+[data-theme="warm-paper"][data-content-contrast="11"],
+:root:not([data-theme])[data-content-contrast="11"] {
+  --content-ink: #38393B;
+}
+[data-theme="warm-paper"][data-content-contrast="15"],
+:root:not([data-theme])[data-content-contrast="15"] {
+  --content-ink: #222325;
+}
+[data-theme="warm-paper"][data-content-contrast="17"],
+:root:not([data-theme])[data-content-contrast="17"] {
+  --content-ink: #17181A;
+}
+
+/* ---------- 素白 high-contrast ---------- */
+[data-theme="high-contrast"][data-content-contrast="9"] {
+  --content-ink: #35383A;
+}
+[data-theme="high-contrast"][data-content-contrast="11"] {
+  --content-ink: #282A2C;
+}
+[data-theme="high-contrast"][data-content-contrast="15"] {
+  --content-ink: #0E1012;
+}
+[data-theme="high-contrast"][data-content-contrast="17"] {
+  --content-ink: #000000;
+}
+
+/* ---------- 青夜·高对比 midnight-contrast ---------- */
+[data-theme="midnight"][data-content-contrast="9"] {
+  --content-ink: #C9CFD3;
+}
+[data-theme="midnight"][data-content-contrast="11"] {
+  --content-ink: #DEE4E8;
+}
+[data-theme="midnight"][data-content-contrast="15"] {
+  --content-ink: #F2F8FC;
+}
+[data-theme="midnight"][data-content-contrast="17"] {
+  --content-ink: #F5FBFF;
+}

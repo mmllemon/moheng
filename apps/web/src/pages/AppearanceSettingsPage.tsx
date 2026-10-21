@@ -38,6 +38,7 @@ export default function AppearanceSettingsPage() {
   const paperTexture = useUiStore((state) => state.paperTexture);
   const paperTextureStrength = useUiStore((state) => state.paperTextureStrength);
   const headingFont = useUiStore((state) => state.headingFont);
+  const contentContrast = useUiStore((state) => state.contentContrast);
   const appIcon = useUiStore((state) => state.appIcon);
   const setTheme = useUiStore((state) => state.setTheme);
   const setDensity = useUiStore((state) => state.setDensity);
@@ -46,6 +47,7 @@ export default function AppearanceSettingsPage() {
   const setPaperTexture = useUiStore((state) => state.setPaperTexture);
   const setPaperTextureStrength = useUiStore((state) => state.setPaperTextureStrength);
   const setHeadingFont = useUiStore((state) => state.setHeadingFont);
+  const setContentContrast = useUiStore((state) => state.setContentContrast);
   const setAppIcon = useUiStore((state) => state.setAppIcon);
   const reset = useUiStore((state) => state.resetUiPreferences);
   const strengthIndex = Math.max(0, PAPER_TEXTURE_STRENGTHS.indexOf(paperTextureStrength as (typeof PAPER_TEXTURE_STRENGTHS)[number]));
@@ -96,6 +98,14 @@ export default function AppearanceSettingsPage() {
               {[0, 1, 2, 3].map((step) => <span key={step} className={step < strengthIndex ? 'is-on' : ''} />)}
             </div>
             <div className="settings-step-labels"><span>1</span><span>{strengthIndex + 1}</span><span>5</span></div>
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><strong>字体对比度</strong><span>如果看着感觉累，可以调整正文墨色的深浅。</span></div>
+          <div className="settings-segment" role="radiogroup" aria-label="字体对比度">
+            {([['9', '较淡'], ['11', '适中'], ['13', '默认'], ['15', '较深'], ['17', '最深']] as const).map(([level, label]) => (
+              <button key={level} type="button" className={contentContrast === level ? 'is-active' : ''} role="radio" aria-checked={contentContrast === level} onClick={() => setContentContrast(level)}>{label}</button>
+            ))}
           </div>
         </div>
         <div className="settings-row">
