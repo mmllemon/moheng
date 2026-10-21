@@ -1311,6 +1311,65 @@ html .search-input {
   line-height: 1.2;
   border-radius: var(--radius-control);
 }
+
+/* -------------------------------------------------------------
+   输入框的皮肤：从 v6 接管
+   -------------------------------------------------------------
+   排查迁移可行性时发现：上面的规则只给了几何（高度/内边距/圆角），
+   背景、边框、文字色、字重全站 259 个输入控件全部来自 v6.css 的一条：
+
+     input:not(...),select,textarea{
+       border:1px solid var(--line-2); border-radius:3px;
+       background:#fffdf7; color:var(--ink);
+       font:12px/1.5 var(--font); outline:0
+     }
+
+   因为 hana.css 用了 html 前缀，几何赢了，皮肤没人管。
+   v6 的值恰好等于当前主题的 --bg-card / --text，所以看不出问题——
+   这是巧合对齐，不是规则保证。换主题或调色时就会露馅。
+
+   这里把皮肤显式声明到 hana.css，让输入框的外观不再依赖旧层。
+   值的选取对齐 Hana 的控件语言：卡片色底、1px 分隔线边框、正文墨色。 */
+html input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
+html select,
+html textarea,
+html .field input:not([type="checkbox"]):not([type="radio"]),
+html .field select,
+html .field textarea,
+html .form-stack input:not([type="checkbox"]):not([type="radio"]),
+html .form-stack select,
+html .form-stack textarea,
+html .form-grid input:not([type="checkbox"]):not([type="radio"]),
+html .form-grid select,
+html .form-grid textarea,
+html .filter-bar input:not([type="checkbox"]):not([type="radio"]),
+html .filter-bar select {
+  background: var(--bg-card);
+  border: var(--border-width) solid var(--border);
+  color: var(--text);
+  font-weight: 400;
+  outline: 0;
+}
+
+/* 聚焦：用强调色描边，不用旧层的冷蓝投影 */
+html input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):focus,
+html select:focus,
+html textarea:focus,
+html .field input:focus,
+html .field select:focus,
+html .field textarea:focus {
+  border-color: var(--accent);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px var(--accent-light);
+  outline: 0;
+}
+
+/* 占位符：与 --text-muted 一致，不用旧层的暖灰 */
+html input::placeholder,
+html textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
 html textarea,
 html .field textarea,
 html .form-stack textarea,

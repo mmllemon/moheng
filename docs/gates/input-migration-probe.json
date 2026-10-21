@@ -1,0 +1,1958 @@
+{
+  "stripLog": {
+    "removed": 273,
+    "detail": [
+      "legacy.css:203",
+      "v6.css:70"
+    ]
+  },
+  "total": 259,
+  "diff": 166,
+  "byProp": {
+    "w": 113,
+    "bg": 126,
+    "borderW": 146,
+    "borderC": 147,
+    "outline": 69,
+    "pad": 20,
+    "fs": 5,
+    "h": 74,
+    "color": 106,
+    "radius": 87,
+    "fw": 6,
+    "minH": 2
+  },
+  "byClass": {
+    "button.select-control-trigger ": 4,
+    "input.date-picker-proxy": 5,
+    "button.date-picker-trigger ": 5,
+    "div.toolbar-search": 3,
+    "input.": 148,
+    "textarea.": 1
+  },
+  "byRoute": {
+    "/": [
+      {
+        "tag": "button",
+        "cls": "select-control-trigger ",
+        "ch": [
+          "w: 102 → 69"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "date-picker-proxy",
+        "ch": [
+          "w: 22 → 20",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "button",
+        "cls": "date-picker-trigger ",
+        "ch": [
+          "w: 113 → 103",
+          "pad: 0px 7px → 0px"
+        ]
+      }
+    ],
+    "/projects": [
+      {
+        "tag": "div",
+        "cls": "toolbar-search",
+        "ch": [
+          "w: 878 → 955",
+          "fs: 11.5px → 13px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 835 → 912",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "button",
+        "cls": "select-control-trigger ",
+        "ch": [
+          "w: 166 → 91"
+        ]
+      }
+    ],
+    "/cost/budget": [
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 243 → 207",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 14 → 13",
+          "w: 14 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 14 → 13",
+          "w: 14 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 14 → 13",
+          "w: 14 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 14 → 13",
+          "w: 14 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(84, 88, 91)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(84, 88, 91)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 14 → 13",
+          "w: 14 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(84, 88, 91)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(84, 88, 91)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 14 → 13",
+          "w: 14 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 14 → 13",
+          "w: 14 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(84, 88, 91)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(84, 88, 91)",
+          "radius: 2px → 0px"
+        ]
+      }
+    ],
+    "/cost/costs": [
+      {
+        "tag": "div",
+        "cls": "toolbar-search",
+        "ch": [
+          "fs: 11.5px → 13px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "outline: 0px → 3px"
+        ]
+      }
+    ],
+    "/reports": [
+      {
+        "tag": "input",
+        "cls": "date-picker-proxy",
+        "ch": [
+          "w: 22 → 20",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "fw: 400 → 500",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "date-picker-proxy",
+        "ch": [
+          "w: 22 → 20",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "fw: 400 → 500",
+          "outline: 0px → 3px"
+        ]
+      }
+    ],
+    "/reports/designer": [
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "fw: 400 → 600",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "date-picker-proxy",
+        "ch": [
+          "w: 22 → 20",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "button",
+        "cls": "date-picker-trigger ",
+        "ch": [
+          "w: 140 → 118",
+          "pad: 0px 11px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "date-picker-proxy",
+        "ch": [
+          "w: 22 → 20",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "button",
+        "cls": "date-picker-trigger ",
+        "ch": [
+          "w: 140 → 118",
+          "pad: 0px 11px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "fw: 400 → 600",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "fw: 400 → 600",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "textarea",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "fw: 400 → 600",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 22 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 11.0454px → 0px",
+          "pad: 0px 10px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "w: 223 → 166",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "button",
+        "cls": "select-control-trigger ",
+        "ch": [
+          "w: 235 → 150"
+        ]
+      }
+    ],
+    "/parties": [
+      {
+        "tag": "div",
+        "cls": "toolbar-search",
+        "ch": [
+          "fs: 11.5px → 13px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "button",
+        "cls": "select-control-trigger ",
+        "ch": [
+          "w: 166 → 116"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      }
+    ],
+    "/audit-logs": [
+      {
+        "tag": "button",
+        "cls": "date-picker-trigger ",
+        "ch": [
+          "pad: 0px 11px → 0px"
+        ]
+      },
+      {
+        "tag": "button",
+        "cls": "date-picker-trigger ",
+        "ch": [
+          "pad: 0px 11px → 0px"
+        ]
+      }
+    ],
+    "/settings/appearance": [
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 34 → 32",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "radius: 3px → 11.0454px",
+          "fs: 12px → 12.5px",
+          "pad: 6px 9px → 0px 10px",
+          "minH: 34px → 32px",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 34 → 32",
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(59, 61, 63)",
+          "radius: 3px → 11.0454px",
+          "fs: 12px → 12.5px",
+          "pad: 6px 9px → 0px 10px",
+          "minH: 34px → 32px",
+          "outline: 0px → 3px"
+        ]
+      }
+    ],
+    "/system/policies": [
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "borderW: 1px → 0px",
+          "borderC: color(srgb 0.478431 0.376471 0.345098 / 0.0721569) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "h: 15 → 13",
+          "w: 15 → 13",
+          "bg: rgb(253, 243, 239) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgb(139, 44, 31) → rgb(95, 99, 103)",
+          "radius: 2px → 0px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      }
+    ],
+    "/system/dictionaries": [
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      }
+    ],
+    "/system/assistant": [
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderC: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "bg: rgb(255, 253, 247) → rgba(0, 0, 0, 0)",
+          "color: rgb(59, 61, 63) → rgb(95, 99, 103)",
+          "borderW: 1px → 0px",
+          "borderC: rgba(122, 96, 88, 0.28) → rgb(95, 99, 103)",
+          "outline: 0px → 3px"
+        ]
+      }
+    ],
+    "/account/security": [
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "outline: 0px → 3px"
+        ]
+      },
+      {
+        "tag": "input",
+        "cls": "",
+        "ch": [
+          "outline: 0px → 3px"
+        ]
+      }
+    ]
+  }
+}
