@@ -76,25 +76,23 @@ Absolutely、delve、deep-think、新暖纸 `new-warm-paper`、青夜·高对比
 > 青夜·高对比 midnight-contrast（供深色高对比场景参考）：bg #26343D / card #30414B / sidebar #202C34 /
 > text #F0F6FA / muted #D3E0E8 / accent #E6B1C4。
 
-墨衡落地 token（数值维持现状，对应关系与差异如实标注）：
+墨衡落地 token（数值维持现状）。复刻目标实为**青夜·高对比**（midnight-contrast）；
+落地表"青夜"列即其真值，已在 `hana.css` 注释中自证（`/* 青夜：Hana midnight-contrast */`），仅选择器沿用了 `data-theme="midnight"`。
 
-| 语义 | 暖纸 | 素白 | 青夜 |
+| 语义 | 暖纸 | 素白 | 青夜（= 青夜·高对比 midnight-contrast） |
 | --- | --- | --- | --- |
-| `--bg` | #F8F4ED | #FBFAF7 | #26343D |
-| `--bg-card` | #FCFAF5 | #FFFFFF | #30414B |
-| `--sidebar-bg` | #F4F0EA | #F3F1EC | #202C34 |
-| `--text` | #3B3D3F | #2A2A29 | #F0F6FA |
+| `--bg` | #F8F4ED ✅ | #FBFAF7 | #26343D ✅ |
+| `--bg-card` | #FCFAF5 ✅ | #FFFFFF | #30414B ✅ |
+| `--sidebar-bg` | #F4F0EA ✅ | #F3F1EC | #202C34 ✅ |
+| `--text` | #3B3D3F ✅ | #2A2A29 | #F0F6FA ✅ |
 | `--text-muted` | #5F6367 | #5F6367 | #B7C8D3 |
-| `--accent` | #466B80 | #466B80 | #E6B1C4 |
+| `--accent` | #466B80（刻意压深，见下） | #466B80 | #E6B1C4 ✅ |
 
-- 历史勘误链：旧版三列曾同时混指两套 Hana 主题——素白列（#FBFAF7 等）与青夜列（#26343D 等）均不是暖纸的同构延伸。
-  2026-10-21 首校误判"素白无对应主题"（只 grep 了 CSS 色值、未查主题注册表与 i18n），同日据设置页实机截图更正：
-  **素白 = `high-contrast` 主题，确实存在**；旧抄的那组值与其真值差一步（#FBFAF7→#FAF8F7、#FFFFFF→#FDFBFA、
-  #F3F1EC→#F3F1F0、#2A2A29→#1A1C1E、#5F6367→#4A4E52）。
-- 墨衡的"青夜"列整列实为 midnight-contrast（青夜·高对比）值，而 Hana 默认夜间主题是 midnight（#3B4A54 系，accent 藕粉）。
-  落地若意图对齐 Hana 夜间观感应改用 midnight；若刻意取深对比则保留，但名称改标"青夜·高对比"，不再占用"青夜"。
-- 素白列若要跟齐真值，注意 Hana 素白 accent 是钢蓝 #3A6B85 而非远山青；muted #5F6367 三列共用也是墨衡自制选择，
-  改跟齐则逐列替换并复跑对比度验收。
+- 暖纸列四行底色/墨色与青夜（midnight-contrast）列五行逐值对齐 Hana 真值 ✅（muted 与暖纸 accent 除外，见下）。
+- Hana `--text-muted` 实测：warm-paper `#6B6F73`，midnight-contrast `#D3E0E8`。表中 #5F6367 / #B7C8D3 为墨衡自制选择，
+  旧版记作"Hana 实测"不成立；跟齐与否同样归入下方素白条目的实现决策。
+- 素白列（#FBFAF7 等）与 Hana 真值 `high-contrast`（#FAF8F7 / #FDFBFA / #F3F1F0 / #1A1C1E / #4A4E52）差一步；
+  且素白 accent 是钢蓝 #3A6B85 而非远山青。跟齐则逐值替换并复跑对比度验收；不跟齐则改标为墨衡自制主题。
 - Hana 原始 accent 为 `#537D96`（✅ `warm-paper.css`，hover `#456A80`）；墨衡统一压深到 `#466B80`，让 10–12px 文字、链接和主按钮达到 WCAG AA（4.5:1），色相仍是远山青。
 - 语义色只用于状态：成功 `--green`、危险 `--danger`、提示 `--warning`。不要用装饰色表达状态。
 - 青夜主题的主按钮文字改用深墨 `--on-accent`，避免粉底白字对比不足。
