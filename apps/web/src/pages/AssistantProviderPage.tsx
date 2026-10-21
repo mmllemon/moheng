@@ -136,32 +136,33 @@ export default function AssistantProviderPage() {
         <div className="assistant-rail-group">API</div>
         <button type="button" className="assistant-rail-item is-active" aria-current="true">
           <span className="assistant-rail-mark"><Bot size={15} /></span>
-          <span className="assistant-rail-copy"><strong>{name || 'OpenAI Compatible'}</strong><small>{models.length ? models.length + ' 个模型' : 'OpenAI 兼容'}</small></span>
-          <span className={'assistant-rail-state ' + (enabled ? 'is-on' : '')} aria-label={enabled ? '已启用' : '未启用'} />
+          <span className="assistant-rail-copy"><strong>{name || 'OpenAI Compatible'}</strong><small>OpenAI 兼容</small></span>
+          <span className="assistant-rail-count">{visibleModels.length}</span>
         </button>
-        <p className="assistant-rail-note">当前版本只维护一个 OpenAI 兼容供应商；切换供应商会覆盖当前配置。</p>
       </aside>
 
       <div className="assistant-provider-detail">
         <header className="assistant-detail-head">
           <div><span className="eyebrow">PROVIDER / OPENAI COMPATIBLE</span><h2>{name || 'OpenAI Compatible'}</h2><p>{baseUrl || '尚未配置接口地址'}</p></div>
           <div className="assistant-detail-state">
-            <span className={'assistant-check-pill ' + (enabled ? 'is-ok' : 'is-wait')}>{enabled ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{enabled ? '已启用' : '未启用'}</span>
             <button type="button" role="switch" aria-checked={enabled} aria-label="启用成本助手" className={'ui-switch ' + (enabled ? 'is-on' : '')} onClick={() => setEnabled((value) => !value)}><i /></button>
           </div>
         </header>
 
         <div className="assistant-provider-form">
-          <label className="assistant-field"><span>供应商名称</span><input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} placeholder="例如：DeepSeek / 内部网关" aria-label="供应商名称" /></label>
           <div className="assistant-field"><span>API Key</span><div className="assistant-key-line"><KeyRound size={14} /><input type={showKey ? 'text' : 'password'} value={apiKey} onChange={(event) => setApiKey(event.target.value)} autoComplete="new-password" placeholder={config?.provider.apiKeyConfigured ? '已配置；留空保持当前密钥' : '输入供应商 API Key'} aria-label="API 密钥" /><button type="button" className="assistant-inline-button" onClick={() => setShowKey((value) => !value)}>{showKey ? <EyeOff size={13} /> : <Eye size={13} />}{showKey ? '隐藏' : '显示'}</button><button type="button" className="assistant-inline-button" onClick={() => void testConnection()} disabled={testing || !config?.provider.baseUrl || !config?.provider.apiKeyConfigured}>{testing ? '检测中…' : '检测'}</button></div></div>
           <label className="assistant-field"><span>Base URL</span><input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://api.openai.com/v1" spellCheck={false} aria-label="接口地址" /></label>
           <div className="assistant-field"><span>API 类型</span><SelectField value="openai" disabled aria-label="API 类型"><option value="openai">OpenAI Compatible</option></SelectField></div>
-          <div className="assistant-field"><span>对话模型</span><div className="assistant-model-line">{models.length ? <SelectField value={modelId} onChange={(event) => setModelId(event.target.value)} aria-label="选择供应商模型"><option value="">选择模型</option>{models.map((model) => <option key={model.id} value={model.id}>{model.id}{model.ownedBy ? ' · ' + model.ownedBy : ''}</option>)}{modelId && !models.some((model) => model.id === modelId) && <option value={modelId}>{modelId}（当前保存值）</option>}</SelectField> : <input value={modelId} onChange={(event) => setModelId(event.target.value)} placeholder="模型 ID" spellCheck={false} aria-label="模型 ID" />}<Button variant="ghost" size="sm" onClick={() => void fetchModels()} disabled={modelsLoading || !baseUrl.trim() || (!apiKey.trim() && !config?.provider.apiKeyConfigured)}><RefreshCw size={14} />{modelsLoading ? '读取中…' : '读取模型'}</Button></div></div>
         </div>
 
-        <div className="assistant-model-tabs" role="tablist" aria-label="模型类型"><button type="button" role="tab" aria-selected="true" className="is-active">对话模型</button><button type="button" role="tab" aria-selected="false" disabled title="当前版本仅支持对话模型">语音转录模型</button><span>{visibleModels.length ? '已添加 ' + visibleModels.length + ' 个' : '尚未添加'}</span></div>
+        <div className="assistant-model-tabs" role="tablist" aria-label="模型类型"><button type="button" role="tab" aria-selected="true" className="is-active">对话模型</button><button type="button" role="tab" aria-selected="false" disabled title="当前版本仅支持对话模型">语音转录模型</button></div>
+        <div className="assistant-added-label">已添加的模型 <b>{visibleModels.length}</b></div>
         <div className="assistant-model-list">
           {visibleModels.length ? visibleModels.map((model) => <button type="button" key={model.id} className={'assistant-model-item ' + (model.id === modelId ? 'is-selected' : '')} onClick={() => setModelId(model.id)}><span>{model.id}</span><small>{model.ownedBy || 'OpenAI Compatible'}</small>{model.id === modelId && <Check size={14} />}</button>) : <div className="assistant-model-empty">读取供应商模型后，可在这里选择用于成本助手的对话模型。</div>}
+        </div>
+        <div className="assistant-model-add">
+          <SelectField value="" onChange={(event) => setModelId(event.target.value)} aria-label="添加对话模型"><option value="">添加模型</option>{visibleModels.map((model) => <option key={model.id} value={model.id}>{model.id}{model.ownedBy ? ' · ' + model.ownedBy : ''}</option>)}{modelId && !visibleModels.some((model) => model.id === modelId) && <option value={modelId}>{modelId}（当前保存值）</option>}</SelectField>
+          <Button variant="ghost" size="sm" onClick={() => void fetchModels()} disabled={modelsLoading || !baseUrl.trim() || (!apiKey.trim() && !config?.provider.apiKeyConfigured)}><RefreshCw size={14} />{modelsLoading ? '读取中…' : '读取模型'}</Button>
         </div>
 
         <div className="assistant-detail-footer">
