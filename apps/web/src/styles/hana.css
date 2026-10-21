@@ -912,8 +912,76 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .button-ghost:hover { background: var(--overlay-light); color: var(--text); }
 .button-danger { background: transparent; border-color: color-mix(in srgb, var(--danger) 28%, transparent); color: var(--danger); }
 .button-danger:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); border-color: color-mix(in srgb, var(--danger) 42%, transparent); color: var(--danger); }
-.button-small { height: 28px; min-height: 28px; padding: 0 10px; font-size: 11.2px; border-radius: var(--radius-md); }
+.button-small { height: 26px; min-height: 26px; padding: 0 var(--space-8); font-size: 11.5px; border-radius: var(--radius-md); }
 .button-small svg { width: 13px; height: 13px; }
+
+/* -------------------------------------------------------------
+   按钮尺寸：全站只有两档
+   -------------------------------------------------------------
+   32px 主操作 / 26px 紧凑，比 1.23。
+   同一个类名在三个文件里被定义过：
+     legacy.css:152  .button-small { min-height: 28px; font-size: 10px }
+     v6.css:255      .button-small { height: 26px; font-size: 11px }
+     hana.css:915    .button-small { height: 28px; font-size: 11.2px }
+   谁赢取决于加载上下文，所以页头出现 “28px 预览 + 32px 新建” 的不齐。
+   用 html 前缀把两档钉死，同时用 min-height 挡住 legacy 的 34px。 */
+html .button {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-12);
+  font-size: 13px;
+}
+html .button-small {
+  height: 26px;
+  min-height: 26px;
+  padding: 0 var(--space-8);
+  font-size: 11.5px;
+}
+
+/* 页头与工具栏内的按钮一律同高：
+   同一行里出现 26px 与 32px 混排时，视觉上就是“没对齐”。 */
+html .page-actions .button,
+html .page-actions .button-small,
+html .table-heading-actions .button,
+html .ds-section-actions .button,
+html .settings-section-actions .button {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-12);
+  font-size: 13px;
+}
+html .page-actions .button svg,
+html .table-heading-actions .button svg,
+html .ds-section-actions .button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 表格行内操作（归档 / 重置密码 / 撤销）保持紧凑，它们不是页头同级操作 */
+html .row-actions .button,
+html .table-action.button {
+  height: 26px;
+  min-height: 26px;
+  font-size: 11.5px;
+}
+
+/* 台账工具栏（.ldg-tools）里的旧规则 .ldg-tools .button-secondary
+   自带 28px（特异度 20），压过 html .button-small（11），这里补齐。 */
+html .ldg-tools .button,
+html .ldg-tools .button.button-secondary,
+html .ldg-tools .button.button-small {
+  height: 26px;
+  min-height: 26px;
+  padding: 0 var(--space-8);
+  font-size: 11.5px;
+}
+
+/* 页面头部主操作在窄屏可以换行，但不能变形 */
+html .page-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
+}
 .icon-button {
   width: 32px;
   height: 32px;
