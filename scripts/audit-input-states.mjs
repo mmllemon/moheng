@@ -129,6 +129,75 @@ show('禁用控件没有任何视觉提示', stats.disabledNoVisualCue,
 show('只读控件没有任何视觉提示', stats.readonlyNoCue,
   (x) => `opacity=${x.opacity} bg=${x.bg} border=${x.border}`);
 
+// ---- 场景探针 ----
+// 全站扫不到 disabled / readonly 不代表没有：它们藏在数据与交互后面。
+// 已知两处需要用交互才能触达，这里逐个构造并断言。
+console.log('\n=== 场景探针 ===');
+
+async function probeScene(name, route, act, pick) {
+  await p.evaluate((r) => {
+    window.history.pushState(null, '', r);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, route);
+  await p.waitForTimeout(1150);
+  const ok = await p.evaluate(act);
+  if (!ok) { console.log(`  · ${name}：场景未就绪（跳过）`); return null; }
+  await p.waitForTimeout(950);
+  const r = await p.evaluate(pick);
+  if (!r) { console.log(`  · ${name}：控件未找到（跳过）`); return null; }
+  console.log(`  · ${name}`);
+  console.log(`      opacity=${r.opacity} cursor=${r.cursor} bg=${r.bg}`);
+  return r;
+}
+
+// 只读：变更审批弹窗里的送审金额，不得与可编辑输入同貌
+const ro = await probeScene(
+  '只读输入：变更审批弹窗 · 内部送审金额',
+  '/cost/changes',
+  () => {
+    const b = [...document.querySelectorAll('button')].find((e) => (e.textContent || '').trim() === '内部审批');
+    if (!b) return false;
+    b.click();
+    return true;
+  },
+  () => {
+    const el = document.querySelector('.dialog input[readonly]');
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    return { opacity: cs.opacity, cursor: cs.cursor, bg: cs.backgroundColor };
+  }
+);
+if (ro) {
+  // 只读不需要降低 opacity，但光标不能是 text，背景不能与卡片同色
+  const looksEditable = ro.cursor === 'text' && (ro.bg === 'rgb(255, 253, 247)' || ro.bg === 'rgb(252, 250, 245)');
+  if (looksEditable) { console.log('      ✗ 与可编辑输入同貌'); stats.readonlyNoCue.push({ route: '/cost/changes', ...ro }); }
+  else console.log('      ✓ 与可编辑输入有区别');
+}
+await p.keyboard.press('Escape');
+await p.waitForTimeout(400);
+
+// 禁用：主题页关闭纹理后，强度滑杆应被禁用且光标 not-allowed
+const dis = await probeScene(
+  '禁用输入：主题页 · 关闭纹理后的强度滑杆',
+  '/settings/appearance',
+  () => {
+    const b = [...document.querySelectorAll('button')].find((e) => (e.textContent || '').trim() === '关闭');
+    if (!b) return false;
+    b.click();
+    return true;
+  },
+  () => {
+    const el = document.querySelector('input[type=range][disabled]');
+    if (!el) return null;
+    const cs = getComputedStyle(el);
+    return { opacity: cs.opacity, cursor: cs.cursor, bg: cs.backgroundColor };
+  }
+);
+if (dis) {
+  if (dis.cursor !== 'not-allowed') { console.log('      ✗ 禁用态光标不是 not-allowed'); stats.disabledNoVisualCue.push({ route: '/settings/appearance', ...dis }); }
+  else console.log('      ✓ 光标 not-allowed');
+}
+
 // 退出码：有问题就非 0，便于 CI 与并行全量跑
 const problems = stats.disabledHoverChanged.length
   + stats.disabledNoVisualCue.length

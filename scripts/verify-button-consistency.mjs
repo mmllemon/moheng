@@ -56,15 +56,17 @@ for (const route of ROUTES) {
         }
       }
     }
-    // 检查全局是否只剩两档
+    // 检查全局是否只剩三档：
+    //   32px 主操作 / 26px 紧凑 / 24px 表格行内
+    // 20 / 22 曾经作为「行内操作更小」的豁免放行，现已统一到 24px，
+    // 留着豁免会让真实偏移静默通过，所以收掉。
     const offTier = [];
     for (const b of document.querySelectorAll('button.button, a.button')) {
       const cs = getComputedStyle(b);
       if (cs.display === 'none') continue;
       const h = Math.round(b.getBoundingClientRect().height);
       if (h < 8) continue;
-      // 行内操作允许更小
-      if (![...allowed, 20, 22, 24].includes(h)) {
+      if (![...allowed, 24].includes(h)) {
         offTier.push({ h, cls: (b.className || '').toString().slice(0, 44), text: (b.textContent || '').trim().slice(0, 16) });
       }
     }
@@ -84,5 +86,5 @@ for (const route of ROUTES) {
   }
 }
 
-console.log(`\n${problems ? '问题共 ' + problems + ' 处' : '全部通过：同容器同高，全站两档'}`);
+console.log(`\n${problems ? '问题共 ' + problems + ' 处' : '全部通过：同容器同高，全站三档（32 / 26 / 24）'}`);
 await browser.close();
