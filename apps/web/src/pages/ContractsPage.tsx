@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, CalendarDays, FileSignature, LockKeyhole, Save, ShieldCheck, X } from 'lucide-react';
+import { FileSignature, LockKeyhole, Save, ShieldCheck, X } from 'lucide-react';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectSummaryReportButton } from '../components/ReportLaunchButton';
 import { Button, dateInputToIso, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 
 type Contract = { id: string; projectId: string; contractNo: string; name: string; signedAt?: string | null; amount: number; effectiveAmount?: number; originalContractAmount?: number; counterpartyPartyId?: string | null; counterpartyParty?: { id: string; name: string; creditCode?: string | null } | null; taxIncluded: boolean; retentionRate: number; advanceDeductionRate: number; paymentTerms?: string | null; guaranteeEndAt?: string | null; notes?: string | null };
@@ -26,7 +26,6 @@ const asDate = (value?: string | null) => value ? new Date(value).toISOString().
 const blankValues: ContractValues = { counterpartyPartyId: null, counterpartyName: '', contractNo: '', name: '', signedAt: '', amount: 0, taxIncluded: true, retentionRate: 3, advanceDeductionRate: 0, paymentTerms: '', guaranteeEndAt: '', notes: '' };
 
 export default function ContractsPage() {
-  const navigate = useNavigate();
   const projectId = useUiStore((state) => state.selectedProjectId);
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
@@ -68,15 +67,17 @@ export default function ContractsPage() {
     <PageHeader eyebrow="OWNER CONTRACT / REGISTER" title="主合同管理" subtitle="默认查看合同台账摘要；新建或编辑合同资料时再打开表单。原始合同金额建档后锁定，价款变化通过已生效的业主变更记录反映。" actions={<><ProjectSummaryReportButton label="预览 / 导出项目综合报表" /><Button onClick={() => { setError(''); setEditorOpen(true); }}>{contract ? <><FileSignature size={15} />编辑合同资料</> : <><FileSignature size={15} />登记主合同</>}</Button></>} />
     {notice && <div className="success-notice"><ShieldCheck size={16} />{notice}</div>}{error && !editorOpen && <div className="form-alert">{error}</div>}
     {!contract ? <section className="panel owner-contract-empty"><div className="owner-contract-empty-mark"><FileSignature size={24} /></div><h2>当前项目尚未建立业主主合同</h2><p>先登记合同基准与付款条款，再维护进度款申报、变更签证和有效合同额。合同正式建档后，原始金额将锁定。</p><Button onClick={() => setEditorOpen(true)}><FileSignature size={15} />登记主合同</Button></section> : <>
-      <section className="panel owner-contract-hero"><div className="owner-contract-hero-copy"><span className="owner-contract-kicker">OWNER MAIN CONTRACT</span><div className="owner-contract-title-line"><h2>{contract.name}</h2><span className="contract-lock-badge"><LockKeyhole size={13} />基准已锁定</span></div><div className="owner-contract-meta"><span>{contract.contractNo}</span><span>签订日期 {formatDate(contract.signedAt)}</span><span>{projectQuery.data?.ownerPartyId ? <Link to={`/parties/${projectQuery.data.ownerPartyId}`}>{projectQuery.data?.ownerName ?? '建设单位档案'} ↗</Link> : projectQuery.data?.ownerName ?? '业主单位'}</span></div></div><div className="owner-contract-effective"><span>当前有效合同额</span><strong>{formatMoney(effectiveAmount, 0)}</strong><small>按原始合同基准与已生效外部确认变更汇总</small></div></section>
-
-      <section className="owner-contract-amount-grid">
-        <article className="owner-contract-amount-card"><span>原始合同金额</span><strong>{formatMoney(originalAmount, 0)}</strong><small>建档基准 · 普通编辑不可修改</small></article>
-        <article className="owner-contract-amount-card"><span>生效调整净额</span><strong className={adjustmentNet > 0 ? 'text-success' : adjustmentNet < 0 ? 'text-danger' : ''}>{adjustmentNet > 0 ? '+' : ''}{formatMoney(adjustmentNet, 0)}</strong><small>来自达到生效条件的外部确认变更</small></article>
-        <article className="owner-contract-amount-card"><span>价税口径</span><strong>{contract.taxIncluded ? '含税合同价' : '不含税合同价'}</strong><small>实际以正式合同条款为准</small></article>
+      <section className="panel owner-contract-hero">
+        <div className="owner-contract-hero-copy"><span className="owner-contract-kicker">OWNER MAIN CONTRACT</span><div className="owner-contract-title-line"><h2>{contract.name}</h2><span className="contract-lock-badge"><LockKeyhole size={13} />基准已锁定</span></div><div className="owner-contract-meta"><span>{contract.contractNo}</span><span>签订日期 {formatDate(contract.signedAt)}</span><span>{projectQuery.data?.ownerPartyId ? <Link to={`/parties/${projectQuery.data.ownerPartyId}`}>{projectQuery.data?.ownerName ?? '建设单位档案'} ↗</Link> : projectQuery.data?.ownerName ?? '业主单位'}</span></div></div>
+        <div className="owner-contract-effective"><span>当前有效合同额</span><strong>{formatMoney(effectiveAmount, 0)}</strong><small>原始基准与已生效外部确认变更的汇总</small></div>
+        <div className="owner-contract-figures">
+          <div><span>原始合同金额</span><strong>{formatMoney(originalAmount, 0)}</strong><small>建档基准 · 普通编辑不可修改</small></div>
+          <div><span>生效调整净额</span><strong className={adjustmentNet > 0 ? 'text-success' : adjustmentNet < 0 ? 'text-danger' : ''}>{adjustmentNet === 0 ? formatMoney(0, 0) : `${adjustmentNet > 0 ? '+' : ''}${formatMoney(adjustmentNet, 0)}`}</strong><small>来自达到生效条件的外部确认变更</small></div>
+          <div><span>价税口径</span><strong>{contract.taxIncluded ? '含税合同价' : '不含税合同价'}</strong><small>实际以正式合同条款为准</small></div>
+        </div>
       </section>
 
-      <section className="panel owner-contract-detail-panel"><div className="panel-heading"><div><h3>合同关键条款</h3><p>该区域用于查看，不将整张合同编辑表单常驻在页面中。</p></div><Button variant="secondary" onClick={() => setEditorOpen(true)}>编辑非金额资料</Button></div><div className="owner-contract-detail-grid">
+      <section className="panel owner-contract-detail-panel"><div className="panel-heading"><div><h3>合同关键条款</h3><p>只读展示合同基准、质保与付款约定；修改统一从顶部“编辑合同资料”进入。</p></div></div><div className="owner-contract-detail-grid">
         <div><span>质保金比例</span><strong>{(contract.retentionRate * 100).toFixed(2)}%</strong></div>
         <div><span>预付款回扣比例</span><strong>{(contract.advanceDeductionRate * 100).toFixed(2)}%</strong></div>
         <div><span>质保金到期日</span><strong>{formatDate(contract.guaranteeEndAt)}</strong></div>
@@ -84,11 +85,6 @@ export default function ContractsPage() {
         <div className="span-detail-wide"><span>合同备注</span><p>{contract.notes || '无备注'}</p></div>
       </div></section>
 
-      <section className="section-block owner-contract-shortcuts"><div className="section-heading"><div><h2>关联业务</h2><p>按业主合同链路进入计量、价款变更与项目成本控制。</p></div></div><div className="owner-contract-shortcut-grid">
-        <button onClick={() => navigate('/cost/progress-bills')}><span className="owner-shortcut-icon"><CalendarDays size={17} /></span><span><strong>进度款管理</strong><small>申报、审批与实际回款</small></span><ArrowRight size={15} /></button>
-        <button onClick={() => navigate('/cost/changes')}><span className="owner-shortcut-icon"><ShieldCheck size={17} /></span><span><strong>变更签证</strong><small>外部确认和有效合同额调整</small></span><ArrowRight size={15} /></button>
-        <button onClick={() => navigate('/cost/budget')}><span className="owner-shortcut-icon"><Save size={17} /></span><span><strong>预算与目标成本</strong><small>查看项目成本基准</small></span><ArrowRight size={15} /></button>
-      </div></section>
     </>}
 
     {editorOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isSubmitting) setEditorOpen(false); }}><div className="dialog dialog-wide owner-contract-dialog" role="dialog" aria-modal="true" aria-labelledby="main-contract-dialog-title"><div className="dialog-header"><div><span className="eyebrow">OWNER CONTRACT / DETAILS</span><h2 id="main-contract-dialog-title">{contract ? '编辑主合同资料' : '登记主合同'}</h2><p>合同基准金额在建档后锁定；调整通过变更签证，不直接覆盖原始金额。</p></div><button className="icon-button" aria-label="关闭" onClick={() => setEditorOpen(false)} disabled={isSubmitting}><X size={17} /></button></div>

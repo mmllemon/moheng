@@ -18,6 +18,7 @@ import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
 import PaperDialogMorph from './PaperDialogMorph';
 import UiPreferencesBar from './UiPreferencesBar';
+import AssistantModal from './assistant/AssistantModal';
 import { useAnimatedPresence } from './useAnimatedPresence';
 import { animatePaperIn, animatePaperOut, rememberPaperOrigin, takePaperOrigin } from '../lib/paper-morph';
 import { useDetachedPanelHeaders } from '../lib/use-detached-panel-headers';
@@ -33,7 +34,7 @@ const navigation: NavigationItem[] = [
   { to: '/projects/members', label: '项目成员与权限', icon: Users, group: '项目管理', end: true },
   { to: '/system', label: '系统管理', icon: SlidersHorizontal, group: '系统管理', end: false, adminOnly: true },
 ];
-const assistantNavigationItem: NavigationItem = { to: '/cost/assistant', label: '成本助手', icon: Sparkles, group: '工作台', end: true };
+
 const systemNavigation: NavigationItem[] = [
   { to: '/system', label: '概览', icon: LayoutDashboard, group: '系统管理', end: true, adminOnly: true },
   { to: '/system/accounts', label: '账号管理', icon: UserCog, group: '系统管理', end: true, adminOnly: true },
@@ -81,6 +82,7 @@ const costWorkspacePages = [
   { to: '/cost/analysis', label: '成本分析' },
 ];
 type QuickItem = { kind: 'page' | 'project'; id: string; title: string; sub: string; to: string };
+type CommandScope = 'all' | 'page' | 'project';
 type QuickActionCategory = 'all' | 'cost' | 'funds' | 'contract';
 const quickActionCategories: Array<{ key: QuickActionCategory; label: string }> = [
   { key: 'all', label: '全部' },
@@ -107,6 +109,7 @@ export default function Layout() {
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
   const [quickSearch, setQuickSearch] = useState('');
+  const [commandScope, setCommandScope] = useState<CommandScope>('all');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const commandPalettePresence = useAnimatedPresence(commandPaletteOpen, 210);
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
@@ -116,6 +119,7 @@ export default function Layout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [settingsSearch, setSettingsSearch] = useState('');
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [settingsNavOpen, setSettingsNavOpen] = useState(false);
   const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
   useDetachedPanelHeaders();
@@ -139,8 +143,12 @@ export default function Layout() {
     api.get<{ enabled: boolean }>('/assistant-poc/status').then((status) => { if (current) setAssistantEnabled(Boolean(status.enabled)); }).catch(() => { if (current) setAssistantEnabled(false); });
     return () => { current = false; };
   }, [user?.id]);
-  const navigationWithAssistant = assistantEnabled ? [...navigation, assistantNavigationItem] : navigation;
   useEffect(() => { setMobileNavOpen(false); setSettingsNavOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    if (location.pathname !== '/assistant' && location.pathname !== '/cost/assistant') return;
+    setAssistantOpen(true);
+    navigate(location.pathname === '/cost/assistant' ? '/cost' : '/', { replace: true });
+  }, [location.pathname, navigate]);
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth > 900) setMobileNavOpen(false);
@@ -186,25 +194,40 @@ export default function Layout() {
     return () => document.removeEventListener('keydown', closeTransientLayers);
   }, [quickActionsOpen, accountMenuOpen, mobileNavOpen]);
 
+  const commandPages = useMemo(() => [...navigation.filter((item) => !item.adminOnly || user?.role === 'ADMIN'), ...(user?.role === 'ADMIN' ? systemNavigation.filter((item) => item.to !== '/system') : []), ...costWorkspacePages.filter((page) => page.to !== '/cost')], [user?.role]);
   const quickItems = useMemo<QuickItem[]>(() => {
     const text = quickSearch.trim().toLocaleLowerCase();
-    const pages = [...navigationWithAssistant.filter((item) => !item.adminOnly || user?.role === 'ADMIN'), ...(user?.role === 'ADMIN' ? systemNavigation.filter((item) => item.to !== '/system') : []), ...costWorkspacePages.filter((page) => page.to !== '/cost')]
+    const pages = commandPages
       .filter((item) => (!text || item.label.toLocaleLowerCase().includes(text)))
       .map((item) => ({ kind: 'page' as const, id: item.to, title: item.label, sub: '页面直达', to: item.to }));
     const projectItems = projects
       .filter((project) => !text || `${project.name} ${project.code}`.toLocaleLowerCase().includes(text))
       .slice(0, 5)
       .map((project) => ({ kind: 'project' as const, id: project.id, title: project.name, sub: project.code, to: '/cost' }));
-    if (!text) return [...pages.slice(0, 5), ...projectItems.slice(0, 3)];
-    return [...pages, ...projectItems].slice(0, 10);
-  }, [projects, quickSearch, user?.role]);
+    const visiblePages = commandScope === 'project' ? [] : pages;
+    const visibleProjects = commandScope === 'page' ? [] : projectItems;
+    if (!text) return [...visiblePages.slice(0, 5), ...visibleProjects.slice(0, 3)];
+    return [...visiblePages, ...visibleProjects].slice(0, 10);
+  }, [commandPages, commandScope, projects, quickSearch]);
 
-  useEffect(() => { setActiveCommandIndex(0); }, [quickSearch]);
+  const commandCounts = useMemo(() => {
+    const text = quickSearch.trim().toLocaleLowerCase();
+    const pageCount = commandPages.filter((item) => !text || item.label.toLocaleLowerCase().includes(text)).length;
+    const projectCount = projects.filter((project) => !text || `${project.name} ${project.code}`.toLocaleLowerCase().includes(text)).length;
+    return { all: pageCount + projectCount, page: pageCount, project: projectCount };
+  }, [commandPages, projects, quickSearch]);
+
+  useEffect(() => { setActiveCommandIndex(0); }, [quickSearch, commandScope]);
+  useEffect(() => {
+    if (!commandPaletteOpen) return;
+    document.getElementById(`command-result-${activeCommandIndex}`)?.scrollIntoView({ block: 'nearest' });
+  }, [activeCommandIndex, commandPaletteOpen]);
   useEffect(() => { if (commandPaletteOpen) commandInputRef.current?.focus(); }, [commandPaletteOpen]);
 
   function openCommandPalette() {
     setQuickActionsOpen(false);
     setQuickSearch('');
+    setCommandScope('all');
     setActiveCommandIndex(0);
     setCommandPaletteOpen(true);
   }
@@ -340,7 +363,7 @@ export default function Layout() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isSettingsArea, settingsNavOpen]);
-  const costPageLabel = location.pathname === '/cost/assistant' ? '成本助手' : location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
+  const costPageLabel = location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (location.pathname === '/settings/appearance' ? '界面' : isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
   const availableSettingsGroups = user?.role === 'ADMIN' ? systemGroups : [{ label: '个人', items: [appearanceSettingsItem] }];
   const settingsSearchGroups = user?.role === 'ADMIN' ? [...availableSettingsGroups, { label: '个人', items: [appearanceSettingsItem] }] : availableSettingsGroups;
@@ -394,7 +417,7 @@ export default function Layout() {
         <nav aria-label="业务导航">
           {primaryGroups.map((group) => <div className="sidebar-nav-group" key={group}>
             <div className="sidebar-group-title"><span>{group}</span></div>
-            {navigationWithAssistant.filter((item) => item.group === group && (!item.adminOnly || user?.role === 'ADMIN')).map((item) => {
+            {navigation.filter((item) => item.group === group && (!item.adminOnly || user?.role === 'ADMIN')).map((item) => {
               const Icon = item.icon;
               return <NavLink key={item.to} to={item.to} end={item.end ?? false} title={item.label} aria-label={item.label} className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}>
                 <Icon size={16} strokeWidth={1.65} /><span>{item.label}</span>
@@ -438,6 +461,7 @@ export default function Layout() {
           <div className="titlebar-cluster">
             <button type="button" className="titlebar-icon" onClick={openCommandPalette} data-tooltip="搜索与命令 ⌘K" aria-label="打开全局搜索"><Search size={15} /></button>
             <button type="button" className={`titlebar-icon ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} data-tooltip="待办与预警" aria-label="打开待办与预警"><BellRing size={15} /></button>
+            {assistantEnabled && <button type="button" className={`titlebar-icon ${assistantOpen ? 'is-active' : ''}`} data-tooltip="成本助手" aria-label="打开成本助手" aria-expanded={assistantOpen} onClick={() => { setCommandPaletteOpen(false); setQuickActionsOpen(false); setAccountMenuOpen(false); setAssistantOpen(true); }}><Sparkles size={15} /></button>}
             <div className="quick-actions-wrap">
               <button type="button" className={`titlebar-icon ${quickActionsOpen ? 'is-active' : ''}`} data-tooltip="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} aria-controls="quick-actions-panel" onClick={() => { setCommandPaletteOpen(false); setAccountMenuOpen(false); setQuickActionCategory('all'); setQuickActionsOpen((open) => !open); }}><Zap size={15} /></button>
               {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
@@ -535,15 +559,26 @@ export default function Layout() {
     {commandPalettePresence.mounted && <div className={`command-palette-layer ${commandPalettePresence.visible ? 'is-visible' : 'is-closing'}`} aria-hidden={!commandPaletteOpen}>
       <button type="button" className="command-palette-backdrop" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)} />
       <section className="command-palette" role="dialog" aria-modal="true" aria-labelledby="command-palette-title">
-        <div className="command-palette-search"><Search size={18} /><input ref={commandInputRef} value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="搜索项目名称、编号或业务模块…" aria-label="搜索项目或业务页面" /><kbd>ESC</kbd><button type="button" className="command-close" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)}><X size={16} /></button></div>
+        <div className="command-palette-search">
+          <Search size={17} aria-hidden="true" />
+          <input ref={commandInputRef} value={quickSearch} onChange={(event) => setQuickSearch(event.target.value)} placeholder="搜索项目名称、编号或业务模块…" aria-label="搜索项目或业务页面" role="combobox" aria-expanded={quickItems.length > 0} aria-controls={quickItems.length ? 'command-results' : undefined} aria-autocomplete="list" aria-activedescendant={quickItems[activeCommandIndex] ? `command-result-${activeCommandIndex}` : undefined} />
+          <kbd>ESC</kbd>
+          <button type="button" className="command-close" aria-label="关闭命令面板" onClick={() => setCommandPaletteOpen(false)}><X size={16} /></button>
+        </div>
+        <div className="command-palette-context">
+          <span id="command-palette-title" className="command-scope-title"><Command size={12} aria-hidden="true" />全局搜索</span>
+          <div className="command-scope-tabs" role="group" aria-label="搜索范围">
+            {(['all', 'page', 'project'] as const).map((scope) => <button key={scope} type="button" aria-pressed={commandScope === scope} className={commandScope === scope ? 'active' : ''} onClick={() => setCommandScope(scope)}>{scope === 'all' ? '全部' : scope === 'page' ? '页面' : '项目'}<small>{commandCounts[scope]}</small></button>)}
+          </div>
+          <span className="command-result-count">{quickItems.length} 项</span>
+        </div>
         <div className="command-palette-body">
-          <div className="command-palette-heading"><div><span className="command-kicker"><Command size={12} /> MOHENG COMMAND</span><h2 id="command-palette-title">快速访问</h2></div><span className="command-result-count">{quickItems.length} 项</span></div>
-          {quickItems.length ? <div className="command-results" role="listbox" aria-label="搜索结果">
+          {quickItems.length ? <div id="command-results" className="command-results" role="listbox" aria-label="搜索结果">
             {quickItems.map((item, index) => {
               const firstOfKind = index === 0 || quickItems[index - 1].kind !== item.kind;
               return <div key={`${item.kind}-${item.id}`}>
                 {firstOfKind && <div className="command-section-label">{item.kind === 'project' ? '项目直达' : '业务页面'}</div>}
-                <button type="button" role="option" aria-selected={activeCommandIndex === index} className={`command-result ${activeCommandIndex === index ? 'active' : ''}`} onMouseEnter={() => setActiveCommandIndex(index)} onClick={() => executeQuickItem(item)}>
+                <button id={`command-result-${index}`} type="button" role="option" aria-selected={activeCommandIndex === index} className={`command-result ${activeCommandIndex === index ? 'active' : ''}`} onMouseEnter={() => setActiveCommandIndex(index)} onClick={() => executeQuickItem(item)}>
                   <span className="command-result-icon">{item.kind === 'project' ? <FolderKanban size={16} /> : <SlidersHorizontal size={16} />}</span>
                   <span className="command-result-copy"><strong>{item.title}</strong><small>{item.sub}</small></span>
                   <span className="command-result-action">{item.kind === 'project' ? <ArrowUpRight size={15} /> : <CornerDownLeft size={14} />}</span>
@@ -555,5 +590,6 @@ export default function Layout() {
         <footer className="command-palette-footer"><span><Keyboard size={13} />用键盘操作</span><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>↵</kbd> 打开</span><span><kbd>Esc</kbd> 关闭</span></footer>
       </section>
     </div>}
+    <AssistantModal open={assistantOpen} onClose={() => setAssistantOpen(false)} />
   </div>;
 }

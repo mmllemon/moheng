@@ -16,7 +16,7 @@
 - 助手消息提交失败后提供重试入口并复用原 `requestId`，以便网络响应丢失时重放同一任务而不是重复创建运行；运行终态失败时可用新 `requestId` 重新提交原问题，前端连接中断而服务端任务仍活动时可重连同一运行。相应静态/运行态契约已纳入 Assistant runtime 与 Prisma 7 migration 工作流并通过对应 PR 头提交的 CI；目标浏览器中的真实交互仍需继续验收。
 - 持久化后台任务处理与陈旧 run 收敛。
 - 长时间运行的助手任务必须进入 PostgreSQL 持久化 `BackgroundJob` 队列，由后台 worker 处理；不得把模型执行放在 HTTP 请求生命周期内。助手 `AssistantRun` 状态与队列任务状态分别记录，并通过幂等终态转换、取消检查和陈旧任务收敛保持一致。
-- `/cost/assistant` 第一版工作台，包含会话列表、消息流、工具状态、来源摘要与局限说明。
+- 成本助手已从工作台页面改为**全局弹窗**：标题栏快捷操作旁提供入口，弹窗内包含会话列表、消息流、悬浮输入卡、工具状态、来源摘要与局限说明；成本工作台不再保留助手 tab，旧 `/cost/assistant` / `/assistant` 链接只作为打开弹窗的兼容入口。
 - 项目级用量摘要端点按当前认证用户、授权项目及最近 30 天统计已结束/活动运行；只有 token 字段完整且总量一致的 `COMPLETE` 记录参与输入/输出/总量累计，`PARTIAL` / `UNAVAILABLE` 单独计数且不估算费用。
 - 三个只读业务工具：`project_operating_overview`、`cost_variance`、`change_evidence_completeness`。
 - `project_operating_overview` 包含分供付款/退款合计和最近流水样本，且与应付、实际成本分开；当流水扫描超过 10,000 条时，付款/退款合计返回不可用并说明限制。

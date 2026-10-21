@@ -12,7 +12,7 @@ function check(label, condition) {
 }
 
 const hana = await read('apps/web/src/styles/hana.css');
-const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap, systemTabs, securityPage, policiesPage, governancePage, parametersPage, accountsPage, assistantPage, auditPage, dictionariesPage, operationsPage] = await Promise.all([
+const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap, systemTabs, securityPage, policiesPage, governancePage, parametersPage, accountsPage, assistantPage, auditPage, dictionariesPage, operationsPage, notificationsPage] = await Promise.all([
   read('apps/web/src/styles/v6.css'),
   read('apps/web/src/styles/legacy.css'),
   read('apps/web/src/main.tsx'),
@@ -23,7 +23,7 @@ const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, das
   read('apps/web/src/components/CostWorkspaceLayout.tsx'),
   read('apps/web/src/pages/DashboardPage.tsx'),
   read('apps/web/src/pages/ProjectsPage.tsx'),
-  read('apps/web/src/pages/CostAssistantPage.tsx'),
+  read('apps/web/src/components/assistant/AssistantWorkspace.tsx'),
   read('apps/web/src/pages/ReportCenterPage.tsx'),
   read('apps/web/src/App.tsx'),
   read('apps/web/src/pages/BudgetPage.tsx'),
@@ -41,6 +41,7 @@ const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, das
   read('apps/web/src/pages/AuditLogsPage.tsx'),
   read('apps/web/src/pages/SystemDictionariesPage.tsx'),
   read('apps/web/src/pages/SystemOperationsPage.tsx'),
+  read('apps/web/src/pages/NotificationsPage.tsx'),
 ]);
 const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
@@ -94,8 +95,9 @@ check('dashboard is restructured as a V6 ledger page',
   dashboard.includes('v6-hero') && dashboard.includes('v6-split') && dashboard.includes('v6-log'));
 check('project archive uses the ledger + dossier workbench',
   projects.includes('projects-kpi-strip') && projects.includes('projects-ledger-layout') && projects.includes('projects-dossier'));
-check('hidden assistant route has a V6 header and paper empty state',
-  appSource.includes('assistant') && assistant.includes('<h1>成本助手</h1>') && assistant.includes('assistant-unavailable'));
+check('cost assistant is a global modal workspace',
+  layout.includes('AssistantModal') && layout.includes('assistantOpen') && appSource.includes('path="assistant"')
+  && assistant.includes('assistant-workbench') && !appSource.includes("import('./pages/CostAssistantPage')"));
 check('report center keeps the compact ledger catalog and export flow',
   center.includes('report-report-list') && center.includes('report-report-option') && center.includes('previewStandardReport'));
 
@@ -171,6 +173,16 @@ check('operations backup history is a list, not a table with a scrollbar',
   operationsPage.includes('system-ops-run-list') && operationsPage.includes('system-ops-empty')
   && !operationsPage.includes('system-expansion-table') && !operationsPage.includes('table-scroll')
   && hana.includes('.system-ops-run {') && hana.includes('.system-ops-summary {'));
+check('interaction states and card inset use shared tokens',
+  hana.includes('--card-inset: var(--space-16)') && hana.includes('--state-hover-bg:') && hana.includes('--state-selected-bg:') && hana.includes('--state-focus-ring:'));
+check('report catalog has a single inset divider per row',
+  hana.includes('.report-report-option {') && hana.includes('border-bottom: 0;') && hana.includes('.report-report-option + .report-report-option::before'));
+check('notices use inset row dividers and count filters',
+  hana.includes('.notice-item + .notice-item::before') && notificationsPage.includes('filterCounts') && hana.includes('.notice-filter-group button small'));
+check('global command palette has scoped grouped results',
+  layout.includes('commandScope') && layout.includes('command-scope-tabs') && layout.includes('aria-activedescendant') && hana.includes('.command-palette-context'));
+check('accounts table becomes labeled cards at narrow widths',
+  accountsPage.includes('user-account-table') && accountsPage.includes('data-label="账号"') && hana.includes('.user-account-table tbody td::before'));
 check('interaction radii use the control / action / compact scale',
   hana.includes('--radius-action: calc(5px * var(--corner-radius-scale))') && hana.includes('--radius-compact: calc(4px * var(--corner-radius-scale))')
   && hana.includes('.button-primary,') && hana.includes('.settings-nav .settings-search input'));

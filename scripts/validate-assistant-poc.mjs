@@ -21,7 +21,7 @@ const [service, routes, server, registry, piAgent, langGraphAgent, pgSmoke, pgPr
   read('apps/api/src/lib/assistant-config.ts'),
   read('apps/api/src/lib/assistant-agent-run-job.ts'),
   read('apps/web/src/assistant-api.ts'),
-  read('apps/web/src/pages/CostAssistantPage.tsx'),
+  read('apps/web/src/components/assistant/AssistantWorkspace.tsx'),
   read('apps/api/src/lib/assistant-context-budget.ts'),
   read('apps/api/src/lib/assistant-context-budget.test.ts'),
   read('apps/api/src/assistant/runtime/langgraph-adapter.test.ts'),

@@ -5,18 +5,19 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFile(join(root, path), 'utf8');
-const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, routes, serverRoutes, toolAdapter, css, changelog, readme, designDoc, listRoutes, assistantConfig] = await Promise.all([
+const [rootPackage, apiPackage, webPackage, thread, page, apiClient, workspace, routes, layout, serverRoutes, toolAdapter, css, changelog, readme, designDoc, listRoutes, assistantConfig] = await Promise.all([
   read('package.json').then(JSON.parse),
   read('apps/api/package.json').then(JSON.parse),
   read('apps/web/package.json').then(JSON.parse),
   read('apps/web/src/components/assistant/AssistantThread.tsx'),
-  read('apps/web/src/pages/CostAssistantPage.tsx'),
+  read('apps/web/src/components/assistant/AssistantWorkspace.tsx'),
   read('apps/web/src/assistant-api.ts'),
   read('apps/web/src/components/CostWorkspaceLayout.tsx'),
   read('apps/web/src/App.tsx'),
+  read('apps/web/src/components/Layout.tsx'),
   read('apps/api/src/routes/assistant-poc.ts'),
   read('apps/api/src/assistant/runtime/langgraph-adapter.ts'),
-  read('apps/web/src/styles.css'),
+  read('apps/web/src/styles/legacy.css'),
   read('CHANGELOG.md'),
   read('README.md'),
   read('docs/AI助手实施与准入.md'),
@@ -60,10 +61,10 @@ check(page.includes("includeArchived ? '隐藏已归档' : '同时显示已归�
 check(page.includes('getAssistantStatus') && page.includes('if (!featureEnabled)'), 'direct route must fail closed when assistant is disabled');
 check(page.includes("conversation.runs[0]") && page.includes('watchRun(conversation.id, latestRun.id, conversation.projectId)'), 'reopening a completed conversation must replay the latest run events for source metadata');
 check(page.includes('source.fields.join') && page.includes('tool.limitations'), 'source/limitation panel must use server-returned event metadata');
-check(workspace.includes("api.get<{ enabled: boolean }>('/assistant-poc/status')") && workspace.includes('{assistantEnabled &&'), 'assistant navigation must stay hidden unless enabled');
-check(routes.includes("const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'))") && routes.includes('path="assistant"'), 'assistant page must be lazy-loaded under /cost/assistant');
+check(layout.includes('{assistantEnabled && <button') && layout.includes('AssistantModal') && !workspace.includes('cost-workspace-nav-assistant'), 'assistant must be a global modal button hidden unless enabled, not a workspace tab');
+check(routes.includes('path="assistant"') && routes.includes('path="cost/assistant"') && !routes.includes('CostAssistantPage'), 'legacy assistant routes must bridge to the global modal');
 check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('preHandler: [authRequired]'), 'status endpoint must require an authenticated user');
-check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('getAssistantRuntimeConfigurationStatus') && assistantConfig.includes('configurationReady: providerConfigured && modelConfigured && checkpointConfigured && endpointValid') && assistantConfig.includes('endpointValid') && assistantConfig.includes('providerConfigured') && assistantConfig.includes('modelConfigured') && assistantConfig.includes('checkpointConfigured') && apiClient.includes('endpointValid: boolean') && page.includes('status.configuration.endpointValid === false') && page.includes('模型兼容 API 地址格式无效'), 'assistant readiness must validate the optional endpoint while exposing only safe configuration booleans');
+check(serverRoutes.includes("app.get('/status'") && serverRoutes.includes('getAssistantRuntimeStatus') && assistantConfig.includes('configurationReady: providerConfigured && modelConfigured && checkpointConfigured && endpointValid') && assistantConfig.includes('endpointValid') && assistantConfig.includes('providerConfigured') && assistantConfig.includes('modelConfigured') && assistantConfig.includes('checkpointConfigured') && apiClient.includes('endpointValid: boolean') && page.includes('status.configuration.endpointValid === false') && page.includes('模型兼容 API 地址格式无效'), 'assistant readiness must validate the optional endpoint while exposing only safe configuration booleans');
 check(page.includes('成本助手运行环境未就绪') && page.includes('configurationIssues') && page.includes('模型服务凭据尚未配置'), 'assistant UI must explain missing runtime configuration before accepting questions');
 check(!serverRoutes.includes("app.get('/status', { preHandler: [featureGate, authRequired]"), 'disabled state probe must work without exposing gated tools');
 check(toolAdapter.includes('sources: result.sources.map') && toolAdapter.includes('limitations: result.limitations'), 'backend tool event must persist compact structured source metadata');

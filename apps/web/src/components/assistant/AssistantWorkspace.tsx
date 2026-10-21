@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Archive, Check, CircleAlert, Clock3, FileSearch, MessageSquare, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Wrench, X } from 'lucide-react';
-import { api, ApiError } from '../api';
-import { useUiStore } from '../auth-store';
-import type { Project } from '../types';
-import { AssistantThread } from '../components/assistant/AssistantThread';
+import { api, ApiError } from '../../api';
+import { useUiStore } from '../../auth-store';
+import type { Project } from '../../types';
+import { AssistantThread } from './AssistantThread';
 import {
   archiveAssistantConversation,
   createAssistantConversation,
@@ -16,7 +16,7 @@ import {
   type AssistantConversationSummary,
   type AssistantRunEvent,
   type AssistantSource,
-} from '../assistant-api';
+} from '../../assistant-api';
 
 type WatchEntry = { conversationId: string; controller: AbortController; promise: Promise<void> };
 type ToolTrace = { toolId: string; status: 'RUNNING' | 'COMPLETED' | 'FAILED'; sourceCount?: number; durationMs?: number; generatedAt?: string; sources?: AssistantSource[]; limitations?: string[]; code?: string };
@@ -30,7 +30,7 @@ const ENTITY_LABELS: Record<string, string> = {
   Project: '项目档案', Change: '变更签证', BudgetItem: '目标成本明细', CostEntry: '实际成本台账', ProgressBill: '业主进度款', DownstreamContractPayment: '分供付款/退款流水', DownstreamContract: '分供合同',
 };
 
-export default function CostAssistantPage() {
+export default function AssistantWorkspace() {
   const selectedProjectId = useUiStore((state) => state.selectedProjectId);
   const [featureEnabled, setFeatureEnabled] = useState<boolean | null>(null);
   const [configurationReady, setConfigurationReady] = useState<boolean | null>(null);
@@ -50,6 +50,7 @@ export default function CostAssistantPage() {
   const [runErrorCode, setRunErrorCode] = useState<string | null>(null);
   const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [usageSummary, setUsageSummary] = useState<Awaited<ReturnType<typeof getAssistantUsageSummary>> | null>(null);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [usageSummaryError, setUsageSummaryError] = useState(false);
   const [loadingUsageSummary, setLoadingUsageSummary] = useState(false);
   const watchers = useRef(new Map<string, WatchEntry>());
@@ -273,19 +274,19 @@ export default function CostAssistantPage() {
     watchers.current.clear();
   }, []);
 
-  if (!selectedProjectId) return <div className="page-wrap"><div className="assistant-unavailable"><ShieldCheck size={26} /><h2>请先选择项目</h2><p>助手只能在已授权的项目上下文中读取成本台账。</p></div></div>;
-  if (featureEnabled === null) return <div className="page-wrap"><div className="assistant-unavailable"><RefreshCw size={22} className="assistant-spin" /><p>正在检查成本助手是否已启用……</p></div></div>;
-  if (!featureEnabled) return <div className="page-wrap assistant-page"><header className="assistant-page-header"><div><h1>成本助手</h1><p>围绕当前项目查询已授权台账、解释差异并整理数据依据。当前为只读试点，默认关闭。</p></div></header><div className="assistant-unavailable"><ShieldCheck size={28} /><h2>成本助手暂未启用</h2><p>本功能仍处于默认关闭的只读试点阶段。启用需要管理员完成模型、数据库检查点与权限验证配置。</p></div></div>;
-  if (configurationReady === null) return <div className="page-wrap"><div className="assistant-unavailable"><RefreshCw size={22} className="assistant-spin" /><p>正在检查模型与检查点配置……</p></div></div>;
-  if (!configurationReady) return <div className="page-wrap assistant-page"><header className="assistant-page-header"><div><h1>成本助手</h1><p>围绕当前项目查询已授权台账、解释差异并整理数据依据。当前为只读试点。</p></div></header><div className="assistant-unavailable assistant-configuration-unavailable"><ShieldCheck size={28} /><h2>成本助手运行环境未就绪</h2><p>功能开关已开启，但运行时配置不完整。系统只检查配置是否存在，不会显示或记录密钥内容。</p><ul aria-label="缺少的配置">{configurationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul><p>请由系统维护人员在服务端环境中补齐配置并重启/重新加载服务，再刷新此页面。</p></div></div>;
+  if (!selectedProjectId) return <div className="assistant-workspace-state"><div className="assistant-unavailable"><ShieldCheck size={26} /><h2>请先选择项目</h2><p>助手只能在已授权的项目上下文中读取成本台账。</p></div></div>;
+  if (featureEnabled === null) return <div className="assistant-workspace-state"><div className="assistant-unavailable"><RefreshCw size={22} className="assistant-spin" /><p>正在检查成本助手是否已启用……</p></div></div>;
+  if (!featureEnabled) return <div className="assistant-workspace"><header className="assistant-page-header"><div><h1>成本助手</h1><p>围绕当前项目查询已授权台账、解释差异并整理数据依据。当前为只读试点，默认关闭。</p></div></header><div className="assistant-unavailable"><ShieldCheck size={28} /><h2>成本助手暂未启用</h2><p>本功能仍处于默认关闭的只读试点阶段。启用需要管理员完成模型、数据库检查点与权限验证配置。</p></div></div>;
+  if (configurationReady === null) return <div className="assistant-workspace-state"><div className="assistant-unavailable"><RefreshCw size={22} className="assistant-spin" /><p>正在检查模型与检查点配置……</p></div></div>;
+  if (!configurationReady) return <div className="assistant-workspace"><header className="assistant-page-header"><div><h1>成本助手</h1><p>围绕当前项目查询已授权台账、解释差异并整理数据依据。当前为只读试点。</p></div></header><div className="assistant-unavailable assistant-configuration-unavailable"><ShieldCheck size={28} /><h2>成本助手运行环境未就绪</h2><p>功能开关已开启，但运行时配置不完整。系统只检查配置是否存在，不会显示或记录密钥内容。</p><ul aria-label="缺少的配置">{configurationIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul><p>请由系统维护人员在服务端环境中补齐配置并重启/重新加载服务，再刷新此页面。</p></div></div>;
 
-  return <div className="page-wrap assistant-page">
+  return <div className="assistant-workspace">
     <header className="assistant-page-header">
       <div><span className="eyebrow">PROJECT COST INTELLIGENCE</span><h1>成本助手</h1><p>围绕当前项目查询已授权台账、解释差异并整理数据依据。</p></div>
       <div className="assistant-project-chip"><span className="assistant-project-dot" /><span>{selectedProject?.name ?? '当前项目'}</span><small>{selectedProject?.code ?? selectedProjectId}</small><span className="assistant-readonly-badge"><ShieldCheck size={12} />只读模式</span></div>
     </header>
     {pageError && <div className="assistant-page-error" role="alert"><CircleAlert size={16} />{pageError}<button type="button" onClick={() => setPageError('')} aria-label="关闭提示"><X size={15} /></button></div>}
-    <section className="assistant-workbench" aria-label="成本助手工作台">
+    <section className={`assistant-workbench ${evidenceOpen ? 'show-evidence' : ''}`} aria-label="成本助手工作台">
       <aside className="assistant-conversation-rail">
         <div className="assistant-rail-top"><div><span className="assistant-section-kicker">WORKSPACE</span><h2>分析记录</h2></div><button className="assistant-icon-action" type="button" onClick={() => void handleCreateConversation()} aria-label="新建分析" title="新建分析"><Plus size={17} /></button></div>
         <label className="assistant-search"><Search size={14} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索当前项目会话" aria-label="搜索会话" /></label>
@@ -308,7 +309,7 @@ export default function CostAssistantPage() {
         {!selectedConversationId && !loadingDetail ? <div className="assistant-no-conversation"><div className="assistant-no-conversation-icon"><Sparkles size={22} /></div><h2>开始一项项目分析</h2><p>从左侧创建会话，或选择已有分析记录继续。</p><button type="button" className="assistant-primary-button" onClick={() => void handleCreateConversation()}><Plus size={15} />新建成本分析</button></div>
           : loadingDetail || !projectDetail ? <div className="assistant-main-loading"><RefreshCw size={19} className="assistant-spin" />正在加载会话与历史消息……</div>
           : <>
-            <div className="assistant-thread-heading"><div><span className="assistant-thread-live-dot" /><div><h2>{projectDetail.title}</h2><p>{projectDetail.status === 'ARCHIVED' ? '已归档 · 只读历史' : '会话数据范围：当前项目'}</p></div></div><div className="assistant-thread-meta"><span>{projectDetail.messages.length} 条消息</span>{projectDetail.status === 'ARCHIVED' && <span className="assistant-archived-tag">已归档</span>}</div></div>
+            <div className="assistant-thread-heading"><div><span className="assistant-thread-live-dot" /><div><h2>{projectDetail.title}</h2><p>{projectDetail.status === 'ARCHIVED' ? '已归档 · 只读历史' : '会话数据范围：当前项目'}</p></div></div><div className="assistant-thread-meta"><span>{projectDetail.messages.length} 条消息</span>{projectDetail.status === 'ARCHIVED' && <span className="assistant-archived-tag">已归档</span>}<button type="button" className="assistant-evidence-toggle" aria-expanded={evidenceOpen} onClick={() => setEvidenceOpen((open) => !open)}><FileSearch size={13} />依据</button></div></div>
             <AssistantThread
               key={projectDetail.id}
               conversation={projectDetail}
@@ -320,7 +321,7 @@ export default function CostAssistantPage() {
       </main>
 
       <aside className="assistant-evidence-rail">
-        <div className="assistant-evidence-header"><div><span className="assistant-section-kicker">TRACE & EVIDENCE</span><h2>分析依据</h2></div><FileSearch size={17} /></div>
+        <div className="assistant-evidence-header"><div><span className="assistant-section-kicker">TRACE & EVIDENCE</span><h2>分析依据</h2></div><div className="assistant-evidence-header-actions"><FileSearch size={17} /><button type="button" className="assistant-evidence-close" aria-label="关闭分析依据" onClick={() => setEvidenceOpen(false)}><X size={15} /></button></div></div>
         <div className="assistant-scope-card"><span className="assistant-evidence-label">授权数据范围</span><strong>{selectedProject?.name ?? '当前项目'}</strong><p>服务端逐次复核项目权限。模型不能自行更改项目范围。</p></div>
         <div className="assistant-evidence-section assistant-usage-summary">
           <div className="assistant-subsection-heading"><h3>近 {usageSummary?.windowDays ?? 30} 天模型用量</h3><span>{usageSummary ? '按当前用户统计' : 'Token'}</span></div>

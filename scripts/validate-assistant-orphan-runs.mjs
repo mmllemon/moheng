@@ -7,7 +7,7 @@ const [jobs, worker, runtime, handler, schema, ui, apiPackage] = await Promise.a
   readFile(new URL('../apps/api/src/assistant/runtime/langgraph-adapter.ts', import.meta.url), 'utf8'),
   readFile(new URL('../apps/api/src/lib/assistant-agent-run-job.ts', import.meta.url), 'utf8'),
   readFile(new URL('../apps/api/prisma/schema.prisma', import.meta.url), 'utf8'),
-  readFile(new URL('../apps/web/src/pages/CostAssistantPage.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../apps/web/src/components/assistant/AssistantWorkspace.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../apps/api/package.json', import.meta.url), 'utf8'),
 ]);
 const checks = [];
@@ -16,7 +16,7 @@ function projectModel() { return schema.slice(schema.indexOf('model Project {'),
 const project = projectModel();
 check('LangChain core peer pin aligned to 1.2.18', JSON.parse(apiPackage).dependencies['@langchain/core'] === '1.2.18');
 check('Optional base URL passed through configuration.baseURL', runtime.includes('configuration: { baseURL }') && runtime.includes('baseURL?: string;'));
-check('Job handler reads OPENAI_BASE_URL and passes it to runtime', handler.includes('process.env.OPENAI_BASE_URL') && handler.includes('apiKey, modelId, baseURL, checkpointUrl'));
+check('Job handler reads runtime base URL and passes it to runtime', handler.includes('const baseURL = runtime.baseUrl') && handler.includes('apiKey, modelId, baseURL, checkpointUrl'));
 check('Five invalid Project-side reverse relations removed', !project.includes('createdGovernanceRules') && !project.includes('publishedGovernanceRules') && !project.includes('triggeredBackupRuns') && !project.includes('createdIntegrationCredentials') && !project.includes('updatedIntegrationCredentials'));
 check('Legitimate Project systemParameterRevisions relation retained', project.includes('systemParameterRevisions SystemParameterRevision[]'));
 check('Orphan reconciler uses explicit target-table references and valid run/conversation JSON predicates', jobs.includes('reconcileOrphanAssistantRuns') && jobs.includes('graceSeconds > 3600') && jobs.includes("job.\"type\" = 'assistant.agent.run'") && jobs.includes("job.\"payload\"->>'runId' = \"AssistantRun\".\"id\"") && jobs.includes("job.\"payload\"->>'conversationId' = \"AssistantRun\".\"conversationId\"") && !jobs.includes("run.\"conversationId'") && !jobs.includes('UPDATE \"AssistantRun\" AS run'));

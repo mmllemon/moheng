@@ -7,7 +7,6 @@ import AccountSecurityStepPage from './pages/AccountSecurityStepPage';
 import DashboardPage from './pages/DashboardPage';
 const ReportStudioPage = lazy(() => import('./pages/ReportStudioPage'));
 const ReportPreviewPage = lazy(() => import('./pages/ReportPreviewPage'));
-const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'));
 const AssistantProviderPage = lazy(() => import('./pages/AssistantProviderPage'));
 const AppearanceSettingsPage = lazy(() => import('./pages/AppearanceSettingsPage'));
 const SystemSecurityPage = lazy(() => import('./pages/SystemSecurityPage'));
@@ -108,6 +107,8 @@ export default function App() {
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="parties" element={<BusinessPartiesPage />} />
         <Route path="parties/:id" element={<BusinessPartyDetailPage />} />
+        <Route path="assistant" element={<div className="page-wrap" />} />
+        <Route path="cost/assistant" element={<div className="page-wrap" />} />
         <Route path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}>
           <Route index element={<ProjectOverviewPage />} />
           <Route path="members" element={<Navigate to="/projects/members" replace />} />
@@ -121,7 +122,6 @@ export default function App() {
           <Route path="owner-finance" element={<OwnerFinancePage />} />
           <Route path="costs" element={<CostsPage />} />
           <Route path="analysis" element={<AnalysisPage />} />
-          <Route path="assistant" element={<Suspense fallback={<div className="page-wrap"><LoadingBlock label="正在加载成本助手…" /></div>}><CostAssistantPage /></Suspense>} />
         </Route>
         <Route path="system" element={<AdminOnly><SystemManagementPage /></AdminOnly>} />
         <Route path="system/security" element={<AdminOnly><SystemSecurityPage /></AdminOnly>} />

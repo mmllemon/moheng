@@ -96,6 +96,8 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 - 设置行：左侧 13px/600 标签 + 10.5px muted 说明，右侧 220–340px 控件；行高至少 56px，分隔线左右各内缩 16px。审计筛选、运维备份、AI 助手、账号创建均改用这一结构，不再用 3–5 列表单硬塞进 670px。
 - 设置搜索：32px 高、11.05px 圆角、5% 墨色底 + 1px 透明边界；10px 左侧搜索图标，右侧 20px 圆形清空按钮；输入后切换为两行搜索结果（标题 + 分组路径），并按 Hana 的搜索索引方式补充语义别名：输入“主题”命中界面，“备份”命中运维备份，“模型”命中 AI 助手，“字典”命中基础字典，不再只匹配导航标题。
 - 交互半径：统一为三级 token，禁止页面写死 2/3/5/7/8/10/12px：控件 `--radius-control`（6×1.8409≈11.05），按钮/导航 `--radius-action`（5×1.8409≈9.20），行内小操作 `--radius-compact`（4×1.8409≈7.36）。卡片使用 `--radius-card`（8×1.8409≈14.73）。输入框、下拉、搜索壳、按钮和分段按钮一律 `corner-shape: round`，不再混用 squircle。
+- 状态 token：`--state-hover-bg`（4% 墨色）、`--state-hover-bg-strong`（7%）、`--state-selected-bg`（7% accent）、`--state-selected-border`（18% accent）、`--state-focus-bg`（4% accent）、`--state-focus-ring`（52% accent）。列表/表格/命令项/会话行共用，禁止再写 `#f6f1e5`、bronze 首列竖条或 hover 改 padding。
+- 卡片 inset：`--card-inset: var(--space-16)`。卡片正文、汇总格、提示条、列表行、空状态至少 16px 横向内缩；表头/表格通过 16px 外边距而不是把首个单元格贴到卡片边缘。
 - 概览指标卡：grid 统一 align-items: stretch + grid-auto-rows: 1fr，卡片 height: 100%；文字长短不再造成卡片高低不一。
 - 弹层：14–20px 圆角、1px 边界、大阴影；命令面板 18px 圆角。
 - 大浮层：548px 纸卡、20px 圆角、顶部 4 个分类 tab、两列入口、底部操作条；不用菜单行堆叠，参考 Hana 能力面板。快捷操作已按此重建。
@@ -123,6 +125,8 @@ Hana 的窗口控制键是桌面端系统窗控；墨衡是 Web，不伪造 macO
 
 - 动效三档：0.1s 状态、0.15s 控件、0.25s 面板；支持系统 reduced-motion，也支持“减少动效”偏好。
 - 纸张 morph：设置窗从触发按钮中心展开；按目标/起点矩形计算 translate 与 scale，480ms 弹性曲线，遮罩 100ms，内容延迟 80ms；退出 120ms 缩回。同一套 helper 通过全局点击/挂载桥接所有 `.modal-backdrop .dialog`，业务弹窗也从触发按钮展开。移动端、reduced-motion 和无触发来源时降级为淡入。
-- 焦点环 2px accent，偏移 1px；设置打开时焦点落在当前导航项，不自动聚焦搜索框。
+- 焦点环：独立控件 2px accent、偏移 1px；表格行/整行列表项使用 1px 内缩 accent ring（`outline-offset:-1px`），不再用整行高饱和底色或上下两条阴影代替焦点。hover 才使用 4% 墨色底，selected 使用 7% accent 底。设置打开时焦点落在当前导航项，不自动聚焦搜索框。
+- 全局成本助手：标题栏快捷操作旁的 Sparkles 按钮打开，宽度 `min(1280px, 100vw - 48px)`、高度 `min(820px, 100vh - 48px)`，三栏 `236px | 1fr | 300px`；左侧会话、中间消息、底部 16px 圆角悬浮 composer、右侧工具/来源卡。≤1120px 右栏变抽屉，≤760px 全屏、左栏变横向会话条。
+- 全局命令中心：760px 宽，搜索框 + 全部/页面/项目筛选 + 分组结果；行高 48px、选中态使用 `--state-selected-bg`，键盘 ↑↓/Enter/Esc，移动端全宽。
 - 所有弹层使用既有 FocusTrap；Esc 先关闭最上层弹层。
 - 主内容、表格、按钮在 1440 与 390 视口均无横向溢出；表格自身横向滚动。
