@@ -68,17 +68,49 @@ export default function SystemParametersPage() {
 
     <section className="panel system-expansion-section" hidden={tab !== 'create'}>
       <div className="panel-heading"><div><h3><Plus size={17} />新建参数版本</h3><p>同一个参数键可以保留多次修改记录；每次提交都会产生新版本，而不是覆盖历史值。</p></div><span className="system-overview-readiness-tag">{revisions.length} 个版本{revisionsQuery.data?.truncated ? ' · 展示最近 250 条' : ''}</span></div>
-      <form className="system-expansion-form system-parameter-form" onSubmit={(event) => { event.preventDefault(); try { parseValue(valueType, rawValue); createDraft.mutate(); } catch (error) { setNotice((error as Error).message); } }}>
-        <label><span>显示名称</span><input value={name} onChange={(event) => { const next = event.target.value; setName(next); if (!keyTouched) setKey(suggestCodeFromName(next, 100)); }} maxLength={120} required placeholder="如 成本预警比例" /></label>
-        <label><span>参数键（自动推荐）</span><input value={key} onChange={(event) => { setKey(event.target.value.toUpperCase()); setKeyTouched(true); }} maxLength={100} pattern="[A-Z][A-Z0-9_.-]{1,99}" required placeholder="根据显示名称自动推荐" /></label>
-        <label><span>值类型</span><SelectField value={valueType} onChange={(event) => { const next = event.currentTarget.value as ValueType; setValueType(next); setRawValue(next === 'BOOLEAN' ? 'true' : next === 'JSON' ? '{\n  "enabled": true\n}' : next === 'NUMBER' ? '0.8' : ''); }} aria-label="参数值类型"><option value="STRING">字符串</option><option value="NUMBER">数值</option><option value="BOOLEAN">布尔值</option><option value="JSON">JSON</option></SelectField></label>
-        <label><span>业务模块读取</span><SelectField value={visibility} onChange={(event) => setVisibility(event.currentTarget.value as Visibility)} aria-label="参数读取范围"><option value="ADMIN_ONLY">仅系统管理员可读</option><option value="BUSINESS_READABLE">已登录业务模块可读</option></SelectField></label>
-        <label><span>适用范围</span><SelectField value={scope} onChange={(event) => setScope(event.currentTarget.value as Scope)} aria-label="参数适用范围"><option value="GLOBAL">全局默认</option><option value="PROJECT">项目级覆盖</option></SelectField></label>
-        {scope === 'PROJECT' && <label><span>所属项目</span><SelectField value={projectId} onChange={(event) => setProjectId(event.currentTarget.value)} aria-label="所属项目"><option value="">请选择项目</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.code} · {project.name}</option>)}</SelectField></label>}
-        <label className="system-parameter-description"><span>用途说明</span><input value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="参数用途及消费该参数的功能" /></label>
-        {valueType === 'BOOLEAN' ? <label><span>参数值</span><SelectField value={rawValue} onChange={(event) => setRawValue(event.currentTarget.value)} aria-label="布尔参数值"><option value="true">true / 启用</option><option value="false">false / 关闭</option></SelectField></label> : valueType === 'JSON' ? <label className="system-parameter-value-json"><span>参数值（JSON）</span><textarea value={rawValue} onChange={(event) => setRawValue(event.target.value)} required rows={5} maxLength={16000} spellCheck={false} /></label> : <label><span>参数值</span><input value={rawValue} onChange={(event) => setRawValue(event.target.value)} required maxLength={valueType === 'STRING' ? 4000 : 100} inputMode={valueType === 'NUMBER' ? 'decimal' : 'text'} /></label>}
-        <label className="system-parameter-note"><span>变更说明</span><input value={changeNote} onChange={(event) => setChangeNote(event.target.value)} maxLength={1000} required placeholder="说明新增/修改该参数的原因" /></label>
-        <div className="system-parameter-submit"><div className={valueError ? 'system-config-validation is-error' : 'system-config-validation'}>{valueError ? <><AlertTriangle size={14} />{valueError}</> : <>解析值：<code>{valuePreview.length > 100 ? `${valuePreview.slice(0, 100)}…` : valuePreview}</code></>}</div><button type="submit" className="button-primary" disabled={createDraft.isPending || !key.trim() || !name.trim() || !changeNote.trim() || Boolean(valueError) || (scope === 'PROJECT' && !projectId)}><Plus size={14} />创建草稿</button></div>
+      <form className="system-parameter-rows" onSubmit={(event) => { event.preventDefault(); try { parseValue(valueType, rawValue); createDraft.mutate(); } catch (error) { setNotice((error as Error).message); } }}>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">显示名称</div><div className="settings-row-hint">用于参数列表展示；编码会按名称自动推荐。</div></div>
+          <div className="settings-row-control"><input value={name} onChange={(event) => { const next = event.target.value; setName(next); if (!keyTouched) setKey(suggestCodeFromName(next, 100)); }} maxLength={120} required placeholder="如 成本预警比例" aria-label="显示名称" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">参数键</div><div className="settings-row-hint">大写字母、数字、下划线和点；创建后保持稳定。</div></div>
+          <div className="settings-row-control"><input value={key} onChange={(event) => { setKey(event.target.value.toUpperCase()); setKeyTouched(true); }} maxLength={100} pattern="[A-Z][A-Z0-9_.-]{1,99}" required placeholder="根据显示名称自动推荐" aria-label="参数键" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">值类型</div><div className="settings-row-hint">决定参数值的解析与校验方式。</div></div>
+          <div className="settings-row-control"><SelectField value={valueType} onChange={(event) => { const next = event.currentTarget.value as ValueType; setValueType(next); setRawValue(next === 'BOOLEAN' ? 'true' : next === 'JSON' ? '{\n  "enabled": true\n}' : next === 'NUMBER' ? '0.8' : ''); }} aria-label="参数值类型"><option value="STRING">字符串</option><option value="NUMBER">数值</option><option value="BOOLEAN">布尔值</option><option value="JSON">JSON</option></SelectField></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">业务模块读取</div><div className="settings-row-hint">仅系统管理员可读，或允许已登录业务模块读取。</div></div>
+          <div className="settings-row-control"><SelectField value={visibility} onChange={(event) => setVisibility(event.currentTarget.value as Visibility)} aria-label="参数读取范围"><option value="ADMIN_ONLY">仅系统管理员可读</option><option value="BUSINESS_READABLE">已登录业务模块可读</option></SelectField></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">适用范围</div><div className="settings-row-hint">全局默认值，或仅覆盖某一个项目。</div></div>
+          <div className="settings-row-control"><SelectField value={scope} onChange={(event) => setScope(event.currentTarget.value as Scope)} aria-label="参数适用范围"><option value="GLOBAL">全局默认</option><option value="PROJECT">项目级覆盖</option></SelectField></div>
+        </div>
+        {scope === 'PROJECT' && <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">所属项目</div><div className="settings-row-hint">项目级参数优先于同键的全局默认值。</div></div>
+          <div className="settings-row-control"><SelectField value={projectId} onChange={(event) => setProjectId(event.currentTarget.value)} aria-label="所属项目"><option value="">请选择项目</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.code} · {project.name}</option>)}</SelectField></div>
+        </div>}
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">用途说明</div><div className="settings-row-hint">说明参数用途及消费该参数的功能。</div></div>
+          <div className="settings-row-control"><input value={description} onChange={(event) => setDescription(event.target.value)} maxLength={1000} placeholder="参数用途及消费该参数的功能" aria-label="用途说明" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">参数值</div><div className="settings-row-hint">JSON 值必须是合法对象或数组；保存前会再次校验。</div></div>
+          <div className="settings-row-control system-parameter-value-control">
+            {valueType === 'BOOLEAN' ? <SelectField value={rawValue} onChange={(event) => setRawValue(event.currentTarget.value)} aria-label="布尔参数值"><option value="true">true / 启用</option><option value="false">false / 关闭</option></SelectField> : valueType === 'JSON' ? <textarea value={rawValue} onChange={(event) => setRawValue(event.target.value)} required rows={5} maxLength={16000} spellCheck={false} aria-label="JSON 参数值" /> : <input value={rawValue} onChange={(event) => setRawValue(event.target.value)} required maxLength={valueType === 'STRING' ? 4000 : 100} inputMode={valueType === 'NUMBER' ? 'decimal' : 'text'} aria-label="参数值" />}
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">变更说明</div><div className="settings-row-hint">说明新增或修改该参数的原因，写入版本历史。</div></div>
+          <div className="settings-row-control"><input value={changeNote} onChange={(event) => setChangeNote(event.target.value)} maxLength={1000} required placeholder="说明新增/修改该参数的原因" aria-label="变更说明" /></div>
+        </div>
+        <div className="settings-row-actions">
+          <span className={valueError ? 'system-config-validation is-error' : 'system-config-validation'}>{valueError ? <><AlertTriangle size={14} />{valueError}</> : <>解析值：<code>{valuePreview.length > 100 ? `${valuePreview.slice(0, 100)}…` : valuePreview}</code></>}</span>
+          <div className="settings-row-actions-buttons"><button type="submit" className="button-primary" disabled={createDraft.isPending || !key.trim() || !name.trim() || !changeNote.trim() || Boolean(valueError) || (scope === 'PROJECT' && !projectId)}><Plus size={14} />创建草稿</button></div>
+        </div>
       </form>
     </section>
 

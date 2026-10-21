@@ -2666,6 +2666,30 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .settings-row-actions-note { color: var(--text-muted); font-size: 10px; line-height: 1.5; }
 .settings-row-actions-buttons { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
+/* 字典分类创建：设置行 */
+.system-dictionary-create-rows { padding: 2px 0; }
+
+/* 参数配置：设置行 */
+.system-parameter-rows { padding: 2px 0; }
+.system-parameter-rows .settings-row-control textarea {
+  width: 340px;
+  max-width: 100%;
+  min-height: 104px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+}
+.system-parameter-rows .settings-row-control textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
+.system-parameter-rows .system-config-validation { color: var(--text-muted); font-size: 10.5px; }
+.system-parameter-rows .system-config-validation.is-error { color: var(--danger); }
+
 /* 审计筛选行 */
 .audit-filter-rows { padding: 2px 0; }
 .settings-row-control .audit-search-input {

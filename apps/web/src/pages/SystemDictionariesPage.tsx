@@ -83,11 +83,20 @@ export default function SystemDictionariesPage() {
 
     <section className="panel system-expansion-section">
       <div className="panel-heading"><div><h3><Plus size={17} />新建字典分类</h3><p>编码用于程序和数据关联，建议使用稳定的大写英文编码；名称用于界面显示。</p></div><span className="system-overview-readiness-tag">{dictionaries.length} 个分类 · {activeDictionaries.length} 个启用</span></div>
-      <form className="system-expansion-form system-config-create-form" onSubmit={(event) => { event.preventDefault(); createDictionary.mutate(); }}>
-        <label><span>分类名称</span><input value={dictionaryName} onChange={(event) => { const next = event.target.value; setDictionaryName(next); if (!dictionaryCodeTouched) setDictionaryCode(suggestCodeFromName(next, 80)); }} required maxLength={120} placeholder="如 项目资料分类" /></label>
-        <label><span>分类编码（自动推荐）</span><input value={dictionaryCode} onChange={(event) => { setDictionaryCode(event.target.value.toUpperCase()); setDictionaryCodeTouched(true); }} required maxLength={80} pattern="[A-Z][A-Z0-9_]{1,79}" placeholder="根据分类名称自动推荐" /></label>
-        <label><span>用途说明</span><input value={dictionaryDescription} onChange={(event) => setDictionaryDescription(event.target.value)} maxLength={1000} placeholder="说明什么场景使用该分类" /></label>
-        <button type="submit" className="button-primary" disabled={createDictionary.isPending}><Plus size={14} />创建分类</button>
+      <form className="system-dictionary-create-rows" onSubmit={(event) => { event.preventDefault(); createDictionary.mutate(); }}>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">分类名称</div><div className="settings-row-hint">用于界面展示；编码会按名称自动推荐。</div></div>
+          <div className="settings-row-control"><input value={dictionaryName} onChange={(event) => { const next = event.target.value; setDictionaryName(next); if (!dictionaryCodeTouched) setDictionaryCode(suggestCodeFromName(next, 80)); }} required maxLength={120} placeholder="如 项目资料分类" aria-label="分类名称" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">分类编码</div><div className="settings-row-hint">使用稳定的大写英文编码；创建后保持稳定。</div></div>
+          <div className="settings-row-control"><input value={dictionaryCode} onChange={(event) => { setDictionaryCode(event.target.value.toUpperCase()); setDictionaryCodeTouched(true); }} required maxLength={80} pattern="[A-Z][A-Z0-9_]{1,79}" placeholder="根据分类名称自动推荐" aria-label="分类编码" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">用途说明</div><div className="settings-row-hint">说明什么场景使用该分类。</div></div>
+          <div className="settings-row-control"><input value={dictionaryDescription} onChange={(event) => setDictionaryDescription(event.target.value)} maxLength={1000} placeholder="说明什么场景使用该分类" aria-label="用途说明" /></div>
+        </div>
+        <div className="settings-row-actions"><span className="settings-row-actions-note">分类停用只影响后续选择，不删除历史记录。</span><div className="settings-row-actions-buttons"><button type="submit" className="button-primary" disabled={createDictionary.isPending}><Plus size={14} />创建分类</button></div></div>
       </form>
     </section>
 
