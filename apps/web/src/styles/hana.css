@@ -432,18 +432,21 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   gap: var(--space-4);
   padding: 0 var(--space-10);
 }
+/* 图标按钮：Hana 的按钮体系里没有 grid 布局，一律 inline-flex + center。
+   高度走 32px 档（Hana 主控件档），不再用 30px。 */
 .sidebar-toggle,
 .titlebar-icon,
 .titlebar-avatar,
 .sidebar-footer-icon {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
-  display: inline-grid;
-  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-action);
   corner-shape: squircle;
   background: transparent;
   color: var(--text-muted);
@@ -509,8 +512,9 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   margin-left: auto;
   width: 26px;
   height: 26px;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   corner-shape: squircle;
@@ -545,7 +549,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   align-items: center;
   gap: var(--space-8);
   width: 100%;
-  height: 33px;
+  height: 34px;
   padding: 0 var(--space-8);
   margin: var(--space-2) 0;
   border-radius: var(--radius-action);
@@ -578,14 +582,16 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   align-items: center;
   gap: var(--space-8);
   width: 100%;
-  min-height: 30px;
-  padding: var(--space-4) var(--space-8);
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-8);
   border: 1px solid transparent;
   border-radius: var(--radius-action);
   corner-shape: squircle;
   background: transparent;
   color: var(--text-light);
   text-align: left;
+  box-sizing: border-box;
   cursor: pointer;
 }
 .sidebar-project:hover { background: var(--accent-light); color: var(--text); }
@@ -654,7 +660,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .sidebar-user-copy strong { overflow: hidden; color: var(--text); font-size: 11.5px; font-weight: 500; white-space: nowrap; text-overflow: ellipsis; }
 .sidebar-user-copy span { overflow: hidden; color: var(--text-muted); font-size: 9.5px; white-space: nowrap; text-overflow: ellipsis; }
 .sidebar-footer-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; }
-.sidebar-footer-icon { width: 27px; height: 27px; flex-basis: 27px; }
+.sidebar-footer-icon { width: 32px; height: 32px; flex-basis: 32px; }
 
 .app-main {
   height: 100vh;
@@ -909,10 +915,11 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .button-small { height: 28px; min-height: 28px; padding: 0 10px; font-size: 11.2px; border-radius: var(--radius-md); }
 .button-small svg { width: 13px; height: 13px; }
 .icon-button {
-  width: 30px;
-  height: 30px;
-  display: inline-grid;
-  place-items: center;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-control);
@@ -1477,7 +1484,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   display: inline-flex;
   align-items: center;
   gap: var(--space-4);
-  height: 29px;
+  height: 30px;
   padding: 0 var(--space-10);
   border: 1px solid transparent;
   border-radius: var(--radius-card);
@@ -2231,8 +2238,9 @@ html[data-paper-texture] .settings-window::after { display: block; }
   height: 32px;
   border-radius: var(--radius-action);
   corner-shape: round;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
@@ -4254,7 +4262,7 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
 .overview-page .v6-block-link.inline svg { opacity: 0.72; }
 .overview-page .ov-sort { color: var(--text-muted); }
 .overview-page .ov-sort .select-control-trigger {
-  min-height: 27px;
+  min-height: 28px;
   padding: 0 var(--space-8);
   border-radius: var(--radius-card);
   corner-shape: squircle;
