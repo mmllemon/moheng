@@ -3064,6 +3064,105 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
 
+/* 预算与目标成本 / 实际成本：Hana 卡片与表格 */
+.ldg-stats {
+  margin: 0 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+}
+.ldg-stats > div { padding: 14px 18px; border-left: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); }
+.ldg-stats > div:first-child { padding-left: 18px; border-left: 0; }
+.ldg-stats span { color: var(--text-muted); font-size: 10.5px; letter-spacing: 0.02em; }
+.ldg-stats strong { margin-top: 3px; color: var(--text); font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; line-height: 1.2; }
+.ldg-stats small { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+
+.ldg-section { margin: 0 0 24px; }
+.ldg-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 0 2px 10px; }
+.ldg-section-head h2 { margin: 0; color: var(--text); font-family: var(--font-ui); font-size: 17px; font-weight: 600; letter-spacing: 0.05em; }
+.ldg-section-head p { margin: 4px 0 0; color: var(--text-muted); font-size: 10.5px; line-height: 1.55; }
+.ldg-section-count { color: var(--text-muted); font-size: 10px; }
+.ldg-section-card { overflow: hidden; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
+
+.ldg-tree-toggle { width: 18px; height: 18px; flex: 0 0 18px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 5px; background: var(--overlay-subtle); color: var(--text-muted); font-size: 12px; line-height: 1; }
+.ldg-tree-toggle:hover { background: var(--accent-light); color: var(--accent); }
+.ldg-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ldg-leaf-dot { width: 4px; height: 4px; flex: 0 0 4px; margin-left: 7px; border-radius: 50%; background: var(--text-muted); opacity: 0.5; }
+.ldg-text-action { color: var(--accent); font-size: 10.5px; }
+.ldg-more { width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); }
+.ldg-more:hover { background: var(--overlay-subtle); color: var(--text); }
+
+.ldg-toolbar { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 0; padding: 12px 18px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.ldg-search { width: 285px; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); color: var(--text-muted); }
+.ldg-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
+.ldg-search input { height: 30px; min-height: 0; padding: 0; border: 0; background: transparent; color: var(--text); font-size: 12.5px; }
+.ldg-segments { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border: 1px solid var(--overlay-light); border-radius: 9px; background: var(--overlay-subtle); overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+.ldg-segments::-webkit-scrollbar { display: none; }
+.ldg-segments button { height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--text-muted); font-size: 10.5px; white-space: nowrap; }
+.ldg-segments button b { margin-left: 3px; color: var(--text-muted); font-family: var(--font-ui); font-size: 9.5px; font-weight: 500; }
+.ldg-segments button.active { background: var(--bg-card); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 12%, transparent); }
+.ldg-segments button.active b { color: var(--accent); }
+.ldg-tools { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.ldg-tool-link { color: var(--text-muted); font-size: 10.5px; }
+.ldg-tool-link:hover { color: var(--text); }
+.ldg-tools .button-secondary { height: 28px; min-height: 28px; padding: 0 9px; border-radius: 8px; font-size: 10.5px; }
+.ldg-selected { margin: 10px 18px 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-light); color: var(--accent); font-size: 10.5px; }
+.ldg-selected button { color: var(--accent); font-size: 10.5px; }
+.ldg-table-wrap { border-top: 0; }
+.ldg-table { width: calc(100% - 36px); margin: 0 18px; min-width: 980px; }
+.ldg-table thead th { height: 34px; padding: 0 10px; border-top: 0; border-bottom: 1px solid var(--border); background: transparent; }
+.ldg-table tbody td { height: 40px; padding: 7px 10px; }
+.ldg-table tbody tr.ldg-parent-row td:nth-child(2), .ldg-table tbody tr.ldg-parent-row td:nth-child(3) { background: transparent; }
+.ldg-table tfoot td { padding: 10px; }
+.ldg-note { display: flex; align-items: flex-start; gap: 8px; margin: 14px 0 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--text-muted) 16%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--text-muted) 5%, transparent); color: var(--text-muted); font-size: 10.5px; line-height: 1.6; }
+.ldg-note .note-mark { width: 16px; height: 16px; flex: 0 0 16px; display: inline-grid; place-items: center; margin-top: 1px; border: 1px solid color-mix(in srgb, var(--text-muted) 36%, transparent); border-radius: 50%; font-size: 9px; font-style: normal; }
+
+.cost-type-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 26px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+  border-top: 1px solid var(--card-border);
+  border-bottom: 1px solid var(--card-border);
+}
+.cost-type-card { min-width: 0; padding: 14px 16px; border: 0; border-left: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); border-radius: 0; background: transparent; box-shadow: none; text-align: left; }
+.cost-type-card:first-child { padding-left: 16px; border-left: 0; }
+.cost-type-card:hover, .cost-type-card.active { border-color: color-mix(in srgb, var(--card-border) 66%, transparent); background: color-mix(in srgb, var(--accent) 5%, transparent); transform: none; }
+.cost-type-card.active .cost-type-label { color: var(--accent); font-weight: 600; }
+.cost-type-label { color: var(--text-muted); font-size: 10px; }
+.cost-type-card strong { margin-top: 3px; color: var(--text); font-family: var(--font-num, var(--num)); font-size: 20px; font-weight: 600; line-height: 1.2; }
+.cost-type-card small { margin-top: 3px; color: var(--text-muted); font-size: 9.5px; }
+.cost-type-symbol { display: none; }
+
+.panel.data-table-panel.panel-detached > .table-toolbar { padding: 12px 18px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.panel.data-table-panel.panel-detached > .table-scroll .data-table { width: calc(100% - 36px); margin: 0 18px; }
+.table-toolbar .toolbar-search { width: min(390px, 70%); height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+.table-toolbar .toolbar-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
+.table-toolbar .toolbar-search input { height: 30px; font-size: 12.5px; }
+.cost-kind-pill { padding: 3px 7px; border: 1px solid var(--border); border-radius: 6px; background: var(--overlay-subtle); color: var(--text-muted); font-size: 10px; }
+.cost-kind-pill.cost-labor { border-color: color-mix(in srgb, var(--accent) 18%, transparent); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
+.cost-kind-pill.cost-material { border-color: color-mix(in srgb, var(--green) 20%, transparent); background: color-mix(in srgb, var(--green) 8%, transparent); color: var(--green); }
+.cost-kind-pill.cost-machine { border-color: color-mix(in srgb, var(--warning, var(--bronze)) 20%, transparent); background: color-mix(in srgb, var(--warning, var(--bronze)) 8%, transparent); color: var(--warning, var(--bronze)); }
+.cost-kind-pill.cost-subcontract { border-color: color-mix(in srgb, var(--accent) 16%, transparent); background: color-mix(in srgb, var(--accent) 6%, transparent); color: var(--accent); }
+.cost-kind-pill.cost-indirect { color: var(--text-muted); }
+
+@media (max-width: 900px) {
+  .cost-type-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cost-type-card { border-top: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); }
+  .cost-type-card:nth-child(-n + 2) { border-top: 0; }
+  .cost-type-card:nth-child(odd) { border-left: 0; padding-left: 16px; }
+  .ldg-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ldg-stats > div:nth-child(3) { border-left: 0; padding-left: 18px; }
+  .ldg-stats > div:nth-child(n + 3) { border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+}
+
 /* 并排卡片清零相邻 panel 的 14px 上边距，避免同排卡片错位 */
 .report-studio-entry-grid > .panel,
 .project-shortcut-grid > .panel,

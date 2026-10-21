@@ -366,6 +366,9 @@ export default function BudgetPage() {
       <div><span>成本执行率</span><strong className={costExecution != null && costExecution > 1 ? 'text-danger' : ''}>{costExecution == null ? '—' : percentage(costExecution)}</strong><small>已录成本 ÷ 目标成本</small></div>
     </div>
 
+    <section className="ldg-section">
+      <div className="ldg-section-head"><div><h2>成本清单</h2><p>按清单层级归集目标成本；展开父级查看子项，点击行查看清单明细。</p></div><span className="ldg-section-count">{rows.length} 条清单</span></div>
+      <div className="ldg-section-card">
     <div className="ldg-toolbar">
       <label className="ldg-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索清单编号或名称" aria-label="搜索清单编号或名称" /></label>
       <div className="ldg-segments" role="group" aria-label="按清单分类筛选">
@@ -406,6 +409,8 @@ export default function BudgetPage() {
         <tfoot><tr><td colSpan={6}>合计（{rows.length} 条 · 仅末级汇总）</td><td className="align-right numeric">{formatMoney(rootAndLeafStats.targetCost, 0)}</td><td className="align-right numeric">{formatMoney(actualTotal, 0)}</td><td /></tr></tfoot>
       </table>
     </div>}
+      </div>
+    </section>
 
     <div className="ldg-note"><span className="note-mark">i</span><span>目标成本仅汇总末级清单；已录成本按发生日期计入，不含已归档记录。清单层级用于成本归集，不参与合同金额计算。CSV / XLSX 导入会执行服务端重复编号、父级关系与数值复检。</span></div>
 
