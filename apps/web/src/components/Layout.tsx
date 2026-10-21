@@ -16,6 +16,7 @@ import BrandMark from './BrandMark';
 import ConfirmHost from './ConfirmDialog';
 import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
+import PaperDialogMorph from './PaperDialogMorph';
 import UiPreferencesBar from './UiPreferencesBar';
 import { useAnimatedPresence } from './useAnimatedPresence';
 import { animatePaperIn, animatePaperOut, rememberPaperOrigin, takePaperOrigin } from '../lib/paper-morph';
@@ -65,6 +66,21 @@ const costWorkspacePages = [
   { to: '/cost/analysis', label: '成本分析' },
 ];
 type QuickItem = { kind: 'page' | 'project'; id: string; title: string; sub: string; to: string };
+type QuickActionCategory = 'all' | 'cost' | 'funds' | 'contract';
+const quickActionCategories: Array<{ key: QuickActionCategory; label: string }> = [
+  { key: 'all', label: '全部' },
+  { key: 'cost', label: '成本' },
+  { key: 'funds', label: '资金' },
+  { key: 'contract', label: '合同' },
+];
+const quickActions: Array<{ category: Exclude<QuickActionCategory, 'all'>; title: string; description: string; to: string; icon: typeof Wallet }> = [
+  { category: 'cost', title: '新增成本记录', description: '登记人工、材料、机械及其他费用', to: '/cost/costs', icon: Wallet },
+  { category: 'funds', title: '进度款管理', description: '业主申报、审批与回款登记', to: '/cost/progress-bills', icon: HandCoins },
+  { category: 'funds', title: '竣工结算与应收', description: '最终结算、应收余额与到账核销', to: '/cost/owner-finance', icon: ReceiptText },
+  { category: 'contract', title: '分供合同与付款', description: '分包 / 采购 / 租赁合同与支付台账', to: '/cost/downstream', icon: FileText },
+  { category: 'funds', title: '结算与应付账款', description: '确认结算、应付核销、质保金与发票核对', to: '/cost/downstream?view=finance', icon: ReceiptText },
+  { category: 'contract', title: '变更签证', description: '查看送审与核定状态', to: '/cost/changes', icon: Workflow },
+];
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -80,6 +96,7 @@ export default function Layout() {
   const commandPalettePresence = useAnimatedPresence(commandPaletteOpen, 210);
   const [activeCommandIndex, setActiveCommandIndex] = useState(0);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const [quickActionCategory, setQuickActionCategory] = useState<QuickActionCategory>('all');
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
@@ -256,6 +273,7 @@ export default function Layout() {
     ...group,
     items: group.items.filter((item) => !settingsSearch.trim() || item.label.toLocaleLowerCase().includes(settingsSearch.trim().toLocaleLowerCase())),
   })).filter((group) => group.items.length);
+  const visibleQuickActions = quickActionCategory === 'all' ? quickActions : quickActions.filter((action) => action.category === quickActionCategory);
 
 
   useEffect(() => {
@@ -340,16 +358,27 @@ export default function Layout() {
             <button type="button" className="titlebar-icon" onClick={openCommandPalette} data-tooltip="搜索与命令 ⌘K" aria-label="打开全局搜索"><Search size={15} /></button>
             <button type="button" className={`titlebar-icon ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} data-tooltip="待办与预警" aria-label="打开待办与预警"><BellRing size={15} /></button>
             <div className="quick-actions-wrap">
-              <button type="button" className={`titlebar-icon ${quickActionsOpen ? 'is-active' : ''}`} data-tooltip="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} onClick={() => { setCommandPaletteOpen(false); setAccountMenuOpen(false); setQuickActionsOpen((open) => !open); }}><Zap size={15} /></button>
+              <button type="button" className={`titlebar-icon ${quickActionsOpen ? 'is-active' : ''}`} data-tooltip="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} aria-controls="quick-actions-panel" onClick={() => { setCommandPaletteOpen(false); setAccountMenuOpen(false); setQuickActionCategory('all'); setQuickActionsOpen((open) => !open); }}><Zap size={15} /></button>
               {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
-              {quickActionsPresence.mounted && <div className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="menu" aria-label="快捷操作菜单" aria-hidden={!quickActionsOpen} data-focus-trap={quickActionsOpen ? 'popover' : undefined}>
-                <div className="quick-action-heading"><strong>快捷操作</strong><span>跳转到常用业务模块</span></div>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/costs'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Wallet size={15} /></span><span><strong>新增成本记录</strong><small>登记人工、材料、机械及其他费用</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/progress-bills'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><HandCoins size={15} /></span><span><strong>进度款管理</strong><small>业主申报、审批与回款登记</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/owner-finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={15} /></span><span><strong>竣工结算与应收</strong><small>最终结算、应收余额与到账核销</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><FileText size={15} /></span><span><strong>分供合同与付款</strong><small>分包 / 采购 / 租赁合同与支付台账</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/downstream?view=finance'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><ReceiptText size={15} /></span><span><strong>结算与应付账款</strong><small>确认结算、应付核销、质保金与发票核对</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
-                <button type="button" role="menuitem" onClick={() => { navigate('/cost/changes'); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Workflow size={15} /></span><span><strong>变更签证</strong><small>查看送审与核定状态</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>
+              {quickActionsPresence.mounted && <div id="quick-actions-panel" className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="dialog" aria-label="快捷操作" aria-hidden={!quickActionsOpen} data-focus-trap={quickActionsOpen ? 'popover' : undefined}>
+                <div className="quick-action-tabs" role="tablist" aria-label="快捷操作分类" onKeyDown={(event) => {
+                  if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+                  const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
+                  const currentIndex = tabs.indexOf(document.activeElement as HTMLButtonElement);
+                  if (currentIndex < 0) return;
+                  const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : event.key === 'ArrowRight' ? (currentIndex + 1) % tabs.length : (currentIndex - 1 + tabs.length) % tabs.length;
+                  event.preventDefault();
+                  tabs[nextIndex]?.focus();
+                  tabs[nextIndex]?.click();
+                }}>
+                  {quickActionCategories.map((category) => <button key={category.key} type="button" role="tab" tabIndex={quickActionCategory === category.key ? 0 : -1} aria-selected={quickActionCategory === category.key} className={quickActionCategory === category.key ? 'is-active' : ''} onClick={() => setQuickActionCategory(category.key)}>{category.label}</button>)}
+                  <button type="button" className="quick-action-close" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)}><X size={15} /></button>
+                </div>
+                <div className="quick-action-heading"><div><strong>常用业务入口</strong><span>按当前项目进入对应工作台</span></div><span className="quick-action-count">{visibleQuickActions.length} 项</span></div>
+                <div className="quick-action-grid" role="tabpanel" aria-label={quickActionCategories.find((category) => category.key === quickActionCategory)?.label ?? '全部'}>
+                  {visibleQuickActions.map((action) => { const Icon = action.icon; return <button type="button" className="quick-action-item" key={action.title} onClick={() => { navigate(action.to); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Icon size={16} /></span><span className="quick-action-copy"><strong>{action.title}</strong><small>{action.description}</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>; })}
+                </div>
+                <div className="quick-action-foot"><span>进入成本工作台后可按项目切换</span><button type="button" onClick={() => { navigate('/cost'); setQuickActionsOpen(false); }}>打开工作台<ArrowUpRight size={13} /></button></div>
               </div>}
             </div>
             <UiPreferencesBar compact />
@@ -374,6 +403,7 @@ export default function Layout() {
         {isSettingsArea ? <div className="settings-underlay" aria-hidden="true" /> : <div className="route-transition" key={location.pathname}><Outlet /></div>}
       </main>
       <FocusTrap />
+      <PaperDialogMorph />
       <ConfirmHost />
       <ToastHost />
     </div>

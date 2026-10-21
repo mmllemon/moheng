@@ -103,9 +103,14 @@ const hanaDocExists = await access(join(root, 'docs/设计系统-hana.md')).then
 const appearanceSettingsExists = await access(join(root, 'apps/web/src/pages/AppearanceSettingsPage.tsx')).then(() => true).catch(() => false);
 const appIconExists = await access(join(root, 'apps/web/src/components/AppIcon.tsx')).then(() => true).catch(() => false);
 const paperMorphExists = await access(join(root, 'apps/web/src/lib/paper-morph.ts')).then(() => true).catch(() => false);
+const paperDialogMorphExists = await access(join(root, 'apps/web/src/components/PaperDialogMorph.tsx')).then(() => true).catch(() => false);
+const accountSecurity = await read('apps/web/src/pages/AccountSecurityPage.tsx');
 check('Hana interface settings page is wired', appSource.includes('settings/appearance') && appearanceSettingsExists && hana.includes('grid-template-columns: 208px 670px'));
 check('Hana app icon and font cards are wired', appIconExists && appearanceSettingsExists && hana.includes('settings-icon-card') && hana.includes('settings-font-card') && appSource.includes('settings/appearance'));
 check('Hana mobile settings drawer is wired', layout.includes('settingsNavOpen') && hana.includes('settings-nav.is-mobile-open') && hana.includes('settings-mobile-nav-trigger'));
+check('Hana capability-style quick panel is wired', layout.includes('quick-action-tabs') && layout.includes('quick-action-grid') && hana.includes('.quick-action-panel') && hana.includes('grid-template-columns: repeat(2, minmax(0, 1fr))'));
+check('settings-style business page is applied to account security', accountSecurity.includes('settings-section') && accountSecurity.includes('settings-card') && accountSecurity.includes('settings-row'));
+check('business dialogs share trigger-level paper morph', paperDialogMorphExists && layout.includes('PaperDialogMorph') && layout.includes('data-focus-trap={quickActionsOpen ? \'popover\' : undefined}'));
 check('Hana paper morph follows a real trigger', paperMorphExists && layout.includes('takePaperOrigin') && hana.includes('--duration-paper-unfold'));
 check('Hana hairline scrollbar is 4px and faint', hana.includes('::-webkit-scrollbar { width: 4px; height: 4px; }') && hana.includes('--text-muted) 20%') && hana.includes('scrollbar-width: auto'));
 check('Hana design system document is present', hanaDocExists);

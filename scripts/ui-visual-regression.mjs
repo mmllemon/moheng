@@ -3,7 +3,7 @@ import { chromium } from 'playwright-core';
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const routes = [
-  '/', '/projects', '/settings/appearance', '/cost', '/cost/budget', '/cost/costs', '/cost/analysis',
+  '/', '/projects', '/settings/appearance', '/account/security', '/cost', '/cost/budget', '/cost/costs', '/cost/analysis',
   '/system', '/system/accounts', '/system/assistant', '/system/security', '/system/authorization',
   '/system/policies', '/system/governance', '/system/dictionaries',
   '/system/parameters', '/system/operations', '/audit-logs', '/reports', '/parties',

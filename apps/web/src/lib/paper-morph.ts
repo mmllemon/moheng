@@ -50,6 +50,7 @@ export function animatePaperIn(panel: HTMLElement | null, origin: HTMLElement | 
   const initial = transformBetween(originBox, panelBox, 0);
   panel.dataset.paperMorph = 'in';
   panel.style.animation = 'none';
+  panel.style.transition = 'none';
   panel.style.transformOrigin = 'center';
   panel.style.transform = transformCss(initial);
   panel.style.opacity = '0';
