@@ -3192,6 +3192,11 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   .owner-contract-amount-grid { grid-template-columns: 1fr; }
 }
 
+/* 所有输入类控件使用标准圆角，避免 squircle 把 8px 压方 */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea,
+select { corner-shape: round !important; }
+
 /* Hana 使用标准圆角，不用 squircle；交互控件统一 32px / 8px */
 .button,
 .select-control-trigger,
@@ -3244,6 +3249,16 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   background: transparent !important;
   box-shadow: none !important;
 }
+.account-security-field input,
+.system-config-field input,
+.system-config-field select {
+  box-sizing: border-box;
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+  padding: 0 10px !important;
+  border-radius: var(--radius-control) !important;
+}
+.system-config-field textarea { border-radius: var(--radius-control) !important; }
 .assistant-field > input,
 .assistant-model-line > input {
   box-sizing: border-box;
@@ -3389,7 +3404,7 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
   border-top: 1px solid var(--card-border);
   border-bottom: 1px solid var(--card-border);
 }
-.ldg-stats > div { padding: 14px 18px; border-left: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); }
+.ldg-stats > div { padding: 14px 18px; }
 .ldg-stats > div:first-child { padding-left: 18px; border-left: 0; }
 .ldg-stats span { color: var(--text-muted); font-size: 10.5px; letter-spacing: 0.02em; }
 .ldg-stats strong { margin-top: 3px; color: var(--text); font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; line-height: 1.2; }
@@ -3448,7 +3463,7 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
   border-top: 1px solid var(--card-border);
   border-bottom: 1px solid var(--card-border);
 }
-.cost-type-card { min-width: 0; padding: 14px 16px; border: 0; border-left: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); border-radius: 0; background: transparent; box-shadow: none; text-align: left; }
+.cost-type-card { min-width: 0; padding: 14px 16px; border: 0; border-radius: 0; background: transparent; box-shadow: none; text-align: left; }
 .cost-type-card:first-child { padding-left: 16px; border-left: 0; }
 .cost-type-card:hover, .cost-type-card.active { border-color: color-mix(in srgb, var(--card-border) 66%, transparent); background: color-mix(in srgb, var(--accent) 5%, transparent); transform: none; }
 .cost-type-card.active .cost-type-label { color: var(--accent); font-weight: 600; }
