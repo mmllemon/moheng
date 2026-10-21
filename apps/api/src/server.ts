@@ -32,6 +32,11 @@ const envSchema = z.object({
   BACKGROUND_WORKER_ENABLED: z.enum(['true', 'false']).default('true'),
   BACKGROUND_JOB_POLL_MS: z.coerce.number().int().min(250).max(60000).default(1000),
   ASSISTANT_POC_ENABLED: z.enum(['true', 'false']).default('false'),
+  /* 登录限流：默认 12 次 / 15 分钟（生产值）。
+     E2E 与视觉回归需要反复登录，可在 .env 中调高；
+     生产环境应保持默认，不要跟随测试配置。 */
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(12),
+  LOGIN_RATE_LIMIT_WINDOW: z.string().default('15 minutes'),
 });
 const envResult = envSchema.safeParse(process.env);
 if (!envResult.success) {
@@ -160,6 +165,13 @@ app.get('/api/meta', async () => success({
 
 // In production, serve the compiled React SPA from the same origin as the API.
 // During Vite development the dist directory may not exist, so Vite serves the UI instead.
+/* 登录限流参数下发给 auth 路由。默认 12 次 / 15 分钟；
+   E2E 与视觉回归可通过 .env 调高（LOGIN_RATE_LIMIT_MAX / LOGIN_RATE_LIMIT_WINDOW），
+   生产环境保持默认值，不随测试配置变化。 */
+(app as typeof app & { loginRateLimit?: { max: number; timeWindow: string } }).loginRateLimit = {
+  max: env.LOGIN_RATE_LIMIT_MAX,
+  timeWindow: env.LOGIN_RATE_LIMIT_WINDOW,
+};
 await registerApiModules(app);
 
 app.setNotFoundHandler((request, reply) => {

@@ -5195,3 +5195,16 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .settings-content .page-header { flex-direction: row; align-items: flex-start; flex-wrap: nowrap; }
   .settings-content .page-actions { width: auto; flex: 0 0 auto; justify-content: flex-end; }
 }
+
+/* =============================================================
+   字体声明
+   -------------------------------------------------------------
+   原在 v6.css；旧层退役时迁入 hana.css，避免禁用旧层后字体丢失。
+   MH Serif SC 是可变字体（Noto Serif SC Variable）：wght 轴 200-900，
+   八个命名实例。旧声明 400 800 与轴不匹配且默认实例是最细的 200，
+   导致标题回退到 ExtraLight——这是标题"轻飘"的真正根因。
+   ============================================================= */
+
+@font-face{font-family:"MH Serif SC";src:url("/fonts/notoserifsc.woff2") format("woff2");font-weight:200 900;font-style:normal;font-display:swap}
+@font-face{font-family:"MH Serif";src:url("/fonts/spectral-semibold.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"MH Brush";src:url("/fonts/mashanzheng-subset.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}

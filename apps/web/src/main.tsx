@@ -5,8 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 import { applyUiPreferences, useUiStore } from './auth-store';
 import './styles.css';
-import './styles/legacy.css';
-import './styles/v6.css';
+// LAYER TEST: import './styles/legacy.css';
+// LAYER TEST: import './styles/v6.css';
 import './styles/hana.css';
 import './styles/content-contrast.css';
 

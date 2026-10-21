@@ -6,12 +6,22 @@ const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Applic
 const routes = (process.env.AXE_ROUTES ?? '/,/projects,/notifications,/settings/appearance,/account/security,/cost/contracts,/cost/changes,/cost/budget,/system,/system/accounts,/system/assistant,/system/security,/system/authorization,/system/policies,/system/governance,/system/dictionaries,/system/parameters,/system/operations,/audit-logs,/reports').split(',');
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2200);
+// 复用已登录的 storageState，避免每次运行都触发登录限流（12 次 / 15 分钟）
+const STATE = process.env.AUTH_STATE ?? 'D:/WorkSpace/hana/moheng/.auth/state.json';
+let ctx;
+try {
+  ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN', storageState: STATE });
+} catch {
+  ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
+}
+const page = await ctx.newPage();
+await page.goto(BASE + '/');
+if (page.url().includes('/login')) {
+  await page.locator('input[type=email], #email').first().fill('admin@local.test');
+  await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
+  await page.locator('button[type=submit]').first().click();
+  await page.waitForTimeout(2200);
+}
 
 const results = [];
 for (const route of routes) {

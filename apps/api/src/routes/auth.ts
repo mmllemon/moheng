@@ -43,9 +43,15 @@ function restrictedToken(app: FastifyInstance, user: { id: string; email: string
 }
 
 export async function authRoutes(app: FastifyInstance) {
+  /* 登录限流参数由 server.ts 从环境变量注入（LOGIN_RATE_LIMIT_MAX / LOGIN_RATE_LIMIT_WINDOW），
+     默认 12 次 / 15 分钟。E2E 与视觉回归可调高，生产保持默认。 */
+  const loginRateLimit = (app as FastifyInstance & {
+    loginRateLimit?: { max: number; timeWindow: string };
+  }).loginRateLimit ?? { max: 12, timeWindow: '15 minutes' };
+
   app.post('/login', {
     preHandler: publicCookieOriginGuard,
-    config: { rateLimit: { max: 12, timeWindow: '15 minutes', keyGenerator: (request) => request.ip } },
+    config: { rateLimit: { ...loginRateLimit, keyGenerator: (request) => request.ip } },
   }, async (request, reply) => {
     const parsed = loginBody.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '请检查邮箱、密码和验证器验证码', parsed.error.flatten());

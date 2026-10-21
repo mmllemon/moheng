@@ -10,9 +10,6 @@
    导致正文按 400 请求时回退到 ExtraLight，标题发“轻”——这是标题轻飘的真正根因。
    现改为声明完整轴范围 200 900，让浏览器在范围内连续插值；
    实际显示字重由各处 font-weight 决定（标题 600/700 现在会真正取到对应字形）。 */
-@font-face{font-family:"MH Serif SC";src:url("/fonts/notoserifsc.woff2") format("woff2");font-weight:200 900;font-style:normal;font-display:swap}
-@font-face{font-family:"MH Serif";src:url("/fonts/spectral-semibold.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
-@font-face{font-family:"MH Brush";src:url("/fonts/mashanzheng-subset.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 
 :root{
   --paper:#f8f6ef; --paper-2:#f2efe5; --paper-3:#ebe6d9;
