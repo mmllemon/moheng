@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Bot, CheckCircle2, CircleAlert, KeyRound, RefreshCw, Save, Server, ShieldCheck, Sparkles } from 'lucide-react';
 import { api, ApiError } from '../api';
-import { Button, formatDate, PageHeader } from '../components/Ui';
+import { Button, formatDate, PageHeader, SettingsSection } from '../components/Ui';
 import SelectField from '../components/SelectField';
 import '../styles/assistant-provider.css';
 
@@ -123,37 +123,71 @@ export default function AssistantProviderPage() {
       <div><span>供应商密钥</span><strong className={configuration?.providerConfigured ? 'is-ok' : 'is-wait'}>{configuration?.providerConfigured ? '已配置' : '未配置'}</strong><small>{config?.provider.apiKeyConfigured ? '密钥已加密保存' : '尚未保存密钥'}</small></div>
       <div><span>模型</span><strong className={configuration?.modelConfigured ? 'is-ok' : 'is-wait'}>{configuration?.modelConfigured ? (config?.provider.modelId || '已选择') : '未选择'}</strong><small>{models.length ? '已拉取 ' + models.length + ' 个可选项' : '实时拉取后选择'}</small></div>
       <div><span>检查点 / 队列</span><strong className={configuration?.checkpointSchemaReady ? 'is-ok' : 'is-wait'}>{configuration?.checkpointSchemaReady ? '已就绪' : configuration?.checkpointConfigured ? '待初始化' : '未配置'}</strong><small>PostgreSQL + 后台 worker</small></div>
-      <div><span>加密保险库</span><strong className={configuration?.vaultConfigured ? 'is-ok' : 'is-wait'}>{configuration?.vaultConfigured ? '可用' : '缺少密钥'}</strong><small>ASSISTANT_ENCRYPTION_KEY</small></div>
+      <div><span>加密保险库</span><strong className={configuration?.vaultConfigured ? 'is-ok' : 'is-wait'}>{configuration?.vaultConfigured ? '可用' : '缺少密钥'}</strong><small>{configuration?.vaultConfigured ? '密钥环可用' : '缺少加密密钥'}</small></div>
     </section>
 
-    <div className="assistant-provider-layout">
-      <section className="assistant-provider-form">
-        <div className="assistant-section-head"><div><h2>供应商</h2><p>支持 OpenAI 兼容的 /models 与 chat completions 接口；模型需支持 tool calling。</p></div><Sparkles size={17} /></div>
-        <div className="assistant-form-grid">
-          <label><span>供应商名称</span><input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} placeholder="例如：DeepSeek / 内部网关" /></label>
-          <label className="span-2"><span>接口地址 <b>*</b></span><input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://api.openai.com/v1" spellCheck={false} /><small>地址末尾不要带 /chat/completions；系统会请求 /models。</small></label>
-          <label className="span-2"><span>API 密钥 <b>*</b></span><div className="assistant-key-input"><KeyRound size={15} /><input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} autoComplete="new-password" placeholder={config?.provider.apiKeyConfigured ? '已配置；留空保持当前密钥' : '输入供应商 API Key'} /></div><small>密钥只提交到服务端并加密保存，保存后不再回显。</small></label>
-          <div className="span-2 assistant-fetch-row"><Button variant="secondary" onClick={() => void fetchModels()} disabled={modelsLoading || !baseUrl.trim() || (!apiKey.trim() && !config?.provider.apiKeyConfigured)}><RefreshCw size={14} />{modelsLoading ? '正在拉取…' : '拉取供应商模型'}</Button>{config?.provider.lastModelsFetchedAt && <span>上次拉取 {formatDate(config.provider.lastModelsFetchedAt)}</span>}</div>
-          <div className="span-2 assistant-field"><span>模型 <b>*</b></span>{models.length ? <SelectField value={modelId} onChange={(event) => setModelId(event.target.value)} aria-label="选择供应商模型"><option value="">选择模型</option>{models.map((model) => <option key={model.id} value={model.id}>{model.id}{model.ownedBy ? ' · ' + model.ownedBy : ''}</option>)}{modelId && !models.some((model) => model.id === modelId) && <option value={modelId}>{modelId}（当前保存值）</option>}</SelectField> : <input value={modelId} onChange={(event) => setModelId(event.target.value)} placeholder="先拉取模型，或手动填写模型 ID" spellCheck={false} />}</div>
+    <SettingsSection title="供应商" description="支持 OpenAI 兼容的 /models 与 chat completions 接口；模型需支持 tool calling。">
+      <div className="assistant-rows">
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">供应商名称</div><div className="settings-row-hint">用于区分不同模型网关或内部代理。</div></div>
+          <div className="settings-row-control"><input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} placeholder="例如：DeepSeek / 内部网关" aria-label="供应商名称" /></div>
         </div>
-        <div className="assistant-enable-row"><label><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /><span><strong>启用成本助手</strong><small>启用后，具备项目访问权限的成员可在成本工作台使用只读助手。</small></span></label><span className={ready ? 'assistant-ready is-ok' : 'assistant-ready'}>{ready ? '可进入成本助手' : '尚未满足启用条件'}</span></div>
-        {notice && <div className="success-notice"><CheckCircle2 size={15} />{notice}</div>}
-        {error && <div className="form-alert">{error}</div>}
-        <div className="assistant-form-actions"><Button onClick={() => void save()} disabled={saving || !baseUrl.trim() || !modelId.trim()}><Save size={15} />{saving ? '保存中…' : '保存配置'}</Button><Button variant="secondary" onClick={() => void testConnection()} disabled={testing || !config?.provider.baseUrl || !config?.provider.apiKeyConfigured}><Server size={15} />{testing ? '测试中…' : '测试连接并刷新模型'}</Button></div>
-      </section>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">接口地址</div><div className="settings-row-hint">末尾不要带 /chat/completions；系统会请求 /models。</div></div>
+          <div className="settings-row-control"><input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://api.openai.com/v1" spellCheck={false} aria-label="接口地址" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">API 密钥</div><div className="settings-row-hint">只提交到服务端并加密保存，保存后不再回显。</div></div>
+          <div className="settings-row-control"><div className="assistant-key-input"><KeyRound size={15} /><input type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} autoComplete="new-password" placeholder={config?.provider.apiKeyConfigured ? '已配置；留空保持当前密钥' : '输入供应商 API Key'} aria-label="API 密钥" /></div></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">模型</div><div className="settings-row-hint">先拉取供应商模型，或直接填写模型 ID。</div></div>
+          <div className="settings-row-control assistant-model-control">
+            {models.length ? <SelectField value={modelId} onChange={(event) => setModelId(event.target.value)} aria-label="选择供应商模型"><option value="">选择模型</option>{models.map((model) => <option key={model.id} value={model.id}>{model.id}{model.ownedBy ? ' · ' + model.ownedBy : ''}</option>)}{modelId && !models.some((model) => model.id === modelId) && <option value={modelId}>{modelId}（当前保存值）</option>}</SelectField> : <input value={modelId} onChange={(event) => setModelId(event.target.value)} placeholder="模型 ID" spellCheck={false} aria-label="模型 ID" />}
+            <Button variant="ghost" size="sm" onClick={() => void fetchModels()} disabled={modelsLoading || !baseUrl.trim() || (!apiKey.trim() && !config?.provider.apiKeyConfigured)}><RefreshCw size={14} />{modelsLoading ? '拉取中…' : '拉取'}</Button>
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">启用成本助手</div><div className="settings-row-hint">启用后，具备项目访问权限的成员可在成本工作台使用只读助手。</div></div>
+          <div className="settings-row-control"><button type="button" role="switch" aria-checked={enabled} aria-label="启用成本助手" className={`ui-switch ${enabled ? 'is-on' : ''}`} onClick={() => setEnabled((value) => !value)}><i /></button><span className="assistant-switch-text">{enabled ? '已启用' : '未启用'}</span></div>
+        </div>
+      </div>
+      {notice && <div className="success-notice"><CheckCircle2 size={15} />{notice}</div>}
+      {error && <div className="form-alert">{error}</div>}
+      <div className="settings-row-actions">
+        <span className="settings-row-actions-note">{config?.provider.lastModelsFetchedAt ? `上次拉取 ${formatDate(config.provider.lastModelsFetchedAt)}` : '保存前可先拉取模型，确认接口与密钥可用。'}</span>
+        <div className="settings-row-actions-buttons">
+          <Button variant="secondary" onClick={() => void testConnection()} disabled={testing || !config?.provider.baseUrl || !config?.provider.apiKeyConfigured}><Server size={15} />{testing ? '测试中…' : '测试连接'}</Button>
+          <Button onClick={() => void save()} disabled={saving || !baseUrl.trim() || !modelId.trim()}><Save size={15} />{saving ? '保存中…' : '保存配置'}</Button>
+        </div>
+      </div>
+    </SettingsSection>
 
-      <aside className="assistant-readiness">
-        <div className="assistant-section-head"><div><h2>接入检查</h2><p>保存前请逐项确认；密钥不会回显。</p></div><ShieldCheck size={17} /></div>
-        <div className="assistant-check-list">
-          <div className={configuration?.vaultConfigured ? 'is-ok' : 'is-wait'}>{configuration?.vaultConfigured ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}<span><strong>服务端加密密钥</strong><small>{configuration?.vaultConfigured ? 'ASSISTANT_ENCRYPTION_KEY 已配置' : '缺少 ASSISTANT_ENCRYPTION_KEY，无法保存密钥'}</small></span></div>
-          <div className={configuration?.endpointValid ? 'is-ok' : 'is-wait'}>{configuration?.endpointValid && baseUrl.trim() ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}<span><strong>接口地址</strong><small>{baseUrl.trim() ? '当前地址格式有效，保存前仍会由服务端校验' : '填写 OpenAI 兼容接口地址'}</small></span></div>
-          <div className={configuration?.providerConfigured ? 'is-ok' : 'is-wait'}>{configuration?.providerConfigured ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}<span><strong>供应商密钥</strong><small>{configuration?.providerConfigured ? '已保存加密密钥；只显示配置状态' : '填写并保存 API Key'}</small></span></div>
-          <div className={configuration?.modelConfigured ? 'is-ok' : 'is-wait'}>{configuration?.modelConfigured ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}<span><strong>模型选择</strong><small>{configuration?.modelConfigured ? config?.provider.modelId : '拉取模型后选择'}</small></span></div>
-          <div className={configuration?.checkpointSchemaReady ? 'is-ok' : 'is-wait'}>{configuration?.checkpointSchemaReady ? <CheckCircle2 size={14} /> : <CircleAlert size={14} />}<span><strong>LangGraph 检查点</strong><small>{configuration?.checkpointSchemaReady ? 'moheng_assistant schema 已初始化' : configuration?.checkpointConfigured ? '连接串已配置；请运行 assistant:checkpoint:setup 初始化 schema' : '未配置检查点数据库'}</small></span></div>
+    <SettingsSection title="接入检查" description="保存前请逐项确认；密钥不会回显，连接测试只验证 /models 可达。">
+      <div className="assistant-checks">
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">服务端加密密钥</div><div className="settings-row-hint">{configuration?.vaultConfigured ? 'ASSISTANT_ENCRYPTION_KEY 已配置。' : '缺少 ASSISTANT_ENCRYPTION_KEY，无法保存密钥。'}</div></div>
+          <div className="settings-row-control"><span className={configuration?.vaultConfigured ? 'assistant-check-pill is-ok' : 'assistant-check-pill is-wait'}>{configuration?.vaultConfigured ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{configuration?.vaultConfigured ? '通过' : '待处理'}</span></div>
         </div>
-        <div className="assistant-aside-note"><Bot size={15} /><p>连接测试只验证 /models 可达，不代表模型已经通过工具调用、金额口径和越权拒绝验收。第一次启用建议只用测试项目。</p></div>
-        {config?.provider.lastTestStatus && <div className={config.provider.lastTestStatus === 'SUCCEEDED' ? 'assistant-last-test is-ok' : 'assistant-last-test is-wait'}><span>最近测试 · {formatDate(config.provider.lastTestAt)}</span><strong>{config.provider.lastTestStatus}{config.provider.lastTestSummary ? ' · ' + config.provider.lastTestSummary : ''}</strong></div>}
-      </aside>
-    </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">接口地址</div><div className="settings-row-hint">{baseUrl.trim() ? '当前地址格式有效，保存前仍会由服务端校验。' : '填写 OpenAI 兼容接口地址。'}</div></div>
+          <div className="settings-row-control"><span className={configuration?.endpointValid && baseUrl.trim() ? 'assistant-check-pill is-ok' : 'assistant-check-pill is-wait'}>{configuration?.endpointValid && baseUrl.trim() ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{configuration?.endpointValid && baseUrl.trim() ? '通过' : '待处理'}</span></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">供应商密钥</div><div className="settings-row-hint">{configuration?.providerConfigured ? '已保存加密密钥；只显示配置状态。' : '填写并保存 API Key。'}</div></div>
+          <div className="settings-row-control"><span className={configuration?.providerConfigured ? 'assistant-check-pill is-ok' : 'assistant-check-pill is-wait'}>{configuration?.providerConfigured ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{configuration?.providerConfigured ? '通过' : '待处理'}</span></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">模型选择</div><div className="settings-row-hint">{configuration?.modelConfigured ? config?.provider.modelId : '拉取模型后选择。'}</div></div>
+          <div className="settings-row-control"><span className={configuration?.modelConfigured ? 'assistant-check-pill is-ok' : 'assistant-check-pill is-wait'}>{configuration?.modelConfigured ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{configuration?.modelConfigured ? '通过' : '待处理'}</span></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">LangGraph 检查点</div><div className="settings-row-hint">{configuration?.checkpointSchemaReady ? 'moheng_assistant schema 已初始化。' : configuration?.checkpointConfigured ? '连接串已配置；请运行 assistant:checkpoint:setup 初始化 schema。' : '未配置检查点数据库。'}</div></div>
+          <div className="settings-row-control"><span className={configuration?.checkpointSchemaReady ? 'assistant-check-pill is-ok' : 'assistant-check-pill is-wait'}>{configuration?.checkpointSchemaReady ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{configuration?.checkpointSchemaReady ? '通过' : '待处理'}</span></div>
+        </div>
+      </div>
+      <div className="inline-notice"><Bot size={16} /><span>连接测试只验证 /models 可达，不代表模型已经通过工具调用、金额口径和越权拒绝验收。第一次启用建议只用测试项目。</span></div>
+      {config?.provider.lastTestStatus && <div className={config.provider.lastTestStatus === 'SUCCEEDED' ? 'assistant-last-test is-ok' : 'assistant-last-test is-wait'}><span>最近测试 · {formatDate(config.provider.lastTestAt)}</span><strong>{config.provider.lastTestStatus}{config.provider.lastTestSummary ? ' · ' + config.provider.lastTestSummary : ''}</strong></div>}
+    </SettingsSection>
   </div>;
 }

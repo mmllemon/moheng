@@ -110,6 +110,7 @@ export default function Layout() {
   const settingsOriginRef = useRef<HTMLElement | null>(null);
   const settingsBarRef = useRef<HTMLDivElement>(null);
   const settingsContentRef = useRef<HTMLDivElement>(null);
+  const settingsScrollbarRef = useRef<HTMLDivElement>(null);
 
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
   const projects = projectsQuery.data ?? [];
@@ -251,6 +252,63 @@ export default function Layout() {
     return animatePaperIn(settingsWindowRef.current, settingsOriginRef.current);
   }, [isSettingsArea]);
   useEffect(() => { if (!isSettingsArea) settingsOriginRef.current = null; }, [isSettingsArea]);
+  useEffect(() => {
+    if (!isSettingsArea) return;
+    const content = settingsContentRef.current;
+    const bar = settingsScrollbarRef.current;
+    const thumb = bar?.firstElementChild as HTMLElement | null;
+    if (!content || !bar || !thumb) return;
+    const update = () => {
+      if (content.scrollHeight <= content.clientHeight + 1) {
+        bar.style.display = 'none';
+        return;
+      }
+      bar.style.display = 'block';
+      const trackHeight = Math.max(1, content.clientHeight - 16);
+      const thumbHeight = Math.max(28, Math.round(trackHeight * (content.clientHeight / content.scrollHeight)));
+      const maxScroll = Math.max(1, content.scrollHeight - content.clientHeight);
+      const maxTop = Math.max(0, trackHeight - thumbHeight);
+      const top = Math.round((content.scrollTop / maxScroll) * maxTop);
+      thumb.style.height = thumbHeight + 'px';
+      thumb.style.transform = 'translateY(' + top + 'px)';
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      event.preventDefault();
+      const startY = event.clientY;
+      const startScroll = content.scrollTop;
+      const maxScroll = Math.max(1, content.scrollHeight - content.clientHeight);
+      const trackHeight = Math.max(1, content.clientHeight - 16);
+      const thumbHeight = Math.max(28, Math.round(trackHeight * (content.clientHeight / content.scrollHeight)));
+      const maxTop = Math.max(1, trackHeight - thumbHeight);
+      const onMove = (moveEvent: PointerEvent) => {
+        const delta = moveEvent.clientY - startY;
+        content.scrollTop = Math.max(0, Math.min(maxScroll, startScroll + (delta / maxTop) * maxScroll));
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    };
+    bar.addEventListener('pointerdown', onPointerDown);
+    content.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    const observer = new ResizeObserver(update);
+    observer.observe(content);
+    const mutation = new MutationObserver(update);
+    mutation.observe(content, { childList: true, subtree: true, characterData: true });
+    const timer = window.setTimeout(update, 260);
+    update();
+    return () => {
+      bar.removeEventListener('pointerdown', onPointerDown);
+      content.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+      observer.disconnect();
+      mutation.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, [isSettingsArea, location.pathname]);
   const closeSettings = () => {
     if (animatePaperOut(settingsWindowRef.current, settingsOriginRef.current, () => { settingsOriginRef.current = null; navigate('/'); })) return;
     settingsOriginRef.current = null;
@@ -437,6 +495,7 @@ export default function Layout() {
           </nav>
           <div ref={settingsContentRef} className="settings-content" aria-hidden={settingsNavOpen ? true : undefined}><div className="route-transition" key={location.pathname}><Outlet /></div></div>
         </div>
+        <div ref={settingsScrollbarRef} className="settings-scrollbar" aria-hidden="true"><span /></div>
       </section>
     </div>}
 

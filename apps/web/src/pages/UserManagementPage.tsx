@@ -81,19 +81,31 @@ export default function UserManagementPage() {
       <div className="sys-split-side">
     <section className="panel">
       <div className="panel-heading"><div><h3>创建系统账号</h3><p>新建账号默认是普通用户，首次登录强制修改初始密码，不会自动获得任何项目访问权限。</p></div><span className="panel-icon"><UserPlus size={18} /></span></div>
-      <form className="form-stack" onSubmit={(event) => { event.preventDefault(); setNotice(''); setError(''); createUser.mutate(); }}>
-        <div className="field"><label>姓名 <b>*</b></label><input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} placeholder="请输入真实姓名" autoComplete="name" /></div>
-        <div className="field"><label>登录邮箱 <b>*</b></label><input required type="email" maxLength={254} autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" /></div>
-        <div className="field"><label>初始密码 <b>*</b></label><input required type="password" minLength={12} maxLength={200} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="至少 12 位临时强密码" /><small className="field-hint">请通过安全渠道告知用户。系统只存储 bcrypt 哈希，不会再次显示初始密码。</small></div>
-        <div><Button type="submit" disabled={createUser.isPending || !name.trim() || !email.trim() || password.length < 12}><UserPlus size={15} />{createUser.isPending ? '创建中…' : '创建账号'}</Button></div>
+      <form className="account-rows" onSubmit={(event) => { event.preventDefault(); setNotice(''); setError(''); createUser.mutate(); }}>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">姓名</div><div className="settings-row-hint">用于账号列表与审计记录展示。</div></div>
+          <div className="settings-row-control"><input required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} placeholder="请输入真实姓名" autoComplete="name" aria-label="姓名" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">登录邮箱</div><div className="settings-row-hint">作为登录账号，不会自动获得项目访问权限。</div></div>
+          <div className="settings-row-control"><input required type="email" maxLength={254} autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@company.com" aria-label="登录邮箱" /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">初始密码</div><div className="settings-row-hint">至少 12 位；系统只存储 bcrypt 哈希，不会再次显示。</div></div>
+          <div className="settings-row-control"><input required type="password" minLength={12} maxLength={200} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="至少 12 位临时强密码" aria-label="初始密码" /></div>
+        </div>
+        <div className="settings-row-actions"><span className="settings-row-actions-note">创建后请通过安全渠道告知用户，并要求首次登录修改密码。</span><div className="settings-row-actions-buttons"><Button type="submit" disabled={createUser.isPending || !name.trim() || !email.trim() || password.length < 12}><UserPlus size={15} />{createUser.isPending ? '创建中…' : '创建账号'}</Button></div></div>
       </form>
     </section>
 
     {resetTarget && <section className="panel user-reset-panel">
       <div className="panel-heading"><div><h3>重置账号密码</h3><p>{resetTarget.name} · {resetTarget.email}。重置后该账号必须修改密码，所有现有会话立即失效。</p></div><button className="icon-button" aria-label="取消重置" onClick={() => { setResetTarget(null); setResetPassword(''); }}><X size={15} /></button></div>
-      <form className="form-stack" onSubmit={(event) => { event.preventDefault(); resetMutation.mutate(); }}>
-        <div className="field"><label>临时密码 *</label><input type="password" required minLength={12} maxLength={200} autoComplete="new-password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} placeholder="至少 12 位临时密码" /></div>
-        <div><Button type="submit" variant="danger" disabled={resetMutation.isPending || resetPassword.length < 12}><KeyRound size={15} />{resetMutation.isPending ? '正在重置…' : '确认重置密码'}</Button></div>
+      <form className="account-rows" onSubmit={(event) => { event.preventDefault(); resetMutation.mutate(); }}>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">临时密码</div><div className="settings-row-hint">重置后该账号必须修改密码，所有现有会话立即失效。</div></div>
+          <div className="settings-row-control"><input type="password" required minLength={12} maxLength={200} autoComplete="new-password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} placeholder="至少 12 位临时密码" aria-label="临时密码" /></div>
+        </div>
+        <div className="settings-row-actions"><span className="settings-row-actions-note">{resetTarget.name} · {resetTarget.email}</span><div className="settings-row-actions-buttons"><Button type="submit" variant="danger" disabled={resetMutation.isPending || resetPassword.length < 12}><KeyRound size={15} />{resetMutation.isPending ? '正在重置…' : '确认重置密码'}</Button></div></div>
       </form>
     </section>}
 

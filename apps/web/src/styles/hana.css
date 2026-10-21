@@ -985,21 +985,21 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   gap: 7px;
   width: 100%;
   min-height: 32px;
-  padding: 0 12px;
-  border: 1px solid transparent;
-  border-radius: 16px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   corner-shape: squircle;
-  background: color-mix(in srgb, var(--text) 3%, transparent);
+  background: var(--bg-card);
   color: var(--text);
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1;
   text-align: left;
   box-shadow: none;
   cursor: pointer;
   transition: border-color var(--duration-fast), background var(--duration-fast), box-shadow var(--duration-fast);
 }
-.select-control-trigger:hover:not(:disabled) { border-color: transparent; background: var(--overlay-medium); }
-.select-control[data-open="true"] .select-control-trigger { border-color: color-mix(in srgb, var(--accent) 48%, transparent); background: var(--bg-card); box-shadow: 0 0 0 3px var(--accent-light); }
+.select-control-trigger:hover:not(:disabled) { border-color: var(--accent); background: var(--bg-card); }
+.select-control[data-open="true"] .select-control-trigger { border-color: var(--accent); background: var(--bg-card); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
 .select-control[data-open="true"] .select-control-trigger::after { display: none; content: none; }
 .select-control-trigger:focus-visible { outline: none; border-color: color-mix(in srgb, var(--accent) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent); }
 .select-control-trigger > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -1009,9 +1009,9 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   position: fixed;
   z-index: var(--z-popover);
   overflow: hidden;
-  padding: 6px;
+  padding: 4px;
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 12px;
   background: var(--bg-card);
   box-shadow: 0 4px 16px rgba(59, 61, 63, 0.09), 0 1px 3px rgba(0, 0, 0, 0.04);
   color: var(--text);
@@ -1039,18 +1039,18 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 32px;
-  padding: 0 10px;
+  min-height: 30px;
+  padding: 0 9px;
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: 5px;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
+  font-size: 12px;
   text-align: left;
   cursor: pointer;
 }
-.select-option:hover, .select-option.is-active { background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text); }
-.select-option.is-selected { background: color-mix(in srgb, var(--text) 3%, transparent); color: var(--accent); font-weight: 400; }
+.select-option:hover, .select-option.is-active { background: var(--accent-light); color: var(--accent); }
+.select-option.is-selected { background: color-mix(in srgb, var(--accent) 9%, transparent); color: var(--accent); font-weight: 500; }
 .select-option.is-selected svg { color: var(--accent); }
 .select-option:disabled { opacity: 0.45; }
 
@@ -1568,7 +1568,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 /* =============================================================
    浮层：下拉、日期、账号、快捷操作、命令面板、弹窗
    ============================================================= */
-.date-picker-trigger { min-height: 32px !important; border: 1px solid var(--border) !important; border-radius: 10px !important; background: var(--bg-card) !important; color: var(--text) !important; font-size: 13px !important; }
+.date-picker-trigger { min-height: 32px !important; border: 1px solid var(--border) !important; border-radius: 8px !important; background: var(--bg-card) !important; color: var(--text) !important; font-size: 13px !important; }
 .date-picker-control[data-open="true"] .date-picker-trigger { border-color: color-mix(in srgb, var(--accent) 48%, transparent) !important; box-shadow: 0 0 0 3px var(--accent-light); }
 .date-picker-control[data-open="true"] .date-picker-trigger::after { display: none !important; content: none !important; }
 .date-picker-popover, .account-menu {
@@ -1579,7 +1579,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   color: var(--text) !important;
   overflow: hidden;
 }
-.date-picker-popover { padding: 8px !important; border-radius: 16px !important; }
+.date-picker-popover { padding: 8px !important; border-radius: 12px !important; }
 .date-picker-day.is-selected { background: var(--accent) !important; color: var(--on-accent, #fff) !important; border-radius: 8px !important; font-weight: 600; }
 .date-picker-day.is-selected::before { display: none !important; content: none !important; }
 .account-menu { width: 240px; padding: 6px !important; border-radius: 18px !important; }
@@ -2041,25 +2041,25 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-header-copy strong { color: var(--text); font-family: var(--font-serif); font-size: 14px; font-weight: 600; }
 .settings-header-copy span { color: var(--text-muted); font-size: 9.5px; letter-spacing: 0.08em; }
 .settings-header-actions { margin-left: auto; display: flex; align-items: center; gap: 3px; }
-.settings-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 208px 670px; column-gap: 40px; padding-right: 40px; }
-.settings-nav { min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; border-right: 1px solid var(--border); background: transparent; }
+.settings-body { flex: 1; min-height: 0; display: flex; padding-right: 0; }
+.settings-nav { width: 208px; flex: 0 0 208px; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; border-right: 1px solid var(--border); background: transparent; }
 .settings-search { position: relative; flex: 0 0 auto; }
 .settings-search svg { position: absolute; left: 9px; top: 50%; width: 14px; height: 14px; color: var(--text-muted); transform: translateY(-50%); pointer-events: none; }
-.settings-search input {
+.settings-nav .settings-search input {
   width: 100%;
-  height: 35px;
+  height: 34px;
   padding: 0 10px 0 30px;
   border: 1px solid transparent;
   border-radius: 10px;
-  background: var(--overlay-subtle);
+  background: color-mix(in srgb, var(--overlay-light) 60%, transparent);
   color: var(--text);
-  font-size: 11.5px;
+  font-size: 13px;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
 }
-.settings-search input::placeholder { color: var(--text-muted); }
-.settings-search input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 42%, transparent); background: var(--bg-card); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent); }
+.settings-nav .settings-search input::placeholder { color: var(--text-muted); }
+.settings-nav .settings-search input:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 32%, transparent); background: var(--bg-card); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
 .settings-groups { flex: 1; min-height: 0; overflow-y: auto; padding-right: 1px; }
 .settings-group { display: flex; flex-direction: column; gap: 1px; margin-bottom: 12px; }
 .settings-group h2 { padding: 5px 8px 3px; color: var(--text-muted); font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em; }
@@ -2082,12 +2082,42 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-nav-link[data-autofocus="true"]:focus-visible { outline: none; }
 .settings-nav-empty { padding: 16px 8px; color: var(--text-muted); font-size: 10.5px; text-align: center; }
 .settings-content {
+  flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
-  padding: 20px 0 32px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 40px 32px;
   scroll-behavior: smooth;
+  scrollbar-width: auto;
 }
+.settings-content::-webkit-scrollbar { width: 4px; height: 4px; }
+.settings-content::-webkit-scrollbar-track { background: transparent; }
+.settings-content::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-muted) 18%, transparent); border-radius: 99px; }
+.settings-content::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text-muted) 32%, transparent); }
+.settings-scrollbar {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 2px;
+  z-index: 4;
+  width: 4px;
+  display: none;
+  pointer-events: auto;
+  cursor: default;
+}
+.settings-scrollbar span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+  transition: background var(--duration-fast);
+}
+.settings-window:hover .settings-scrollbar span { background: color-mix(in srgb, var(--text-muted) 30%, transparent); }
+.settings-content { scrollbar-width: none; -ms-overflow-style: none; }
+.settings-content::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .settings-content .page-wrap { max-width: 100%; padding: 0; }
 .settings-content .page-header { align-items: flex-start; margin-bottom: 20px; padding-right: 38px; }
 .settings-content .page-header h1 { font-family: var(--font-ui); font-size: 16px; font-weight: 600; letter-spacing: 0.005em; }
@@ -2102,7 +2132,7 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-content .system-overview-two-column { grid-template-columns: 1fr; }
 .settings-content .sys-split { display: flex; flex-direction: column; gap: 14px; }
 .settings-content .sys-split-side, .settings-content .sys-split-main { width: 100%; min-width: 0; }
-.settings-content .sys-split-side .panel { max-width: 560px; }
+.settings-content .sys-split-side .panel { max-width: none; }
 .settings-content .table-scroll { width: 100%; }
 .settings-content .data-table { min-width: 640px; }
 .settings-content .app-footer { display: none; }
@@ -2362,8 +2392,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
 }
 
 @media (max-width: 1010px) {
-  .settings-body { grid-template-columns: 190px minmax(0, 1fr); column-gap: 0; padding-right: 0; }
-  .settings-content { padding: 18px 22px 30px; }
   .settings-close-floating { right: 14px; }
   .settings-theme-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .settings-font-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2417,8 +2445,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
   .cost-workspace-tabs { padding-left: 12px; padding-right: 12px; }
   .settings-overlay { padding: 0; }
   .settings-window { width: 100%; height: 100%; border-radius: 0; border: 0; }
-  .settings-body { grid-template-columns: 176px minmax(0, 1fr); column-gap: 0; padding-right: 0; }
-  .settings-content { padding: 18px 18px 32px; }
   .settings-header { padding-left: 12px; }
   .system-roadmap-grid { grid-template-columns: 1fr; }
   .system-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -2598,6 +2624,79 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
+
+/* =============================================================
+   Hana SettingsRow：左侧文字，右侧交互
+   ============================================================= */
+.settings-row > .settings-row-copy { flex: 1 1 auto; }
+.settings-row-label { color: var(--text); font-size: 13px; font-weight: 600; line-height: 1.4; }
+.settings-row-hint { margin-top: 3px; color: var(--text-muted); font-size: 10.5px; line-height: 1.55; }
+.settings-row-control { flex: 0 0 auto; min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.settings-row-control .select-control { width: 220px; max-width: 100%; }
+.settings-row-control input:not([type="checkbox"]):not([type="radio"]),
+.settings-row-control select {
+  width: 300px;
+  max-width: 100%;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  outline: none;
+}
+.settings-row-control input:focus,
+.settings-row-control select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
+.settings-row-control .assistant-key-input { width: 300px; }
+.settings-row-control .assistant-key-input input { width: 100%; border: 0; box-shadow: none; background: transparent; padding: 0; height: 30px; }
+.settings-row-control .text-input { width: 300px; }
+.settings-section-card > .success-notice,
+.settings-section-card > .form-alert { margin: 12px 16px; }
+.settings-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 64%, transparent);
+}
+.settings-row-actions-note { color: var(--text-muted); font-size: 10px; line-height: 1.5; }
+.settings-row-actions-buttons { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* 审计筛选行 */
+.audit-filter-rows { padding: 2px 0; }
+.settings-row-control .audit-search-input {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 300px;
+  max-width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+}
+.settings-row-control .audit-search-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
+.settings-row-control .audit-search-input input { width: 100%; min-width: 0; height: 30px; padding: 0; border: 0; background: transparent; color: var(--text); font-size: 12.5px; outline: none; }
+.settings-row-control .date-picker-control { width: 220px; max-width: 100%; }
+.audit-filter-panel .settings-row-actions { margin-top: 0; }
+.audit-filter-panel .audit-inline-message { margin: 0 16px 12px; }
+
+/* 概览指标卡统一拉伸，文字长短不再改变卡片高度 */
+.audit-summary-grid,
+.security-metrics,
+.system-overview-metrics,
+.notice-summary-grid,
+.assistant-status-strip { align-items: stretch; grid-auto-rows: 1fr; }
+.audit-summary-card,
+.security-metric,
+.system-overview-metric,
+.notice-summary-card { height: 100%; }
 
 /* 通知中心：概览与工作事项 */
 .notice-summary-grid {
@@ -2940,6 +3039,27 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 680px) {
+  .settings-scrollbar { display: none !important; }
+  .settings-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .settings-row-copy { width: 100%; }
+  .settings-row-control { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .settings-row-control .select-control,
+  .settings-row-control input:not([type="checkbox"]):not([type="radio"]),
+  .settings-row-control .text-input,
+  .settings-row-control .audit-search-input,
+  .settings-row-control .date-picker-control,
+  .assistant-key-input { width: 100% !important; max-width: 100%; }
+  .settings-row-actions { flex-direction: column; align-items: stretch; }
+  .settings-row-actions-buttons { justify-content: flex-end; }
+}
+
+@media (max-width: 760px) {
+  .audit-summary-card,
+  .security-metric,
+  .notice-summary-card { min-height: 120px; }
+}
 
 /* =============================================================
    Hana 区块节奏（2026-10 复审）

@@ -116,14 +116,29 @@ export default function AuditLogsPage() {
 
     <form className="panel audit-filter-panel" onSubmit={submitFilters}>
       <div className="audit-filter-heading"><div><h3><Filter size={16} />筛选操作记录</h3><p>可按项目、业务对象、操作者/动作/记录编号和日期范围筛选。</p></div><span>只读审计视图</span></div>
-      <div className="audit-filter-grid">
-        <label className="audit-field"><span>项目范围</span><SelectField value={draft.projectId} onChange={(event) => setDraft((current) => ({ ...current, projectId: event.target.value }))} aria-label="项目范围"><option value="">全部可访问项目</option>{(projectsQuery.data ?? []).map((project) => <option value={project.id} key={project.id}>{project.name} · {project.code}</option>)}</SelectField></label>
-        <label className="audit-field"><span>业务对象</span><SelectField value={draft.entity} onChange={(event) => setDraft((current) => ({ ...current, entity: event.target.value }))} aria-label="业务对象"><option value="">全部业务对象</option>{entityOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</SelectField></label>
-        <label className="audit-field audit-search-field"><span>关键字</span><div className="audit-search-input"><Search size={15} /><input value={draft.q} onChange={(event) => setDraft((current) => ({ ...current, q: event.target.value }))} placeholder="操作者、动作、对象编号、项目名称" /></div></label>
-        <label className="audit-field"><span>开始日期</span><DatePicker value={draft.from} onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))} aria-label="开始日期" placeholder="不限" max={draft.to || undefined} /></label>
-        <label className="audit-field"><span>结束日期</span><DatePicker value={draft.to} onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))} aria-label="结束日期" placeholder="不限" min={draft.from || undefined} /></label>
+      <div className="audit-filter-rows">
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">项目范围</div><div className="settings-row-hint">在全部可访问项目或单一项目内检索。</div></div>
+          <div className="settings-row-control"><SelectField value={draft.projectId} onChange={(event) => setDraft((current) => ({ ...current, projectId: event.target.value }))} aria-label="项目范围"><option value="">全部可访问项目</option>{(projectsQuery.data ?? []).map((project) => <option value={project.id} key={project.id}>{project.name} · {project.code}</option>)}</SelectField></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">业务对象</div><div className="settings-row-hint">按合同、成本、变更、结算等对象筛选。</div></div>
+          <div className="settings-row-control"><SelectField value={draft.entity} onChange={(event) => setDraft((current) => ({ ...current, entity: event.target.value }))} aria-label="业务对象"><option value="">全部业务对象</option>{entityOptions.map((item) => <option value={item.value} key={item.value}>{item.label}</option>)}</SelectField></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">关键字</div><div className="settings-row-hint">操作者、动作、对象编号或项目名称。</div></div>
+          <div className="settings-row-control"><div className="audit-search-input"><Search size={15} /><input value={draft.q} onChange={(event) => setDraft((current) => ({ ...current, q: event.target.value }))} placeholder="操作者、动作、对象编号、项目名称" aria-label="关键字" /></div></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">开始日期</div><div className="settings-row-hint">留空表示不限起始时间。</div></div>
+          <div className="settings-row-control"><DatePicker value={draft.from} onChange={(event) => setDraft((current) => ({ ...current, from: event.target.value }))} aria-label="开始日期" placeholder="不限" max={draft.to || undefined} /></div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><div className="settings-row-label">结束日期</div><div className="settings-row-hint">留空表示不限截止时间。</div></div>
+          <div className="settings-row-control"><DatePicker value={draft.to} onChange={(event) => setDraft((current) => ({ ...current, to: event.target.value }))} aria-label="结束日期" placeholder="不限" min={draft.from || undefined} /></div>
+        </div>
       </div>
-      <div className="audit-filter-actions"><span>导出采用 UTF-8 BOM，支持用 Excel 打开；单次最多导出最新 5,000 条。</span><div><Button type="button" variant="ghost" onClick={resetFilters}>重置</Button><Button type="submit"><Search size={14} />应用筛选</Button></div></div>
+      <div className="settings-row-actions"><span className="settings-row-actions-note">导出采用 UTF-8 BOM，支持用 Excel 打开；单次最多导出最新 5,000 条。</span><div className="settings-row-actions-buttons"><Button type="button" variant="ghost" onClick={resetFilters}>重置</Button><Button type="submit"><Search size={14} />应用筛选</Button></div></div>
       {exportMessage && <div className={`audit-inline-message ${exportMessage.startsWith('导出失败') ? 'is-error' : ''}`} role="status">{exportMessage}</div>}
     </form>
 
