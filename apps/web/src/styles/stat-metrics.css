@@ -1,37 +1,186 @@
-
 /* =============================================================
-   统计指标区（统一规范）
+   统计指标区（全站统一规范）
    -------------------------------------------------------------
-   依据：Hana 1.1.35 官方卡片规范 hana-card-style.css 的 .hs-metrics / .hs-metric
-   核心思路：不做"卡片"，只做排版分隔——无背景、无边框、无圆角、无阴影，
-   只用 border-left 竖线分隔。首项不画左线、末项不留右内边距。
+   依据：Hana 1.1.35 官方卡片规范 hana-card-style.css 的
+         .hs-metrics / .hs-metric
+
+   核心思路：指标不是"卡片"，只是"排版分隔"。
+     · 容器：透明、无圆角、无阴影，上下各一条 1px 细线
+     · 指标项：只靠 border-left 竖线分隔，首项不画、末项不留右内边距
+     · 排版：标签在上、数值 26px/600/tabular-nums、说明在下
+     · 不设图标、不居中——一律左对齐
+
+   改造前全站有 5 套规格并存：
+     A 卡片背景 #FCFAF5 + 圆角 14.73px  （/projects /cost/budget
+        /cost/analysis /parties /system/security）
+     B 透明 + 圆角 0 + 上下细线          （/cost/progress-bills /cost/changes
+        /notifications /audit-logs /system）
+     C 透明 + 圆角 2px                   （/cost/owner-finance）
+     D 透明 + 无边框                     （/cost/downstream /cost/contracts
+        /system/authorization）
+     E 透明 + 无边框 + 卡片内竖线        （/reports）
+   外加 8 处带图标、4 处居中对齐。全部收成 B。
 
    注意：选择器统一加 html 前缀提高特异度，否则会被 hana.css 里的
-   .downstream-summary-grid .change-summary:nth-child(odd) 等双类规则压过。
+   .downstream-summary-grid .change-summary:nth-child(odd) 这类双类规则压过。
    ============================================================= */
 
-/* 指标区容器：等分网格，minmax(0,1fr) 保证不被内容撑破 */
+/* -------------------------------------------------------------
+   一、容器层 —— 全站只有一种
+   注意：旧规则带页面级前缀（.projects-ledger-page .projects-kpi-strip
+   特异度 20），单类 html 前缀（11）压不住，所以这里补齐同样的
+   页面前缀再叠加 html 前缀，特异度 21。
+
+   列数刻意不用 auto-fit：minmax(0,1fr) 允许列宽降到 0，
+   auto-fit 会判定"还能再塞"而压少列数，导致 4 项变两行。
+   改为按项数确定列数（见 grid-template-columns 逐条）。
+   ------------------------------------------------------------- */
+html .projects-ledger-page .projects-kpi-strip,
+html .analysis-page .an-stats,
+html .settings-content .security-metrics,
 html .change-summary-grid,
 html .bill-summary-grid,
 html .owner-finance-metrics,
 html .downstream-summary-grid,
-html .security-metrics {
+html .security-metrics,
+html .system-overview-metrics,
+html .notice-summary-grid,
+html .audit-summary-grid,
+html .projects-kpi-strip,
+html .ldg-stats,
+html .an-stats,
+html .business-party-summary-strip,
+html .report-studio-entry-grid,
+html .system-authorization-scope-grid,
+html .owner-contract-detail-grid,
+html .system-ops-summary,
+html .assistant-check-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   padding: var(--space-16) 0;
   margin: var(--space-16) 0;
+  border: 0;
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
 }
 
-/* 指标项：竖线分隔，无卡片外观 */
+/* 逐个按实际项数固定列数。
+   不用 auto-fit（minmax(0,1fr) 允许列宽降到 0，会被判定能再塞而压少列数），
+   也不用 CSS 变量（被容器块里更早的声明同特异度覆盖）。 */
+html .change-summary-grid,
+html .bill-summary-grid,
+html .ldg-stats,
+html .an-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+html .owner-finance-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+html .downstream-summary-grid,
+html .owner-contract-detail-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+html .security-metrics,
+html .notice-summary-grid,
+html .audit-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* /system/operations 是 4 项，不是 3 项——设 3 列会把第 4 项挤到下一行 */
+html .system-ops-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+html .system-overview-metrics,
+html .projects-kpi-strip,
+html .system-authorization-scope-grid,
+html .report-studio-entry-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+html .assistant-check-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+/* /parties 只有 2 个真指标 + 1 段跨列说明 */
+html .business-party-summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* 带页面前缀的容器：同时按页面前缀+html 前缀重写一遍 */
+html .ds-section-card .downstream-summary-grid,
+html .projects-ledger-page .projects-kpi-strip > div,
+html .analysis-page .an-stats > div,
+html .settings-content .security-metrics > * {
+  position: static;
+  padding: 0 var(--space-16);
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+/* ds-section-card 里的统计区：清掉双列布局与卡片包裹 */
+html .ds-section-card .downstream-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  padding: var(--space-16) 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 0;
+  background: transparent;
+}
+html .ds-section-card .downstream-summary-grid .change-summary {
+  border-top: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+html .ds-section-card .downstream-summary-grid .change-summary:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+html .ds-section-card .downstream-summary-grid .change-summary:last-child {
+  padding-right: 0;
+}
+/* downstream 里旧规则的 21px 数值要拉回 26px */
+html .downstream-summary-grid .change-summary strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+html .projects-ledger-page .projects-kpi-strip > div:first-child,
+html .analysis-page .an-stats > div:first-child,
+html .settings-content .security-metrics > *:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+html .projects-ledger-page .projects-kpi-strip > div:last-child,
+html .analysis-page .an-stats > div:last-child,
+html .settings-content .security-metrics > *:last-child {
+  padding-right: 0;
+}
+/* 干掉旧的分隔线伪元素——它们只画到 12px 高度，与新规范不一致 */
+html .projects-ledger-page .projects-kpi-strip > div + div::before,
+html .ldg-stats > div + div::before,
+html .downstream-summary-grid .change-summary + .change-summary::before {
+  display: none;
+}
+
+/* -------------------------------------------------------------
+   二、指标项 —— 无卡片外观，一律左对齐
+   ------------------------------------------------------------- */
 html .change-summary,
 html .bill-summary,
 html .owner-metric,
-html .security-metric {
+html .security-metric,
+html .system-overview-metric,
+html .notice-summary-card,
+html .audit-summary-card,
+html .projects-kpi-strip > *,
+html .ldg-stats > *,
+html .an-stats > *,
+html .business-party-summary-strip > *,
+html .report-studio-entry-card,
+html .system-authorization-scope-card,
+html .owner-contract-detail-grid > *,
+html .system-ops-summary-cell,
+html .assistant-check-item {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
   width: 100%;
   min-width: 0;
   padding: 0 var(--space-16);
@@ -43,43 +192,130 @@ html .security-metric {
   box-sizing: border-box;
 }
 
-/* 首项不画左线；末项不留右内边距。用双类提高特异度压过旧规则 */
-html .change-summary-grid > .change-summary:first-child,
-html .bill-summary-grid > .bill-summary:first-child,
-html .owner-finance-metrics > .owner-metric:first-child,
-html .downstream-summary-grid > .change-summary:first-child,
-html .security-metrics > .security-metric:first-child,
-html .change-summary-grid > :first-child,
-html .bill-summary-grid > :first-child,
-html .owner-finance-metrics > :first-child,
-html .downstream-summary-grid > :first-child,
-html .security-metrics > :first-child {
+/* 首项不画左线 */
+html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
+    .downstream-summary-grid, .security-metrics, .system-overview-metrics,
+    .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip, .ldg-stats,
+    .an-stats, .business-party-summary-strip, .report-studio-entry-grid,
+    .system-authorization-scope-grid, .owner-contract-detail-grid,
+    .system-ops-summary, .assistant-check-grid) > :first-child {
   padding-left: 0;
   border-left: 0;
 }
-html .change-summary-grid > :last-child,
-html .bill-summary-grid > :last-child,
-html .owner-finance-metrics > :last-child,
-html .downstream-summary-grid > :last-child,
-html .security-metrics > :last-child {
+
+/* 末项不留右内边距 */
+html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
+    .downstream-summary-grid, .security-metrics, .system-overview-metrics,
+    .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip, .ldg-stats,
+    .an-stats, .business-party-summary-strip, .report-studio-entry-grid,
+    .system-authorization-scope-grid, .owner-contract-detail-grid,
+    .system-ops-summary, .assistant-check-grid) > :last-child {
   padding-right: 0;
 }
 
-/* 强调项：不再用背景色区分，靠数值颜色 */
-html .change-summary-emphasis,
-html .owner-metric-primary {
-  background: transparent;
+/* -------------------------------------------------------------
+   二半、多行区（2×2 等）的逐行竖线
+   -------------------------------------------------------------
+   Hana 的 .hs-metrics 固定单行，所以只需 :first-child / :last-child。
+   但墨衡有几个页面本来就是 2×2（/system、/system/operations、/parties），
+   只用 :first-child 会导致：第 1 行末项留着右内边距、第 2 行首项多一根左竖线。
+   这里按列数逐行纠正。 */
+
+/* 两列布局：奇数位是行首，偶数位是行末
+   注意：/system 的卡片同时带 .panel，旧规则
+   `article.panel.system-overview-metric:first-child`（特异度 32）会压过单类写法。
+   用 .panel 同时挂名，直接把特异度拉到 32+。 */
+html .system-overview-metrics > article.system-overview-metric:nth-child(odd),
+html :is(.business-party-summary-strip, .system-authorization-scope-grid, .report-studio-entry-grid) > :nth-child(odd) {
+  padding-left: 0;
+  border-left: 0;
 }
-html .change-summary-emphasis strong,
-html .owner-metric-primary strong {
-  color: var(--accent);
+html .system-overview-metrics > article.system-overview-metric:nth-child(even),
+html :is(.business-party-summary-strip, .system-authorization-scope-grid, .report-studio-entry-grid) > :nth-child(even) {
+  padding-right: 0;
+  padding-left: var(--space-16);
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 
+/* 三列布局（/system/security 等）：3n+1 行首，3n 行末 */
+html :is(.security-metrics, .notice-summary-grid, .audit-summary-grid) > :nth-child(3n + 1) {
+  padding-left: 0;
+  border-left: 0;
+}
+html :is(.security-metrics, .notice-summary-grid, .audit-summary-grid) > :nth-child(3n) {
+  padding-right: 0;
+}
+/* /system/operations 是四列 */
+html .system-ops-summary > :nth-child(4n + 1) {
+  padding-left: 0;
+  border-left: 0;
+}
+html .system-ops-summary > :nth-child(4n) {
+  padding-right: 0;
+}
+
+/* 五列布局（/cost/contracts 是 3 项 + 2 项跨列，非标准 5 列） */
+html .downstream-summary-grid > :nth-child(5n + 1),
+html .assistant-check-grid > :nth-child(5n + 1) {
+  padding-left: 0;
+  border-left: 0;
+}
+html .downstream-summary-grid > :nth-child(5n),
+html .assistant-check-grid > :nth-child(5n) {
+  padding-right: 0;
+}
+
+/* /cost/contracts 的 span-detail-wide 是跨列项，
+   它们自己占满一行，不应吃竖线与右内边距。 */
+html .owner-contract-detail-grid > .span-detail-wide {
+  padding-right: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+/* 标准 5 列那里只有前 3 项同行 */
+html .owner-contract-detail-grid > :nth-child(3) {
+  padding-right: 0;
+}
+
+/* /parties 的说明段落跨满整行，不参与逐行竖线 */
+html .business-party-summary-strip > p {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* -------------------------------------------------------------
+   三、去掉纯装饰图标 —— Hana 的 .hs-metric 没有图标
+   图标会把"数字"变成"信息块"，重心被拉起，数值不再是最重的东西。
+   注意：/system 的图标是 <a> 导航入口，保留，见第五节。
+   ------------------------------------------------------------- */
+html .bill-summary-icon,
+html .security-metric-icon,
+html .notice-summary-icon,
+html .audit-summary-icon,
+html .system-authorization-scope-icon,
+html .report-studio-entry-icon,
+html .business-party-summary-strip > * > svg,
+html .projects-kpi-strip > * > svg,
+html .ldg-stats > * > svg,
+html .an-stats > * > svg,
+html .owner-contract-detail-grid > * > svg,
+html .assistant-check-item > svg,
+html .system-ops-summary .system-overview-icon {
+  display: none;
+}
+
+/* -------------------------------------------------------------
+   四、排版：标签 / 数值 / 说明
+   ------------------------------------------------------------- */
+
 /* 标签：10px / 400 / muted */
-html .change-summary.change-summary > span:first-child,
-html .bill-summary.bill-summary > span:first-child,
-html .owner-metric.owner-metric > span:first-child,
-html .security-metric.security-metric > span:first-child {
+html .change-summary > span:first-child,
+html .bill-summary > span:first-child:not(.bill-summary-icon),
+html .owner-metric > span:first-child,
+html .security-metric > div > small:first-child,
+html .system-overview-metric small:first-child,
+html .notice-summary-card small:first-child,
+html .audit-summary-card small:first-child {
   display: block;
   margin: 0;
   color: var(--text-muted);
@@ -91,11 +327,40 @@ html .security-metric.security-metric > span:first-child {
   overflow-wrap: anywhere;
 }
 
-/* 数值：26px / 600 / 1.15，等宽数字 */
-html .change-summary.change-summary strong,
-html .bill-summary.bill-summary strong,
-html .owner-metric.owner-metric > strong,
-html .security-metric.security-metric > strong {
+/* 通用：指标项里第一个 small 或 span 当标签 */
+html .projects-kpi-strip > * > small,
+html .ldg-stats > * > small,
+html .an-stats > * > small,
+html .business-party-summary-strip > * > small,
+html .owner-contract-detail-grid > * > small,
+html .assistant-check-item > small,
+html .system-ops-summary-cell > small {
+  display: block;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+
+/* 数值：26px / 600 / 1.15 / tabular-nums */
+html .change-summary strong,
+html .bill-summary strong,
+html .owner-metric > strong,
+html .security-metric > div > strong,
+html .system-overview-metric > div > strong,
+html .notice-summary-card > div > strong,
+html .audit-summary-card > div > strong,
+html .projects-kpi-strip > * > strong,
+html .ldg-stats > * > strong,
+html .an-stats > * > strong,
+html .business-party-summary-strip > * > strong,
+html .report-studio-entry-card strong,
+html .system-authorization-scope-card strong,
+html .owner-contract-detail-grid > * > strong,
+html .system-ops-summary-cell strong,
+html .assistant-check-item strong {
   display: block;
   margin: var(--space-6) 0 0;
   color: var(--text);
@@ -112,7 +377,10 @@ html .change-summary strong small,
 html .change-summary strong span,
 html .bill-summary strong small,
 html .owner-metric > strong small,
-html .security-metric > strong small {
+html .security-metric > div > strong small,
+html .projects-kpi-strip > * > strong small,
+html .ldg-stats > * > strong small,
+html .an-stats > * > strong small {
   margin-left: var(--space-4);
   color: var(--text-muted);
   font-size: 12px;
@@ -120,11 +388,95 @@ html .security-metric > strong small {
   letter-spacing: 0;
 }
 
+/* /projects 的 KPI 条：数值 18px → 26px，标签 9.5px → 10px */
+html .projects-ledger-page .projects-kpi-strip > div > strong,
+html .projects-kpi-strip > div > strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  margin-top: var(--space-6);
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+html .projects-ledger-page .projects-kpi-strip > div > span,
+html .projects-kpi-strip > div > span {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+html .projects-ledger-page .projects-kpi-strip > div > small,
+html .projects-kpi-strip > div > small {
+  font-size: 9.5px;
+  margin-top: var(--space-4);
+}
+
+/* /parties 的数值：17px/700 → 26px/600，标签从 strong 内小字提升为上方标签 */
+html .business-party-summary-strip strong {
+  font-family: var(--font-num, var(--num));
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+html .business-party-summary-strip > div > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+  width: 100%;
+}
+html .business-party-summary-strip > div > span > small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  order: -1;
+}
+
+/* /system 概览的数值：20px → 26px（包括 “1 / 1” 这种带分隔的）*/
+html .settings-content .system-overview-metrics .system-overview-metric > div > strong,
+html .system-overview-metric > div > strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+/* /cost/analysis 的 an-grid 是图表区（非指标区），保持原样；
+   但 an-stats 里的数值要拉回 26px。 */
+html .analysis-page .an-stats > div > strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  margin-top: var(--space-6);
+}
+html .analysis-page .an-stats > div > span {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
 /* 说明文字：9.5px / muted */
-html .change-summary small,
-html .bill-summary small,
+html .change-summary > small,
+html .bill-summary > small,
 html .owner-metric > small,
-html .security-metric > small {
+html .security-metric > div > span,
+html .system-overview-metric > div > small,
+html .notice-summary-card > div > small,
+html .audit-summary-card > div > small,
+html .projects-kpi-strip > * > span,
+html .ldg-stats > * > span,
+html .an-stats > * > span,
+html .business-party-summary-strip > * > span,
+html .owner-contract-detail-grid > * > span,
+html .system-ops-summary-cell > span,
+html .assistant-check-item > span {
   display: block;
   margin: var(--space-4) 0 0;
   color: var(--text-muted);
@@ -133,43 +485,65 @@ html .security-metric > small {
   overflow-wrap: anywhere;
 }
 
-/* 窄视口：两列 */
-@media (max-width: 1080px) {
-  html .change-summary-grid,
-  html .bill-summary-grid,
-  html .owner-finance-metrics,
-  html .downstream-summary-grid,
-  html .security-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: var(--space-16);
-  }
-  html .change-summary-grid > :nth-child(odd),
-  html .bill-summary-grid > :nth-child(odd),
-  html .owner-finance-metrics > :nth-child(odd),
-  html .downstream-summary-grid > :nth-child(odd),
-  html .security-metrics > :nth-child(odd) {
-    padding-left: 0;
-    border-left: 0;
-  }
-  html .change-summary-grid > :nth-child(even),
-  html .bill-summary-grid > :nth-child(even),
-  html .owner-finance-metrics > :nth-child(even),
-  html .downstream-summary-grid > :nth-child(even),
-  html .security-metrics > :nth-child(even) {
-    padding-right: 0;
-    border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  }
+/* 强调项：不用背景色区分，靠数值颜色 */
+html .change-summary-emphasis,
+html .owner-metric-primary,
+html .an-panel.is-primary {
+  background: transparent;
+}
+html .change-summary-emphasis strong,
+html .owner-metric-primary strong {
+  color: var(--accent);
 }
 
-/* 变体 C：icon + div(small + strong + span) 结构（security-metric 等）
-   同样遵循指标规范：数值 26px/600/tabular-nums，标签 10px/muted */
-html .security-metric.security-metric > div {
+/* -------------------------------------------------------------
+   五、变体结构适配
+   ------------------------------------------------------------- */
+
+/* icon + div(small + strong + span) —— security-metric 等 */
+html .security-metric > div,
+html .system-overview-metric > div,
+html .notice-summary-card > div,
+html .audit-summary-card > div,
+html .system-ops-summary-copy {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   min-width: 0;
+  width: 100%;
 }
-html .security-metric.security-metric > div > small:first-child {
-  display: block;
+
+/* /system/operations 的 cell 结构是「图标 + copy」横向排列，
+   旧规则用 flex-direction: row + ::before/::after 伪元素画线。
+   这里改成标准指标项：竖向、左对齐、真 border-left。 */
+html .system-ops-summary .system-ops-summary-cell {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0 var(--space-16);
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+}
+html .system-ops-summary .system-ops-summary-cell:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+html .system-ops-summary .system-ops-summary-cell:last-child {
+  padding-right: 0;
+}
+/* 干掉旧的伪元素分隔线 */
+html .system-ops-summary .system-ops-summary-cell::before,
+html .system-ops-summary .system-ops-summary-cell::after {
+  display: none;
+}
+/* ops 的 label 行包着一个小标题和状态胶囊，让它们竖排 */
+html .system-ops-summary .system-ops-summary-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: var(--space-6);
+  width: 100%;
+}
+html .system-ops-summary .system-ops-summary-label small {
   margin: 0;
   color: var(--text-muted);
   font-size: 10px;
@@ -177,7 +551,8 @@ html .security-metric.security-metric > div > small:first-child {
   letter-spacing: 0.04em;
   line-height: 1.4;
 }
-html .security-metric.security-metric > div > strong {
+html .system-ops-summary .system-ops-summary-copy > strong,
+html .system-ops-summary .system-ops-summary-copy > strong.ops-version {
   display: block;
   margin: var(--space-6) 0 0;
   color: var(--text);
@@ -187,123 +562,161 @@ html .security-metric.security-metric > div > strong {
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
 }
-html .security-metric.security-metric > div > span {
+html .system-ops-summary .system-ops-summary-copy > span {
   display: block;
   margin: var(--space-4) 0 0;
   color: var(--text-muted);
   font-size: 9.5px;
   line-height: 1.45;
 }
-html .security-metric.security-metric > .security-metric-icon {
-  flex: 0 0 auto;
-  margin-bottom: var(--space-6);
+
+/* /system 概览里的图标是可点击的 <a> 导航入口，不能删除。
+   改成绝对定位到右上角，不参与主视觉轴。 */
+html .system-overview-metric {
+  position: relative;
+}
+html .system-overview-metric > a.system-overview-icon,
+html .system-overview-metric > a:has(> svg) {
+  position: absolute;
+  top: 0;
+  right: var(--space-16);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
   color: var(--text-muted);
+  opacity: 0.55;
+}
+html .system-overview-metric > a.system-overview-icon:hover,
+html .system-overview-metric > a:has(> svg):hover {
+  opacity: 1;
+  color: var(--accent);
+}
+html .system-overview-metric > a.system-overview-icon svg {
+  width: 13px;
+  height: 13px;
 }
 
-/* 变体 B：icon + 内容区（system-overview-metric / notice-summary-card / audit-summary-card）
-   同样遵循指标规范。这些卡片通常是"图标 + 标题 + 数值 + 说明"的横向结构。 */
-html .system-overview-metric,
-html .notice-summary-card,
-html .audit-summary-card {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-width: 0;
+/* .panel 同时是指标卡时，必须显式清掉 panel 的背景与边框 */
+html article.panel.change-summary,
+html article.panel.bill-summary,
+html article.panel.owner-metric,
+html article.panel.security-metric,
+html article.panel.system-overview-metric,
+html article.panel.notice-summary-card,
+html article.panel.audit-summary-card,
+html article.panel.report-studio-entry-card {
   padding: 0 var(--space-16);
   border: 0;
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  box-sizing: border-box;
 }
-html .system-overview-metric:first-child,
-html .notice-summary-card:first-child,
-html .audit-summary-card:first-child {
+html article.panel.change-summary:first-child,
+html article.panel.bill-summary:first-child,
+html article.panel.owner-metric:first-child,
+html article.panel.security-metric:first-child,
+html article.panel.system-overview-metric:first-child,
+html article.panel.notice-summary-card:first-child,
+html article.panel.audit-summary-card:first-child,
+html article.panel.report-studio-entry-card:first-child {
   padding-left: 0;
   border-left: 0;
 }
-html .system-overview-metric:last-child,
-html .notice-summary-card:last-child,
-html .audit-summary-card:last-child {
+html article.panel.change-summary:last-child,
+html article.panel.bill-summary:last-child,
+html article.panel.owner-metric:last-child,
+html article.panel.security-metric:last-child,
+html article.panel.system-overview-metric:last-child,
+html article.panel.notice-summary-card:last-child,
+html article.panel.audit-summary-card:last-child,
+html article.panel.report-studio-entry-card:last-child {
   padding-right: 0;
 }
 
-/* 这些卡里的数值统一 26px */
-html .system-overview-metric strong,
-html .notice-summary-card strong,
-html .audit-summary-card strong {
-  display: block;
-  margin: var(--space-6) 0 0;
-  color: var(--text);
-  font-family: var(--font-num, var(--num));
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
+/* /parties 的说明段落 <p> 是 grid 直接子元素，
+   旧规则用 flex-wrap 让它撑满一行；转成 grid 后它会占掉一个列位，
+   导致指标只剩 2 列且高度不齐。这里让它跨满整行。 */
+html .business-party-summary-strip {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  row-gap: 0;
 }
-/* 标签与说明 */
-html .system-overview-metric small,
-html .notice-summary-card small,
-html .audit-summary-card small {
-  display: block;
-  margin: var(--space-4) 0 0;
+html .business-party-summary-strip > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--space-10) 0 0;
+  border: 0;
+  border-left: 0;
   color: var(--text-muted);
   font-size: 9.5px;
   line-height: 1.45;
+  text-align: left;
 }
 
-/* 对应容器：去掉卡片外观，改用上下分隔线 */
-html .system-overview-metrics,
-html .notice-summary-grid,
-html .audit-summary-grid {
+/* /system 概览里的图标 <a> 是 grid 直接子元素，
+   当独立列会把 4 项拆成 8 项、必然折行。让它脱离网格流。 */
+html .system-overview-metrics > article {
+  position: relative;
+}
+html .system-overview-metrics > article > a {
+  position: absolute;
+  top: 0;
+  right: var(--space-16);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 0;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  opacity: 0.55;
+}
+html .system-overview-metrics > article > a:hover {
+  opacity: 1;
+}
+
+/* /reports 与 /system/assistant 不是指标区（一个是按钮入口，一个是检查清单），
+   不套指标模板；只保证容器边框与指标区一致，视觉连贯。 */
+html .report-studio-entry-grid,
+html .assistant-check-grid {
   padding: var(--space-16) 0;
   margin: var(--space-16) 0;
-  border: 0;
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
-  border-radius: 0;
   background: transparent;
-  overflow: visible;
+  border-radius: 0;
 }
 
-/* 变体 D：.panel 同时是指标卡（system-overview-metric）
-   这类卡片带了 .panel 的背景与边框，需要显式清除才能与其它指标统一。 */
-html article.panel.system-overview-metric {
-  padding: 0 var(--space-16);
-  border: 0;
-  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-html article.panel.system-overview-metric:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
-html article.panel.system-overview-metric:last-child { padding-right: 0; }
-html article.panel.system-overview-metric > div {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-html article.panel.system-overview-metric > div > strong {
-  display: block;
-  margin: var(--space-6) 0 0;
-  color: var(--text);
-  font-family: var(--font-num, var(--num));
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-}
-html article.panel.system-overview-metric > div > small {
-  display: block;
-  margin: var(--space-4) 0 0;
-  color: var(--text-muted);
-  font-size: 9.5px;
-  line-height: 1.45;
+/* -------------------------------------------------------------
+   六、窄视口 —— 不折行，改横向滚动
+   -------------------------------------------------------------
+   Hana 的做法：固定 3 列，全库无任何 media query，永不出现第二行，
+   所以 .hs-metric:first-child 那条 border-left:0 永远成立。
+
+   之前我写过「窄屏转两列」，那是自造补丁，正是「第二行竖线错位」的根源：
+   nth-child(odd/even) 是按 4 列算的，换到 2 列后行边界与 padding 对不上，
+   而且 row-gap 里的竖线物理高度不覆盖行间距，看起来就是「多根细线」。
+   现在改成保持单行 + 横向滚动。 ------------------------------------------------------------- */
+@media (max-width: 1080px) {
+  html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
+      .downstream-summary-grid, .security-metrics, .system-overview-metrics,
+      .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
+      .ldg-stats, .an-stats, .business-party-summary-strip,
+      .report-studio-entry-grid, .system-authorization-scope-grid,
+      .owner-contract-detail-grid, .system-ops-summary, .assistant-check-grid) {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+  }
+  /* 窄屏时仍保持单行：列宽不再等分，改由内容决定，总宽超过容器就横向滚动。
+     切忌折行——一折行 row-gap 里的竖线高度就不覆盖行间距，
+     看起来就是"第二行多根细线"。 */
+  html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
+      .downstream-summary-grid, .security-metrics, .system-overview-metrics,
+      .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
+      .ldg-stats, .an-stats, .business-party-summary-strip,
+      .report-studio-entry-grid, .system-authorization-scope-grid,
+      .owner-contract-detail-grid, .system-ops-summary, .assistant-check-grid) > * {
+    min-width: 128px;
+  }
 }

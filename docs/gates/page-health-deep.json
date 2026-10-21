@@ -13,7 +13,7 @@
     {
       "route": "/projects",
       "url": "/projects",
-      "contentH": 841,
+      "contentH": 857,
       "issues": [],
       "textLen": 648,
       "errors": []
@@ -29,7 +29,7 @@
     {
       "route": "/cost/contracts",
       "url": "/cost/contracts",
-      "contentH": 671,
+      "contentH": 670,
       "issues": [],
       "textLen": 607,
       "errors": []
@@ -37,7 +37,7 @@
     {
       "route": "/cost/budget",
       "url": "/cost/budget",
-      "contentH": 753,
+      "contentH": 746,
       "issues": [],
       "textLen": 909,
       "errors": []
@@ -45,7 +45,7 @@
     {
       "route": "/cost/progress-bills",
       "url": "/cost/progress-bills",
-      "contentH": 568,
+      "contentH": 525,
       "issues": [],
       "textLen": 568,
       "errors": []
@@ -61,7 +61,7 @@
     {
       "route": "/cost/downstream",
       "url": "/cost/downstream",
-      "contentH": 893,
+      "contentH": 894,
       "issues": [],
       "textLen": 905,
       "errors": []
@@ -85,7 +85,7 @@
     {
       "route": "/cost/analysis",
       "url": "/cost/analysis",
-      "contentH": 811,
+      "contentH": 804,
       "issues": [],
       "textLen": 918,
       "errors": []
@@ -93,7 +93,7 @@
     {
       "route": "/reports",
       "url": "/reports",
-      "contentH": 995,
+      "contentH": 1044,
       "issues": [],
       "textLen": 915,
       "errors": []
@@ -137,7 +137,7 @@
     {
       "route": "/notifications",
       "url": "/notifications",
-      "contentH": 731,
+      "contentH": 689,
       "issues": [],
       "textLen": 548,
       "errors": []
@@ -145,7 +145,7 @@
     {
       "route": "/parties",
       "url": "/parties",
-      "contentH": 685,
+      "contentH": 753,
       "issues": [],
       "textLen": 434,
       "errors": []
@@ -153,7 +153,7 @@
     {
       "route": "/audit-logs",
       "url": "/audit-logs",
-      "contentH": 1158,
+      "contentH": 1105,
       "issues": [],
       "textLen": 795,
       "errors": []
@@ -169,7 +169,7 @@
     {
       "route": "/system",
       "url": "/system",
-      "contentH": 1442,
+      "contentH": 1362,
       "issues": [],
       "textLen": 1056,
       "errors": []
@@ -177,7 +177,7 @@
     {
       "route": "/system/security",
       "url": "/system/security",
-      "contentH": 1723,
+      "contentH": 1721,
       "issues": [],
       "textLen": 2229,
       "errors": []
@@ -185,7 +185,7 @@
     {
       "route": "/system/authorization",
       "url": "/system/authorization",
-      "contentH": 1514,
+      "contentH": 1516,
       "issues": [],
       "textLen": 1636,
       "errors": []
@@ -209,7 +209,7 @@
     {
       "route": "/system/operations",
       "url": "/system/operations",
-      "contentH": 1610,
+      "contentH": 1617,
       "issues": [],
       "textLen": 1379,
       "errors": []

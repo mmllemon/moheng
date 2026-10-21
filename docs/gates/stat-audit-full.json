@@ -1,0 +1,823 @@
+{
+  "report": [
+    {
+      "route": "/projects",
+      "blocks": [
+        {
+          "gridCls": "projects-kpi-strip",
+          "w": 1138,
+          "h": 83,
+          "display": "grid",
+          "cols": "284px 284px 284px 284px",
+          "gap": "0px",
+          "padding": "0px",
+          "borderTop": "1px rgba(122, 96, 88, 0.18",
+          "borderBottom": "1px",
+          "radius": "14.7272px",
+          "bg": "rgb(252, 250, 245)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "14px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "14px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/cost/contracts",
+      "blocks": [
+        {
+          "gridCls": "owner-contract-detail-grid",
+          "w": 1138,
+          "h": 95,
+          "display": "grid",
+          "cols": "126.438px 126.438px 126.453px 126.438px 126.438px 126.438px 126.438px 126.438px ",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 5,
+          "cardStyles": [
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 14px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/cost/budget",
+      "blocks": [
+        {
+          "gridCls": "ldg-stats",
+          "w": 1138,
+          "h": 102,
+          "display": "grid",
+          "cols": "284.5px 284.5px 284.5px 284.5px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px ",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/cost/progress-bills",
+      "blocks": [
+        {
+          "gridCls": "bill-summary-grid",
+          "w": 1138,
+          "h": 85,
+          "display": "grid",
+          "cols": "284.5px 284.5px 284.5px 284.5px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px ",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "bill-summary",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "bill-summary",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/cost/changes",
+      "blocks": [
+        {
+          "gridCls": "change-summary-grid",
+          "w": 1138,
+          "h": 102,
+          "display": "grid",
+          "cols": "284.5px 284.5px 284.5px 284.5px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px ",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "change-summary",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "change-summary",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/cost/downstream",
+      "blocks": [
+        {
+          "gridCls": "change-summary-grid downstream-summary-grid",
+          "w": 1136,
+          "h": 107,
+          "display": "grid",
+          "cols": "227.188px 227.203px 227.203px 227.203px 227.188px",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "0px rgb(59, 61, 63)",
+          "borderBottom": "0px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 5,
+          "cardStyles": [
+            {
+              "cls": "change-summary",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "change-summary",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/cost/owner-finance",
+      "blocks": [
+        {
+          "gridCls": "owner-finance-metrics",
+          "w": 1138,
+          "h": 130,
+          "display": "grid",
+          "cols": "189.656px 189.672px 189.672px 189.656px 189.672px 189.672px 0px 0px 0px 0px 0px ",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 6,
+          "cardStyles": [
+            {
+              "cls": "owner-metric owner-metric-primary",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "owner-metric",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/cost/analysis",
+      "blocks": [
+        {
+          "gridCls": "an-stats",
+          "w": 1138,
+          "h": 104,
+          "display": "grid",
+          "cols": "284px 284px 284px 284px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px ",
+          "gap": "0px",
+          "padding": "2px 0px",
+          "borderTop": "1px rgba(122, 96, 88, 0.18",
+          "borderBottom": "1px",
+          "radius": "14.7272px",
+          "bg": "rgb(252, 250, 245)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "15px 18px 15px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "15px 18px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        },
+        {
+          "gridCls": "an-grid",
+          "w": 1138,
+          "h": 544,
+          "display": "grid",
+          "cols": "626.078px 491.922px",
+          "gap": "20px",
+          "padding": "0px",
+          "borderTop": "0px rgb(59, 61, 63)",
+          "borderBottom": "0px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "an-panel panel-detached",
+              "alignItems": "normal",
+              "textAlign": "start",
+              "padding": "0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            },
+            {
+              "cls": "an-panel panel-detached",
+              "alignItems": "normal",
+              "textAlign": "start",
+              "padding": "0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/reports",
+      "blocks": [
+        {
+          "gridCls": "report-studio-entry-grid",
+          "w": 1138,
+          "h": 110,
+          "display": "grid",
+          "cols": "569px 569px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px ",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 2,
+          "cardStyles": [
+            {
+              "cls": "panel report-studio-entry-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "panel report-studio-entry-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 0px 0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/notifications",
+      "blocks": [
+        {
+          "gridCls": "notice-summary-grid",
+          "w": 1138,
+          "h": 102,
+          "display": "grid",
+          "cols": "379.328px 379.328px 379.344px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0p",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 3,
+          "cardStyles": [
+            {
+              "cls": "panel notice-summary-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "panel notice-summary-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/parties",
+      "blocks": [
+        {
+          "gridCls": "business-party-summary-strip",
+          "w": 1138,
+          "h": 77,
+          "display": "grid",
+          "cols": "379.328px 379.328px 379.344px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0p",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 3,
+          "cardStyles": [
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/audit-logs",
+      "blocks": [
+        {
+          "gridCls": "audit-summary-grid",
+          "w": 670,
+          "h": 105,
+          "display": "grid",
+          "cols": "223.328px 223.328px 223.328px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0p",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 3,
+          "cardStyles": [
+            {
+              "cls": "panel audit-summary-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "panel audit-summary-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/system",
+      "blocks": [
+        {
+          "gridCls": "system-overview-metrics",
+          "w": 670,
+          "h": 241,
+          "display": "grid",
+          "cols": "331px 331px",
+          "gap": "8px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "panel system-overview-metric",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "panel system-overview-metric",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/system/security",
+      "blocks": [
+        {
+          "gridCls": "security-metrics",
+          "w": 670,
+          "h": 110,
+          "display": "grid",
+          "cols": "222.656px 222.672px 222.672px",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px rgba(122, 96, 88, 0.18",
+          "borderBottom": "1px",
+          "radius": "14.7272px",
+          "bg": "rgb(252, 250, 245)",
+          "childCount": 3,
+          "cardStyles": [
+            {
+              "cls": "security-metric",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "security-metric",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/system/authorization",
+      "blocks": [
+        {
+          "gridCls": "system-authorization-scope-grid",
+          "w": 668,
+          "h": 124,
+          "display": "grid",
+          "cols": "222.656px 222.672px 222.672px",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 3,
+          "cardStyles": [
+            {
+              "cls": "system-authorization-scope-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "system-authorization-scope-card",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/system/operations",
+      "blocks": [
+        {
+          "gridCls": "system-ops-summary",
+          "w": 670,
+          "h": 150,
+          "display": "grid",
+          "cols": "167.5px 167.5px 167.5px 167.5px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px 0px ",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 4,
+          "cardStyles": [
+            {
+              "cls": "system-ops-summary-cell",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "system-ops-summary-cell",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/system/assistant",
+      "blocks": [
+        {
+          "gridCls": "assistant-check-grid",
+          "w": 668,
+          "h": 206,
+          "display": "grid",
+          "cols": "133.594px 133.594px 133.609px 133.594px 133.609px 0px 0px 0px 0px 0px 0px 0px 0p",
+          "gap": "0px",
+          "padding": "16px 0px",
+          "borderTop": "1px color(srgb 0.478431 0.",
+          "borderBottom": "1px",
+          "radius": "0px",
+          "bg": "rgba(0, 0, 0, 0)",
+          "childCount": 5,
+          "cardStyles": [
+            {
+              "cls": "assistant-check-item",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px 0px 0px",
+              "borderLeft": "0px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            },
+            {
+              "cls": "assistant-check-item",
+              "alignItems": "flex-start",
+              "textAlign": "left",
+              "padding": "0px 16px",
+              "borderLeft": "1px",
+              "bg": "rgba(0, 0, 0, 0)",
+              "hasIcon": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "specs": [
+    [
+      "1px|14.7272px|0px|rgb(252, 250, 245)",
+      [
+        {
+          "route": "/projects",
+          "cls": "projects-kpi-strip",
+          "h": 83
+        }
+      ]
+    ],
+    [
+      "1px|0px|16px 0px|rgba(0, 0, 0, 0)",
+      [
+        {
+          "route": "/cost/contracts",
+          "cls": "owner-contract-detail-grid",
+          "h": 95
+        },
+        {
+          "route": "/cost/budget",
+          "cls": "ldg-stats",
+          "h": 102
+        },
+        {
+          "route": "/cost/progress-bills",
+          "cls": "bill-summary-grid",
+          "h": 85
+        },
+        {
+          "route": "/cost/changes",
+          "cls": "change-summary-grid",
+          "h": 102
+        },
+        {
+          "route": "/cost/owner-finance",
+          "cls": "owner-finance-metrics",
+          "h": 130
+        },
+        {
+          "route": "/reports",
+          "cls": "report-studio-entry-grid",
+          "h": 110
+        },
+        {
+          "route": "/notifications",
+          "cls": "notice-summary-grid",
+          "h": 102
+        },
+        {
+          "route": "/parties",
+          "cls": "business-party-summary-strip",
+          "h": 77
+        },
+        {
+          "route": "/audit-logs",
+          "cls": "audit-summary-grid",
+          "h": 105
+        },
+        {
+          "route": "/system",
+          "cls": "system-overview-metrics",
+          "h": 241
+        },
+        {
+          "route": "/system/authorization",
+          "cls": "system-authorization-scope-grid",
+          "h": 124
+        },
+        {
+          "route": "/system/operations",
+          "cls": "system-ops-summary",
+          "h": 150
+        },
+        {
+          "route": "/system/assistant",
+          "cls": "assistant-check-grid",
+          "h": 206
+        }
+      ]
+    ],
+    [
+      "0px|0px|16px 0px|rgba(0, 0, 0, 0)",
+      [
+        {
+          "route": "/cost/downstream",
+          "cls": "change-summary-grid downstream-summary-g",
+          "h": 107
+        }
+      ]
+    ],
+    [
+      "1px|14.7272px|2px 0px|rgb(252, 250, 245)",
+      [
+        {
+          "route": "/cost/analysis",
+          "cls": "an-stats",
+          "h": 104
+        }
+      ]
+    ],
+    [
+      "0px|0px|0px|rgba(0, 0, 0, 0)",
+      [
+        {
+          "route": "/cost/analysis",
+          "cls": "an-grid",
+          "h": 544
+        }
+      ]
+    ],
+    [
+      "1px|14.7272px|16px 0px|rgb(252, 250, 245)",
+      [
+        {
+          "route": "/system/security",
+          "cls": "security-metrics",
+          "h": 110
+        }
+      ]
+    ]
+  ]
+}
