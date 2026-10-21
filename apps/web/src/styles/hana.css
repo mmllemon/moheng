@@ -982,6 +982,138 @@ html .page-actions {
   align-items: center;
   gap: var(--space-8);
 }
+
+/* -------------------------------------------------------------
+   输入控件尺寸：与按钮同档
+   -------------------------------------------------------------
+   改造前 112 个输入控件共 16 种规格：表单 34px、工具栏 30/32px 混用；
+   且 .toolbar-search 外框 32px 里套着 30px 的 input，内外不同高，
+   文字看起来没垂直居中。
+   现在两档：32px 常规输入 / 26px 紧凑输入，与按钮 32/26 严格对应。 */
+html input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]),
+html select,
+html .field input:not([type="checkbox"]):not([type="radio"]),
+html .field select,
+html .form-stack input:not([type="checkbox"]):not([type="radio"]),
+html .form-stack select,
+html .form-grid input:not([type="checkbox"]):not([type="radio"]),
+html .form-grid select,
+html .filter-bar input:not([type="checkbox"]):not([type="radio"]),
+html .filter-bar select,
+html .search-input {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-10);
+  font-size: 12.5px;
+  line-height: 1.2;
+  border-radius: var(--radius-control);
+}
+html textarea,
+html .field textarea,
+html .form-stack textarea,
+html .form-grid textarea {
+  min-height: 72px;
+  padding: var(--space-8) var(--space-10);
+  font-size: 12.5px;
+  line-height: 1.55;
+  border-radius: var(--radius-control);
+}
+
+/* 搜索框：外框与内框必须同高。
+   旧规则 .toolbar-search{min-height:32px} 配 .toolbar-search input{height:30px}，
+   内框比外框矮 2px。这里让 input 撑满外框。 */
+html .toolbar-search {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-10);
+  border-radius: var(--radius-control);
+}
+html .toolbar-search input,
+html .toolbar-search > input[type="search"],
+html .table-toolbar .toolbar-search input {
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  font-size: 12.5px;
+  line-height: 30px;
+  background: transparent;
+}
+
+/* 顶栏全局搜索、筛选栏搜索这类小尺寸载体：26px 紧凑档 */
+html .app-titlebar .toolbar-search,
+html .topbar-search,
+html .compact-search {
+  height: 26px;
+  min-height: 26px;
+  padding: 0 var(--space-8);
+}
+html .app-titlebar .toolbar-search input,
+html .topbar-search input,
+html .compact-search input {
+  height: 24px;
+  min-height: 24px;
+  font-size: 11.5px;
+  line-height: 24px;
+}
+
+/* 旧层里残留的 3px 圆角输入框，收回到统一圆角 */
+html input.radius-3,
+html select.radius-3 {
+  border-radius: var(--radius-control);
+}
+
+/* 局部容器自带高度（34px / 30px），特异度高于通用规则，逐个收回 */
+html .settings-step-slider input,
+html .settings-step-slider select,
+html .report-visibility-toggle input,
+html .report-visibility-toggle select,
+html .report-column-editor-top input,
+html .report-column-editor-top select {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 var(--space-10);
+  font-size: 12.5px;
+  border-radius: var(--radius-control);
+}
+/* 设置页侧边搜索属于紧凑载体 */
+html .settings-search input,
+html .settings-nav .settings-search input {
+  height: 26px;
+  min-height: 26px;
+  padding: 0 var(--space-8);
+  font-size: 11.5px;
+}
+
+/* 其余紧凑场景：台账搜索、字典条目表单、助手密钥行，
+   都是行内密集区域，跟 26px 档（与紧凑按钮同高） */
+html .ldg-search input,
+html .ldg-toolbar .ldg-search input,
+html .system-dictionary-item-fields input,
+html .system-dictionary-item-sort input,
+html .assistant-key-line input,
+html .assistant-field input {
+  height: 26px;
+  min-height: 26px;
+  padding: 0 var(--space-8);
+  font-size: 11.5px;
+  border-radius: var(--radius-control);
+}
+
+/* 工具栏搜索框的内框高度：外框 32px - 2×1px 边框 = 30px，
+   这 2px 差值是正确的，不要拉平。这里显式声明以免后人误解。 */
+html .toolbar-search input {
+  height: 30px;
+  min-height: 30px;
+}
+
+/* 输入框内嵌图标（日历、搜索、下拉箭头）的左侧留白，
+   保证 32px 与 26px 两档里文字都不压图标 */
+html .field input[type="date"],
+html .field input[type="search"],
+html .filter-bar input[type="search"] {
+  padding-left: var(--space-10);
+}
 .icon-button {
   width: 32px;
   height: 32px;
@@ -5350,9 +5482,9 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .system-dictionary-item-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 82px; gap: 8px; }
 .system-dictionary-item-fields label { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .system-dictionary-item-fields label > span { color: var(--text-muted); font-size: 9.5px; }
-.system-dictionary-item-fields input { width: 100%; height: 30px !important; min-height: 30px !important; padding: 0 9px !important; font-size: 11px; }
+.system-dictionary-item-fields input { width: 100%; height: 26px !important; min-height: 26px !important; padding: 0 var(--space-8) !important; font-size: 11.5px; border-radius: var(--radius-control); }
 .system-dictionary-item-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 8px; }
-.system-dictionary-item-actions .button-secondary { height: 28px; min-height: 28px; padding: 0 9px; font-size: 10px; }
+.system-dictionary-item-actions .button-secondary { height: 26px; min-height: 26px; padding: 0 var(--space-8); font-size: 11.5px; }
 @media (max-width: 720px) {
   .system-dictionary-item-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .system-dictionary-item-sort { grid-column: 1 / -1; max-width: 100px; }
