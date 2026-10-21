@@ -3,7 +3,7 @@ import { chromium } from 'playwright-core';
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const routes = [
-  '/', '/projects', '/cost', '/cost/budget', '/cost/costs', '/cost/analysis',
+  '/', '/projects', '/settings/appearance', '/cost', '/cost/budget', '/cost/costs', '/cost/analysis',
   '/system', '/system/accounts', '/system/assistant', '/system/security', '/system/authorization',
   '/system/policies', '/system/governance', '/system/dictionaries',
   '/system/parameters', '/system/operations', '/audit-logs', '/reports', '/parties',
@@ -132,7 +132,8 @@ const shellOk = shellAudit.sidebar?.x === 6
   && shellAudit.sidebar?.width === 240
   && shellAudit.titlebar?.height === 44
   && shellAudit.main?.x === 246
-  && (shellAudit.settings?.width ?? 0) >= 1000
+  && shellAudit.settings?.width === 960
+  && shellAudit.settings?.height === 722
   && shellAudit.settingsNav?.width === 208;
 if (!shellOk) failures.push({ check: 'hana-shell-metrics', shellAudit });
 

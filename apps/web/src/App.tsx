@@ -9,6 +9,7 @@ const ReportStudioPage = lazy(() => import('./pages/ReportStudioPage'));
 const ReportPreviewPage = lazy(() => import('./pages/ReportPreviewPage'));
 const CostAssistantPage = lazy(() => import('./pages/CostAssistantPage'));
 const AssistantProviderPage = lazy(() => import('./pages/AssistantProviderPage'));
+const AppearanceSettingsPage = lazy(() => import('./pages/AppearanceSettingsPage'));
 const SystemSecurityPage = lazy(() => import('./pages/SystemSecurityPage'));
 const AccountSecurityPage = lazy(() => import('./pages/AccountSecurityPage'));
 const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage'));
@@ -134,6 +135,8 @@ export default function App() {
         <Route path="system/assistant" element={<AdminOnly><AssistantProviderPage /></AdminOnly>} />
         <Route path="projects/members" element={<NeedProject><ProjectMembersPage /></NeedProject>} />
         <Route path="account/security" element={<AccountSecurityPage />} />
+        <Route path="settings" element={<Navigate to="/settings/appearance" replace />} />
+        <Route path="settings/appearance" element={<Suspense fallback={<div className="page-wrap"><LoadingBlock label="正在打开界面设置…" /></div>}><AppearanceSettingsPage /></Suspense>} />
         <Route path="system/members" element={<Navigate to="/projects/members" replace />} />
         <Route path="workspace" element={<LegacyWorkspaceRedirect />} />
         <Route path="workspace/*" element={<LegacyWorkspaceRedirect />} />

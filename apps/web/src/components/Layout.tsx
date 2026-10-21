@@ -6,7 +6,7 @@ import {
   Building2, BookOpen, ChevronRight, ClipboardList, FileText, FolderKanban,
   HandCoins, LayoutDashboard, LogOut, Menu, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, History, ReceiptText,
   ArrowUpRight, Command, CornerDownLeft, Keyboard, X, BellRing, FileSpreadsheet, Users,
-  ShieldCheck, UserRound, ServerCog, Sparkles, PanelLeft, PanelLeftClose, Plus,
+  ShieldCheck, UserRound, ServerCog, Sparkles, PanelLeft, PanelLeftClose, Plus, Palette,
 } from 'lucide-react';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
@@ -43,6 +43,7 @@ const systemNavigation: NavigationItem[] = [
   { to: '/system/operations', label: '运维备份', icon: ServerCog, group: '系统管理', end: true, adminOnly: true },
   { to: '/audit-logs', label: '操作追溯', icon: History, group: '系统管理', end: true, adminOnly: true },
 ];
+const appearanceSettingsItem: NavigationItem = { to: '/settings/appearance', label: '界面', icon: Palette, group: '系统管理', end: true };
 const systemGroups = [
   { label: '系统', items: systemNavigation.slice(0, 3) },
   { label: '权限与规则', items: systemNavigation.slice(3, 5) },
@@ -201,16 +202,18 @@ export default function Layout() {
   const isGlobalContext = location.pathname === '/' || location.pathname === '/audit-logs' || location.pathname === '/account/security' || location.pathname.startsWith('/parties') || location.pathname.startsWith('/reports') || ['/notifications', '/projects', '/projects/members'].includes(location.pathname);
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const isSystemArea = user?.role === 'ADMIN' && (location.pathname.startsWith('/system') || location.pathname === '/audit-logs');
+  const isSettingsArea = location.pathname.startsWith('/settings') || isSystemArea;
   const costPageLabel = location.pathname === '/cost/assistant' ? '成本助手' : location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
-  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
-  const visibleSystemGroups = systemGroups.map((group) => ({
+  const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (location.pathname === '/settings/appearance' ? '界面' : isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
+  const availableSettingsGroups = user?.role === 'ADMIN' ? [{ label: '个人', items: [appearanceSettingsItem] }, ...systemGroups] : [{ label: '个人', items: [appearanceSettingsItem] }];
+  const visibleSettingsGroups = availableSettingsGroups.map((group) => ({
     ...group,
     items: group.items.filter((item) => !settingsSearch.trim() || item.label.toLocaleLowerCase().includes(settingsSearch.trim().toLocaleLowerCase())),
   })).filter((group) => group.items.length);
 
 
   useEffect(() => {
-    if (!isSystemArea) return;
+    if (!isSettingsArea) return;
     setSettingsSearch('');
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !document.querySelector('.date-picker-popover, .select-popover, .modal-backdrop, .command-palette-layer.is-visible')) {
@@ -220,7 +223,7 @@ export default function Layout() {
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isSystemArea, navigate]);
+  }, [isSettingsArea, navigate]);
 
   async function logout() {
     try { await api.logout(); } catch { /* The local session is cleared even if the network is unavailable. */ }
@@ -321,21 +324,21 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="app-content" aria-hidden={isSystemArea ? true : undefined}>
-        {isSystemArea ? <div className="settings-underlay" aria-hidden="true" /> : <div className="route-transition" key={location.pathname}><Outlet /></div>}
+      <main className="app-content" aria-hidden={isSettingsArea ? true : undefined}>
+        {isSettingsArea ? <div className="settings-underlay" aria-hidden="true" /> : <div className="route-transition" key={location.pathname}><Outlet /></div>}
       </main>
       <FocusTrap />
       <ConfirmHost />
     </div>
 
-    {isSystemArea && <div className="settings-overlay" role="presentation">
-      <section className="settings-window" role="dialog" aria-modal="true" aria-label="系统设置" data-focus-trap="modal">
+    {isSettingsArea && <div className="settings-overlay" role="presentation">
+      <section className="settings-window" role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
         <button type="button" className="settings-close settings-close-floating" onClick={() => navigate('/')} aria-label="关闭设置"><X size={16} /></button>
         <div className="settings-body">
-          <nav className="settings-nav" aria-label="系统设置导航">
+          <nav className="settings-nav" aria-label="设置导航">
             <div className="settings-search"><Search size={14} /><input value={settingsSearch} onChange={(event) => setSettingsSearch(event.target.value)} placeholder="搜索设置" aria-label="搜索设置" type="search" /></div>
             <div className="settings-groups">
-              {visibleSystemGroups.length ? visibleSystemGroups.map((group) => <section className="settings-group" key={group.label}>
+              {visibleSettingsGroups.length ? visibleSettingsGroups.map((group) => <section className="settings-group" key={group.label}>
                 <h2>{group.label}</h2>
                 {group.items.map((item) => {
                   const Icon = item.icon;

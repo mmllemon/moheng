@@ -100,6 +100,8 @@ check('key routes still exist',
 const designExists = await access(join(root, 'docs/设计系统-v6-文房.md')).then(() => true).catch(() => false);
 const componentExists = await access(join(root, 'docs/组件库-v6-文房.md')).then(() => true).catch(() => false);
 const hanaDocExists = await access(join(root, 'docs/设计系统-hana.md')).then(() => true).catch(() => false);
+const appearanceSettingsExists = await access(join(root, 'apps/web/src/pages/AppearanceSettingsPage.tsx')).then(() => true).catch(() => false);
+check('Hana interface settings page is wired', appSource.includes('settings/appearance') && appearanceSettingsExists && hana.includes('grid-template-columns: 208px 670px'));
 check('Hana design system document is present', hanaDocExists);
 check('legacy radii are flattened for the whole repo',
   !/border-radius:\s*(7px|8px|9px|10px|12px|16px)/.test(legacy));
