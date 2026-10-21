@@ -1,6 +1,7 @@
 import { type CSSProperties } from 'react';
 import { Check, RotateCcw } from 'lucide-react';
 import { PageHeader } from '../components/Ui';
+import { toast } from '../lib/toast';
 import {
   PAPER_TEXTURE_STRENGTHS,
   useUiStore,
@@ -102,7 +103,7 @@ export default function AppearanceSettingsPage() {
 
     <div className="settings-page-foot">
       <span>纸纹取自 Hana 1.1.35 原版素材。</span>
-      <button type="button" className="settings-reset" onClick={reset}><RotateCcw size={12} />恢复默认</button>
+      <button type="button" className="settings-reset" onClick={() => { reset(); toast('已恢复默认显示', { description: '暖纸 · 宣纸 · 舒朗' }); }}><RotateCcw size={12} />恢复默认</button>
     </div>
   </div>;
 }

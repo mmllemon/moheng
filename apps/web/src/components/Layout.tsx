@@ -14,6 +14,7 @@ import type { Project } from '../types';
 
 import BrandMark from './BrandMark';
 import ConfirmHost from './ConfirmDialog';
+import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
 import UiPreferencesBar from './UiPreferencesBar';
 import { useAnimatedPresence } from './useAnimatedPresence';
@@ -329,6 +330,7 @@ export default function Layout() {
       </main>
       <FocusTrap />
       <ConfirmHost />
+      <ToastHost />
     </div>
 
     {isSettingsArea && <div className="settings-overlay" role="presentation">

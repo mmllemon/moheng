@@ -560,7 +560,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   text-align: left;
   cursor: pointer;
 }
-.sidebar-project:hover { background: var(--overlay-light); color: var(--text); }
+.sidebar-project:hover { background: var(--accent-light); color: var(--text); }
 .sidebar-project.is-active { background: var(--accent-light); color: var(--accent); }
 .sidebar-project-mark {
   width: 18px;
@@ -1161,6 +1161,8 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 }
 .data-table tbody tr { transition: background var(--duration-fast); }
 .data-table tbody tr:hover td { background: color-mix(in srgb, var(--accent-light) 62%, transparent); }
+.data-table tbody tr:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: -2px; }
+.data-table tbody tr[aria-selected="true"] td { background: var(--accent-light); }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .data-table tfoot td {
   padding: 9px 12px;
@@ -1548,6 +1550,47 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .loading-block { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 34px; color: var(--text-muted); font-size: 11px; }
 .spinner { width: 14px; height: 14px; border: 1.5px solid var(--overlay-strong); border-top-color: var(--accent); border-radius: 50%; animation: hana-spin 0.8s linear infinite; }
 .full-screen-loading { min-height: 100vh; display: grid; place-items: center; background: var(--bg); }
+
+/* Hana Toast */
+.hana-toast-host {
+  position: fixed;
+  z-index: var(--z-toast);
+  top: calc(var(--titlebar-h) + 12px);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(440px, calc(100vw - 32px));
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.hana-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  max-width: 100%;
+  padding: 7px 8px 7px 18px;
+  border: 1px solid var(--overlay-light);
+  border-radius: 14px;
+  corner-shape: squircle;
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+  animation: hana-toast-in var(--duration-slow) var(--ease-paper-spring);
+}
+.hana-toast.is-leaving { opacity: 0; transform: translateY(-5px); transition: opacity var(--duration-fast), transform var(--duration-fast); }
+.hana-toast-copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.hana-toast-copy strong { overflow: hidden; color: var(--text); font-size: 13px; font-weight: 500; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; }
+.hana-toast-copy small { color: var(--text-muted); font-size: 11.2px; line-height: 1.4; }
+.hana-toast.is-error { border-color: color-mix(in srgb, var(--danger) 28%, transparent); }
+.hana-toast.is-error .hana-toast-copy strong { color: var(--danger); }
+.hana-toast-action { flex: 0 0 auto; height: 26px; padding: 0 9px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: var(--text); font-size: 11px; white-space: nowrap; cursor: pointer; }
+.hana-toast-action:hover { background: var(--overlay-light); }
+.hana-toast-close { width: 30px; height: 30px; flex: 0 0 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 10px; background: transparent; color: var(--text-muted); cursor: pointer; }
+.hana-toast-close:hover { background: var(--overlay-light); color: var(--text); }
 
 /* =============================================================
    登录：一张纸卡，不另造一套视觉
@@ -2026,5 +2069,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 
 @keyframes hana-spin { to { transform: rotate(360deg); } }
 @keyframes hana-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hana-toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
