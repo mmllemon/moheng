@@ -1,0 +1,439 @@
+{
+  "errors": [],
+  "blockCount": 10,
+  "layout": [
+    {
+      "depth": 0,
+      "tag": "body",
+      "cls": "reduce-card-buttons",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900
+      },
+      "display": "block",
+      "gap": "normal",
+      "pad": "0px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "normal",
+      "gridCols": "none",
+      "fontSize": "15px",
+      "lineHeight": "25.5px",
+      "color": "rgb(59, 61, 63)",
+      "bg": "rgb(248, 244, 237)",
+      "radius": "0px",
+      "overflow": "hidden"
+    },
+    {
+      "depth": 1,
+      "tag": "div",
+      "cls": "",
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 928
+      },
+      "display": "block",
+      "gap": "normal",
+      "pad": "0px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "normal",
+      "gridCols": "none",
+      "fontSize": "15px",
+      "lineHeight": "25.5px",
+      "color": "rgb(59, 61, 63)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "0px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 2,
+      "tag": "div",
+      "cls": "_bar_284c4",
+      "rect": {
+        "x": 0,
+        "y": 900,
+        "w": 1440,
+        "h": 28
+      },
+      "display": "flex",
+      "gap": "8px",
+      "pad": "4px 12px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "center",
+      "gridCols": "none",
+      "fontSize": "12px",
+      "lineHeight": "20.4px",
+      "color": "rgb(153, 153, 153)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "0px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 3,
+      "tag": "span",
+      "cls": "_text_278e6",
+      "rect": {
+        "x": 12,
+        "y": 904,
+        "w": 60,
+        "h": 20
+      },
+      "display": "block",
+      "gap": "normal",
+      "pad": "0px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "normal",
+      "gridCols": "none",
+      "fontSize": "12px",
+      "lineHeight": "20.4px",
+      "color": "rgb(153, 153, 153)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "0px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 3,
+      "tag": "button",
+      "cls": "_reconnect_c513e",
+      "rect": {
+        "x": 80,
+        "y": 905,
+        "w": 62,
+        "h": 19
+      },
+      "display": "block",
+      "gap": "normal",
+      "pad": "1px 8px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "normal",
+      "gridCols": "none",
+      "fontSize": "11px",
+      "lineHeight": "normal",
+      "color": "rgb(153, 153, 153)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "5.52269px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 3,
+      "tag": "div",
+      "cls": "hana-toast.error",
+      "rect": {
+        "x": 440,
+        "y": 56,
+        "w": 559,
+        "h": 50
+      },
+      "display": "flex",
+      "gap": "10px",
+      "pad": "8px 12px 8px 20px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "center",
+      "gridCols": "none",
+      "fontSize": "13px",
+      "lineHeight": "22.1px",
+      "color": "rgb(107, 111, 115)",
+      "bg": "rgb(252, 250, 245)",
+      "radius": "14.7272px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 4,
+      "tag": "span",
+      "cls": "",
+      "rect": {
+        "x": 461,
+        "y": 70,
+        "w": 475,
+        "h": 22
+      },
+      "display": "block",
+      "gap": "normal",
+      "pad": "0px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "normal",
+      "gridCols": "none",
+      "fontSize": "13px",
+      "lineHeight": "22.1px",
+      "color": "rgb(107, 111, 115)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "0px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 4,
+      "tag": "div",
+      "cls": "hana-toast-actions",
+      "rect": {
+        "x": 955,
+        "y": 65,
+        "w": 32,
+        "h": 32
+      },
+      "display": "flex",
+      "gap": "6px",
+      "pad": "0px",
+      "margin": "0px 0px 0px 8px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "center",
+      "gridCols": "none",
+      "fontSize": "13px",
+      "lineHeight": "22.1px",
+      "color": "rgb(107, 111, 115)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "0px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 5,
+      "tag": "button",
+      "cls": "hana-toast-close",
+      "rect": {
+        "x": 955,
+        "y": 65,
+        "w": 32,
+        "h": 32
+      },
+      "display": "flex",
+      "gap": "normal",
+      "pad": "2px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "center",
+      "align": "center",
+      "gridCols": "none",
+      "fontSize": "13.3333px",
+      "lineHeight": "normal",
+      "color": "rgb(107, 111, 115)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "7.36359px",
+      "overflow": "visible"
+    },
+    {
+      "depth": 6,
+      "tag": "svg",
+      "cls": "[object.SVGAnimatedString]",
+      "rect": {
+        "x": 964,
+        "y": 74,
+        "w": 14,
+        "h": 14
+      },
+      "display": "block",
+      "gap": "normal",
+      "pad": "0px",
+      "margin": "0px",
+      "flexDir": "row",
+      "justify": "normal",
+      "align": "normal",
+      "gridCols": "none",
+      "fontSize": "13.3333px",
+      "lineHeight": "normal",
+      "color": "rgb(107, 111, 115)",
+      "bg": "rgba(0, 0, 0, 0)",
+      "radius": "0px",
+      "overflow": "hidden"
+    }
+  ],
+  "patterns": {
+    "displayCounts": {
+      "flex": 97,
+      "grid": 5,
+      "block": 143
+    },
+    "topGaps": [
+      [
+        "8px",
+        15
+      ],
+      [
+        "4px",
+        7
+      ],
+      [
+        "0px",
+        4
+      ],
+      [
+        "10px",
+        2
+      ],
+      [
+        "normal 4px",
+        2
+      ],
+      [
+        "5.6px",
+        2
+      ],
+      [
+        "3.2px",
+        2
+      ],
+      [
+        "4.8px",
+        2
+      ],
+      [
+        "2px",
+        2
+      ],
+      [
+        "5.248px",
+        2
+      ]
+    ],
+    "topPaddings": [
+      [
+        "2px 0px 4px",
+        7
+      ],
+      [
+        "6px 12px",
+        7
+      ],
+      [
+        "0px 6px",
+        2
+      ],
+      [
+        "0px 8px",
+        2
+      ],
+      [
+        "4px 8px",
+        2
+      ],
+      [
+        "2px 0px 0px",
+        2
+      ],
+      [
+        "6px 14px",
+        2
+      ],
+      [
+        "0px 6.4px",
+        2
+      ],
+      [
+        "2px",
+        2
+      ],
+      [
+        "0px 6px 6px",
+        1
+      ],
+      [
+        "24px 8px",
+        1
+      ],
+      [
+        "6px 8px 6px 12px",
+        1
+      ]
+    ],
+    "topFontSizes": [
+      [
+        "15px",
+        98
+      ],
+      [
+        "13.3333px",
+        66
+      ],
+      [
+        "12.48px",
+        31
+      ],
+      [
+        "11.2px",
+        24
+      ],
+      [
+        "13.12px",
+        14
+      ],
+      [
+        "12px",
+        3
+      ],
+      [
+        "13px",
+        3
+      ],
+      [
+        "14.4px",
+        2
+      ],
+      [
+        "16px",
+        2
+      ],
+      [
+        "18px",
+        1
+      ]
+    ],
+    "topLineHeights": [
+      [
+        "normal",
+        111
+      ],
+      [
+        "25.5px",
+        98
+      ],
+      [
+        "22.304px",
+        7
+      ],
+      [
+        "13.12px",
+        5
+      ],
+      [
+        "0px",
+        4
+      ],
+      [
+        "11.2px",
+        3
+      ],
+      [
+        "19.04px",
+        3
+      ],
+      [
+        "22.1px",
+        3
+      ],
+      [
+        "14.4px",
+        2
+      ],
+      [
+        "21.216px",
+        2
+      ]
+    ]
+  }
+}
