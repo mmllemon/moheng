@@ -3064,6 +3064,24 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
 
+/* 并排卡片清零相邻 panel 的 14px 上边距，避免同排卡片错位 */
+.report-studio-entry-grid > .panel,
+.project-shortcut-grid > .panel,
+.report-catalog-grid > .panel,
+.audit-summary-grid > .panel,
+.notice-summary-grid > .panel,
+.system-overview-metrics > .panel,
+.security-metrics > .panel,
+.metric-grid > .panel,
+.change-summary-grid > .panel { margin: 0; }
+.report-studio-entry-card + .report-studio-entry-card,
+.project-shortcut-card + .project-shortcut-card,
+.report-catalog-card + .report-catalog-card { margin-top: 0; }
+
+/* 报表页去掉遗留的分区横线 */
+.report-workspace-section { border-top: 0; padding-top: 0; }
+.report-standard-layout { border-top: 0; }
+
 /* 并排入口卡统一等高；按钮类 grid item 默认不会自动拉伸 */
 .report-studio-entry-grid,
 .project-shortcut-grid,
