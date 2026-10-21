@@ -1,0 +1,348 @@
+{
+  "datePicker": {
+    "triggerCount": 2,
+    "trigger": {
+      "x": 907,
+      "y": 545,
+      "w": 220,
+      "h": 32,
+      "display": "flex",
+      "visibility": "visible",
+      "opacity": "1",
+      "z": "auto",
+      "pos": "relative",
+      "radius": "11.0454px",
+      "bg": "rgb(252, 250, 245)",
+      "shadow": "none",
+      "inViewport": true
+    },
+    "dialog": {
+      "x": 907,
+      "y": 178,
+      "w": 306,
+      "h": 362,
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "z": "80",
+      "pos": "fixed",
+      "radius": "12px",
+      "bg": "rgb(252, 250, 245)",
+      "shadow": "rgba(45, 43, 40, 0.07) 0px 4px 12px 0px",
+      "inViewport": true
+    },
+    "popover": {
+      "x": 907,
+      "y": 178,
+      "w": 306,
+      "h": 362,
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "z": "80",
+      "pos": "fixed",
+      "radius": "12px",
+      "bg": "rgb(252, 250, 245)",
+      "shadow": "rgba(45, 43, 40, 0.07) 0px 4px 12px 0px",
+      "inViewport": true
+    },
+    "dialogVisible": true,
+    "cells": 42,
+    "selected": null,
+    "monthLabel": null,
+    "dialogInViewport": {
+      "x": 907,
+      "y": 178,
+      "w": 306,
+      "h": 362,
+      "rightOverflow": -227,
+      "bottomOverflow": -361
+    }
+  },
+  "popovers": {
+    "accountCandidates": []
+  },
+  "systemPages": {
+    "/system": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 0,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 1348,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/accounts": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 3,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 838,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/assistant": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 0,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 838,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/security": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 0,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 1753,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/authorization": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 3,
+      "rows": 0,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 1586,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/policies": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 0,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 1947,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/governance": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 0,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 838,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/dictionaries": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 5,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 2458,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/parameters": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 8,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 994,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    },
+    "/system/operations": {
+      "window": {
+        "x": 240,
+        "y": 30,
+        "w": 960,
+        "h": 840
+      },
+      "nav": {
+        "x": 241,
+        "y": 31,
+        "w": 208,
+        "h": 838
+      },
+      "content": {
+        "x": 449,
+        "y": 31,
+        "w": 750,
+        "h": 838
+      },
+      "cards": 0,
+      "sections": 0,
+      "rows": 3,
+      "cardBg": null,
+      "cardBorder": null,
+      "contentScrollH": 1666,
+      "contentClientH": 838,
+      "winBg": "rgb(248, 244, 237)"
+    }
+  },
+  "consoleErrors": []
+}
