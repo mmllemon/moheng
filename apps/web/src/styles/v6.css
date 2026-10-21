@@ -239,21 +239,7 @@ kbd{padding:1px 5px;border:1px solid var(--line);border-radius:2px;background:#f
 .status-orange{color:var(--warn);border-color:rgba(138,95,26,.35)}
 .status-red{color:var(--danger);border-color:rgba(162,58,42,.35)}
 .status-gray{color:var(--meta);border-color:var(--line-2)}
-
 /* ---------- 按钮 / 表单 ---------- */
-.button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--line-2);border-radius:3px;background:#fffdf7;color:var(--ink);font-size:12px;cursor:pointer;white-space:nowrap;box-shadow:none}
-.button svg{width:14px;height:14px}
-.button:hover{background:#f5f0e3;border-color:#b3a88f}
-.button-primary,.button-secondary,.button-ghost,.button-danger{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 12px;border-radius:3px;font-size:12px;line-height:1;white-space:nowrap}
-.button-primary{background:var(--ink);border-color:#0b100d;color:#f8f2e4}
-.button-primary:hover{background:#232c26;border-color:#0b100d}
-.button-secondary{background:#fffdf7;border-color:var(--line-2);color:var(--ink)}
-.button-ghost{background:transparent;border-color:transparent;color:var(--meta)}
-.button-ghost:hover{background:#f1ebde;color:var(--ink)}
-.button-danger{background:transparent;border-color:#dcc0b5;color:var(--danger)}
-.button-danger:hover{background:#fbf0ec;border-color:#c9a596}
-.button-small{height:26px;padding:0 8px;font-size:11px}
-.button:disabled{opacity:.55;cursor:not-allowed}
 
 label{font-size:11px;color:var(--meta)}
 input:not([type=checkbox]):not([type=radio]),select,textarea{min-height:34px;padding:6px 9px;border:1px solid var(--line-2);border-radius:3px;background:#fffdf7;color:var(--ink);font:12px/1.5 var(--font);outline:0}
@@ -398,10 +384,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .system-management-card{padding:12px 0;border-bottom:1px solid var(--line)}
 .system-workspace-tab{font-family:var(--font)}
 
-
-
-
-
 /* ---------- V6 page-family normalization ---------- */
 [class*="kicker"],[class*="overline"]{display:none}
 [class*="card"]{background-color:transparent;border-color:var(--line);box-shadow:none}
@@ -509,8 +491,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .assistant-unavailable h2{font-family:var(--serif);font-size:28px}
 .assistant-unavailable p{font-size:12px;line-height:1.9;color:var(--meta)}
 
-
-
 /* project management kpis */
 .project-management-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
 .project-management-kpi{display:flex;align-items:center;gap:0;min-width:0;padding:13px 18px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none;transform:none}
@@ -561,8 +541,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .project-management-kpi:nth-child(odd),.system-overview-metric:nth-child(odd){border-left:0;padding-left:0}
 }
 
-
-
 /* projects: one dossier card, full width */
 .projects-page .project-list-grid{display:grid;grid-template-columns:1fr;gap:0}
 .projects-page .project-list-card{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);grid-auto-rows:min-content;column-gap:42px;row-gap:10px;padding:22px 26px;background:var(--surface);border:1px solid var(--line-2);border-radius:2px;box-shadow:none}
@@ -611,8 +589,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .projects-page .project-card-actions{grid-row:10}
 }
 
-
-
 /* mobile navigation */
 .mobile-nav-trigger,.mobile-nav-backdrop{display:none}
 .mobile-nav-backdrop{position:fixed;inset:0;z-index:55;border:0;background:rgba(19,25,23,.38);backdrop-filter:blur(2px)}
@@ -652,8 +628,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .notice-summary-card:last-child{border-bottom:0}
 }
 
-
-
 @media (max-width:940px){
   .cost-workspace-tabs{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;padding-left:16px;padding-right:16px}
   .cost-workspace-nav-overview,.cost-workspace-nav-group,.cost-workspace-nav-group-tabs{flex:0 0 auto;flex-wrap:nowrap}
@@ -665,13 +639,9 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .sidebar.mobile-nav-open .collapse-button{display:none}
 }
 @media (max-width:640px){
-  .page-actions .button:not(.button-primary):not(:first-child){display:none}
   .v6-table{min-width:860px}
   .table-scroll .data-table{min-width:680px}
-  .page-actions .button{flex:0 0 auto}
 }
-
-
 
 /* date picker selected/confirm */
 .date-picker-day.is-selected{background:transparent;color:var(--seal);font-weight:600;box-shadow:none}
@@ -684,8 +654,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .date-picker-clear:hover{color:var(--danger)}
 .date-picker-footer{border-top:1px solid var(--line);margin-top:4px;padding-top:4px}
 
-
-
 /* assistant action hierarchy */
 .assistant-primary-button,.assistant-send-button{background:var(--ink);border:1px solid var(--ink);border-radius:2px;color:#f8f2e4;box-shadow:none}
 .assistant-primary-button:hover,.assistant-send-button:hover{background:#232c26;border-color:#232c26}
@@ -693,8 +661,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .assistant-cancel-button{background:transparent;border:1px solid var(--line-2);color:var(--danger);border-radius:2px}
 .assistant-suggestion{border:1px solid var(--line-2);border-radius:2px;background:transparent}
 .assistant-suggestion:hover{border-color:var(--bronze);background:rgba(var(--accent-rgb),.04)}
-
-
 
 /* ---------- Analysis · instrument sheet ---------- */
 .page-context{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:10.5px;color:var(--meta);letter-spacing:.02em}
@@ -766,21 +732,11 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .an-variance-nums strong,.an-variance-nums span,.an-variance-nums b{font-size:9px}
 }
 
-
-
-
-
-
-
 /* preview pages: selector in topbar, one less strip */
 .topbar-scope{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;color:var(--ink-2);white-space:nowrap}
 .topbar-project{width:196px}
 .topbar-project .select-control-trigger{min-height:31px;height:31px;border-color:transparent;background:transparent;font-size:11.5px;padding:0 20px 0 0;font-weight:500}
 .topbar-project .select-control-chevron{right:0;width:13px;height:13px}
-
-
-
-
 
 .owner-contract-shortcut-grid{gap:0;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line)}
 .owner-contract-shortcut-grid>button{border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;padding:13px 16px;color:var(--ink)}
@@ -788,8 +744,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .owner-contract-shortcut-grid>button:hover{background:rgba(var(--accent-rgb),.04);border-color:var(--line);transform:none;box-shadow:none}
 .owner-contract-shortcut-grid strong{color:var(--ink)}
 .owner-contract-shortcut-grid small{color:var(--meta)}
-
-
 
 /* owner retention/prepayment strip */
 .owner-special-balances{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line);background:transparent}
@@ -804,17 +758,10 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .finance-contract-metrics>div{background:transparent}
 .finance-contract-metrics strong{color:var(--ink)}
 
-
-
-
-
 /* dialogs that render content directly under .dialog (no form wrapper) */
 .dialog{overflow-x:hidden}
 .dialog > :not(.dialog-header):not(.dialog-footer):not(form){margin:14px 22px 0;min-width:0}
 .dialog > .dialog-footer{margin:16px 0 0;padding:12px 22px 16px;width:auto}
-.dialog > .dialog-footer .button{flex:0 0 auto}
-
-
 
 /* date + time field */
 .date-time-field{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:8px;align-items:start;min-width:0}
@@ -823,8 +770,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 
 .party-quick-dialog{width:min(500px,calc(100vw - 32px))}
 .party-quick-dialog .business-party-create-form{padding:14px 22px 0;border-top:0;max-height:calc(100dvh - 210px);overflow:auto}
-
-
 
 [hidden]{display:none}
 .audit-filter-heading > span{border-radius:2px}
@@ -868,8 +813,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .owner-metric>strong{color:var(--ink);font-family:var(--num);font-size:22px}
 .owner-metric>span,.owner-metric>small{color:var(--meta)}
 
-
-
 /* targeted fixes from visual review */
 .system-workspace-tab.active,.cost-workspace-tab.active{background:transparent;border-color:transparent;box-shadow:none}
 .date-picker-day.is-selected{border:0;outline:0;box-shadow:none}
@@ -897,8 +840,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 @media (min-width:941px){.project-context-bar{display:none}}
 
 @media (max-width:940px){.topbar-scope,.topbar-project{display:none}}
-
-
 
 /* project cockpit / contracts: remove residual boxed surfaces */
 .project-overview-page .project-identity-panel{background:transparent;border:0;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line);border-radius:0;padding:14px 0}
@@ -1149,7 +1090,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 
 /* ---------- 响应式 ---------- */
 
-
 /* preferences: one paper theme; density / motion / width remain */
 .ui-preferences-popover,.ui-preferences-trigger{background:var(--surface);border:1px solid var(--line-2);border-radius:2px;box-shadow:var(--shadow-pop);color:var(--ink-2)}
 .ui-preferences-popover .ui-pref-popover-header{border-bottom:1px solid var(--line)}
@@ -1189,7 +1129,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .page-header{align-items:stretch;flex-direction:column;gap:12px}
   .page-header h1{font-size:24px}
   .page-actions{width:100%}
-  .page-actions .button{flex:1}
   .metric-grid,.budget-summary-grid,.bill-summary-grid,.change-summary-grid,.cost-type-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
   .metric-card,.budget-summary-item,.bill-summary,.change-summary,.cost-type-card{border-left:1px solid var(--line);padding:11px 12px}
   .metric-card:nth-child(odd),.budget-summary-item:nth-child(odd),.bill-summary:nth-child(odd),.change-summary:nth-child(odd),.cost-type-card:nth-child(odd){border-left:0;padding-left:0}
