@@ -236,14 +236,14 @@ export default function Layout() {
     <button type="button" className="mobile-nav-backdrop" aria-label="关闭主导航" onClick={() => setMobileNavOpen(false)} style={{ display: mobileNavOpen ? 'block' : 'none' }} />
     <aside className={'app-sidebar' + (mobileNavOpen ? ' mobile-nav-open' : '')} id="main-navigation" aria-label="主导航" data-focus-trap={mobileNavOpen ? 'modal' : undefined}>
       <div className="app-sidebar-titlebar">
-        <button type="button" className="sidebar-toggle" onClick={toggleSidebar} title={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}</button>
-        <button type="button" className="sidebar-toggle" onClick={openCommandPalette} title="搜索与命令" aria-label="打开全局搜索"><Search size={16} /></button>
+        <button type="button" className="sidebar-toggle" onClick={toggleSidebar} data-tooltip={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}</button>
+        <button type="button" className="sidebar-toggle" onClick={openCommandPalette} data-tooltip="搜索与命令" aria-label="侧栏搜索"><Search size={16} /></button>
         <span className="sidebar-toolbar-spacer" />
       </div>
       <div className="app-sidebar-profile">
         <span className="sidebar-brand-mark"><BrandMark /></span>
         <div className="sidebar-wordmark"><strong>墨衡</strong><span>工程经营管理</span></div>
-        <button type="button" className="sidebar-profile-action" onClick={() => navigate('/projects')} title="项目档案" aria-label="打开项目档案"><FolderKanban size={14} /></button>
+        <button type="button" className="sidebar-profile-action" onClick={() => navigate('/projects')} data-tooltip="项目档案" aria-label="打开项目档案"><FolderKanban size={14} /></button>
       </div>
       <div className="app-sidebar-scroll">
         <nav aria-label="业务导航">
@@ -274,7 +274,7 @@ export default function Layout() {
           <div className="sidebar-user-avatar">{user?.name?.slice(0, 1) ?? '管'}</div>
           <div className="sidebar-user-copy"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div>
           <div className="sidebar-footer-actions">
-            <button title="退出登录" aria-label="退出登录" className="sidebar-footer-icon" onClick={logout}><LogOut size={15} /></button>
+            <button data-tooltip="退出登录" data-tooltip-align="end" aria-label="退出登录" className="sidebar-footer-icon" onClick={logout}><LogOut size={15} /></button>
           </div>
         </div>
       </div>
@@ -282,8 +282,8 @@ export default function Layout() {
 
     <div className="app-main">
       <header className="app-titlebar">
-        {collapsed && <button type="button" className="titlebar-icon titlebar-restore" onClick={toggleSidebar} title="展开导航" aria-label="展开导航"><PanelLeft size={17} /></button>}
-        <button type="button" className="titlebar-icon titlebar-mobile-menu" aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={17} /> : <Menu size={17} />}</button>
+        {collapsed && <button type="button" className="titlebar-icon titlebar-restore" onClick={toggleSidebar} data-tooltip="展开导航" aria-label="展开导航"><PanelLeft size={17} /></button>}
+        <button type="button" className="titlebar-icon titlebar-mobile-menu" data-tooltip={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={17} /> : <Menu size={17} />}</button>
         <div className="titlebar-context">
           <span className="titlebar-wordmark">MOHENG</span><span className="titlebar-separator">/</span><strong>{currentPageLabel}</strong>
           {!isGlobalContext && activeProject && <><span className="titlebar-separator">·</span><span className="titlebar-project-code">{activeProject.code}</span></>}
@@ -291,10 +291,10 @@ export default function Layout() {
         <div className="titlebar-actions">
           {isGlobalContext ? <span className="titlebar-global-scope"><i />全公司</span> : <div className="titlebar-project"><SelectField value={selectedProjectId ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)} aria-label="切换当前项目">{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</SelectField></div>}
           <div className="titlebar-cluster">
-            <button type="button" className="titlebar-icon" onClick={openCommandPalette} title="搜索与命令（⌘K）" aria-label="打开全局搜索"><Search size={15} /></button>
-            <button type="button" className={`titlebar-icon ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} title="待办与预警" aria-label="打开待办与预警"><BellRing size={15} /></button>
+            <button type="button" className="titlebar-icon" onClick={openCommandPalette} data-tooltip="搜索与命令 ⌘K" aria-label="打开全局搜索"><Search size={15} /></button>
+            <button type="button" className={`titlebar-icon ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} data-tooltip="待办与预警" aria-label="打开待办与预警"><BellRing size={15} /></button>
             <div className="quick-actions-wrap">
-              <button type="button" className={`titlebar-icon ${quickActionsOpen ? 'is-active' : ''}`} title="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} onClick={() => { setCommandPaletteOpen(false); setAccountMenuOpen(false); setQuickActionsOpen((open) => !open); }}><Zap size={15} /></button>
+              <button type="button" className={`titlebar-icon ${quickActionsOpen ? 'is-active' : ''}`} data-tooltip="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} onClick={() => { setCommandPaletteOpen(false); setAccountMenuOpen(false); setQuickActionsOpen((open) => !open); }}><Zap size={15} /></button>
               {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
               {quickActionsPresence.mounted && <div className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="menu" aria-label="快捷操作菜单" aria-hidden={!quickActionsOpen} data-focus-trap={quickActionsOpen ? 'popover' : undefined}>
                 <div className="quick-action-heading"><strong>快捷操作</strong><span>跳转到常用业务模块</span></div>
@@ -308,7 +308,7 @@ export default function Layout() {
             </div>
             <UiPreferencesBar compact />
             <div className="account-menu-wrap">
-              <button type="button" className={`titlebar-avatar ${accountMenuOpen ? 'is-active' : ''}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} aria-label={`账号菜单：${user?.name ?? '用户'}`} title={user?.name ?? '账号'} onClick={() => { setQuickActionsOpen(false); setAccountMenuOpen((open) => !open); }}><UserRound size={15} strokeWidth={1.7} /></button>
+              <button type="button" className={`titlebar-avatar ${accountMenuOpen ? 'is-active' : ''}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} aria-label={`账号菜单：${user?.name ?? '用户'}`} data-tooltip={user?.name ?? '账号'} data-tooltip-align="end" onClick={() => { setQuickActionsOpen(false); setAccountMenuOpen((open) => !open); }}><UserRound size={15} strokeWidth={1.7} /></button>
               {accountMenuOpen && <>
                 <button type="button" className="account-menu-dismiss" aria-label="关闭账号菜单" onClick={() => setAccountMenuOpen(false)} />
                 <div className="account-menu" role="menu" aria-label="个人账号菜单" data-focus-trap={accountMenuOpen ? 'popover' : undefined}>
