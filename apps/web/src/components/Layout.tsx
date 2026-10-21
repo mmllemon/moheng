@@ -1,5 +1,5 @@
 import SelectField from './SelectField';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -18,7 +18,7 @@ import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
 import PaperDialogMorph from './PaperDialogMorph';
 import UiPreferencesBar from './UiPreferencesBar';
-import AssistantModal from './assistant/AssistantModal';
+const AssistantModal = lazy(() => import('./assistant/AssistantModal'));
 import { useAnimatedPresence } from './useAnimatedPresence';
 import { animatePaperIn, animatePaperOut, rememberPaperOrigin, takePaperOrigin } from '../lib/paper-morph';
 import { useDetachedPanelHeaders } from '../lib/use-detached-panel-headers';
@@ -590,6 +590,6 @@ export default function Layout() {
         <footer className="command-palette-footer"><span><Keyboard size={13} />用键盘操作</span><span><kbd>↑</kbd><kbd>↓</kbd> 选择</span><span><kbd>↵</kbd> 打开</span><span><kbd>Esc</kbd> 关闭</span></footer>
       </section>
     </div>}
-    <AssistantModal open={assistantOpen} onClose={() => setAssistantOpen(false)} />
+    {assistantOpen && <Suspense fallback={<div className="assistant-overlay"><div className="assistant-modal assistant-modal-loading">正在打开成本助手…</div></div>}><AssistantModal open onClose={() => setAssistantOpen(false)} /></Suspense>}
   </div>;
 }

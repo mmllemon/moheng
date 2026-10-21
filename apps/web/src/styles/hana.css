@@ -4661,6 +4661,7 @@ select,
   background: var(--bg);
   box-shadow: var(--shadow-2xl);
 }
+.assistant-modal-loading { display: grid; place-items: center; color: var(--text-muted); font-size: 11px; }
 .assistant-modal-close {
   position: absolute;
   top: 14px;

@@ -263,6 +263,8 @@ function Composer({ disabled }: { disabled: boolean }) {
     }}>
       <ComposerPrimitive.Input asChild>
         <textarea
+          data-autofocus
+          autoFocus
           rows={1}
           maxLength={8000}
           disabled={disabled}
