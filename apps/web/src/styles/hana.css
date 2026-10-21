@@ -1091,8 +1091,63 @@ html .button-danger:not(:disabled):hover {
   color: var(--danger);
 }
 
-/* 下拉触发器（select-control-trigger）的禁用态：不响应悬停 */
-html .select-control-trigger:disabled,
+/* -------------------------------------------------------------
+   输入控件的 disabled / readonly
+   -------------------------------------------------------------
+   问题：原生 input/select/textarea 在全站没有任何 :disabled 规则，
+   浏览器默认样式被 hana.css 的统一外观完全遮住。
+   实测变更审批弹窗里的只读「内部送审金额」：
+     opacity=1  cursor=text  bg 与普通输入相同  边框差异来自聚焦而非只读
+   用户看不出它不能编辑，会点进去反复尝试。
+
+   三态分开：
+     可编辑  背景 bg-card，边框 --border，光标 text
+     只读    背景降为半透明，无边框，光标 default（内容仍可选中复制）
+     禁用    背景降为半透明，文字降级，光标 not-allowed，不响应悬停
+   用 [readonly] 而不是 .readonly 类，因为组件里用的是原生属性。 */
+html input[readonly]:not([type="checkbox"]):not([type="radio"]),
+html textarea[readonly],
+html select[readonly] {
+  background: color-mix(in srgb, var(--text) 3.5%, transparent);
+  border-color: color-mix(in srgb, var(--border) 55%, transparent);
+  color: var(--text-light);
+  cursor: default;
+}
+/* 只读控件不该在聚焦时给出“可以输入”的暗示，
+   但保留一个淡轮廓，表示当前选中位置 */
+html input[readonly]:focus,
+html textarea[readonly]:focus {
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  box-shadow: none;
+  outline: none;
+}
+
+html input:disabled,
+html select:disabled,
+html textarea:disabled,
+html .field input:disabled,
+html .field select:disabled,
+html .field textarea:disabled,
+html .form-stack input:disabled,
+html .form-grid input:disabled {
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  border-color: color-mix(in srgb, var(--border) 40%, transparent);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+/* 禁用控件：悬停不能有任何反馈 */
+html input:disabled:hover,
+html select:disabled:hover,
+html textarea:disabled:hover,
+html .field input:disabled:hover,
+html .field select:disabled:hover,
+html .field textarea:disabled:hover {
+  background: color-mix(in srgb, var(--text) 2%, transparent);
+  border-color: color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+/* 下拉触发器（select-control-trigger）的禁用态：不响应悬停 */html .select-control-trigger:disabled,
 html .select-control-trigger[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
