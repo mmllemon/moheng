@@ -140,7 +140,7 @@ check('browser-level UI gates are present', await access(join(root, 'scripts/ui-
 check('section headers sit outside body cards', hana.includes('.ds-section-head') && hana.includes('.panel.panel-detached::before') && layout.includes('useDetachedPanelHeaders'));
 check('body-card table rules are inset from the card edge', hana.includes('.ds-section-card .data-table { width: calc(100% - 36px)') && hana.includes('.panel.panel-detached > .table-scroll .data-table'));
 check('Hana segmented tabs and tinted notes are wired', hana.includes('.sys-tabs {') && hana.includes('width: fit-content') && hana.includes('.inline-notice,') && hana.includes('border-radius: 10px'));
-check('settings pages use left-copy / right-control rows', hana.includes('.settings-row-control') && hana.includes('.settings-row-label') && assistantPage.includes('settings-row') && auditPage.includes('audit-filter-rows'));
+check('settings pages use left-copy / right-control rows', hana.includes('.settings-row-control') && hana.includes('.settings-row-label') && (assistantPage.includes('settings-row') || assistantPage.includes('assistant-provider-shell')) && auditPage.includes('audit-filter-rows'));
 check('settings search matches Hana translucent field', hana.includes('.settings-nav .settings-search input') && hana.includes('border-radius: 10px') && hana.includes('color-mix(in srgb, var(--overlay-light) 60%, transparent)'));
 check('settings scrollbar is a 4px window-edge overlay', layout.includes('settings-scrollbar') && hana.includes('.settings-scrollbar') && hana.includes('width: 4px') && layout.includes('bar.addEventListener') && layout.includes('onPointerDown'));
 check('metric cards stretch to equal heights', hana.includes('grid-auto-rows: 1fr') && hana.includes('height: 100%'));
@@ -150,6 +150,11 @@ check('system management extension entry is removed', !(await read('apps/web/src
 check('system settings is an admin gear beside logout', layout.includes('aria-label="系统设置"') && layout.includes('<Settings size={15} />') && !layout.includes('sidebar-settings-link'));
 check('appearance is independent from system settings nav', layout.includes("location.pathname === '/settings/appearance'") && layout.includes('is-appearance-only') && hana.includes('.settings-window.is-appearance-only .settings-nav'));
 check('card dividers are inset and table edges have no rules', hana.includes('.settings-row + .settings-row::before') && hana.includes('.data-table thead th { border-top: 0 !important; }'));
+check('interactive controls share 32px height and 8px radius', hana.includes('height: var(--control-height) !important') && hana.includes('--radius-control: 8px'));
+check('settings page headers stick while scrolling', hana.includes('position: sticky; top: -20px') && hana.includes('.settings-content .page-header'));
+check('project ledger is name/status with a wider dossier', !(await read('apps/web/src/pages/ProjectsPage.tsx')).includes('<th>业主</th>') && hana.includes('minmax(560px, 1.3fr)'));
+check('row selection has no inset left bar', hana.includes('.projects-table tbody tr.is-selected td:first-child { box-shadow: none; }') && hana.includes('.data-table tbody tr:hover td:first-child { box-shadow: none; }'));
+check('assistant provider uses a Hana rail/detail split', (await read('apps/web/src/pages/AssistantProviderPage.tsx')).includes('assistant-provider-shell') && (await read('apps/web/src/styles/assistant-provider.css')).includes('grid-template-columns: 168px'));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {

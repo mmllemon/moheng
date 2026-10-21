@@ -27,7 +27,7 @@
   --radius-input: 6px;
   --radius-card: 8px;
   --radius: 5px;
-  --radius-control: 6px;
+  --radius-control: 8px;
   --radius-lg-v6: 8px;
   --radius-card: 14px;
   --card-border: color-mix(in srgb, var(--border) 78%, transparent);
@@ -3070,6 +3070,82 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
+
+/* 统一交互控件：32px 高、8px 圆角 */
+.select-control-trigger,
+.date-picker-trigger,
+.business-party-trigger,
+.toolbar-search,
+.ldg-search,
+.table-toolbar .toolbar-search,
+.settings-nav .settings-search,
+.settings-search,
+.audit-search-input,
+.assistant-key-input { height: var(--control-height) !important; min-height: var(--control-height) !important; border-radius: var(--radius-control) !important; }
+.select-control-trigger,
+.date-picker-trigger,
+.business-party-trigger { padding-top: 0 !important; padding-bottom: 0 !important; }
+.field input:not([type="checkbox"]):not([type="radio"]),
+.field select,
+.settings-row-control input:not([type="checkbox"]):not([type="radio"]),
+.settings-row-control select,
+.settings-row-control .select-control-trigger,
+.settings-row-control .date-picker-trigger { height: var(--control-height) !important; min-height: var(--control-height) !important; border-radius: var(--radius-control) !important; }
+.field textarea,
+.settings-row-control textarea { border-radius: var(--radius-control) !important; }
+.toolbar-search input,
+.ldg-search input,
+.settings-search input,
+.audit-search-input input,
+.assistant-key-input input { height: calc(var(--control-height) - 2px) !important; }
+.select-control-popover,
+.date-picker-popover,
+.business-party-results { border-radius: 10px; }
+.business-party-input-wrap { height: var(--control-height) !important; min-height: var(--control-height) !important; border-radius: var(--radius-control) !important; }
+.business-party-input-wrap input { height: calc(var(--control-height) - 2px) !important; }
+.toolbar-select,
+.table-filter-select,
+.command-trigger { height: var(--control-height) !important; border-radius: var(--radius-control) !important; }
+
+/* 系统设置大标题吸顶 */
+.settings-content .page-header { position: sticky; top: -20px; z-index: 8; margin: -20px -40px 20px; padding: 20px 40px 14px; background: var(--bg-base); }
+.settings-window.is-appearance-only .page-header { position: static; margin: 0 0 20px; padding: 0; background: transparent; }
+@media (max-width: 720px) {
+  .settings-content .page-header { top: -24px; margin: -24px -18px 18px; padding: 20px 18px 12px; }
+}
+
+/* 选中态统一为浅 accent 底，不再用左侧竖条 */
+.data-table tbody tr:hover td:first-child { box-shadow: none; }
+.projects-table tbody tr.is-selected td { background: color-mix(in srgb, var(--accent) 6%, var(--bg-card)); }
+.projects-table tbody tr.is-selected td:first-child { box-shadow: none; }
+.system-dictionary-card.is-selected { box-shadow: none; background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+/* 项目台账：卡片化摘要与台账 */
+.projects-ledger-page .projects-kpi-strip { padding: 0; overflow: hidden; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
+.projects-ledger-page .projects-kpi-strip > div { position: relative; padding: 14px 16px; border-left: 0; }
+.projects-ledger-page .projects-kpi-strip > div + div::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); }
+.projects-ledger .table-scroll { overflow: hidden; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
+.projects-table { width: calc(100% - 36px); margin: 0 18px; }
+.projects-table thead th { border-top: 0; }
+.projects-table tbody tr:last-child td { border-bottom: 0; }
+@media (max-width: 900px) {
+  .projects-ledger-page .projects-kpi-strip > div:nth-child(3)::before { display: none; }
+}
+
+/* 项目台账：两列台账 + 更宽的项目详情卡 */
+.projects-ledger-layout { grid-template-columns: minmax(0, 1fr) minmax(560px, 1.3fr); gap: 24px; }
+.projects-table { min-width: 0; }
+.projects-ledger { border-top: 0; padding-top: 0; }
+.projects-dossier { position: sticky; top: 84px; padding: 20px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
+.projects-dossier-head { padding-bottom: 12px; border-bottom-color: color-mix(in srgb, var(--border) 62%, transparent); }
+.projects-dossier-head h2 { font-size: 22px; }
+.projects-dossier-facts,
+.projects-dossier-finance { gap: 0 20px; }
+@media (max-width: 1100px) {
+  .projects-ledger-layout { grid-template-columns: 1fr; }
+  .projects-dossier { position: static; }
+  .projects-ledger-page .projects-kpi-strip > div:nth-child(3)::before { display: none; }
+}
 
 /* 卡片内分隔线统一内缩，表格上下不画封口线 */
 .data-table thead th { border-top: 0 !important; }

@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpRight, CircleAlert, Copy, Edit3, FolderPlus, Plus, Search, Users2, X } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { toast } from '../lib/toast';
@@ -160,12 +160,8 @@ export default function ProjectsPage() {
     {filtered.length === 0 ? <EmptyState title={projects.length ? '没有符合条件的项目' : '项目列表还是空的'} description={projects.length ? '请更换关键词或筛选状态。' : '新建项目档案后，可以继续维护合同、目标成本和实际成本记录。'} action={() => setDialog({ open: true })} /> : <div className="projects-ledger-layout">
       <section className="projects-ledger" aria-label="项目台账">
         <div className="projects-ledger-head"><div><h2>项目台账</h2><p>按合同额排序 · 选择一行查看右侧项目档案</p></div><span>{filtered.length} 个项目</span></div>
-        <div className="table-scroll"><table className="data-table projects-table"><thead><tr><th>项目</th><th>状态</th><th>业主</th><th className="align-right">合同额</th><th className="align-right">目标成本</th><th className="align-right">已发生</th><th className="align-right">回款率</th></tr></thead><tbody>{filtered.map((project) => {
-          const snapshot = projectMap.get(project.id);
+        <div className="table-scroll"><table className="data-table projects-table"><thead><tr><th>项目</th><th>状态</th></tr></thead><tbody>{filtered.map((project) => {
           const pendingChanges = pendingChangeCounts.get(project.id) ?? 0;
-          const targetCost = snapshot?.targetCost;
-          const actualCost = snapshot?.actualCost;
-          const recoveryRatio = snapshot?.recoveryRatio;
           return <tr
             key={project.id}
             className={selected?.id === project.id ? 'is-selected' : ''}
@@ -185,11 +181,6 @@ export default function ProjectsPage() {
           >
             <td><strong className="table-primary-text">{project.name}</strong><small className="table-subtext">{project.code}{pendingChanges > 0 ? ' · ' + pendingChanges + ' 项待跟进' : ''}</small></td>
             <td><StatusBadge status={project.status} /></td>
-            <td><span className="projects-owner-cell">{project.ownerPartyId ? <Link to={'/parties/' + project.ownerPartyId}>{project.ownerName} ↗</Link> : project.ownerName}</span></td>
-            <td className="align-right numeric">{formatMoney(project.contractAmount, 0)}</td>
-            <td className="align-right numeric">{snapshot ? (targetCost && targetCost > 0 ? formatMoney(targetCost, 0) : '未建立') : '—'}</td>
-            <td className="align-right numeric">{snapshot ? formatMoney(actualCost ?? 0, 0) : '—'}</td>
-            <td className="align-right numeric">{recoveryRatio == null ? '—' : (recoveryRatio * 100).toFixed(1) + '%'}</td>
           </tr>;
         })}</tbody></table></div>
       </section>
