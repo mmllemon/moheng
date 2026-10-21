@@ -37,6 +37,10 @@ const envSchema = z.object({
      生产环境应保持默认，不要跟随测试配置。 */
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(12),
   LOGIN_RATE_LIMIT_WINDOW: z.string().default('15 minutes'),
+  /* 全局 API 限流：默认 120 次 / 1 分钟。
+     全量页面健康检查会连续访问 30+ 路由，本地开发可调高。 */
+  GLOBAL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+  GLOBAL_RATE_LIMIT_WINDOW: z.string().default('1 minute'),
 });
 const envResult = envSchema.safeParse(process.env);
 if (!envResult.success) {
@@ -97,7 +101,7 @@ await app.register(cors, {
 });
 await app.register(cookie);
 await app.register(jwt, { secret: env.JWT_SECRET });
-await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
+await app.register(rateLimit, { max: env.GLOBAL_RATE_LIMIT_MAX, timeWindow: env.GLOBAL_RATE_LIMIT_WINDOW });
 if (!env.PUBLIC_BASE_URL) {
 await app.register(swagger, {
   openapi: {

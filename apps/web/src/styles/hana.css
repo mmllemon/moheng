@@ -1348,7 +1348,9 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .data-table .align-right, .align-right { text-align: right; }
 .table-primary-text { display: block; color: var(--text); font-size: 12px; font-weight: 500; line-height: 1.4; }
 .table-subtext { display: block; margin-top: 2px; color: var(--text-muted); font-size: 9.8px; line-height: 1.4; }
-.table-scroll { overflow-x: auto; }
+/* 表格滚动容器：必须能横向滚动。父级不能 overflow: hidden，
+   否则窄视口下 min-width 表格的右侧列会被裁掉（不是滚动，是直接消失）。 */
+.table-scroll { overflow-x: auto; overflow-y: visible; }
 .panel-heading h3::before, .an-panel-head h2::before, .ldg-drawer-body h3::before, .v6-block-head h2::before { display: none !important; content: none !important; }
 .v6-row-arrow { color: var(--text-muted); opacity: 0.6; }
 .data-table tbody tr:hover .v6-row-arrow { color: var(--accent); opacity: 1; }
@@ -3194,7 +3196,32 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   margin: 0;
   border: 0;
 }
-.downstream-summary-grid .change-summary {
+/* 统计卡片基础布局：必须撑满 grid 单元格。
+   关键：不能用 min-width: 0 而不给 width —— grid 子项会按 min-content 计算，
+   内容宽 0 + padding 30px = 32px，文字被压成竖排。 */
+.change-summary {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+}
+.change-summary-label {
+  display: block;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.change-summary strong,
+.change-summary small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.downstream-summary-grid .change-summary,
+.change-summary-grid .change-summary,
+.bill-summary-grid .change-summary,
+.owner-finance-metrics .change-summary {
   min-width: 0;
   padding: var(--space-14) var(--space-16);
   border: 0;
@@ -3233,13 +3260,16 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .change-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .owner-finance-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .owner-contract-amount-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.bill-summary,
-.change-summary,
-.owner-metric,
-.bill-summary + .bill-summary::before,
-.change-summary + .change-summary::before,
-.owner-metric + .owner-metric::after,
-.bill-summary-icon { width: 30px; height: 30px; flex-basis: 30px; border-radius: var(--radius-action); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+/* 图标尺寸只应作用于图标元素。
+   旧写法把 .change-summary / .bill-summary / .owner-metric（整个统计卡片）
+   一并设成 30×30px，导致卡片被压成小方块、文字竖排重叠。 */
+.bill-summary-icon {
+  width: 30px;
+  height: 30px;
+  flex-basis: 30px;
+  border-radius: var(--radius-action);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
 .bill-summary small,
 .change-summary-label,
 .owner-metric > span,
@@ -3655,7 +3685,7 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
 .projects-ledger-page .projects-kpi-strip { padding: 0; overflow: hidden; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
 .projects-ledger-page .projects-kpi-strip > div { position: relative; padding: 14px 16px; border-left: 0; }
 .projects-ledger-page .projects-kpi-strip > div + div::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); }
-.projects-ledger .table-scroll { overflow: hidden; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
+.projects-ledger .table-scroll { overflow-x: auto; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
 .projects-table { width: calc(100% - 36px); margin: 0 18px; }
 .projects-table thead th { border-top: 0; }
 .projects-table tbody tr:last-child td { border-bottom: 0; }
@@ -3738,7 +3768,10 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
 .ldg-section-head h2 { margin: 0; color: var(--text); font-family: var(--font-ui); font-size: 17px; font-weight: 600; letter-spacing: 0.05em; }
 .ldg-section-head p { margin: 4px 0 0; color: var(--text-muted); font-size: 10.5px; line-height: 1.55; }
 .ldg-section-count { color: var(--text-muted); font-size: 10px; }
-.ldg-section-card { overflow: hidden; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
+/* 注意：不能用 overflow: hidden。表格有 min-width: 980px，窄视口下需要
+   .ldg-table-wrap 的 overflow-x: auto 生效；父级 hidden 会把滚动条裁掉，
+   导致右侧列直接消失。圆角由内部元素各自处理。 */
+.ldg-section-card { overflow: visible; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
 
 .ldg-tree-toggle { width: 18px; height: 18px; flex: 0 0 18px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-sm); background: var(--overlay-subtle); color: var(--text-muted); font-size: 12px; line-height: 1; }
 .ldg-tree-toggle:hover { background: var(--accent-light); color: var(--accent); }
@@ -4254,7 +4287,7 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
   corner-shape: squircle;
   background: var(--bg-card);
 }
-.overview-page .v6-block > .table-scroll { overflow: hidden; }
+.overview-page .v6-block > .table-scroll { overflow-x: auto; }
 .overview-page .v6-block > .v6-log-list { max-height: 360px; overflow: auto; }
 .overview-page .v6-block > .v6-todo { overflow: hidden; }
 .overview-page .v6-log-row { padding-inline: 18px; }
