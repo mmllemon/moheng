@@ -122,7 +122,8 @@ export default function AssistantProviderPage() {
   ];
   return <div className="page-wrap assistant-provider-page">
     <PageHeader
-      title="供应商"
+      title="AI 助手配置"
+      subtitle="配置 OpenAI 兼容的模型供应商、加密保存密钥；保存并启用后，成本工作台会出现只读成本助手入口。"
       actions={<Button variant="secondary" onClick={() => { setLoading(true); api.get<ProviderConfig>('/system-management/assistant-provider').then(applyConfig).catch(() => setError('刷新失败')).finally(() => setLoading(false)); }}><RefreshCw size={15} />刷新</Button>}
     />
 

@@ -3076,6 +3076,122 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
 
+/* 多列指标：同一张卡内分栏，分隔线内缩 */
+.bill-summary-grid,
+.change-summary-grid,
+.owner-finance-metrics,
+.owner-contract-amount-grid {
+  display: grid;
+  gap: 0;
+  margin: 0 0 24px;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  background: var(--bg-card);
+}
+.bill-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.change-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.owner-finance-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.owner-contract-amount-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bill-summary,
+.change-summary,
+.owner-metric,
+.owner-contract-amount-card {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.bill-summary + .bill-summary::before,
+.change-summary + .change-summary::before,
+.owner-metric + .owner-metric::after,
+.owner-contract-amount-card + .owner-contract-amount-card::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--card-border) 66%, transparent);
+  pointer-events: none;
+}
+.bill-summary-icon { width: 30px; height: 30px; flex-basis: 30px; border-radius: 7px; background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.bill-summary small,
+.change-summary-label,
+.owner-metric > span,
+.owner-contract-amount-card span { color: var(--text-muted); font-size: 10px; }
+.bill-summary strong,
+.change-summary strong,
+.owner-metric > strong,
+.owner-contract-amount-card strong { color: var(--text); font-family: var(--font-num, var(--num)); font-weight: 600; }
+.bill-summary strong { margin-top: 3px; font-size: 20px; }
+.change-summary strong { margin: 5px 0 3px; font-size: 20px; }
+.owner-metric { min-height: 96px; }
+.owner-metric::before { display: none; }
+.owner-metric > strong { font-size: 20px; }
+.owner-contract-amount-card strong { font-size: 18px; }
+.change-summary-emphasis { background: transparent; }
+.change-summary-emphasis strong { font-size: 20px; }
+.change-summary small,
+.owner-metric > small,
+.owner-contract-amount-card small { color: var(--text-muted); font-size: 9.5px; line-height: 1.5; }
+
+.owner-contract-hero { border-radius: var(--radius-card); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); background: var(--bg-card); }
+.owner-contract-hero::before { display: none; }
+.owner-contract-detail-grid { padding: 0 18px 16px; border-top: 0; }
+.owner-contract-detail-grid > div { background: transparent; }
+.owner-contract-detail-grid > div:nth-child(4),
+.owner-contract-detail-grid > div:nth-child(5) { border-top: 0; position: relative; }
+.owner-contract-detail-grid > div:nth-child(4)::before,
+.owner-contract-detail-grid > div:nth-child(5)::before { content: ''; position: absolute; top: 0; right: 0; left: 0; height: 1px; background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
+.owner-contract-shortcut-grid { align-items: stretch; grid-auto-rows: 1fr; }
+.owner-contract-shortcut-grid > button { height: 100%; border-radius: 10px; }
+
+.owner-finance-tabs {
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--overlay-light);
+  border-radius: 9px;
+  background: var(--overlay-subtle);
+  box-shadow: none;
+}
+.owner-finance-tabs > button { min-height: 28px; padding: 0 10px; border: 0; border-radius: 7px; color: var(--text-muted); font-size: 10.5px; }
+.owner-finance-tabs > button:hover { color: var(--text); background: color-mix(in srgb, var(--bg-card) 48%, transparent); }
+.owner-finance-tabs > button.active { color: var(--text); border-color: transparent; background: var(--bg-card); box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 12%, transparent); font-weight: 600; }
+.owner-finance-tabs > button small { min-width: auto; height: auto; padding: 0; border-radius: 0; background: transparent; color: var(--text-muted); font-size: 9px; }
+.owner-finance-tabs > button.active small { background: transparent; color: var(--accent); }
+.owner-finance-contract-chip { margin-left: auto; }
+
+@media (max-width: 1100px) {
+  .owner-finance-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bill-summary-grid,
+  .change-summary-grid,
+  .owner-contract-amount-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .owner-metric + .owner-metric::after,
+  .bill-summary + .bill-summary::before,
+  .change-summary + .change-summary::before,
+  .owner-contract-amount-card + .owner-contract-amount-card::before { display: none; }
+  .owner-finance-metrics,
+  .bill-summary-grid,
+  .change-summary-grid,
+  .owner-contract-amount-grid { gap: 8px; border: 0; background: transparent; overflow: visible; }
+  .owner-metric,
+  .bill-summary,
+  .change-summary,
+  .owner-contract-amount-card { border: 1px solid var(--card-border); border-radius: 10px; background: var(--bg-card); }
+}
+@media (max-width: 720px) {
+  .owner-finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bill-summary-grid,
+  .change-summary-grid,
+  .owner-contract-amount-grid { grid-template-columns: 1fr; }
+}
+
 /* Hana 使用标准圆角，不用 squircle；交互控件统一 32px / 8px */
 .button,
 .select-control-trigger,
