@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useId, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Check, ChevronDown, Plus, Search, X } from 'lucide-react';
@@ -25,6 +25,8 @@ export default function BusinessPartyPicker({
   const queryClient = useQueryClient();
   const [search, setSearch] = useState(name ?? '');
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listboxId = useId();
   const [createOpen, setCreateOpen] = useState(false);
   const [creditCode, setCreditCode] = useState('');
   const [contactName, setContactName] = useState('');
@@ -43,8 +45,12 @@ export default function BusinessPartyPicker({
   const selected = rows.find((p) => p.id === value);
   
   function editName(next: string) {
-    setSearch(next); setOpen(true); setError('');
+    setSearch(next); setOpen(true); setActiveIndex(-1); setError('');
     onChange(null, next);
+  }
+  function selectParty(party: BusinessPartyOption) {
+    onChange(party.id, party.name, party);
+    setSearch(party.name); setOpen(false); setCreateOpen(false); setActiveIndex(-1);
   }
   async function createParty(event: FormEvent) {
     event.preventDefault();
@@ -67,17 +73,35 @@ export default function BusinessPartyPicker({
 
   return <div className={`business-party-picker ${open ? 'is-open' : ''}`}>
     <label className="business-party-picker-label">{label}{required && <b> *</b>}</label>
+    <div className="business-party-combobox">
     <div className={`business-party-input-wrap ${open ? 'is-open' : ''}`}>
       <Search size={15} className="business-party-search-icon" />
-      <input value={search} required={required} placeholder="搜索单位全称或统一社会信用代码" onFocus={() => { setOpen(true); setCreateOpen(false); }} onChange={(event) => editName(event.target.value)} onBlur={() => { /* Keep picker open for click selection; menu closes on result selection or outside dismiss. */ }} />
-      {value && <button type="button" className="business-party-clear" title="清除单位关联" onClick={() => { setSearch(''); onChange(null, ''); }}><X size={14} /></button>}
-      <ChevronDown size={14} className="business-party-chevron" />
+      <input
+        value={search}
+        required={required}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+        aria-autocomplete="list"
+        aria-activedescendant={open && rows[activeIndex] ? listboxId + '-' + rows[activeIndex].id : undefined}
+        placeholder="搜索单位全称或统一社会信用代码"
+        onFocus={() => { setOpen(true); setCreateOpen(false); }}
+        onChange={(event) => editName(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') { event.preventDefault(); setOpen(true); setActiveIndex((index) => Math.min(rows.length - 1, index + 1)); }
+          else if (event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex((index) => Math.max(0, index - 1)); }
+          else if (event.key === 'Enter' && open && rows[activeIndex]) { event.preventDefault(); selectParty(rows[activeIndex]); }
+          else if (event.key === 'Escape') { setOpen(false); setActiveIndex(-1); }
+        }}
+      />
+      {value && <button type="button" className="business-party-clear" title="清除单位关联" aria-label="清除单位关联" onClick={() => { setSearch(''); onChange(null, ''); }}><X size={14} /></button>}
+      <button type="button" className="business-party-chevron" aria-label={open ? '收起单位列表' : '展开单位列表'} aria-expanded={open} onClick={() => { setOpen((current) => !current); setActiveIndex(-1); }}><ChevronDown size={14} /></button>
     </div>
     {open && <>
       <button type="button" className="business-party-dismiss" aria-label="关闭单位选择" onClick={() => { setOpen(false); setCreateOpen(false); }} />
-      <div className="business-party-results">{!createOpen && <>
+      <div className="business-party-results" id={listboxId} role="listbox" aria-label="往来单位搜索结果">{!createOpen && <>
         {lookup.isLoading && <div className="business-party-empty">正在搜索单位档案…</div>}
-        {rows.map((party) => <button type="button" className="business-party-result" key={party.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { onChange(party.id, party.name, party); setSearch(party.name); setOpen(false); setCreateOpen(false); }}>
+        {rows.map((party, index) => <button type="button" role="option" aria-selected={value === party.id} id={listboxId + '-' + party.id} className={'business-party-result' + (index === activeIndex ? ' is-active' : '') + (value === party.id ? ' is-selected' : '')} key={party.id} onMouseDown={(event) => event.preventDefault()} onMouseEnter={() => setActiveIndex(index)} onClick={() => selectParty(party)}>
           <span className="business-party-result-icon"><Building2 size={16} /></span><span className="business-party-result-copy"><strong>{party.name}</strong><small>{party.creditCode || '未登记统一社会信用代码'} · {party.roles.map((role) => roleNames[role]).join('、') || '往来单位'}</small></span>{value === party.id && <Check size={15} className="business-party-selected" />}
         </button>)}
         {!lookup.isLoading && !rows.length && <div className="business-party-empty">暂未找到匹配单位。</div>}
@@ -93,6 +117,7 @@ export default function BusinessPartyPicker({
         </form></div></div>, document.body)}
       </div>
     </>}
+    </div>
     {selected && <div className="business-party-selected-details">
       <div className="business-party-selected-hint"><Check size={12} />已关联统一单位档案 · {selected.creditCode || '信用代码未维护'} · {selected.identityVerified ? '主体已核验' : '主体待核验'}</div>
       {(selected.contactName || selected.phone || selected.address || selected.invoiceTitle || selected.taxNo) && <div className="business-party-autofill-grid">
