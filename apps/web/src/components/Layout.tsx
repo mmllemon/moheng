@@ -55,6 +55,20 @@ const systemGroups = [
   { label: '智能与运维', items: systemNavigation.slice(8) },
 ];
 const primaryGroups: NavigationItem['group'][] = ['经营中心', '工作台', '项目管理'];
+const settingsSearchAliases: Record<string, string[]> = {
+  '/settings/appearance': ['界面', '外观', '主题', '图标', '字体', '纸纹', '纹理', '密度', '动效', 'theme', 'appearance', 'font'],
+  '/system': ['系统', '概览', '运行状态', '版本'],
+  '/system/accounts': ['账号', '用户', '成员', '角色', '密码', '权限'],
+  '/system/security': ['登录', '安全', 'mfa', '双因素', '会话', '密码策略'],
+  '/system/authorization': ['授权', '复核', '权限矩阵', '项目权限'],
+  '/system/policies': ['权限', '流程', '审批', '策略', '角色'],
+  '/system/governance': ['组织', '规则', '部门', '治理'],
+  '/system/dictionaries': ['字典', '分类', '选项', '基础数据', '枚举'],
+  '/system/parameters': ['参数', '配置', '版本', '全局', '项目覆盖', '草稿'],
+  '/system/assistant': ['ai', '助手', '模型', '供应商', 'api', '密钥', 'openai'],
+  '/system/operations': ['运维', '备份', '恢复', '演练', '数据库', '磁盘', '任务'],
+  '/audit-logs': ['审计', '日志', '操作记录', '追溯'],
+};
 const costWorkspacePages = [
   { to: '/cost', label: '项目驾驶舱' },
   { to: '/cost/contracts', label: '业主主合同' },
@@ -329,10 +343,16 @@ export default function Layout() {
   const costPageLabel = location.pathname === '/cost/assistant' ? '成本助手' : location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (location.pathname === '/settings/appearance' ? '界面' : isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
   const availableSettingsGroups = user?.role === 'ADMIN' ? systemGroups : [{ label: '个人', items: [appearanceSettingsItem] }];
+  const settingsSearchGroups = user?.role === 'ADMIN' ? [...availableSettingsGroups, { label: '个人', items: [appearanceSettingsItem] }] : availableSettingsGroups;
   const isAppearanceSettings = location.pathname === '/settings/appearance';
   const settingsSearchQuery = settingsSearch.trim();
-  const settingsSearchMatches = availableSettingsGroups.flatMap((group) => group.items
-    .filter((item) => !settingsSearchQuery || item.label.toLocaleLowerCase().includes(settingsSearchQuery.toLocaleLowerCase()))
+  const settingsSearchMatches = settingsSearchGroups.flatMap((group) => group.items
+    .filter((item) => {
+      if (!settingsSearchQuery) return true;
+      const query = settingsSearchQuery.toLocaleLowerCase();
+      const haystack = [item.label, ...(settingsSearchAliases[item.to] ?? [])].join(' ').toLocaleLowerCase();
+      return haystack.includes(query);
+    })
     .map((item) => ({ ...item, groupLabel: group.label })));
   const visibleQuickActions = quickActionCategory === 'all' ? quickActions : quickActions.filter((action) => action.category === quickActionCategory);
 

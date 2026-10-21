@@ -144,7 +144,7 @@ check('body-card table rules are inset from the card edge', hana.includes('.ds-s
 check('Hana segmented tabs and tinted notes are wired', hana.includes('.sys-tabs {') && hana.includes('width: fit-content') && hana.includes('.inline-notice,') && hana.includes('border-radius: 10px'));
 check('settings pages use left-copy / right-control rows', hana.includes('.settings-row-control') && hana.includes('.settings-row-label') && (assistantPage.includes('settings-row') || assistantPage.includes('assistant-provider-shell')) && auditPage.includes('audit-filter-rows'));
 check('settings search is a real Hana field with clear and result states',
-  layout.includes('settings-search-clear') && layout.includes('settings-search-results') && layout.includes('settingsSearchMatches')
+  layout.includes('settings-search-clear') && layout.includes('settings-search-results') && layout.includes('settingsSearchMatches') && layout.includes('settingsSearchAliases')
   && hana.includes('.settings-nav .settings-search {') && hana.includes('height: var(--control-height)')
   && hana.includes('background: var(--overlay-light)') && hana.includes('.settings-search-result {'));
 check('settings scrollbar is a 4px window-edge overlay', layout.includes('settings-scrollbar') && hana.includes('.settings-scrollbar') && hana.includes('width: 4px') && layout.includes('bar.addEventListener') && layout.includes('onPointerDown'));
