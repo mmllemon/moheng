@@ -46,6 +46,14 @@
   --icon-btn-size-sm: calc(18px + var(--icon-btn-pad) * 2);
   --icon-btn-size: calc(22px + var(--icon-btn-pad) * 2);
   --icon-btn-size-lg: 32px;
+
+  /* 按钮字号三档：与 Hana 的 fs-hint / fs-caption / fs-ui 一一对应。
+     Hana 用法分布：fs-hint 37 次（大多数按钮）、fs-caption 17 次、fs-ui 10 次。
+     moheng 之前没有这层 token，各处直接写 px，导致 .button-secondary
+     在不同容器里有 11.5 / 10.5 / 10 三种字号。 */
+  --btn-font-lg: 13px;      /* 页头主操作、对话框提交 */
+  --btn-font: 11.5px;       /* 一般按钮、区块操作 */
+  --btn-font-sm: 10.5px;    /* 表格行内、密集工具条 */
   --radius-card: calc(var(--radius-card-base) * var(--corner-radius-scale));
   --card-border: color-mix(in srgb, var(--border) 78%, transparent);
   --card-inset: var(--space-16);
@@ -906,7 +914,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   corner-shape: squircle;
   background: color-mix(in srgb, var(--text) 3.5%, transparent);
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--btn-font-lg);
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
@@ -925,7 +933,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .button-ghost:hover { background: var(--overlay-light); color: var(--text); }
 .button-danger { background: transparent; border-color: color-mix(in srgb, var(--danger) 28%, transparent); color: var(--danger); }
 .button-danger:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); border-color: color-mix(in srgb, var(--danger) 42%, transparent); color: var(--danger); }
-.button-small { height: 26px; min-height: 26px; padding: 0 var(--space-8); font-size: 11.5px; border-radius: var(--radius-md); }
+.button-small { height: 26px; min-height: 26px; padding: 0 var(--space-8); font-size: var(--btn-font); border-radius: var(--radius-md); }
 .button-small svg { width: 13px; height: 13px; }
 
 /* -------------------------------------------------------------
@@ -942,13 +950,64 @@ html .button {
   height: 32px;
   min-height: 32px;
   padding: 0 var(--space-12);
-  font-size: 13px;
+  font-size: var(--btn-font-lg);
 }
 html .button-small {
   height: 26px;
   min-height: 26px;
   padding: 0 var(--space-8);
-  font-size: 11.5px;
+  font-size: var(--btn-font);
+}
+
+/* 按钮字号：全站只允许三档
+   病因：.button-primary/.button-secondary/... 在多个层里各自定义字号——
+     v6.css:247            12px
+     legacy.css:2591       10px / 600（.system-parameter-submit 内）
+     hana.css 各容器       10.5 / 11 / 11.5 / 13 混用
+   两层在 hana.css 之后加载，单改 hana.css 压不住，所以在这里钉死。
+   三档对应 Hana 的 fs-hint / fs-caption / fs-ui。 */
+html .button,
+html .button-primary,
+html .button-secondary,
+html .button-ghost,
+html .button-danger {
+  font-size: var(--btn-font-lg);
+}
+html .button-small,
+html .button.button-small,
+html .button-primary.button-small,
+html .button-secondary.button-small,
+html .button-ghost.button-small,
+html .button-danger.button-small {
+  font-size: var(--btn-font);
+}
+/* 表格行内、台账工具条里的按钮是密集场景，走最小档。
+   注意：这里同时把高度收到 24px，否则会出现「26px 高 + 10.5px 字」
+   与「26px 高 + 11.5px 字」两种同高不同字号的按钮。 */
+html .data-table .button,
+html .data-table .button-secondary,
+html .data-table .button-danger,
+html .row-actions .button,
+html .table-action,
+html .table-action.button {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 var(--space-6);
+  font-size: var(--btn-font-sm);
+}
+/* 页头与区块操作强制大档，保证与旁边的主按钮同字号 */
+html .page-actions .button,
+html .page-actions .button-small,
+html .page-actions .button-secondary,
+html .table-heading-actions .button,
+html .ds-section-actions .button,
+html .dialog-actions .button,
+html .settings-section-actions .button,
+/* 这两个容器原来是 11px / 10px，同一行里与其他按钮不一致 */
+html .report-config-actions .button,
+html .assistant-detail-actions .button,
+html .assistant-model-add .button-ghost {
+  font-size: var(--btn-font-lg);
 }
 
 /* -------------------------------------------------------------
@@ -1029,7 +1088,7 @@ html .settings-section-actions .button {
   height: 32px;
   min-height: 32px;
   padding: 0 var(--space-12);
-  font-size: 13px;
+  font-size: var(--btn-font-lg);
 }
 html .page-actions .button svg,
 html .table-heading-actions .button svg,
@@ -1043,7 +1102,7 @@ html .row-actions .button,
 html .table-action.button {
   height: 26px;
   min-height: 26px;
-  font-size: 11.5px;
+  font-size: var(--btn-font-sm);
 }
 
 /* 台账工具栏（.ldg-tools）里的旧规则 .ldg-tools .button-secondary
@@ -1054,7 +1113,7 @@ html .ldg-tools .button.button-small {
   height: 26px;
   min-height: 26px;
   padding: 0 var(--space-8);
-  font-size: 11.5px;
+  font-size: var(--btn-font);
 }
 
 /* 页面头部主操作在窄屏可以换行，但不能变形 */
@@ -3226,15 +3285,15 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .security-metric strong { display: block; margin: 3px 0; font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; line-height: 1.15; }
 .security-metric div > span { display: block; color: var(--text-muted); font-size: 9.5px; line-height: 1.45; }
 .security-panel .table-scroll .button-danger {
-  height: 26px;
-  min-height: 26px;
-  padding: 0 var(--space-8);
+  height: 24px;
+  min-height: 24px;
+  padding: 0 var(--space-6);
   border-color: transparent;
   border-radius: var(--radius-action);
   corner-shape: squircle;
   background: transparent;
   color: var(--text-muted);
-  font-size: 10.5px;
+  font-size: var(--btn-font-sm);
 }
 .security-panel .table-scroll .button-danger:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); border-color: transparent; color: var(--danger); }
 
@@ -3385,7 +3444,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   corner-shape: squircle;
   background: transparent;
   color: var(--text-muted);
-  font-size: 10.5px;
+  font-size: var(--btn-font-sm);
   font-weight: 500;
 }
 .data-table .button-secondary:hover { border-color: transparent; background: var(--overlay-subtle); color: var(--text); }
@@ -5501,7 +5560,7 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 
 /* 字典目录：目录行只负责选择，资料与字典项各自成卡 */
 .system-dictionary-heading-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.system-dictionary-heading-actions .button-secondary { height: 30px; min-height: 30px; padding: 0 10px; font-size: 10.5px; }
+.system-dictionary-heading-actions .button-secondary { height: 30px; min-height: 30px; padding: 0 10px; font-size: var(--btn-font); }
 .system-dictionary-card-list { display: flex; flex-direction: column; gap: 2px; padding: 0 8px 8px; }
 .system-dictionary-card {
   display: block;
@@ -5565,7 +5624,7 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .system-dictionary-item-fields label > span { color: var(--text-muted); font-size: 9.5px; }
 .system-dictionary-item-fields input { width: 100%; height: 26px !important; min-height: 26px !important; padding: 0 var(--space-8) !important; font-size: 11.5px; border-radius: var(--radius-control); }
 .system-dictionary-item-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; margin-top: 8px; }
-.system-dictionary-item-actions .button-secondary { height: 26px; min-height: 26px; padding: 0 var(--space-8); font-size: 11.5px; }
+.system-dictionary-item-actions .button-secondary { height: 26px; min-height: 26px; padding: 0 var(--space-8); font-size: var(--btn-font); }
 @media (max-width: 720px) {
   .system-dictionary-item-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .system-dictionary-item-sort { grid-column: 1 / -1; max-width: 100px; }
