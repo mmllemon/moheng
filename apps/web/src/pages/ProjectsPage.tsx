@@ -1,14 +1,16 @@
 import DatePicker from '../components/DatePicker';
+import ContextMenu from '../components/ContextMenu';
 import SelectField from '../components/SelectField';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CircleAlert, Edit3, FolderPlus, Plus, Search, Users2, X } from 'lucide-react';
+import { ArrowUpRight, CircleAlert, Copy, Edit3, FolderPlus, Plus, Search, Users2, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
+import { toast } from '../lib/toast';
 import { useUiStore } from '../auth-store';
 import type { Project } from '../types';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
@@ -116,6 +118,7 @@ export default function ProjectsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('ALL');
   const [dialog, setDialog] = useState<{ open: boolean; project?: Project }>({ open: false });
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; project: Project } | null>(null);
   const projects = projectsQuery.data ?? [];
   const projectMap = useMemo(() => new Map((dashboardQuery.data?.projects ?? []).map((project) => [project.id, project])), [dashboardQuery.data?.projects]);
   const pendingChangeCounts = useMemo(() => { const counts = new Map<string, number>(); for (const change of dashboardQuery.data?.pendingChanges ?? []) counts.set(change.projectId, (counts.get(change.projectId) ?? 0) + 1); return counts; }, [dashboardQuery.data?.pendingChanges]);
@@ -163,7 +166,23 @@ export default function ProjectsPage() {
           const targetCost = snapshot?.targetCost;
           const actualCost = snapshot?.actualCost;
           const recoveryRatio = snapshot?.recoveryRatio;
-          return <tr key={project.id} className={selected?.id === project.id ? 'is-selected' : ''} tabIndex={0} aria-selected={selected?.id === project.id} onClick={() => setSelectedId(project.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedId(project.id); } }}>
+          return <tr
+            key={project.id}
+            className={selected?.id === project.id ? 'is-selected' : ''}
+            tabIndex={0}
+            aria-selected={selected?.id === project.id}
+            onClick={() => setSelectedId(project.id)}
+            onContextMenu={(event) => { event.preventDefault(); setSelectedId(project.id); setContextMenu({ x: event.clientX, y: event.clientY, project }); }}
+            onKeyDown={(event) => {
+              if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                event.preventDefault();
+                const rect = event.currentTarget.getBoundingClientRect();
+                setContextMenu({ x: rect.left + 24, y: rect.top + 24, project });
+                return;
+              }
+              if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedId(project.id); }
+            }}
+          >
             <td><strong className="table-primary-text">{project.name}</strong><small className="table-subtext">{project.code}{pendingChanges > 0 ? ' · ' + pendingChanges + ' 项待跟进' : ''}</small></td>
             <td><StatusBadge status={project.status} /></td>
             <td><span className="projects-owner-cell">{project.ownerPartyId ? <Link to={'/parties/' + project.ownerPartyId}>{project.ownerName} ↗</Link> : project.ownerName}</span></td>
@@ -203,6 +222,22 @@ export default function ProjectsPage() {
         <div className="projects-dossier-actions"><Button onClick={() => { setSelectedProjectId(selected.id); navigate('/cost'); }}><FolderPlus size={14} />进入驾驶舱</Button><Button variant="secondary" onClick={() => { setSelectedProjectId(selected.id); navigate('/projects/members'); }}><Users2 size={14} />项目成员</Button></div>
       </aside>}
     </div>}
+
+    {contextMenu && <ContextMenu
+      x={contextMenu.x}
+      y={contextMenu.y}
+      label={`项目操作：${contextMenu.project.name}`}
+      onClose={() => setContextMenu(null)}
+      items={[
+        { heading: contextMenu.project.name },
+        { label: '进入项目驾驶舱', icon: FolderPlus, shortcut: '↵', onSelect: () => { setSelectedProjectId(contextMenu.project.id); navigate('/cost'); } },
+        { label: '编辑项目档案', icon: Edit3, onSelect: () => setDialog({ open: true, project: contextMenu.project }) },
+        { label: '项目成员与权限', icon: Users2, onSelect: () => { setSelectedProjectId(contextMenu.project.id); navigate('/projects/members'); } },
+        ...(contextMenu.project.ownerPartyId ? [{ label: '打开业主档案', icon: ArrowUpRight, onSelect: () => navigate('/parties/' + contextMenu.project.ownerPartyId) }] : []),
+        { divider: true as const },
+        { label: '复制项目编号', icon: Copy, onSelect: () => { void navigator.clipboard.writeText(contextMenu.project.code).then(() => toast('已复制项目编号', { description: contextMenu.project.code })).catch(() => toast('复制失败', { tone: 'error', description: '浏览器未授予剪贴板权限' })); } },
+      ]}
+    />}
 
     {dialog.open && <ProjectDialog project={dialog.project} onClose={() => { setDialog({ open: false }); void queryClient.invalidateQueries({ queryKey: ['projects'] }); void queryClient.invalidateQueries({ queryKey: ['dashboard'] }); }} />}
   </div>;

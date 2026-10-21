@@ -1551,6 +1551,48 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .spinner { width: 14px; height: 14px; border: 1.5px solid var(--overlay-strong); border-top-color: var(--accent); border-radius: 50%; animation: hana-spin 0.8s linear infinite; }
 .full-screen-loading { min-height: 100vh; display: grid; place-items: center; background: var(--bg); }
 
+/* Hana 右键菜单 */
+.hana-context-menu {
+  position: fixed;
+  z-index: var(--z-popover);
+  min-width: 196px;
+  padding: 4px 0;
+  border: 1px solid var(--overlay-light);
+  border-radius: 14px;
+  corner-shape: squircle;
+  background: var(--bg-card);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.07);
+  animation: hana-pop-in var(--duration-paper-spring) var(--ease-paper-spring);
+}
+.hana-context-heading { padding: 6px 12px 4px; overflow: hidden; color: var(--text-muted); font-size: 10.5px; font-weight: 500; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; }
+.hana-context-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+.hana-context-item:hover,
+.hana-context-item:focus,
+.hana-context-item:focus-visible { outline: none; background: var(--overlay-subtle); }
+.hana-context-item:disabled { color: var(--text-muted); opacity: 0.5; }
+.hana-context-icon { width: 14px; height: 14px; flex: 0 0 14px; display: grid; place-items: center; color: var(--text-muted); }
+.hana-context-item.is-danger { color: var(--danger); }
+.hana-context-item.is-danger .hana-context-icon { color: var(--danger); }
+.hana-context-item.is-danger:hover, .hana-context-item.is-danger:focus-visible { background: color-mix(in srgb, var(--danger) 6%, transparent); }
+.hana-context-item kbd { margin-left: auto; padding-left: 18px; color: var(--text-muted); font-family: var(--font-ui); font-size: 9.5px; }
+.hana-context-divider { height: 1px; margin: 4px 0; background: var(--overlay-light); }
+
 /* Hana Toast */
 .hana-toast-host {
   position: fixed;
