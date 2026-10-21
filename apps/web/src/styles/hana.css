@@ -598,7 +598,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   flex: 0 0 auto;
   padding: 8px;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--sidebar-bg) 84%, transparent);
+  background: transparent;
 }
 .sidebar-user-row {
   display: flex;
@@ -1763,7 +1763,7 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-header-copy span { color: var(--text-muted); font-size: 9.5px; letter-spacing: 0.08em; }
 .settings-header-actions { margin-left: auto; display: flex; align-items: center; gap: 3px; }
 .settings-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 208px 670px; column-gap: 40px; padding-right: 40px; }
-.settings-nav { min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; border-right: 1px solid var(--border); background: color-mix(in srgb, var(--sidebar-bg) 44%, var(--bg)); }
+.settings-nav { min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; border-right: 1px solid var(--border); background: transparent; }
 .settings-search { position: relative; flex: 0 0 auto; }
 .settings-search svg { position: absolute; left: 9px; top: 50%; width: 14px; height: 14px; color: var(--text-muted); transform: translateY(-50%); pointer-events: none; }
 .settings-search input {
@@ -2077,7 +2077,7 @@ html[data-paper-texture] .settings-window::after { display: block; }
   .form-grid { grid-template-columns: 1fr; }
   .system-overview-metrics { grid-template-columns: 1fr; }
   .settings-body { grid-template-columns: 1fr; display: block; overflow: auto; padding-right: 0; }
-  .settings-nav { position: static; z-index: 4; max-height: none; background: color-mix(in srgb, var(--sidebar-bg) 44%, var(--bg)); border-right: 0; border-bottom: 1px solid var(--border); box-shadow: none; }
+  .settings-nav { position: static; z-index: 4; max-height: none; background: transparent; border-right: 0; border-bottom: 1px solid var(--border); box-shadow: none; }
   .settings-groups { max-height: 220px; overflow: auto; }
   .settings-content { padding: 14px 12px 28px; }
   .settings-search { position: sticky; top: 0; z-index: 2; background: var(--sidebar-bg); }

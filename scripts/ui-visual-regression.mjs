@@ -119,12 +119,21 @@ const shellAudit = await page.evaluate(() => {
     const box = element.getBoundingClientRect();
     return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
   };
+  const backgroundAlpha = (selector) => {
+    const element = document.querySelector(selector);
+    if (!element) return null;
+    const value = getComputedStyle(element).backgroundColor;
+    const channels = value.match(/rgba?\(([^)]+)\)/)?.[1].split(',').map(Number);
+    return channels ? (channels[3] ?? 1) : null;
+  };
   return {
     sidebar: rect('.app-sidebar'),
     titlebar: rect('.app-titlebar'),
     main: rect('.app-main'),
     settings: rect('.settings-window'),
     settingsNav: rect('.settings-nav'),
+    settingsNavAlpha: backgroundAlpha('.settings-nav'),
+    sidebarFooterAlpha: backgroundAlpha('.app-sidebar-footer'),
   };
 });
 const shellOk = shellAudit.sidebar?.x === 6
@@ -134,7 +143,9 @@ const shellOk = shellAudit.sidebar?.x === 6
   && shellAudit.main?.x === 246
   && shellAudit.settings?.width === 960
   && shellAudit.settings?.height === 722
-  && shellAudit.settingsNav?.width === 208;
+  && shellAudit.settingsNav?.width === 208
+  && shellAudit.settingsNavAlpha === 0
+  && shellAudit.sidebarFooterAlpha === 0;
 if (!shellOk) failures.push({ check: 'hana-shell-metrics', shellAudit });
 
 console.log('\nSUMMARY');
