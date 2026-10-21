@@ -33,6 +33,19 @@
   --radius-action: calc(5px * var(--corner-radius-scale));
   --radius-compact: calc(4px * var(--corner-radius-scale));
   --radius-lg-v6: 8px;
+
+  /* 图标按钮几何：照 Hana 的算法，尺寸不是一个写死的数，
+     而是「图标本体 + 四周内边」。
+     Hana: height = calc(var(--card-top-btn-size, 24px) + var(--card-top-btn-pad, 2px) * 2)
+     即「图标 24、内边 2」→ 28px。
+     moheng 保留三档，因为侧栏/标题栏/行内三种环境的视觉权重确实不同：
+       22px = 18 图标 + 2×2  → 侧栏项目操作
+       26px = 22 图标 + 2×2  → 侧栏个人操作
+       32px = 28 图标 + 2×2  → 标题栏、侧栏主控 */
+  --icon-btn-pad: 2px;
+  --icon-btn-size-sm: calc(18px + var(--icon-btn-pad) * 2);
+  --icon-btn-size: calc(22px + var(--icon-btn-pad) * 2);
+  --icon-btn-size-lg: 32px;
   --radius-card: calc(var(--radius-card-base) * var(--corner-radius-scale));
   --card-border: color-mix(in srgb, var(--border) 78%, transparent);
   --card-inset: var(--space-16);
@@ -938,6 +951,74 @@ html .button-small {
   font-size: 11.5px;
 }
 
+/* -------------------------------------------------------------
+   图标按钮：把散落的六个类名收进同一套几何
+   -------------------------------------------------------------
+   现状：356 个图标按钮分属 6 套并行类名（sidebar-toggle /
+   sidebar-footer-icon / titlebar-icon / sidebar-profile-action /
+   sidebar-project-all / settings-close），每套自己写死尺寸。
+   尺寸落在 32/28/26/24/22 五档，但无任何规则保证同环境一致。
+
+   这里不改原值（原值是合理的），只做两件事：
+   1. 尺寸改从 token 读，想整体调只改 --icon-btn-pad；
+   2. 图标本体尺寸统一定义，避免被内容或父级 flex 撑变形。
+   注意：.titlebar-icon 在窄屏 @media (max-width: 680px) 里
+   有一条 28px 的响应式规则，这是有意的，不是重复定义。 */
+html .sidebar-toggle,
+html .sidebar-footer-icon,
+html .titlebar-icon {
+  width: var(--icon-btn-size-lg);
+  height: var(--icon-btn-size-lg);
+  flex: 0 0 var(--icon-btn-size-lg);
+}
+html .sidebar-toggle > svg,
+html .sidebar-footer-icon > svg,
+html .titlebar-icon > svg {
+  flex: 0 0 auto;
+  display: block;
+}
+
+html .sidebar-profile-action {
+  width: var(--icon-btn-size);
+  height: var(--icon-btn-size);
+  flex: 0 0 var(--icon-btn-size);
+}
+html .sidebar-profile-action > svg { flex: 0 0 auto; display: block; }
+
+html .sidebar-project-all {
+  width: var(--icon-btn-size-sm);
+  height: var(--icon-btn-size-sm);
+  flex: 0 0 var(--icon-btn-size-sm);
+}
+html .sidebar-project-all > svg { flex: 0 0 auto; display: block; }
+
+html .settings-close,
+html .settings-close-floating {
+  width: var(--icon-btn-size-lg);
+  height: var(--icon-btn-size-lg);
+  flex: 0 0 var(--icon-btn-size-lg);
+}
+html .settings-close > svg,
+html .settings-close-floating > svg { flex: 0 0 auto; display: block; }
+
+/* 行内小操作（台账展开箭头、明细下拉）：24px，不是正方形也允许
+   因为有些带文字箭头并列，宽度由内容决定 */
+html .ldg-more {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+}
+
+/* 所有图标按钮内部 svg 不允许被撑变形 */
+html .icon-button > svg,
+html .ldg-more > svg {
+  flex: 0 0 auto;
+  display: block;
+}
+
 /* 页头与工具栏内的按钮一律同高：
    同一行里出现 26px 与 32px 混排时，视觉上就是“没对齐”。 */
 html .page-actions .button,
@@ -1115,8 +1196,8 @@ html .filter-bar input[type="search"] {
   padding-left: var(--space-10);
 }
 .icon-button {
-  width: 32px;
-  height: 32px;
+  width: var(--icon-btn-size-lg);
+  height: var(--icon-btn-size-lg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
