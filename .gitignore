@@ -12,6 +12,9 @@ apps/api/logs/
 apps/api/data/evidence/
 apps/api/data/jobs/
 
+# Local UI review screenshots and audit scripts (never source inputs)
+.ui-review/
+
 # 本地验证产物与过程补丁
 *.patch
 GATE-*.jsonl

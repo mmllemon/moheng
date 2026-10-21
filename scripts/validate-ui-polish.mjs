@@ -103,8 +103,9 @@ check('report center keeps the compact ledger catalog and export flow',
 
 check('key routes still exist',
   ['assistant', 'budget', 'analysis', 'projects', 'reports', 'system'].every((route) => appSource.includes(route)));
-const designExists = await access(join(root, 'docs/设计系统-v6-文房.md')).then(() => true).catch(() => false);
-const componentExists = await access(join(root, 'docs/组件库-v6-文房.md')).then(() => true).catch(() => false);
+const designExists = await access(join(root, 'docs/archive/设计系统-v6-文房.md')).then(() => true).catch(() => false);
+const componentExists = await access(join(root, 'docs/archive/组件库-v6-文房.md')).then(() => true).catch(() => false);
+const hanaAcceptanceExists = await access(join(root, 'docs/UI-验收-hana.md')).then(() => true).catch(() => false);
 const hanaDocExists = await access(join(root, 'docs/设计系统-hana.md')).then(() => true).catch(() => false);
 const appearanceSettingsExists = await access(join(root, 'apps/web/src/pages/AppearanceSettingsPage.tsx')).then(() => true).catch(() => false);
 const appIconExists = await access(join(root, 'apps/web/src/components/AppIcon.tsx')).then(() => true).catch(() => false);
@@ -186,7 +187,8 @@ check('accounts table becomes labeled cards at narrow widths',
 check('interaction radii use the control / action / compact scale',
   hana.includes('--radius-action: calc(5px * var(--corner-radius-scale))') && hana.includes('--radius-compact: calc(4px * var(--corner-radius-scale))')
   && hana.includes('.button-primary,') && hana.includes('.settings-nav .settings-search input'));
-check('V6 design and component documents are present', designExists && componentExists);
+check('historical V6 design/component documents are present under archive', designExists && componentExists);
+check('current Hana UI acceptance document is present', hanaAcceptanceExists);
 
 if (failures.length) {
   console.error('\n' + failures.length + ' UI polish checks failed.');
