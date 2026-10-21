@@ -1746,18 +1746,53 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 /* 通用弹窗 / 抽屉 */
 .modal-backdrop, .ldg-drawer-layer { background: rgba(28, 25, 21, 0.28) !important; backdrop-filter: blur(2px); }
 .dialog, .ldg-drawer {
+  position: relative;
+  isolation: isolate;
   border: 1px solid var(--overlay-medium) !important;
   border-radius: 20px !important;
-  background: var(--bg-card) !important;
+  corner-shape: squircle;
+  background: var(--bg) !important;
   color: var(--text) !important;
   box-shadow: var(--shadow-2xl) !important;
 }
-.dialog-header, .dialog-footer { border-color: var(--border) !important; }
-.dialog-header h2, .dialog-title { font-family: var(--font-ui) !important; font-size: 16px !important; font-weight: 600 !important; letter-spacing: 0.01em; }
-.dialog-header { padding: 18px 20px 12px !important; }
-.dialog-body { font-size: 13px !important; line-height: 1.65; }
-.dialog-footer { padding: 12px 20px 16px !important; }
-.dialog-body { color: var(--text-light); }
+html[data-paper-texture] .dialog::before,
+html[data-paper-texture] .dialog::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+  -webkit-mask-size: var(--paper-texture-tile-size);
+  mask-size: var(--paper-texture-tile-size);
+}
+html[data-paper-texture] .dialog::before {
+  background: oklch(from var(--bg) calc(l + var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-hi);
+  mask-image: var(--paper-texture-mask-hi);
+}
+html[data-paper-texture] .dialog::after {
+  background: oklch(from var(--bg) calc(l - var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-lo);
+  mask-image: var(--paper-texture-mask-lo);
+}
+.dialog > * { position: relative; z-index: 1; }
+.dialog-header, .dialog-footer { border-color: color-mix(in srgb, var(--border) 78%, transparent) !important; background: transparent !important; }
+.dialog-header { padding: 20px 22px 10px !important; border-bottom: 0 !important; }
+.dialog-header h2, .dialog-title { margin: 0 0 3px; font-family: var(--font-ui) !important; font-size: 17px !important; font-weight: 600 !important; letter-spacing: 0.01em; }
+.dialog-header p { margin: 0; font-size: 11px !important; line-height: 1.55; }
+.dialog-header .icon-button { width: 32px; height: 32px; margin: -5px -5px 0 0; border-radius: 10px; }
+.dialog-body { font-size: 13px !important; line-height: 1.65; color: var(--text-light); }
+.dialog form { padding: 10px 22px 0 !important; }
+.dialog-footer { padding: 14px 22px 18px !important; margin: 16px -22px 0 !important; border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent) !important; }
+.dialog .form-section-title { padding: 16px 0 10px; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; }
+.dialog .form-section-title span { display: none; }
+.dialog .field label { color: var(--text-muted); font-size: 11px; }
+.dialog .field input, .dialog .field select, .dialog .field textarea { border-radius: 10px; }
 
 /* 通知 / 成功 / 错误 */
 .success-notice, .form-alert, .error-block, .data-note {
