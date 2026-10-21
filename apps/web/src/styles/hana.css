@@ -3191,6 +3191,77 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   .owner-contract-amount-grid { grid-template-columns: 1fr; }
 }
 
+/* 卡片内部分隔线统一：1px 粗，距卡片边缘 20px */
+:root { --card-divider-width: 1px; --card-divider-inset: 20px; }
+.ldg-stats > div + div::before,
+.cost-type-card + .cost-type-card::before,
+.bill-summary + .bill-summary::before,
+.change-summary + .change-summary::before,
+.owner-metric + .owner-metric::after,
+.owner-contract-amount-card + .owner-contract-amount-card::before,
+.projects-ledger-page .projects-kpi-strip > div + div::before,
+.downstream-summary-grid .change-summary + .change-summary::before {
+  top: var(--card-divider-inset);
+  bottom: var(--card-divider-inset);
+  width: 1px;
+}
+
+.settings-row + .settings-row::before,
+.settings-row-actions::before,
+.settings-section-card .panel-heading::after,
+.report-report-option + .report-report-option::before,
+.system-overview-event-row + .system-overview-event-row::before,
+.system-readiness-line + .system-readiness-line::before,
+.system-rule-row + .system-rule-row::before,
+.system-integration-row + .system-integration-row::before,
+.system-job-list article + article::before,
+.system-dictionary-card + .system-dictionary-card::before,
+.system-authorization-reviewed-note::before,
+.system-authorization-review-form::before,
+.system-policy-form::before,
+.ldg-toolbar::after,
+.panel.data-table-panel.panel-detached > .table-toolbar::after,
+.table-toolbar::after { left: var(--card-divider-inset); right: var(--card-divider-inset); }
+
+.ds-section-card .data-table,
+.panel.panel-detached > .table-scroll .data-table,
+.panel.data-table-panel.panel-detached > .table-scroll .data-table,
+.ldg-table,
+.projects-table { width: calc(100% - (var(--card-divider-inset) + var(--card-divider-inset))); margin-left: var(--card-divider-inset); margin-right: var(--card-divider-inset); }
+.owner-contract-detail-grid { padding: 0 var(--card-divider-inset) 16px; }
+.owner-contract-detail-grid > div:nth-child(4)::before,
+.owner-contract-detail-grid > div:nth-child(5)::before { left: 0; right: 0; }
+
+.project-overview-page .metric-card,
+.analysis-page .an-stats > div,
+.notice-summary-card,
+.settings-content .security-metric,
+.system-authorization-scope-card,
+.system-authorization-stats > div { border-left: 0; position: relative; }
+.project-overview-page .metric-card + .metric-card::before,
+.analysis-page .an-stats > div + div::before,
+.notice-summary-card + .notice-summary-card::before,
+.settings-content .security-metric + .security-metric::before,
+.system-authorization-scope-card + .system-authorization-scope-card::before,
+.system-authorization-stats > div + div::before {
+  content: '';
+  position: absolute;
+  top: var(--card-divider-inset);
+  bottom: var(--card-divider-inset);
+  left: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--card-border) 66%, transparent);
+  pointer-events: none;
+}
+@media (max-width: 1100px) {
+  .project-overview-page .metric-card + .metric-card::before,
+  .analysis-page .an-stats > div + div::before,
+  .notice-summary-card + .notice-summary-card::before,
+  .settings-content .security-metric + .security-metric::before,
+  .system-authorization-scope-card + .system-authorization-scope-card::before,
+  .system-authorization-stats > div + div::before { display: none; }
+}
+
 /* 所有输入类控件使用标准圆角，避免 squircle 把 8px 压方 */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
 textarea,
