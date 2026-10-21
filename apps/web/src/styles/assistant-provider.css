@@ -38,7 +38,7 @@
 .assistant-detail-state { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 
 .assistant-provider-form { padding: 12px 0 4px; }
-.assistant-field { display: grid; grid-template-columns: 82px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 40px; }
+.assistant-field { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; gap: 14px; min-height: 40px; }
 .assistant-field > span { color: var(--text-muted); font-size: 10px; }
 .assistant-field > input,
 .assistant-field .select-control { width: 100%; }
@@ -74,9 +74,12 @@
 .assistant-detail-actions .button { height: 32px; min-height: 32px; padding: 0 9px; border-radius: var(--radius-control); font-size: 10px; }
 
 .assistant-check-panel { margin-top: 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
-.assistant-check-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
-.assistant-check-head h3 { margin: 0; color: var(--text); font-size: 13px; font-weight: 600; }
-.assistant-check-head p { margin: 3px 0 0; color: var(--text-muted); font-size: 9.5px; line-height: 1.55; }
+.assistant-check-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.assistant-check-summary::-webkit-details-marker { display: none; }
+.assistant-check-summary > span:first-child { color: var(--text); font-size: 12px; font-weight: 600; }
+.assistant-check-panel[open] .assistant-check-summary { padding-bottom: 10px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.assistant-check-head { margin: 10px 0; }
+.assistant-check-head p { margin: 0; color: var(--text-muted); font-size: 9.5px; line-height: 1.55; }
 .assistant-check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
 .assistant-check-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-width: 0; padding: 9px 0; border-top: 1px solid color-mix(in srgb, var(--border) 52%, transparent); }
 .assistant-check-item strong { display: block; color: var(--text); font-size: 10px; font-weight: 500; }

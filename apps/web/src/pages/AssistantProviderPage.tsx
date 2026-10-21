@@ -123,7 +123,6 @@ export default function AssistantProviderPage() {
   return <div className="page-wrap assistant-provider-page">
     <PageHeader
       title="供应商"
-      subtitle="管理成本助手的模型供应商；当前版本只维护一个 OpenAI 兼容供应商，保存并启用后成本工作台会出现只读助手入口。"
       actions={<Button variant="secondary" onClick={() => { setLoading(true); api.get<ProviderConfig>('/system-management/assistant-provider').then(applyConfig).catch(() => setError('刷新失败')).finally(() => setLoading(false)); }}><RefreshCw size={15} />刷新</Button>}
     />
 
@@ -171,10 +170,11 @@ export default function AssistantProviderPage() {
       </div>
     </section>
 
-    <section className="assistant-check-panel">
-      <div className="assistant-check-head"><div><h3>接入检查</h3><p>保存前逐项确认；密钥不会回显，连接测试只验证 /models 可达。</p></div><span className={'assistant-check-pill ' + (ready ? 'is-ok' : 'is-wait')}>{ready ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{ready ? '可启用' : '待完善'}</span></div>
+    <details className="assistant-check-panel">
+      <summary className="assistant-check-summary"><span>接入检查</span><span className={'assistant-check-pill ' + (ready ? 'is-ok' : 'is-wait')}>{ready ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{ready ? '可启用' : '待完善'}</span></summary>
+      <div className="assistant-check-head"><p>保存前逐项确认；密钥不会回显，连接测试只验证 /models 可达。</p></div>
       <div className="assistant-check-grid">{checks.map((check) => <div className="assistant-check-item" key={check.label}><div><strong>{check.label}</strong><p>{check.hint}</p></div><span className={'assistant-check-pill ' + (check.ok ? 'is-ok' : 'is-wait')}>{check.ok ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{check.ok ? check.pass : check.wait}</span></div>)}</div>
       <div className="inline-notice"><Bot size={16} /><span>连接测试只验证 /models 可达，不代表模型已经通过工具调用、金额口径和越权拒绝验收。第一次启用建议只用测试项目。</span></div>
-    </section>
+    </details>
   </div>;
 }

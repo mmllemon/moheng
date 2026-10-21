@@ -2083,10 +2083,15 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-nav-empty { padding: 16px 8px; color: var(--text-muted); font-size: 10.5px; text-align: center; }
 .settings-window.is-appearance-only .settings-nav,
 .settings-window.is-appearance-only .settings-mobile-nav-trigger,
-.settings-window.is-appearance-only .settings-mobile-nav-backdrop { display: none; }
-.settings-window.is-appearance-only .settings-content { width: 100%; max-width: 760px; margin: 0 auto; padding: 36px 40px 56px; }
+.settings-window.is-appearance-only .settings-mobile-nav-backdrop,
+.settings-window.is-provider-only .settings-nav,
+.settings-window.is-provider-only .settings-mobile-nav-trigger,
+.settings-window.is-provider-only .settings-mobile-nav-backdrop { display: none; }
+.settings-window.is-appearance-only .settings-content,
+.settings-window.is-provider-only .settings-content { width: 100%; max-width: 760px; margin: 0 auto; padding: 36px 40px 56px; }
 @media (max-width: 720px) {
-  .settings-window.is-appearance-only .settings-content { max-width: none; padding: 24px 18px 40px; }
+  .settings-window.is-appearance-only .settings-content,
+  .settings-window.is-provider-only .settings-content { max-width: none; padding: 24px 18px 40px; }
 }
 .settings-content {
   flex: 1 1 auto;
@@ -3071,6 +3076,22 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
 
+/* Hana 使用标准圆角，不用 squircle；交互控件统一 32px / 8px */
+.button,
+.select-control-trigger,
+.date-picker-trigger,
+.business-party-input-wrap,
+.toolbar-search,
+.settings-search,
+.ldg-search,
+.audit-search-input,
+.assistant-key-line,
+.assistant-field > input,
+.settings-row-control input,
+.settings-row-control select,
+.settings-row-control textarea { corner-shape: round; }
+.button { border-radius: var(--radius-control); }
+
 /* 统一交互控件：32px 高、8px 圆角 */
 .select-control-trigger,
 .date-picker-trigger,
@@ -3097,7 +3118,28 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .ldg-search input,
 .settings-search input,
 .audit-search-input input,
-.assistant-key-input input { height: calc(var(--control-height) - 2px) !important; }
+.assistant-key-line input {
+  box-sizing: border-box;
+  height: calc(var(--control-height) - 2px) !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.assistant-field > input,
+.assistant-model-line > input {
+  box-sizing: border-box;
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+  padding: 0 10px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-control) !important;
+  background: var(--bg-card) !important;
+  box-shadow: none !important;
+  font-size: 11.5px !important;
+}
 .select-control-popover,
 .date-picker-popover,
 .business-party-results { border-radius: 10px; }
@@ -3108,7 +3150,43 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .command-trigger { height: var(--control-height) !important; border-radius: var(--radius-control) !important; }
 
 /* 系统设置大标题吸顶 */
-.settings-content .page-header { position: sticky; top: -20px; z-index: 8; margin: -20px -40px 20px; padding: 20px 56px 14px 40px; background: var(--bg-base); }
+.settings-content .page-header {
+  position: sticky;
+  top: -20px;
+  z-index: 8;
+  isolation: isolate;
+  margin: -20px -40px 20px;
+  padding: 20px 84px 14px 40px;
+  background: var(--bg);
+}
+.settings-content .page-header::before,
+.settings-content .page-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  display: none;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+  -webkit-mask-size: var(--paper-texture-tile-size);
+  mask-size: var(--paper-texture-tile-size);
+}
+html[data-paper-texture] .settings-content .page-header::before,
+html[data-paper-texture] .settings-content .page-header::after { display: block; }
+.settings-content .page-header::before {
+  background: oklch(from var(--bg) calc(l + var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-hi);
+  mask-image: var(--paper-texture-mask-hi);
+}
+.settings-content .page-header::after {
+  background: oklch(from var(--bg) calc(l - var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  -webkit-mask-image: var(--paper-texture-mask-lo);
+  mask-image: var(--paper-texture-mask-lo);
+}
+.settings-content .page-header > * { position: relative; z-index: 1; }
 .settings-window.is-appearance-only .page-header { position: static; margin: 0 0 20px; padding: 0; background: transparent; }
 @media (max-width: 720px) {
   .settings-content .page-header { top: -24px; margin: -24px -18px 18px; padding: 20px 18px 12px; }
@@ -3914,7 +3992,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .table-action-danger:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); color: var(--danger); }
 
 /* 系统设置内容：标题更克制，说明更短 */
-.settings-content .page-header { margin-bottom: 22px; padding-right: 38px; }
+.settings-content .page-header { margin-bottom: 22px; padding-right: 84px; }
 .settings-content .page-header h1 { font-family: var(--font-ui); font-size: 17px; font-weight: 600; letter-spacing: 0.05em; }
 .settings-content .page-header p { max-width: 760px; margin-top: 5px; font-size: 11px; line-height: 1.6; }
 .settings-content .page-actions { padding-top: 0; }

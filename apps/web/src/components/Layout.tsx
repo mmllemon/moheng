@@ -330,6 +330,7 @@ export default function Layout() {
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (location.pathname === '/settings/appearance' ? '界面' : isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
   const availableSettingsGroups = user?.role === 'ADMIN' ? systemGroups : [{ label: '个人', items: [appearanceSettingsItem] }];
   const isAppearanceSettings = location.pathname === '/settings/appearance';
+  const isProviderSettings = location.pathname === '/system/assistant';
   const visibleSettingsGroups = availableSettingsGroups.map((group) => ({
     ...group,
     items: group.items.filter((item) => !settingsSearch.trim() || item.label.toLocaleLowerCase().includes(settingsSearch.trim().toLocaleLowerCase())),
@@ -470,7 +471,7 @@ export default function Layout() {
     </div>
 
     {isSettingsArea && <div className="settings-overlay" role="presentation">
-      <section ref={settingsWindowRef} className={`settings-window ${settingsNavOpen ? 'is-mobile-nav-open' : ''} ${isAppearanceSettings ? 'is-appearance-only' : ''}`} role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
+      <section ref={settingsWindowRef} className={`settings-window ${settingsNavOpen ? 'is-mobile-nav-open' : ''} ${isAppearanceSettings ? 'is-appearance-only' : ''} ${isProviderSettings ? 'is-provider-only' : ''}`} role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
         <div ref={settingsBarRef} className="settings-mobile-bar">
           <button type="button" className="settings-mobile-nav-trigger" aria-expanded={settingsNavOpen} aria-controls="settings-navigation" onClick={() => setSettingsNavOpen(true)}>
             <PanelLeft size={16} /><span>{currentPageLabel}</span><ChevronRight size={14} />

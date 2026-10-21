@@ -151,10 +151,10 @@ check('system settings is an admin gear beside logout', layout.includes('aria-la
 check('appearance is independent from system settings nav', layout.includes("location.pathname === '/settings/appearance'") && layout.includes('is-appearance-only') && hana.includes('.settings-window.is-appearance-only .settings-nav'));
 check('card dividers are inset and table edges have no rules', hana.includes('.settings-row + .settings-row::before') && hana.includes('.data-table thead th { border-top: 0 !important; }'));
 check('interactive controls share 32px height and 8px radius', hana.includes('height: var(--control-height) !important') && hana.includes('--radius-control: 8px'));
-check('settings page headers stick while scrolling', hana.includes('position: sticky; top: -20px') && hana.includes('.settings-content .page-header'));
+check('settings page headers stick while scrolling', hana.includes('.settings-content .page-header') && hana.includes('position: sticky;') && hana.includes('top: -20px;'));
 check('project ledger is name/status with a wider dossier', !(await read('apps/web/src/pages/ProjectsPage.tsx')).includes('<th>业主</th>') && hana.includes('minmax(560px, 1.3fr)'));
 check('row selection has no inset left bar', hana.includes('.projects-table tbody tr.is-selected td:first-child { box-shadow: none; }') && hana.includes('.data-table tbody tr:hover td:first-child { box-shadow: none; }'));
-check('assistant provider uses a Hana rail/detail split', (await read('apps/web/src/pages/AssistantProviderPage.tsx')).includes('assistant-provider-shell') && (await read('apps/web/src/styles/assistant-provider.css')).includes('grid-template-columns: 168px'));
+check('assistant provider uses a Hana rail/detail split', (await read('apps/web/src/pages/AssistantProviderPage.tsx')).includes('assistant-provider-shell') && (await read('apps/web/src/styles/assistant-provider.css')).includes('grid-template-columns: 184px'));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {
