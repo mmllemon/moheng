@@ -3,8 +3,11 @@
    Unlayered layer: wins over legacies imported in layer(legacy).
    ============================================================ */
 
-/* MH Serif SC 的字重声明已迁到 hana-serif-fonts.css（Hana 1.1.35 五档真实字重 300/400/500/600/700）。
-   旧声明 font-weight: 400 800 只提供一个静态文件，浏览器只能合成加粗，已移除。 */
+/* MH Serif SC：2026-10-21 曾尝试搬 Hana 1.1.35 的 99 个 unicode-range 切片（5.72MB），
+   实测发现 Hana 同一 range 的五个字重（300-700）全指向同一文件，无 font-variation-settings，
+   即它也只有一份字形、靠浏览器合成加粗。搬运无法带来真实字重，已回退。
+   如需真实五档字重，应引入带 fvar 轴的可变字体或真正的多字重静态字体。 */
+@font-face{font-family:"MH Serif SC";src:url("/fonts/notoserifsc.woff2") format("woff2");font-weight:400 800;font-style:normal;font-display:swap}
 @font-face{font-family:"MH Serif";src:url("/fonts/spectral-semibold.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
 @font-face{font-family:"MH Brush";src:url("/fonts/mashanzheng-subset.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 

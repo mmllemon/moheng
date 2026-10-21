@@ -8,7 +8,6 @@ import './styles.css';
 import './styles/legacy.css';
 import './styles/v6.css';
 import './styles/hana.css';
-import './styles/hana-serif-fonts.css';
 import './styles/content-contrast.css';
 
 applyUiPreferences(useUiStore.getState());
