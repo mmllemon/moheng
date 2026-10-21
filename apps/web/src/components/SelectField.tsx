@@ -1,6 +1,6 @@
 import { Children, forwardRef, isValidElement, useCallback, useEffect, useMemo, useRef, useState, useId, type ForwardedRef, type FocusEvent as ReactFocusEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 import { useAnimatedPresence } from './useAnimatedPresence';
 
 type SelectOption = { value: string; label: string; disabled: boolean };
@@ -72,7 +72,7 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
     const maxHeight = Math.min(300, Math.max(180, window.innerHeight * 0.46));
     const belowSpace = window.innerHeight - rect.bottom - 12;
     const top = belowSpace >= Math.min(maxHeight, 220) || rect.top < maxHeight + 16
-      ? Math.min(rect.bottom + 6, window.innerHeight - maxHeight - 12)
+      ? Math.min(rect.bottom + 3, window.innerHeight - maxHeight - 12)
       : Math.max(12, rect.top - maxHeight - 6);
     const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
     setPosition({ top, left, width, maxHeight });
@@ -261,7 +261,6 @@ const SelectField = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelec
           onClick={() => choose(option)}
         >
           <span className="select-option-label">{option.label}</span>
-          {option.value === selectedValue && <Check size={15} />}
         </button>)}
       </div>
       {!visibleOptions.length && <div className="select-option-empty" role="status" aria-live="polite">没有匹配的选项</div>}

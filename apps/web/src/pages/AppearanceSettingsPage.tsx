@@ -62,14 +62,14 @@ export default function AppearanceSettingsPage() {
       <div className="settings-card">
         <div className="settings-row">
           <div className="settings-row-copy"><strong>纸质纹理</strong><span>为页面、侧栏和设置页加上纸张质感。</span></div>
-          <div className="settings-segment" role="group" aria-label="纸质纹理">
-            {textures.map((choice) => <button key={choice.value} type="button" className={paperTexture === choice.value ? 'is-active' : ''} aria-pressed={paperTexture === choice.value} onClick={() => setPaperTexture(choice.value)}>{choice.label}</button>)}
+          <div className="settings-segment" role="radiogroup" aria-label="纸质纹理">
+            {textures.map((choice) => <button key={choice.value} type="button" className={paperTexture === choice.value ? 'is-active' : ''} role="radio" aria-checked={paperTexture === choice.value} onClick={() => setPaperTexture(choice.value)}>{choice.label}</button>)}
           </div>
         </div>
         <div className="settings-row">
           <div className="settings-row-copy"><strong>纹理强度</strong><span>1 最轻，5 最明显；只改变纸面明暗差。</span></div>
           <div className={`settings-step-slider ${paperTexture === 'off' ? 'is-disabled' : ''}`}>
-            <input type="range" min="0" max="4" step="1" value={strengthIndex} disabled={paperTexture === 'off'} aria-label="纹理强度" onChange={(event) => setPaperTextureStrength(PAPER_TEXTURE_STRENGTHS[Number(event.target.value)] ?? 1)} />
+            <input type="range" min="0" max="4" step="1" value={strengthIndex} disabled={paperTexture === 'off'} aria-label="纹理强度" aria-valuetext={`${strengthIndex + 1} 档`} onChange={(event) => setPaperTextureStrength(PAPER_TEXTURE_STRENGTHS[Number(event.target.value)] ?? 1)} />
             <div className="settings-step-rail" aria-hidden="true">
               {[0, 1, 2, 3].map((step) => <span key={step} className={step < strengthIndex ? 'is-on' : ''} />)}
             </div>
@@ -88,9 +88,9 @@ export default function AppearanceSettingsPage() {
       <div className="settings-card">
         <div className="settings-row">
           <div className="settings-row-copy"><strong>信息密度</strong><span>调整表格和表单的行距。</span></div>
-          <div className="settings-segment" role="group" aria-label="信息密度">
-            <button type="button" className={density === 'comfortable' ? 'is-active' : ''} aria-pressed={density === 'comfortable'} onClick={() => setDensity('comfortable')}>舒朗</button>
-            <button type="button" className={density === 'compact' ? 'is-active' : ''} aria-pressed={density === 'compact'} onClick={() => setDensity('compact')}>紧凑</button>
+          <div className="settings-segment" role="radiogroup" aria-label="信息密度">
+            <button type="button" className={density === 'comfortable' ? 'is-active' : ''} role="radio" aria-checked={density === 'comfortable'} onClick={() => setDensity('comfortable')}>舒朗</button>
+            <button type="button" className={density === 'compact' ? 'is-active' : ''} role="radio" aria-checked={density === 'compact'} onClick={() => setDensity('compact')}>紧凑</button>
           </div>
         </div>
         <div className="settings-row">
