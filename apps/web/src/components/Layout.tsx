@@ -1,5 +1,5 @@
 import SelectField from './SelectField';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -18,6 +18,7 @@ import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
 import UiPreferencesBar from './UiPreferencesBar';
 import { useAnimatedPresence } from './useAnimatedPresence';
+import { animatePaperIn, animatePaperOut, rememberPaperOrigin, takePaperOrigin } from '../lib/paper-morph';
 
 type NavigationItem = { to: string; label: string; icon: typeof LayoutDashboard; group: '经营中心' | '工作台' | '项目管理' | '系统管理'; end?: boolean; adminOnly?: boolean };
 const navigation: NavigationItem[] = [
@@ -83,8 +84,13 @@ export default function Layout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [settingsSearch, setSettingsSearch] = useState('');
+  const [settingsNavOpen, setSettingsNavOpen] = useState(false);
   const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
   const commandInputRef = useRef<HTMLInputElement>(null);
+  const settingsWindowRef = useRef<HTMLElement>(null);
+  const settingsOriginRef = useRef<HTMLElement | null>(null);
+  const settingsBarRef = useRef<HTMLDivElement>(null);
+  const settingsContentRef = useRef<HTMLDivElement>(null);
 
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
   const projects = projectsQuery.data ?? [];
@@ -100,12 +106,28 @@ export default function Layout() {
     return () => { current = false; };
   }, [user?.id]);
   const navigationWithAssistant = assistantEnabled ? [...navigation, assistantNavigationItem] : navigation;
-  useEffect(() => { setMobileNavOpen(false); }, [location.pathname]);
+  useEffect(() => { setMobileNavOpen(false); setSettingsNavOpen(false); }, [location.pathname]);
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth > 900) setMobileNavOpen(false); };
+    const onResize = () => {
+      if (window.innerWidth > 900) setMobileNavOpen(false);
+      if (window.innerWidth > 760) setSettingsNavOpen(false);
+    };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+  useEffect(() => {
+    if (!settingsNavOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setSettingsNavOpen(false); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [settingsNavOpen]);
+  useEffect(() => {
+    for (const element of [settingsBarRef.current, settingsContentRef.current]) {
+      if (!element) continue;
+      if (settingsNavOpen) element.setAttribute('inert', '');
+      else element.removeAttribute('inert');
+    }
+  }, [settingsNavOpen]);
   useEffect(() => {
     const closeTopDialog = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
@@ -204,6 +226,29 @@ export default function Layout() {
   const isPartyDetail = /^\/parties\/[^/]+/.test(location.pathname);
   const isSystemArea = user?.role === 'ADMIN' && (location.pathname.startsWith('/system') || location.pathname === '/audit-logs');
   const isSettingsArea = location.pathname.startsWith('/settings') || isSystemArea;
+  useLayoutEffect(() => {
+    if (!isSettingsArea) return;
+    if (settingsOriginRef.current === null) settingsOriginRef.current = takePaperOrigin();
+    return animatePaperIn(settingsWindowRef.current, settingsOriginRef.current);
+  }, [isSettingsArea]);
+  useEffect(() => { if (!isSettingsArea) settingsOriginRef.current = null; }, [isSettingsArea]);
+  const closeSettings = () => {
+    if (animatePaperOut(settingsWindowRef.current, settingsOriginRef.current, () => { settingsOriginRef.current = null; navigate('/'); })) return;
+    settingsOriginRef.current = null;
+    navigate('/');
+  };
+  useEffect(() => {
+    if (!isSettingsArea) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (document.querySelector('.date-picker-popover, .select-popover')) return;
+      if (settingsNavOpen) { event.preventDefault(); setSettingsNavOpen(false); return; }
+      event.preventDefault();
+      closeSettings();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isSettingsArea, settingsNavOpen]);
   const costPageLabel = location.pathname === '/cost/assistant' ? '成本助手' : location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (location.pathname === '/settings/appearance' ? '界面' : isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
   const availableSettingsGroups = user?.role === 'ADMIN' ? [{ label: '个人', items: [appearanceSettingsItem] }, ...systemGroups] : [{ label: '个人', items: [appearanceSettingsItem] }];
@@ -270,7 +315,7 @@ export default function Layout() {
         </section>
       </div>
       <div className="app-sidebar-footer">
-        {user?.role === 'ADMIN' && <NavLink to="/system" className={({ isActive }) => `sidebar-nav-link sidebar-settings-link ${isActive ? 'active' : ''}`}><SlidersHorizontal size={15} strokeWidth={1.65} /><span>系统设置</span><span className="sidebar-settings-tag">ADMIN</span></NavLink>}
+        {user?.role === 'ADMIN' && <NavLink to="/system" onClick={(event) => rememberPaperOrigin(event.currentTarget)} className={({ isActive }) => `sidebar-nav-link sidebar-settings-link ${isActive ? 'active' : ''}`}><SlidersHorizontal size={15} strokeWidth={1.65} /><span>系统设置</span><span className="sidebar-settings-tag">ADMIN</span></NavLink>}
         <div className="sidebar-user-row">
           <div className="sidebar-user-avatar">{user?.name?.slice(0, 1) ?? '管'}</div>
           <div className="sidebar-user-copy"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div>
@@ -316,7 +361,7 @@ export default function Layout() {
                   <div className="account-menu-identity"><strong>{user?.name ?? '用户'}</strong><span>{user?.email ?? ''}</span><small>{user?.role === 'ADMIN' ? '系统管理员' : '普通成员'}</small></div>
                   <button type="button" role="menuitem" onClick={() => { navigate('/account/security'); setAccountMenuOpen(false); }}><UserRound size={15} /><span>个人中心与账号安全</span></button>
                   {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={() => { navigate('/system/security'); setAccountMenuOpen(false); }}><ShieldCheck size={15} /><span>登录安全中心</span></button>}
-                  {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={() => { navigate('/system'); setAccountMenuOpen(false); }}><SlidersHorizontal size={15} /><span>系统设置</span></button>}
+                  {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={(event) => { rememberPaperOrigin(event.currentTarget); navigate('/system'); setAccountMenuOpen(false); }}><SlidersHorizontal size={15} /><span>系统设置</span></button>}
                   <button type="button" role="menuitem" className="account-menu-logout" onClick={() => { setAccountMenuOpen(false); void logout(); }}><LogOut size={15} /><span>退出登录</span></button>
                 </div>
               </>}
@@ -334,10 +379,18 @@ export default function Layout() {
     </div>
 
     {isSettingsArea && <div className="settings-overlay" role="presentation">
-      <section className="settings-window" role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
-        <button type="button" className="settings-close settings-close-floating" onClick={() => navigate('/')} aria-label="关闭设置"><X size={16} /></button>
+      <section ref={settingsWindowRef} className={`settings-window ${settingsNavOpen ? 'is-mobile-nav-open' : ''}`} role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
+        <div ref={settingsBarRef} className="settings-mobile-bar">
+          <button type="button" className="settings-mobile-nav-trigger" aria-expanded={settingsNavOpen} aria-controls="settings-navigation" onClick={() => setSettingsNavOpen(true)}>
+            <PanelLeft size={16} /><span>{currentPageLabel}</span><ChevronRight size={14} />
+          </button>
+          <button type="button" className="settings-close" onClick={closeSettings} aria-label="关闭设置"><X size={16} /></button>
+        </div>
+        <button type="button" className="settings-close settings-close-floating" onClick={closeSettings} aria-label="关闭设置"><X size={16} /></button>
         <div className="settings-body">
-          <nav className="settings-nav" aria-label="设置导航">
+          {settingsNavOpen && <button type="button" tabIndex={-1} className="settings-mobile-nav-backdrop" aria-label="关闭设置导航" onClick={() => setSettingsNavOpen(false)} />}
+          <nav id="settings-navigation" className={`settings-nav ${settingsNavOpen ? 'is-mobile-open' : ''}`} aria-label="设置导航">
+            <div className="settings-mobile-drawer-head"><span>设置</span><button type="button" onClick={() => setSettingsNavOpen(false)} aria-label="关闭设置导航"><X size={15} /></button></div>
             <div className="settings-search"><Search size={14} /><input value={settingsSearch} onChange={(event) => setSettingsSearch(event.target.value)} placeholder="搜索设置" aria-label="搜索设置" type="search" /></div>
             <div className="settings-groups">
               {visibleSettingsGroups.length ? visibleSettingsGroups.map((group) => <section className="settings-group" key={group.label}>
@@ -345,12 +398,12 @@ export default function Layout() {
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isCurrent = item.to === '/system' ? location.pathname === '/system' : location.pathname === item.to;
-                  return <NavLink key={item.to} to={item.to} end={item.end ?? false} data-autofocus={isCurrent ? 'true' : undefined} className={({ isActive }) => `settings-nav-link ${isActive ? 'active' : ''}`}><Icon size={15} strokeWidth={1.6} /><span>{item.label}</span></NavLink>;
+                  return <NavLink key={item.to} to={item.to} end={item.end ?? false} onClick={() => setSettingsNavOpen(false)} data-autofocus={isCurrent ? 'true' : undefined} className={({ isActive }) => `settings-nav-link ${isActive ? 'active' : ''}`}><Icon size={15} strokeWidth={1.6} /><span>{item.label}</span></NavLink>;
                 })}
               </section>) : <div className="settings-nav-empty">没有匹配的设置</div>}
             </div>
           </nav>
-          <div className="settings-content"><div className="route-transition" key={location.pathname}><Outlet /></div></div>
+          <div ref={settingsContentRef} className="settings-content" aria-hidden={settingsNavOpen ? true : undefined}><div className="route-transition" key={location.pathname}><Outlet /></div></div>
         </div>
       </section>
     </div>}

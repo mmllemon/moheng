@@ -105,6 +105,31 @@ await mobilePage.waitForTimeout(300);
 const mobileClosed = await mobilePage.evaluate(() => !document.querySelector('.app-sidebar.mobile-nav-open'));
 if (mobileOverflow > 1 || !mobileTrap || !mobileClosed) failures.push({ check: 'mobile-nav', mobileOverflow, mobileTrap, mobileClosed });
 
+await mobilePage.goto(BASE + '/system', { waitUntil: 'networkidle' });
+await mobilePage.waitForSelector('.settings-window', { timeout: 5000 }).catch(() => {});
+await mobilePage.waitForTimeout(500);
+await mobilePage.locator('.settings-mobile-nav-trigger').click();
+await mobilePage.waitForTimeout(380);
+const settingsDrawer = await mobilePage.evaluate(() => {
+  const nav = document.querySelector('.settings-nav');
+  const rect = nav?.getBoundingClientRect();
+  return {
+    left: rect ? Math.round(rect.left) : null,
+    width: rect ? Math.round(rect.width) : null,
+    visible: nav ? getComputedStyle(nav).visibility : null,
+    backdrop: Boolean(document.querySelector('.settings-mobile-nav-backdrop')),
+    expanded: document.querySelector('.settings-mobile-nav-trigger')?.getAttribute('aria-expanded'),
+  };
+});
+const settingsDrawerOk = settingsDrawer.left === 6 && settingsDrawer.width === 310 && settingsDrawer.visible === 'visible' && settingsDrawer.backdrop && settingsDrawer.expanded === 'true';
+await mobilePage.keyboard.press('Escape');
+await mobilePage.waitForTimeout(320);
+const settingsDrawerClosed = await mobilePage.evaluate(() => {
+  const className = document.querySelector('.settings-nav')?.className ?? '';
+  return !document.querySelector('.settings-mobile-nav-backdrop') && !className.includes('is-mobile-open');
+});
+if (!settingsDrawerOk || !settingsDrawerClosed) failures.push({ check: 'settings-mobile-drawer', settingsDrawer, settingsDrawerClosed });
+
 await page.evaluate(() => {
   window.history.pushState(null, '', '/system');
   window.dispatchEvent(new PopStateEvent('popstate'));
@@ -142,7 +167,7 @@ const shellOk = shellAudit.sidebar?.x === 6
   && shellAudit.titlebar?.height === 44
   && shellAudit.main?.x === 246
   && shellAudit.settings?.width === 960
-  && shellAudit.settings?.height === 722
+  && shellAudit.settings?.height === 840
   && shellAudit.settingsNav?.width === 208
   && shellAudit.settingsNavAlpha === 0
   && shellAudit.sidebarFooterAlpha === 0;

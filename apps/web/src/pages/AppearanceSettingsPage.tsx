@@ -1,11 +1,14 @@
 import { type CSSProperties } from 'react';
 import { Check, RotateCcw } from 'lucide-react';
+import AppIcon from '../components/AppIcon';
 import { PageHeader } from '../components/Ui';
+import { APP_ICON_IDS, APP_ICON_PALETTES } from '../lib/app-icon';
 import { toast } from '../lib/toast';
 import {
   PAPER_TEXTURE_STRENGTHS,
   useUiStore,
   type PaperTextureStyle,
+  type UiHeadingFont,
   type UiTheme,
 } from '../auth-store';
 
@@ -22,6 +25,12 @@ const textures: Array<{ value: PaperTextureStyle; label: string }> = [
   { value: 'fine', label: '细颗粒' },
 ];
 
+const headingFonts: Array<{ value: UiHeadingFont; label: string; note: string; family: string }> = [
+  { value: 'serif', label: '思源宋体', note: '稳重，适合经营标题', family: 'var(--font-serif)' },
+  { value: 'sans', label: '系统黑体', note: '清晰，适合高密度页面', family: 'var(--font-ui)' },
+  { value: 'latin', label: '光谱衬线', note: '西文与数字标题', family: '"MH Serif", Georgia, "Noto Serif SC", serif' },
+];
+
 export default function AppearanceSettingsPage() {
   const theme = useUiStore((state) => state.theme);
   const density = useUiStore((state) => state.density);
@@ -29,14 +38,19 @@ export default function AppearanceSettingsPage() {
   const wideContent = useUiStore((state) => state.wideContent);
   const paperTexture = useUiStore((state) => state.paperTexture);
   const paperTextureStrength = useUiStore((state) => state.paperTextureStrength);
+  const headingFont = useUiStore((state) => state.headingFont);
+  const appIcon = useUiStore((state) => state.appIcon);
   const setTheme = useUiStore((state) => state.setTheme);
   const setDensity = useUiStore((state) => state.setDensity);
   const toggleReduceMotion = useUiStore((state) => state.toggleReduceMotion);
   const toggleWideContent = useUiStore((state) => state.toggleWideContent);
   const setPaperTexture = useUiStore((state) => state.setPaperTexture);
   const setPaperTextureStrength = useUiStore((state) => state.setPaperTextureStrength);
+  const setHeadingFont = useUiStore((state) => state.setHeadingFont);
+  const setAppIcon = useUiStore((state) => state.setAppIcon);
   const reset = useUiStore((state) => state.resetUiPreferences);
   const strengthIndex = Math.max(0, PAPER_TEXTURE_STRENGTHS.indexOf(paperTextureStrength as (typeof PAPER_TEXTURE_STRENGTHS)[number]));
+  const headingFontFamily = headingFonts.find((font) => font.value === headingFont)?.family ?? 'var(--font-serif)';
 
   return <div className="page-wrap appearance-settings-page">
     <PageHeader title="界面" subtitle="调整主题、纸张质感与工作区显示。设置只影响当前浏览器。" />
@@ -54,6 +68,44 @@ export default function AppearanceSettingsPage() {
           <span className="settings-theme-swatch" style={{ '--theme-bg': choice.bg, '--theme-sidebar': choice.sidebar, '--theme-card': choice.card } as CSSProperties} />
           <span className="settings-theme-copy"><strong>{choice.label}</strong><small>{choice.note}</small></span>
           <span className="settings-theme-check">{theme === choice.value && <Check size={13} />}</span>
+        </button>)}
+      </div>
+    </section>
+
+    <section className="settings-section" aria-labelledby="appearance-icon-title">
+      <h2 id="appearance-icon-title">应用图标</h2>
+      <div className="settings-icon-grid" role="group" aria-label="应用图标">
+        {APP_ICON_IDS.map((id) => <button
+          key={id}
+          type="button"
+          className={`settings-icon-card ${appIcon === id ? 'is-active' : ''}`}
+          aria-pressed={appIcon === id}
+          title={APP_ICON_PALETTES[id].note}
+          onClick={() => setAppIcon(id)}
+        >
+          <AppIcon id={id} className="settings-icon-preview" />
+          <span>{APP_ICON_PALETTES[id].label}</span>
+        </button>)}
+      </div>
+      <div className="settings-inline-foot">
+        <span>浏览器页签图标会同步更新。</span>
+        <button type="button" className="settings-inline-reset" disabled={appIcon === 'ink'} onClick={() => setAppIcon('ink')}>恢复默认</button>
+      </div>
+    </section>
+
+    <section className="settings-section" aria-labelledby="appearance-type-title">
+      <h2 id="appearance-type-title">标题字体</h2>
+      <div className="settings-font-sample" style={{ fontFamily: headingFontFamily }} aria-hidden="true">账目有据，经营有度。 <span>MOHENG 2026</span></div>
+      <div className="settings-font-grid" role="group" aria-label="标题字体">
+        {headingFonts.map((font) => <button
+          key={font.value}
+          type="button"
+          className={`settings-font-card ${headingFont === font.value ? 'is-active' : ''}`}
+          aria-pressed={headingFont === font.value}
+          onClick={() => setHeadingFont(font.value)}
+        >
+          <span className="settings-font-card-sample" style={{ fontFamily: font.family }}>{font.value === 'latin' ? 'MOHENG' : '经营有据'}</span>
+          <span className="settings-font-card-desc">{font.label} · {font.note}</span>
         </button>)}
       </div>
     </section>
@@ -103,7 +155,7 @@ export default function AppearanceSettingsPage() {
 
     <div className="settings-page-foot">
       <span>纸纹取自 Hana 1.1.35 原版素材。</span>
-      <button type="button" className="settings-reset" onClick={() => { reset(); toast('已恢复默认显示', { description: '暖纸 · 宣纸 · 舒朗' }); }}><RotateCcw size={12} />恢复默认</button>
+      <button type="button" className="settings-reset" onClick={() => { reset(); toast('已恢复默认显示', { description: '暖纸 · 宣纸 · 舒朗 · 宋体 · 墨夜' }); }}><RotateCcw size={12} />恢复默认</button>
     </div>
   </div>;
 }

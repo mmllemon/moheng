@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { applyAppIcon, normalizeAppIcon, type AppIconId } from './lib/app-icon';
 import type { User } from './types';
 
 export type RestrictedAuthFlow = 'mfa-enrollment' | 'password-change';
@@ -24,6 +25,7 @@ export type UiTheme = 'warm-paper' | 'plain-white' | 'midnight';
 export type UiDensity = 'comfortable' | 'compact';
 export type UiAccent = 'theme' | 'indigo' | 'jade' | 'cinnabar';
 export type PaperTextureStyle = 'off' | 'rice' | 'cotton' | 'fine';
+export type UiHeadingFont = 'serif' | 'sans' | 'latin';
 
 export const PAPER_TEXTURE_STRENGTHS = [0.5, 0.75, 1, 1.25, 1.5] as const;
 export function normalizePaperTextureStrength(value: number) {
@@ -40,6 +42,8 @@ type UiPreferences = {
   wideContent: boolean;
   paperTexture: PaperTextureStyle;
   paperTextureStrength: number;
+  headingFont: UiHeadingFont;
+  appIcon: AppIconId;
 };
 const UI_PREFERENCES_KEY = 'moheng:ui-preferences';
 const defaultUiPreferences: UiPreferences = {
@@ -50,6 +54,8 @@ const defaultUiPreferences: UiPreferences = {
   wideContent: false,
   paperTexture: 'rice',
   paperTextureStrength: 1,
+  headingFont: 'serif',
+  appIcon: 'ink',
 };
 
 function readUiPreferences(): UiPreferences {
@@ -60,6 +66,7 @@ function readUiPreferences(): UiPreferences {
     const savedTheme = value.theme;
     const theme: UiTheme = savedTheme === 'plain-white' || savedTheme === 'midnight' ? savedTheme : 'warm-paper';
     const paperTexture: PaperTextureStyle = value.paperTexture === 'off' || value.paperTexture === 'cotton' || value.paperTexture === 'fine' ? value.paperTexture : 'rice';
+    const headingFont: UiHeadingFont = value.headingFont === 'sans' || value.headingFont === 'latin' ? value.headingFont : 'serif';
     return {
       theme,
       density: value.density === 'compact' ? 'compact' : 'comfortable',
@@ -68,6 +75,8 @@ function readUiPreferences(): UiPreferences {
       wideContent: Boolean(value.wideContent),
       paperTexture,
       paperTextureStrength: normalizePaperTextureStrength(Number(value.paperTextureStrength ?? 1)),
+      headingFont,
+      appIcon: normalizeAppIcon(value.appIcon),
     };
   } catch { return defaultUiPreferences; }
 }
@@ -83,11 +92,14 @@ export function applyUiPreferences(value: UiPreferences) {
   root.dataset.density = value.density;
   root.dataset.motion = value.reduceMotion ? 'reduced' : 'full';
   root.dataset.contentWidth = value.wideContent ? 'wide' : 'standard';
+  root.dataset.headingFont = value.headingFont;
+  root.dataset.appIcon = value.appIcon;
   if (value.paperTexture === 'off') root.removeAttribute('data-paper-texture');
   else root.dataset.paperTexture = value.paperTexture;
   root.style.setProperty('--paper-texture-strength', String(value.paperTextureStrength));
   const themeColors = { 'warm-paper': '#f8f4ed', 'plain-white': '#fbfaf7', midnight: '#26343d' } as const;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColors[value.theme]);
+  applyAppIcon(value.appIcon);
 }
 
 function commitUiPreferences(set: (partial: Partial<UiState>) => void, value: UiPreferences) {
@@ -108,8 +120,29 @@ type UiState = UiPreferences & {
   toggleWideContent: () => void;
   setPaperTexture: (texture: PaperTextureStyle) => void;
   setPaperTextureStrength: (strength: number) => void;
+  setHeadingFont: (font: UiHeadingFont) => void;
+  setAppIcon: (icon: AppIconId) => void;
   resetUiPreferences: () => void;
 };
+
+function preferencesFromState(state: UiState): UiPreferences {
+  return {
+    theme: state.theme,
+    density: state.density,
+    accent: state.accent,
+    reduceMotion: state.reduceMotion,
+    wideContent: state.wideContent,
+    paperTexture: state.paperTexture,
+    paperTextureStrength: state.paperTextureStrength,
+    headingFont: state.headingFont,
+    appIcon: state.appIcon,
+  };
+}
+
+function updateUiPreferences(set: (partial: Partial<UiState>) => void, state: UiState, patch: Partial<UiPreferences>) {
+  commitUiPreferences(set, { ...preferencesFromState(state), ...patch });
+  return patch;
+}
 
 export const useUiStore = create<UiState>((set) => ({
   selectedProjectId: (() => { try { return localStorage.getItem('cms:selected-project'); } catch { return null; } })(),
@@ -120,41 +153,14 @@ export const useUiStore = create<UiState>((set) => ({
     set({ selectedProjectId: id });
   },
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  setTheme: (theme) => set((state) => {
-    const next = { theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent, paperTexture: state.paperTexture, paperTextureStrength: state.paperTextureStrength };
-    commitUiPreferences(set, next);
-    return { theme };
-  }),
-  setDensity: (density) => set((state) => {
-    const next = { theme: state.theme, density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent, paperTexture: state.paperTexture, paperTextureStrength: state.paperTextureStrength };
-    commitUiPreferences(set, next);
-    return { density };
-  }),
-  setAccent: (accent) => set((state) => {
-    const next = { theme: state.theme, density: state.density, accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent, paperTexture: state.paperTexture, paperTextureStrength: state.paperTextureStrength };
-    commitUiPreferences(set, next);
-    return { accent };
-  }),
-  toggleReduceMotion: () => set((state) => {
-    const next = { theme: state.theme, density: state.density, accent: state.accent, reduceMotion: !state.reduceMotion, wideContent: state.wideContent, paperTexture: state.paperTexture, paperTextureStrength: state.paperTextureStrength };
-    commitUiPreferences(set, next);
-    return { reduceMotion: next.reduceMotion };
-  }),
-  toggleWideContent: () => set((state) => {
-    const next = { theme: state.theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: !state.wideContent, paperTexture: state.paperTexture, paperTextureStrength: state.paperTextureStrength };
-    commitUiPreferences(set, next);
-    return { wideContent: next.wideContent };
-  }),
-  setPaperTexture: (paperTexture) => set((state) => {
-    const next = { theme: state.theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent, paperTexture, paperTextureStrength: state.paperTextureStrength };
-    commitUiPreferences(set, next);
-    return { paperTexture };
-  }),
-  setPaperTextureStrength: (strength) => set((state) => {
-    const paperTextureStrength = normalizePaperTextureStrength(strength);
-    const next = { theme: state.theme, density: state.density, accent: state.accent, reduceMotion: state.reduceMotion, wideContent: state.wideContent, paperTexture: state.paperTexture, paperTextureStrength };
-    commitUiPreferences(set, next);
-    return { paperTextureStrength };
-  }),
+  setTheme: (theme) => set((state) => updateUiPreferences(set, state, { theme })),
+  setDensity: (density) => set((state) => updateUiPreferences(set, state, { density })),
+  setAccent: (accent) => set((state) => updateUiPreferences(set, state, { accent })),
+  toggleReduceMotion: () => set((state) => updateUiPreferences(set, state, { reduceMotion: !state.reduceMotion })),
+  toggleWideContent: () => set((state) => updateUiPreferences(set, state, { wideContent: !state.wideContent })),
+  setPaperTexture: (paperTexture) => set((state) => updateUiPreferences(set, state, { paperTexture })),
+  setPaperTextureStrength: (strength) => set((state) => updateUiPreferences(set, state, { paperTextureStrength: normalizePaperTextureStrength(strength) })),
+  setHeadingFont: (headingFont) => set((state) => updateUiPreferences(set, state, { headingFont })),
+  setAppIcon: (appIcon) => set((state) => updateUiPreferences(set, state, { appIcon })),
   resetUiPreferences: () => { commitUiPreferences(set, defaultUiPreferences); },
 }));

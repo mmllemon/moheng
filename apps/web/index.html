@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="warm-paper" data-paper-texture="rice">
+<html lang="zh-CN" data-theme="warm-paper" data-paper-texture="rice" data-heading-font="serif" data-app-icon="ink">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,6 +17,8 @@
           document.documentElement.dataset.density = prefs.density === "compact" ? "compact" : "comfortable";
           document.documentElement.dataset.motion = prefs.reduceMotion ? "reduced" : "full";
           document.documentElement.dataset.contentWidth = prefs.wideContent ? "wide" : "standard";
+          document.documentElement.dataset.headingFont = prefs.headingFont === "sans" || prefs.headingFont === "latin" ? prefs.headingFont : "serif";
+          document.documentElement.dataset.appIcon = prefs.appIcon === "paper" || prefs.appIcon === "jade" || prefs.appIcon === "seal" ? prefs.appIcon : "ink";
           var texture = prefs.paperTexture === "off" || prefs.paperTexture === "cotton" || prefs.paperTexture === "fine" ? prefs.paperTexture : "rice";
           if (texture === "off") document.documentElement.removeAttribute("data-paper-texture");
           else document.documentElement.dataset.paperTexture = texture;
