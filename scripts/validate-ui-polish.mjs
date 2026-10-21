@@ -155,7 +155,7 @@ check('interactive controls use Hana 32px height and scaled radius token', hana.
 check('settings page headers stick while scrolling', hana.includes('.settings-content .page-header') && hana.includes('position: sticky;') && hana.includes('top: -20px;'));
 check('project ledger is name/status with a wider dossier', !(await read('apps/web/src/pages/ProjectsPage.tsx')).includes('<th>业主</th>') && hana.includes('minmax(560px, 1.3fr)'));
 check('row selection has no inset left bar', hana.includes('.projects-table tbody tr.is-selected td:first-child { box-shadow: none; }') && hana.includes('.data-table tbody tr:hover td:first-child { box-shadow: none; }'));
-check('assistant provider uses a Hana rail/detail split', (await read('apps/web/src/pages/AssistantProviderPage.tsx')).includes('assistant-provider-shell') && (await read('apps/web/src/styles/assistant-provider.css')).includes('grid-template-columns: 168px'));
+check('assistant provider uses a Hana rail/detail split', (await read('apps/web/src/pages/AssistantProviderPage.tsx')).includes('assistant-provider-shell') && (await read('apps/web/src/styles/assistant-provider.css')).includes('grid-template-columns: 190px'));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {
