@@ -1,12 +1,13 @@
 import { Palette } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { rememberPaperOrigin } from '../lib/paper-morph';
 
 export default function UiPreferencesBar({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
+  const location = useLocation();
   return <button
     type="button"
-    className="titlebar-icon"
+    className={`titlebar-icon ${location.pathname.startsWith('/settings/appearance') ? 'is-active' : ''}`}
     aria-label="打开界面设置"
     data-tooltip="界面、纸纹与显示" data-tooltip-align="end"
     onClick={(event) => { rememberPaperOrigin(event.currentTarget); navigate('/settings/appearance'); }}

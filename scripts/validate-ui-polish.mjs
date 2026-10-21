@@ -146,6 +146,10 @@ check('settings scrollbar is a 4px window-edge overlay', layout.includes('settin
 check('metric cards stretch to equal heights', hana.includes('grid-auto-rows: 1fr') && hana.includes('height: 100%'));
 check('business party picker is a keyboard combobox', (await read('apps/web/src/components/BusinessPartyPicker.tsx')).includes('role="combobox"') && hana.includes('.business-party-results') && hana.includes('border-radius: 12px'));
 check('report and project entry cards stretch to equal heights', hana.includes('.report-studio-entry-grid') && hana.includes('.project-shortcut-card') && hana.includes('align-self: stretch'));
+check('system management extension entry is removed', !(await read('apps/web/src/pages/SystemManagementPage.tsx')).includes('系统管理扩展入口'));
+check('system settings is an admin gear beside logout', layout.includes('aria-label="系统设置"') && layout.includes('<Settings size={15} />') && !layout.includes('sidebar-settings-link'));
+check('appearance is independent from system settings nav', layout.includes("location.pathname === '/settings/appearance'") && layout.includes('is-appearance-only') && hana.includes('.settings-window.is-appearance-only .settings-nav'));
+check('card dividers are inset and table edges have no rules', hana.includes('.settings-row + .settings-row::before') && hana.includes('.data-table thead th { border-top: 0 !important; }'));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {

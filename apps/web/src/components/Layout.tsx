@@ -6,7 +6,7 @@ import {
   Building2, BookOpen, ChevronRight, ClipboardList, FileText, FolderKanban,
   HandCoins, LayoutDashboard, LogOut, Menu, Search, SlidersHorizontal, Wallet, Workflow, Zap, UserCog, History, ReceiptText,
   ArrowUpRight, Command, CornerDownLeft, Keyboard, X, BellRing, FileSpreadsheet, Users,
-  ShieldCheck, UserRound, ServerCog, Sparkles, PanelLeft, PanelLeftClose, Plus, Palette,
+  ShieldCheck, UserRound, ServerCog, Sparkles, PanelLeft, PanelLeftClose, Plus, Palette, Settings,
 } from 'lucide-react';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
@@ -328,7 +328,8 @@ export default function Layout() {
   }, [isSettingsArea, settingsNavOpen]);
   const costPageLabel = location.pathname === '/cost/assistant' ? '成本助手' : location.pathname === '/cost/downstream' && new URLSearchParams(location.search).get('view') === 'finance' ? '结算与应付账款' : costWorkspacePages.find((item) => item.to === location.pathname)?.label;
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (location.pathname === '/settings/appearance' ? '界面' : isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
-  const availableSettingsGroups = user?.role === 'ADMIN' ? [{ label: '个人', items: [appearanceSettingsItem] }, ...systemGroups] : [{ label: '个人', items: [appearanceSettingsItem] }];
+  const availableSettingsGroups = user?.role === 'ADMIN' ? systemGroups : [{ label: '个人', items: [appearanceSettingsItem] }];
+  const isAppearanceSettings = location.pathname === '/settings/appearance';
   const visibleSettingsGroups = availableSettingsGroups.map((group) => ({
     ...group,
     items: group.items.filter((item) => !settingsSearch.trim() || item.label.toLocaleLowerCase().includes(settingsSearch.trim().toLocaleLowerCase())),
@@ -393,11 +394,11 @@ export default function Layout() {
         </section>
       </div>
       <div className="app-sidebar-footer">
-        {user?.role === 'ADMIN' && <NavLink to="/system" onClick={(event) => rememberPaperOrigin(event.currentTarget)} className={({ isActive }) => `sidebar-nav-link sidebar-settings-link ${isActive ? 'active' : ''}`}><SlidersHorizontal size={15} strokeWidth={1.65} /><span>系统设置</span><span className="sidebar-settings-tag">ADMIN</span></NavLink>}
         <div className="sidebar-user-row">
           <div className="sidebar-user-avatar">{user?.name?.slice(0, 1) ?? '管'}</div>
           <div className="sidebar-user-copy"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div>
           <div className="sidebar-footer-actions">
+            {user?.role === 'ADMIN' && <button type="button" data-tooltip="系统设置" data-tooltip-align="end" aria-label="系统设置" className="sidebar-footer-icon" onClick={(event) => { rememberPaperOrigin(event.currentTarget); navigate('/system'); }}><Settings size={15} /></button>}
             <button data-tooltip="退出登录" data-tooltip-align="end" aria-label="退出登录" className="sidebar-footer-icon" onClick={logout}><LogOut size={15} /></button>
           </div>
         </div>
@@ -469,7 +470,7 @@ export default function Layout() {
     </div>
 
     {isSettingsArea && <div className="settings-overlay" role="presentation">
-      <section ref={settingsWindowRef} className={`settings-window ${settingsNavOpen ? 'is-mobile-nav-open' : ''}`} role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
+      <section ref={settingsWindowRef} className={`settings-window ${settingsNavOpen ? 'is-mobile-nav-open' : ''} ${isAppearanceSettings ? 'is-appearance-only' : ''}`} role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
         <div ref={settingsBarRef} className="settings-mobile-bar">
           <button type="button" className="settings-mobile-nav-trigger" aria-expanded={settingsNavOpen} aria-controls="settings-navigation" onClick={() => setSettingsNavOpen(true)}>
             <PanelLeft size={16} /><span>{currentPageLabel}</span><ChevronRight size={14} />
@@ -477,7 +478,7 @@ export default function Layout() {
           <button type="button" className="settings-close" onClick={closeSettings} aria-label="关闭设置"><X size={16} /></button>
         </div>
         <button type="button" className="settings-close settings-close-floating" onClick={closeSettings} aria-label="关闭设置"><X size={16} /></button>
-        <div className="settings-body">
+        <div className={`settings-body ${isAppearanceSettings ? 'is-appearance-only' : ''}`}>
           {settingsNavOpen && <button type="button" tabIndex={-1} className="settings-mobile-nav-backdrop" aria-label="关闭设置导航" onClick={() => setSettingsNavOpen(false)} />}
           <nav id="settings-navigation" className={`settings-nav ${settingsNavOpen ? 'is-mobile-open' : ''}`} aria-label="设置导航">
             <div className="settings-mobile-drawer-head"><span>设置</span><button type="button" onClick={() => setSettingsNavOpen(false)} aria-label="关闭设置导航"><X size={15} /></button></div>

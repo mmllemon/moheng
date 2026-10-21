@@ -2081,6 +2081,13 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-nav-link.active svg { color: var(--accent); }
 .settings-nav-link[data-autofocus="true"]:focus-visible { outline: none; }
 .settings-nav-empty { padding: 16px 8px; color: var(--text-muted); font-size: 10.5px; text-align: center; }
+.settings-window.is-appearance-only .settings-nav,
+.settings-window.is-appearance-only .settings-mobile-nav-trigger,
+.settings-window.is-appearance-only .settings-mobile-nav-backdrop { display: none; }
+.settings-window.is-appearance-only .settings-content { width: 100%; max-width: 760px; margin: 0 auto; padding: 36px 40px 56px; }
+@media (max-width: 720px) {
+  .settings-window.is-appearance-only .settings-content { max-width: none; padding: 24px 18px 40px; }
+}
 .settings-content {
   flex: 1 1 auto;
   min-width: 0;
@@ -3064,6 +3071,44 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 @keyframes hana-pop-in { from { opacity: 0; transform: translateY(-3px) scale(0.99); } to { opacity: 1; transform: none; } }
 @keyframes hana-dialog-in { from { opacity: 0; transform: translateY(6px) scale(0.995); } to { opacity: 1; transform: none; } }
 
+/* 卡片内分隔线统一内缩，表格上下不画封口线 */
+.data-table thead th { border-top: 0 !important; }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tfoot td { border-bottom: 0; }
+
+.settings-row { border-bottom: 0; position: relative; }
+.settings-row + .settings-row::before { content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: 1px; background: color-mix(in srgb, var(--border) 66%, transparent); pointer-events: none; }
+.settings-row-actions { border-top: 0; position: relative; }
+.settings-row-actions::before { content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: 1px; background: color-mix(in srgb, var(--border) 66%, transparent); pointer-events: none; }
+
+.system-workspace-nav { border-bottom: 0; }
+.system-overview-event-row,
+.system-readiness-line,
+.system-rule-row,
+.system-integration-row,
+.system-job-list article,
+.system-dictionary-card { border-top: 0; position: relative; }
+.system-overview-event-row + .system-overview-event-row::before,
+.system-readiness-line + .system-readiness-line::before,
+.system-rule-row + .system-rule-row::before,
+.system-integration-row + .system-integration-row::before,
+.system-job-list article + article::before,
+.system-dictionary-card + .system-dictionary-card::before { content: ''; position: absolute; top: 0; left: 18px; right: 18px; height: 1px; background: color-mix(in srgb, var(--border) 66%, transparent); pointer-events: none; }
+.system-authorization-reviewed-note,
+.system-authorization-review-form,
+.system-policy-form { border-top: 0; position: relative; }
+.system-authorization-reviewed-note::before,
+.system-authorization-review-form::before,
+.system-policy-form::before { content: ''; position: absolute; top: 0; left: 18px; right: 18px; height: 1px; background: color-mix(in srgb, var(--border) 66%, transparent); pointer-events: none; }
+
+.report-report-option { border-bottom: 0; position: relative; }
+.report-report-option + .report-report-option::before { content: ''; position: absolute; top: 0; left: 12px; right: 12px; height: 1px; background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
+
+.ldg-stats > div { border-left: 0; position: relative; }
+.ldg-stats > div + div::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: -0.5px; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); pointer-events: none; }
+.cost-type-card { border-left: 0; position: relative; }
+.cost-type-card + .cost-type-card::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); pointer-events: none; }
+
 /* 预算与目标成本 / 实际成本：Hana 卡片与表格 */
 .ldg-stats {
   margin: 0 0 26px;
@@ -3095,7 +3140,8 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .ldg-more { width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted); }
 .ldg-more:hover { background: var(--overlay-subtle); color: var(--text); }
 
-.ldg-toolbar { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 0; padding: 12px 18px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.ldg-toolbar { position: relative; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin: 0; padding: 12px 18px; border-bottom: 0; }
+.ldg-toolbar::after { content: ''; position: absolute; right: 18px; bottom: 0; left: 18px; height: 1px; background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
 .ldg-search { width: 285px; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); color: var(--text-muted); }
 .ldg-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
 .ldg-search input { height: 30px; min-height: 0; padding: 0; border: 0; background: transparent; color: var(--text); font-size: 12.5px; }
@@ -3141,7 +3187,8 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .cost-type-card small { margin-top: 3px; color: var(--text-muted); font-size: 9.5px; }
 .cost-type-symbol { display: none; }
 
-.panel.data-table-panel.panel-detached > .table-toolbar { padding: 12px 18px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.panel.data-table-panel.panel-detached > .table-toolbar { position: relative; padding: 12px 18px; border-bottom: 0; }
+.panel.data-table-panel.panel-detached > .table-toolbar::after { content: ''; position: absolute; right: 18px; bottom: 0; left: 18px; height: 1px; background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
 .panel.data-table-panel.panel-detached > .table-scroll .data-table { width: calc(100% - 36px); margin: 0 18px; }
 .table-toolbar .toolbar-search { width: min(390px, 70%); height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
 .table-toolbar .toolbar-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
@@ -3155,6 +3202,9 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 
 @media (max-width: 900px) {
   .cost-type-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cost-type-card:nth-child(3)::before,
+  .cost-type-card:nth-child(5)::before { display: none; }
+  .ldg-stats > div:nth-child(3)::before { display: none; }
   .cost-type-card { border-top: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); }
   .cost-type-card:nth-child(-n + 2) { border-top: 0; }
   .cost-type-card:nth-child(odd) { border-left: 0; padding-left: 16px; }
@@ -3812,7 +3862,8 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 }
 .settings-section-card > .table-scroll { overflow-x: auto; }
 .settings-section-card .data-table { width: calc(100% - 32px); margin: 0 16px; }
-.settings-section-card .panel-heading { padding: 14px 16px 10px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.settings-section-card .panel-heading { padding: 14px 16px 10px; border-bottom: 0; position: relative; }
+.settings-section-card .panel-heading::after { content: ''; position: absolute; right: 16px; bottom: 0; left: 16px; height: 1px; background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
 .settings-section-card .panel-heading h3 { color: var(--text); font-size: 13px; font-weight: 600; }
 .settings-section-card .panel-heading p { margin-top: 3px; font-size: 10px; }
 .settings-subhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 15px 16px 9px; border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }

@@ -76,18 +76,6 @@ export default function SystemManagementPage() {
       </section>
     </section>
 
-    <section className="panel system-management-roadmap">
-      <div className="panel-heading"><div><h3>系统管理扩展入口</h3><p>以下能力已进入源码并提供管理页面；执行状态仍取决于部署配置与真实环境验证。</p></div><span className="panel-icon"><ServerCog size={18} /></span></div>
-      <div className="system-roadmap-grid">
-        <article><span className="roadmap-stage is-next">已实现</span><strong>组织与规则治理</strong><p>部门/岗位归属、变更审批规则草稿与版本发布、集成凭据加密/轮换和数据质量巡检。</p><Link to="/system/governance" className="panel-header-action">打开治理工作台 <ArrowRight size={14} /></Link></article>
-        <article><span className="roadmap-stage is-next">已实现</span><strong>权限治理与授权复核</strong><p>只读展示服务端权限基线，记录跨项目范围与项目成员授权的时间点快照，支持管理员复核留痕。</p><Link to="/system/authorization" className="panel-header-action">打开权限治理 <ArrowRight size={14} /></Link></article>
-        <article><span className="roadmap-stage is-next">已实现</span><strong>统一基础字典</strong><p>统一分类编码、字典项名称、排序与启停状态；软停用保留历史，不直接替换核心财务枚举。</p><Link to="/system/dictionaries" className="panel-header-action">打开基础字典 <ArrowRight size={14} /></Link></article>
-        <article><span className="roadmap-stage is-next">已实现</span><strong>统一参数配置</strong><p>全局默认与项目级覆盖、类型校验、草稿发布、历史版本和回滚草稿；敏感凭据由专用保险库维护。</p><Link to="/system/parameters" className="panel-header-action">打开参数配置 <ArrowRight size={14} /></Link></article>
-        <article><span className="roadmap-stage is-next">需配置</span><strong>运行维护与备份恢复</strong><p>数据库备份、文件完整性校验、隔离库恢复演练、后台任务和磁盘容量监控。</p><Link to="/system/operations" className="panel-header-action">打开运维工作台 <ArrowRight size={14} /></Link></article>
-        <article><span className="roadmap-stage">安全边界</span><strong>公司角色与项目角色分离</strong><p>公司管理员身份不自动等价于项目审批角色；已发布的规则只控制公司内部变更审批，不改变外部确认金额生效政策。</p></article>
-        <article><span className="roadmap-stage">待环境验收</span><strong>部署闭环</strong><p>需要在目标部署机验证 pg_dump/pg_restore、异地隔离目标、HTTPS/TLS、日志保留策略与真实登录流程。</p></article>
-      </div>
-    </section>
     <div className="data-note"><span className="note-mark">i</span><span>当前首页为管理概览，不替代“系统账号管理”“登录安全中心”“操作追溯”等专门页面。MFA、TLS 与项目授权等状态在开发环境或未完成部署时仍需结合实际环境复核。</span></div>
   </div>;
 }
