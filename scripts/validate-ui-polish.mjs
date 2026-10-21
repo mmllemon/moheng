@@ -12,7 +12,7 @@ function check(label, condition) {
 }
 
 const hana = await read('apps/web/src/styles/hana.css');
-const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap, systemTabs, securityPage, policiesPage, governancePage, parametersPage, accountsPage, assistantPage, auditPage] = await Promise.all([
+const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap, systemTabs, securityPage, policiesPage, governancePage, parametersPage, accountsPage, assistantPage, auditPage, dictionariesPage, operationsPage] = await Promise.all([
   read('apps/web/src/styles/v6.css'),
   read('apps/web/src/styles/legacy.css'),
   read('apps/web/src/main.tsx'),
@@ -39,6 +39,8 @@ const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, das
   read('apps/web/src/pages/UserManagementPage.tsx'),
   read('apps/web/src/pages/AssistantProviderPage.tsx'),
   read('apps/web/src/pages/AuditLogsPage.tsx'),
+  read('apps/web/src/pages/SystemDictionariesPage.tsx'),
+  read('apps/web/src/pages/SystemOperationsPage.tsx'),
 ]);
 const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
@@ -141,7 +143,10 @@ check('section headers sit outside body cards', hana.includes('.ds-section-head'
 check('body-card table rules are inset from the card edge', hana.includes('.ds-section-card .data-table { width: calc(100% - 36px)') && hana.includes('.panel.panel-detached > .table-scroll .data-table'));
 check('Hana segmented tabs and tinted notes are wired', hana.includes('.sys-tabs {') && hana.includes('width: fit-content') && hana.includes('.inline-notice,') && hana.includes('border-radius: 10px'));
 check('settings pages use left-copy / right-control rows', hana.includes('.settings-row-control') && hana.includes('.settings-row-label') && (assistantPage.includes('settings-row') || assistantPage.includes('assistant-provider-shell')) && auditPage.includes('audit-filter-rows'));
-check('settings search matches Hana translucent field', hana.includes('.settings-nav .settings-search input') && hana.includes('border-radius: 10px') && hana.includes('color-mix(in srgb, var(--overlay-light) 60%, transparent)'));
+check('settings search is a real Hana field with clear and result states',
+  layout.includes('settings-search-clear') && layout.includes('settings-search-results') && layout.includes('settingsSearchMatches')
+  && hana.includes('.settings-nav .settings-search {') && hana.includes('height: var(--control-height)')
+  && hana.includes('background: var(--overlay-light)') && hana.includes('.settings-search-result {'));
 check('settings scrollbar is a 4px window-edge overlay', layout.includes('settings-scrollbar') && hana.includes('.settings-scrollbar') && hana.includes('width: 4px') && layout.includes('bar.addEventListener') && layout.includes('onPointerDown'));
 check('metric cards stretch to equal heights', hana.includes('grid-auto-rows: 1fr') && hana.includes('height: 100%'));
 check('business party picker is a keyboard combobox', (await read('apps/web/src/components/BusinessPartyPicker.tsx')).includes('role="combobox"') && hana.includes('.business-party-results') && hana.includes('border-radius: 12px'));
@@ -156,6 +161,19 @@ check('settings page headers stick while scrolling', hana.includes('.settings-co
 check('project ledger is name/status with a wider dossier', !(await read('apps/web/src/pages/ProjectsPage.tsx')).includes('<th>业主</th>') && hana.includes('minmax(560px, 1.3fr)'));
 check('row selection has no inset left bar', hana.includes('.projects-table tbody tr.is-selected td:first-child { box-shadow: none; }') && hana.includes('.data-table tbody tr:hover td:first-child { box-shadow: none; }'));
 check('assistant provider uses a Hana rail/detail split', (await read('apps/web/src/pages/AssistantProviderPage.tsx')).includes('assistant-provider-shell') && (await read('apps/web/src/styles/assistant-provider.css')).includes('grid-template-columns: 190px'));
+check('dictionary catalog is a master list with a separate editor card',
+  dictionariesPage.includes('system-dictionary-editor') && dictionariesPage.includes('system-dictionary-state')
+  && !dictionariesPage.includes('system-config-field') && hana.includes('.system-dictionary-card-title'));
+check('dictionary items are wrapping rows instead of a wide table',
+  dictionariesPage.includes('system-dictionary-item-list') && dictionariesPage.includes('system-dictionary-item-fields')
+  && !dictionariesPage.includes('<table') && hana.includes('.system-dictionary-item-list'));
+check('operations backup history is a list, not a table with a scrollbar',
+  operationsPage.includes('system-ops-run-list') && operationsPage.includes('system-ops-empty')
+  && !operationsPage.includes('system-expansion-table') && !operationsPage.includes('table-scroll')
+  && hana.includes('.system-ops-run {') && hana.includes('.system-ops-summary {'));
+check('interaction radii use the control / action / compact scale',
+  hana.includes('--radius-action: calc(5px * var(--corner-radius-scale))') && hana.includes('--radius-compact: calc(4px * var(--corner-radius-scale))')
+  && hana.includes('.button-primary,') && hana.includes('.settings-nav .settings-search input'));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {

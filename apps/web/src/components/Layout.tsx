@@ -330,10 +330,10 @@ export default function Layout() {
   const currentPageLabel = costPageLabel ?? systemNavigation.find((item) => item.to === location.pathname)?.label ?? navigation.find((item) => item.to === location.pathname)?.label ?? (location.pathname === '/settings/appearance' ? '界面' : isPartyDetail ? '单位经营档案' : location.pathname === '/parties' ? '往来单位库' : location.pathname === '/projects/members' ? '项目成员与权限' : location.pathname === '/account/security' ? '个人中心与账号安全' : '工作台');
   const availableSettingsGroups = user?.role === 'ADMIN' ? systemGroups : [{ label: '个人', items: [appearanceSettingsItem] }];
   const isAppearanceSettings = location.pathname === '/settings/appearance';
-  const visibleSettingsGroups = availableSettingsGroups.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => !settingsSearch.trim() || item.label.toLocaleLowerCase().includes(settingsSearch.trim().toLocaleLowerCase())),
-  })).filter((group) => group.items.length);
+  const settingsSearchQuery = settingsSearch.trim();
+  const settingsSearchMatches = availableSettingsGroups.flatMap((group) => group.items
+    .filter((item) => !settingsSearchQuery || item.label.toLocaleLowerCase().includes(settingsSearchQuery.toLocaleLowerCase()))
+    .map((item) => ({ ...item, groupLabel: group.label })));
   const visibleQuickActions = quickActionCategory === 'all' ? quickActions : quickActions.filter((action) => action.category === quickActionCategory);
 
 
@@ -482,17 +482,29 @@ export default function Layout() {
           {settingsNavOpen && <button type="button" tabIndex={-1} className="settings-mobile-nav-backdrop" aria-label="关闭设置导航" onClick={() => setSettingsNavOpen(false)} />}
           <nav id="settings-navigation" className={`settings-nav ${settingsNavOpen ? 'is-mobile-open' : ''}`} aria-label="设置导航">
             <div className="settings-mobile-drawer-head"><span>设置</span><button type="button" onClick={() => setSettingsNavOpen(false)} aria-label="关闭设置导航"><X size={15} /></button></div>
-            <div className="settings-search"><Search size={14} /><input value={settingsSearch} onChange={(event) => setSettingsSearch(event.target.value)} placeholder="搜索设置" aria-label="搜索设置" type="search" /></div>
-            <div className="settings-groups">
-              {visibleSettingsGroups.length ? visibleSettingsGroups.map((group) => <section className="settings-group" key={group.label}>
+            <div className="settings-search">
+              <Search size={14} aria-hidden="true" />
+              <input value={settingsSearch} onChange={(event) => setSettingsSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setSettingsSearch(''); }} placeholder="搜索设置" aria-label="搜索设置" type="search" autoComplete="off" aria-controls={settingsSearchQuery ? 'settings-search-results' : undefined} />
+              {settingsSearch && <button type="button" className="settings-search-clear" aria-label="清空设置搜索" onClick={() => setSettingsSearch('')}><X size={12} /></button>}
+            </div>
+            {settingsSearchQuery ? <div id="settings-search-results" className="settings-search-results" aria-live="polite">
+              <div className="settings-search-results-title">搜索结果</div>
+              {settingsSearchMatches.length ? settingsSearchMatches.map((item) => {
+                const Icon = item.icon;
+                const isCurrent = item.to === '/system' ? location.pathname === '/system' : location.pathname === item.to;
+                return <NavLink key={item.to} to={item.to} end={item.end ?? false} onClick={() => { setSettingsSearch(''); setSettingsNavOpen(false); }} data-autofocus={isCurrent ? 'true' : undefined} className={({ isActive }) => `settings-search-result ${isActive ? 'active' : ''}`}><span className="settings-search-result-icon"><Icon size={14} strokeWidth={1.6} /></span><span className="settings-search-result-copy"><strong>{item.label}</strong><small>{item.groupLabel}</small></span></NavLink>;
+              }) : <div className="settings-search-empty">没有匹配的设置</div>}
+            </div> : <div className="settings-groups">
+              {availableSettingsGroups.map((group) => <section className="settings-group" key={group.label}>
                 <h2>{group.label}</h2>
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isCurrent = item.to === '/system' ? location.pathname === '/system' : location.pathname === item.to;
                   return <NavLink key={item.to} to={item.to} end={item.end ?? false} onClick={() => setSettingsNavOpen(false)} data-autofocus={isCurrent ? 'true' : undefined} className={({ isActive }) => `settings-nav-link ${isActive ? 'active' : ''}`}><Icon size={15} strokeWidth={1.6} /><span>{item.label}</span></NavLink>;
                 })}
-              </section>) : <div className="settings-nav-empty">没有匹配的设置</div>}
-            </div>
+              </section>)}
+              {!availableSettingsGroups.length && <div className="settings-nav-empty">没有匹配的设置</div>}
+            </div>}
           </nav>
           <div ref={settingsContentRef} className="settings-content" aria-hidden={settingsNavOpen ? true : undefined}><div className="route-transition" key={location.pathname}><Outlet /></div></div>
         </div>
