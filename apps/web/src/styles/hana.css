@@ -1295,29 +1295,40 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--text-light);
 }
+/* 表头：Hana 的阅读态表格用 13px / 600 + 淡色底区分，不靠加粗也不靠竖线 */
 .data-table thead th {
-  height: 34px;
+  height: 36px;
   padding: 0 var(--space-12);
   border-bottom: 1px solid var(--border);
-  background: transparent;
+  background: color-mix(in srgb, var(--text) 3.5%, transparent);
   color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.035em;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   text-align: left;
   white-space: nowrap;
 }
 .data-table tbody td {
+  height: 40px;
   padding: var(--space-8) var(--space-12);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
   background: transparent;
   vertical-align: middle;
 }
-.data-table tbody tr { transition: background var(--duration-fast); }
-.data-table tbody tr:hover td { background: var(--state-hover-bg); }
+/* 斑马纹：Hana 用 4.5% 墨色，几乎看不见但足以区分行 */
+.data-table tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--text) 4.5%, transparent);
+}
+.data-table tbody tr {
+  transition: background var(--duration-fast);
+}
+/* hover 需盖过斑马纹，用略深的底色 */
+.data-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
 .data-table tbody tr:hover td:first-child { padding-left: 12px; box-shadow: none; }
 .data-table tbody tr:focus,
 .data-table tbody tr:focus-visible { background: color-mix(in srgb, var(--accent) 4%, var(--bg-card)); outline: 1px solid var(--state-focus-ring); outline-offset: -1px; }
@@ -2614,8 +2625,8 @@ html[data-paper-texture] .settings-window::after { display: block; }
   .appearance-theme-swatch { width: 52px; height: 30px; flex: 0 0 52px; }
 }
 
-html[data-density="compact"] .data-table thead th { height: 29px; }
-html[data-density="compact"] .data-table tbody td { padding-top: 6px; padding-bottom: 6px; }
+html[data-density="compact"] .data-table thead th { height: 32px; }
+html[data-density="compact"] .data-table tbody td { height: 32px; padding-top: var(--space-4); padding-bottom: var(--space-4); }
 html[data-density="compact"] .sidebar-nav-link { height: 29px; }
 html[data-density="compact"] .v6-log-row { padding-top: 7px; padding-bottom: 7px; }
 html[data-content-width="wide"] .page-wrap { max-width: 1600px; }
