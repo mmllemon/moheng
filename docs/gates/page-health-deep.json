@@ -61,7 +61,7 @@
     {
       "route": "/cost/downstream",
       "url": "/cost/downstream",
-      "contentH": 894,
+      "contentH": 892,
       "issues": [],
       "textLen": 905,
       "errors": []
@@ -77,9 +77,9 @@
     {
       "route": "/cost/costs",
       "url": "/cost/costs",
-      "contentH": 618,
+      "contentH": 613,
       "issues": [],
-      "textLen": 696,
+      "textLen": 721,
       "errors": []
     },
     {
@@ -209,7 +209,7 @@
     {
       "route": "/system/operations",
       "url": "/system/operations",
-      "contentH": 1617,
+      "contentH": 1545,
       "issues": [],
       "textLen": 1379,
       "errors": []

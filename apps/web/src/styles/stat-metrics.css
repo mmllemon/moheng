@@ -688,6 +688,151 @@ html .assistant-check-grid {
 }
 
 /* -------------------------------------------------------------
+   七、区块卡（.ds-section-card）里包着指标区时，去掉外壳
+   -------------------------------------------------------------
+   .ds-section-card 是 Section 组件的固定包装，全站通用，不能一刀切删背景。
+   但 /cost/downstream 的「数据概览」是「区块卡 + 指标区」双保险，
+   结果指标区外面套了一层带背景与 14.73px 圆角的壳。
+   用 :has() 只命中「子元素就是指标区」的区块卡。 */
+html .ds-section-card:has(> .downstream-summary-grid),
+html .ds-section-card:has(> .change-summary-grid),
+html .ds-section-card:has(> .bill-summary-grid),
+html .ds-section-card:has(> .owner-finance-metrics),
+html .ds-section-card:has(> .security-metrics),
+html .ds-section-card:has(> .system-overview-metrics) {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+/* 指标区在区块卡里时，上下分隔线已由指标区自己画，不再重复 */
+html .ds-section-card > .change-summary-grid,
+html .ds-section-card > .downstream-summary-grid,
+html .ds-section-card > .bill-summary-grid {
+  margin: 0;
+}
+
+/* -------------------------------------------------------------
+   八、/cost/costs 的「成本类型卡」——本质是可点击的指标项
+   -------------------------------------------------------------
+   5 个 button 点下去会筛选下方表格，所以不能改成 div；
+   但外观应该是指标而不是「大按钮」：去壳、左对齐、26px 数值。 */
+html .cost-type-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  padding: var(--space-16) 0;
+  margin: var(--space-16) 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+html .cost-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  width: 100%;
+  min-width: 0;
+  padding: 0 var(--space-16);
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+html .cost-type-card:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+html .cost-type-card:last-child {
+  padding-right: 0;
+}
+html .cost-type-card:hover {
+  background: transparent;
+}
+html .cost-type-card:hover strong {
+  color: var(--accent);
+}
+html .cost-type-card .cost-type-label {
+  display: block;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+}
+html .cost-type-card strong {
+  display: block;
+  margin: var(--space-6) 0 0;
+  color: var(--text);
+  font-family: var(--font-num, var(--num));
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease;
+}
+html .cost-type-card small {
+  display: block;
+  margin: var(--space-4) 0 0;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+/* 选中态不靠背景，靠数值颜色和左侧强调 */
+html .cost-type-card[aria-pressed='true'] strong,
+html .cost-type-card.is-active strong {
+  color: var(--accent);
+}
+
+/* 工具栏切换按钮：与搜索框同高，胶囊形，选中态用底色 */
+html .toolbar-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 2px);
+  padding: 2px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: var(--radius-action, 8px);
+  background: transparent;
+}
+html .toolbar-view-button {
+  height: 26px;
+  padding: 0 var(--space-10, 10px);
+  border: 0;
+  border-radius: calc(var(--radius-action, 8px) - 2px);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+html .toolbar-view-button:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text);
+}
+html .toolbar-view-button.is-active {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+html .toolbar-view-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* -------------------------------------------------------------
    六、窄视口 —— 不折行，改横向滚动
    -------------------------------------------------------------
    Hana 的做法：固定 3 列，全库无任何 media query，永不出现第二行，
