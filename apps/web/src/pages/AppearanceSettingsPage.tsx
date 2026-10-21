@@ -4,6 +4,7 @@ import { PageHeader } from '../components/Ui';
 import { APP_ICON_IDS, APP_ICON_PALETTES } from '../lib/app-icon';
 import { toast } from '../lib/toast';
 import {
+  CONTENT_CONTRAST_LEVELS,
   PAPER_TEXTURE_STRENGTHS,
   useUiStore,
   type PaperTextureStyle,
@@ -51,6 +52,7 @@ export default function AppearanceSettingsPage() {
   const setAppIcon = useUiStore((state) => state.setAppIcon);
   const reset = useUiStore((state) => state.resetUiPreferences);
   const strengthIndex = Math.max(0, PAPER_TEXTURE_STRENGTHS.indexOf(paperTextureStrength as (typeof PAPER_TEXTURE_STRENGTHS)[number]));
+  const contrastIndex = Math.max(0, CONTENT_CONTRAST_LEVELS.indexOf(contentContrast));
   const headingFontFamily = headingFonts.find((font) => font.value === headingFont)?.family ?? 'var(--font-serif)';
 
   return <div className="page-wrap appearance-settings-page">
@@ -101,13 +103,16 @@ export default function AppearanceSettingsPage() {
           </div>
         </div>
         <div className="settings-row">
-          <div className="settings-row-copy"><strong>字体对比度</strong><span>如果看着感觉累，可以调整正文墨色的深浅。</span></div>
-          <div className="settings-segment" role="radiogroup" aria-label="字体对比度">
-            {([['9', '较淡'], ['11', '适中'], ['13', '默认'], ['15', '较深'], ['17', '最深']] as const).map(([level, label]) => (
-              <button key={level} type="button" className={contentContrast === level ? 'is-active' : ''} role="radio" aria-checked={contentContrast === level} onClick={() => setContentContrast(level)}>{label}</button>
-            ))}
+          <div className="settings-row-copy"><strong>字体对比度</strong><span>如果看着感觉累，可以调整这个滑块。</span></div>
+          <div className="settings-step-slider">
+            <input type="range" min="0" max="4" step="1" value={contrastIndex} aria-label="字体对比度" aria-valuetext={`${CONTENT_CONTRAST_LEVELS[contrastIndex]} 档`} onChange={(event) => setContentContrast(CONTENT_CONTRAST_LEVELS[Number(event.target.value)] ?? '13')} />
+            <div className="settings-step-rail contrast-rail" aria-hidden="true">
+              {CONTENT_CONTRAST_LEVELS.map((level, index) => <span key={level} className={index <= contrastIndex ? 'is-on' : ''} style={{ ['--contrast-bar-h' as string]: `${1.5 + index * 1.4}px` }} />)}
+            </div>
+            <div className="settings-step-labels"><span /><span>{CONTENT_CONTRAST_LEVELS[contrastIndex]}</span><span /></div>
           </div>
         </div>
+        <div className="appearance-contrast-sample" aria-hidden="true">永和九年，岁在癸丑。</div>
         <div className="settings-row">
           <div className="settings-row-copy"><strong>减少动效</strong><span>保留状态反馈，关闭位移与弹性动画。</span></div>
           <button type="button" className={`settings-toggle ${reduceMotion ? 'is-on' : ''}`} role="switch" aria-checked={reduceMotion} aria-label="减少动效" onClick={toggleReduceMotion}><i /></button>

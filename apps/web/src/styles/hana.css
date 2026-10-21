@@ -2449,7 +2449,30 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-step-rail span.is-on { background: var(--accent); }
 .settings-step-labels { display: flex; justify-content: space-between; margin-top: 7px; color: var(--text-muted); font-size: 9.5px; font-variant-numeric: tabular-nums; }
 .settings-step-labels span:nth-child(2) { color: var(--accent); font-weight: 600; }
-.settings-step-slider.is-disabled { opacity: 0.35; }
+
+/* 字体对比度档位条：用笔画粗细（高/宽递进）隐喻墨色深浅，与 Hana 1.1.35 设置页一致 */
+.settings-step-rail.contrast-rail { align-items: center; height: 12px; }
+.settings-step-rail.contrast-rail span {
+  height: var(--contrast-bar-h, 4px);
+  min-height: 1.5px;
+  max-height: 7px;
+  background: var(--overlay-medium);
+  corner-shape: round;
+}
+.settings-step-rail.contrast-rail span.is-on { background: var(--accent); }
+.appearance-contrast-sample {
+  margin: 4px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-control);
+  corner-shape: squircle;
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.7;
+  transition: color var(--duration-fast) var(--ease-out);
+}.settings-step-slider.is-disabled { opacity: 0.35; }
 .settings-step-slider.is-disabled > input { cursor: not-allowed; }
 
 .settings-toggle {
