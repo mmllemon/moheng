@@ -1,6 +1,30 @@
 import type { ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight, Plus, Search, type LucideIcon } from 'lucide-react';
 
+export function Section({ title, subtitle, actions, icon: Icon, children, className = '' }: {
+  title: string; subtitle?: string; actions?: ReactNode; icon?: LucideIcon; children: ReactNode; className?: string;
+}) {
+  return <section className={`ds-section ${className}`.trim()}>
+    <div className="ds-section-head">
+      <div className="ds-section-copy"><h2>{Icon && <Icon size={16} strokeWidth={1.6} />}{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
+      {actions && <div className="ds-section-actions">{actions}</div>}
+    </div>
+    <div className="ds-section-card">{children}</div>
+  </section>;
+}
+
+export function SettingsSection({ title, description, actions, children, hidden = false, className = '' }: {
+  title: ReactNode; description?: ReactNode; actions?: ReactNode; children: ReactNode; hidden?: boolean; className?: string;
+}) {
+  return <section className={`settings-section ${className}`.trim()} hidden={hidden}>
+    <div className="settings-section-head">
+      <div><h2>{title}</h2>{description && <p>{description}</p>}</div>
+      {actions && <div className="settings-section-actions">{actions}</div>}
+    </div>
+    <div className="settings-section-card">{children}</div>
+  </section>;
+}
+
 export function PageHeader({ title, subtitle, context, actions }: { title: string; subtitle?: string; context?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
   return <div className="page-header">
     <div><h1>{title}</h1>{context ? <div className="page-context">{context}</div> : subtitle && <p>{subtitle}</p>}</div>

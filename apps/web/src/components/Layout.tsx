@@ -20,6 +20,7 @@ import PaperDialogMorph from './PaperDialogMorph';
 import UiPreferencesBar from './UiPreferencesBar';
 import { useAnimatedPresence } from './useAnimatedPresence';
 import { animatePaperIn, animatePaperOut, rememberPaperOrigin, takePaperOrigin } from '../lib/paper-morph';
+import { useDetachedPanelHeaders } from '../lib/use-detached-panel-headers';
 
 type NavigationItem = { to: string; label: string; icon: typeof LayoutDashboard; group: '经营中心' | '工作台' | '项目管理' | '系统管理'; end?: boolean; adminOnly?: boolean };
 const navigation: NavigationItem[] = [
@@ -103,6 +104,7 @@ export default function Layout() {
   const [settingsSearch, setSettingsSearch] = useState('');
   const [settingsNavOpen, setSettingsNavOpen] = useState(false);
   const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
+  useDetachedPanelHeaders();
   const commandInputRef = useRef<HTMLInputElement>(null);
   const settingsWindowRef = useRef<HTMLElement>(null);
   const settingsOriginRef = useRef<HTMLElement | null>(null);

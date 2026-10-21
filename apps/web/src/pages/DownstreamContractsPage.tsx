@@ -4,14 +4,14 @@ import { Fragment, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, BadgeCheck, Banknote, ClipboardCheck, FilePlus2, FileSignature, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Banknote, BarChart3, ClipboardCheck, FilePlus2, FileSignature, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
-import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, Section } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
 type DownstreamContractType = 'LABOR_SUBCONTRACT' | 'PROFESSIONAL_SUBCONTRACT' | 'MATERIAL_PURCHASE' | 'EQUIPMENT_LEASE' | 'SERVICE' | 'OTHER';
@@ -153,6 +153,7 @@ export default function DownstreamContractsPage() {
   return <div className="page-wrap">
     <PageHeader eyebrow="PROJECT COST / COMMITMENTS" title="分供合同台账" subtitle="统一管理分包、材料采购、机械租赁与服务合同；合同金额、实际成本和现金支付分别核算。" actions={<><ProjectLedgerReportButton reportKey="downstream-contracts" /><Button variant="secondary" onClick={() => navigate('/cost/downstream?view=finance')}>结算与应付账款<ArrowRight size={14} /></Button><Button onClick={() => setCreating(true)}><Plus size={16} />新增分供合同</Button></>} />
     {notice && <div className="success-notice">{notice}<button className="icon-button" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></button></div>}{error && <div className="form-alert">{error}</div>}
+    <Section title="数据概览" subtitle="合同数、执行中合同额、关联成本与现金流分别核算；概览数字不替代明细台账。" icon={BarChart3}>
     <div className="change-summary-grid downstream-summary-grid">
       <div className="change-summary"><span className="change-summary-label">分供合同数</span><strong>{summary?.contractCount ?? 0}</strong><small>含草稿及历史合同</small></div>
       <div className="change-summary"><span className="change-summary-label">执行中/完工待结算合同额</span><strong>{formatMoney(summary?.activeAndPendingSettlementContractAmount ?? 0, 0)}</strong><small>执行中 + 完工待结算合同当前金额合计（{summary?.activeAndPendingSettlementContractCount ?? 0} 份）</small></div>
@@ -160,8 +161,9 @@ export default function DownstreamContractsPage() {
       <div className="change-summary change-summary-emphasis"><span className="change-summary-label">累计净付款</span><strong>{formatMoney(summary?.paidAmount ?? 0, 0)}</strong><small>累计付款 {formatMoney(summary?.grossPaidAmount ?? 0, 0)} − 退款 {formatMoney(summary?.refundedAmount ?? 0, 0)}</small></div>
       <div className="change-summary"><span className="change-summary-label">累计退款/退回</span><strong>{formatMoney(summary?.refundedAmount ?? 0, 0)}</strong><small>单独记现金流，不自动冲减成本</small></div>
     </div>
+    </Section>
     <div className="inline-notice"><ShieldAlert size={17} /><span>口径说明：合同当前金额 = 原始签约金额 + 已登记且有效的补充协议净额。执行中/完工待结算合同额是这些合同当前金额的合计，并非精确的未履约承诺额。付款计划是预计现金流，付款台账是实际现金流；只有成本录入才计入实际成本。合同额与已关联实际成本的算术差额不是预计成本或预计完工成本。</span></div>
-    <section className="panel downstream-contract-panel"><div className="panel-heading"><div><h3>分供合同台账</h3><p>合同金额调整必须登记已签署生效的补充协议，不允许直接覆盖原始金额。</p></div><span className="panel-icon"><FileSignature size={19} /></span></div>
+    <Section title="明细" subtitle="合同金额调整必须登记已签署生效的补充协议，不允许直接覆盖原始金额。" icon={FileSignature}>
       {!rows.length ? <EmptyState title="当前项目还没有分供合同" description="先建立采购、劳务/专业分包或租赁合同，再按实际业务维护付款计划、实际支付和合同关联成本。" action={() => setCreating(true)} /> : (
         <div className="table-scroll">
           <table className="data-table">
@@ -221,8 +223,11 @@ export default function DownstreamContractsPage() {
           </table>
         </div>
       )}
-    </section>
-    <div className="inline-notice"><ShieldAlert size={16} /><span>“结算已确认”不等于“款项已付清”。已过账结算会在“结算与应付”形成独立应付来源；普通付款须核销应付余额，预付款单独管理，质保金释放后再形成应付。没有最终结算过账，不能直接修改合同状态为结算已确认。</span></div><div className="data-note"><span className="note-mark">i</span><span>已付款不自动生成实际成本，避免双重累计。请在“实际成本录入”选择对应分供合同后录入已发生金额；历史未关联成本需要在核对发票、验收或结算依据后手动补关联，不能仅按金额自动匹配。</span></div>
+      <div className="detail-notes">
+        <div className="inline-notice"><ShieldAlert size={16} /><span>“结算已确认”不等于“款项已付清”。已过账结算会在“结算与应付”形成独立应付来源；普通付款须核销应付余额，预付款单独管理，质保金释放后再形成应付。没有最终结算过账，不能直接修改合同状态为结算已确认。</span></div>
+        <div className="data-note"><span className="note-mark">i</span><span>已付款不自动生成实际成本，避免双重累计。请在“实际成本录入”选择对应分供合同后录入已发生金额；历史未关联成本需要在核对发票、验收或结算依据后手动补关联，不能仅按金额自动匹配。</span></div>
+      </div>
+    </Section>
     {creating && <CreateContractDialog projectId={projectId} onClose={() => setCreating(false)} onNotice={setNotice} />}
     {editing && <CreateContractDialog key={editing.id} projectId={projectId} existing={editing} onClose={() => setEditing(null)} onNotice={setNotice} />}
     {amending && <AmendmentDialog projectId={projectId} contract={amending} onClose={() => setAmending(null)} onNotice={setNotice} />}

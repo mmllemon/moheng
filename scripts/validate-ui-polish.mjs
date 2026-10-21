@@ -135,6 +135,9 @@ check('accounts page uses the split create/list workbench', accountsPage.include
 check('mobile nav and transient menus are focus-trapped', layout.includes("data-focus-trap={mobileNavOpen ? 'modal' : undefined}") && layout.includes("data-focus-trap={quickActionsOpen ? 'popover' : undefined}") && layout.includes("data-focus-trap={accountMenuOpen ? 'popover' : undefined}"));
 check('legacy CSS no longer ships obsolete themes', !legacy.includes('data-theme-name'));
 check('browser-level UI gates are present', await access(join(root, 'scripts/ui-visual-regression.mjs')).then(() => true).catch(() => false) && await access(join(root, 'scripts/axe-audit.mjs')).then(() => true).catch(() => false));
+check('section headers sit outside body cards', hana.includes('.ds-section-head') && hana.includes('.panel.panel-detached::before') && layout.includes('useDetachedPanelHeaders'));
+check('body-card table rules are inset from the card edge', hana.includes('.ds-section-card .data-table { width: calc(100% - 36px)') && hana.includes('.panel.panel-detached > .table-scroll .data-table'));
+check('Hana segmented tabs and tinted notes are wired', hana.includes('.sys-tabs {') && hana.includes('width: fit-content') && hana.includes('.inline-notice,') && hana.includes('border-radius: 10px'));
 check('V6 design and component documents are present', designExists && componentExists);
 
 if (failures.length) {
