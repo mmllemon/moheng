@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Bot, Check, CheckCircle2, CircleAlert, Eye, EyeOff, KeyRound, RefreshCw, Save, Server } from 'lucide-react';
+import { type MouseEvent, useEffect, useState } from 'react';
+import { Bot, Check, CheckCircle2, ChevronDown, CircleAlert, Eye, EyeOff, KeyRound, Plus, RefreshCw, Save, Search, Server } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { Button, formatDate, PageHeader } from '../components/Ui';
 import SelectField from '../components/SelectField';
@@ -34,6 +34,11 @@ export default function AssistantProviderPage() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [addedModelIds, setAddedModelIds] = useState<string[]>([]);
+  const [extraModels, setExtraModels] = useState<ProviderModel[]>([]);
+  const [modelPicker, setModelPicker] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [modelSearch, setModelSearch] = useState('');
+  const [customModelId, setCustomModelId] = useState('');
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
@@ -47,6 +52,10 @@ export default function AssistantProviderPage() {
       // The server does not persist raw model IDs; keep an explicit empty state until the user fetches again.
     }
   }
+
+  useEffect(() => {
+    if (modelId) setAddedModelIds((prev) => prev.includes(modelId) ? prev : [...prev, modelId]);
+  }, [modelId]);
 
   useEffect(() => {
     let alive = true;
@@ -112,7 +121,36 @@ export default function AssistantProviderPage() {
 
   const configuration = config?.configuration;
   const ready = Boolean(config?.configurationReady && enabled);
-  const visibleModels = models.length ? models : (modelId ? [{ id: modelId, ownedBy: null }] : []);
+  const knownModels = [...models, ...extraModels.filter((extra) => !models.some((model) => model.id === extra.id))];
+  const addedModels = addedModelIds.map((id) => knownModels.find((model) => model.id === id) ?? { id, ownedBy: null });
+  const pickerModels = (knownModels.length ? knownModels : addedModels).filter((model) => !modelSearch.trim() || model.id.toLowerCase().includes(modelSearch.trim().toLowerCase()));
+
+  function toggleModel(id: string) {
+    const has = addedModelIds.includes(id);
+    const next = has ? addedModelIds.filter((modelIdValue) => modelIdValue !== id) : [...addedModelIds, id];
+    setAddedModelIds(next);
+    if (has) {
+      if (modelId === id) setModelId(next[0] ?? '');
+    } else {
+      setModelId(id);
+    }
+  }
+
+  function addCustomModel() {
+    const id = customModelId.trim();
+    if (!id) return;
+    if (!knownModels.some((model) => model.id === id)) setExtraModels((prev) => [...prev, { id, ownedBy: null }]);
+    if (!addedModelIds.includes(id)) setAddedModelIds((prev) => [...prev, id]);
+    setModelId(id);
+    setCustomModelId('');
+  }
+
+  function openModelPicker(event: MouseEvent<HTMLButtonElement>) {
+    if (modelPicker) { setModelPicker(null); return; }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const width = Math.min(360, window.innerWidth - rect.left - 16);
+    setModelPicker({ top: rect.bottom + 6, left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)), width });
+  }
   const checks = [
     { label: '服务端加密密钥', hint: configuration?.vaultConfigured ? 'ASSISTANT_ENCRYPTION_KEY 已配置。' : '缺少 ASSISTANT_ENCRYPTION_KEY，无法保存密钥。', ok: Boolean(configuration?.vaultConfigured), pass: '已配置', wait: '缺少密钥' },
     { label: '接口地址', hint: baseUrl.trim() ? '当前地址格式有效，保存前仍会由服务端校验。' : '填写 OpenAI 兼容接口地址。', ok: Boolean(configuration?.endpointValid && baseUrl.trim()), pass: '格式有效', wait: '待填写' },
@@ -137,7 +175,7 @@ export default function AssistantProviderPage() {
         <button type="button" className="assistant-rail-item is-active" aria-current="true">
           <span className="assistant-rail-mark"><Bot size={15} /></span>
           <span className="assistant-rail-copy"><strong>{name || 'OpenAI Compatible'}</strong><small>OpenAI 兼容</small></span>
-          <span className="assistant-rail-count">{visibleModels.length}</span>
+          <span className="assistant-rail-count">{addedModels.length}</span>
         </button>
       </aside>
 
@@ -156,13 +194,20 @@ export default function AssistantProviderPage() {
         </div>
 
         <div className="assistant-model-tabs" role="tablist" aria-label="模型类型"><button type="button" role="tab" aria-selected="true" className="is-active">对话模型</button><button type="button" role="tab" aria-selected="false" disabled title="当前版本仅支持对话模型">语音转录模型</button></div>
-        <div className="assistant-added-label">已添加的模型 <b>{visibleModels.length}</b></div>
+        <div className="assistant-added-label">已添加的模型 <b>{addedModels.length}</b></div>
         <div className="assistant-model-list">
-          {visibleModels.length ? visibleModels.map((model) => <button type="button" key={model.id} className={'assistant-model-item ' + (model.id === modelId ? 'is-selected' : '')} onClick={() => setModelId(model.id)}><span>{model.id}</span><small>{model.ownedBy || 'OpenAI Compatible'}</small>{model.id === modelId && <Check size={14} />}</button>) : <div className="assistant-model-empty">读取供应商模型后，可在这里选择用于成本助手的对话模型。</div>}
+          {addedModels.length ? addedModels.map((model) => <button type="button" key={model.id} className={'assistant-model-item ' + (model.id === modelId ? 'is-selected' : '')} onClick={() => setModelId(model.id)}><span>{model.id}</span><small>{model.ownedBy || 'OpenAI Compatible'}</small>{model.id === modelId && <Check size={14} />}</button>) : <div className="assistant-model-empty">读取供应商模型后，从“添加模型”中选择要加入的对话模型。</div>}
         </div>
         <div className="assistant-model-add">
-          <SelectField value="" onChange={(event) => setModelId(event.target.value)} aria-label="添加对话模型"><option value="">添加模型</option>{visibleModels.map((model) => <option key={model.id} value={model.id}>{model.id}{model.ownedBy ? ' · ' + model.ownedBy : ''}</option>)}{modelId && !visibleModels.some((model) => model.id === modelId) && <option value={modelId}>{modelId}（当前保存值）</option>}</SelectField>
+          <button type="button" className="assistant-model-add-trigger" aria-expanded={Boolean(modelPicker)} aria-haspopup="listbox" onClick={openModelPicker}><span>添加模型</span><ChevronDown size={14} /></button>
           <Button variant="ghost" size="sm" onClick={() => void fetchModels()} disabled={modelsLoading || !baseUrl.trim() || (!apiKey.trim() && !config?.provider.apiKeyConfigured)}><RefreshCw size={14} />{modelsLoading ? '读取中…' : '读取模型'}</Button>
+          {modelPicker && <div className="assistant-model-picker" style={{ position: 'fixed', top: modelPicker.top, left: modelPicker.left, width: modelPicker.width }} onKeyDown={(event) => { if (event.key === 'Escape') setModelPicker(null); }}>
+            <div className="assistant-model-picker-search"><Search size={14} /><input value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} placeholder="搜索模型…" aria-label="搜索模型" autoFocus /></div>
+            <div className="assistant-model-picker-list" role="listbox" aria-label="可添加模型" aria-multiselectable="true">
+              {pickerModels.length ? pickerModels.map((model) => { const isAdded = addedModelIds.includes(model.id); return <button type="button" role="option" aria-selected={isAdded} key={model.id} className={'assistant-model-option ' + (isAdded ? 'is-added' : '')} onClick={() => toggleModel(model.id)}><span className="assistant-model-option-check">{isAdded ? <Check size={13} /> : null}</span><strong>{model.id}</strong><small>{model.ownedBy || 'OpenAI Compatible'}</small></button>; }) : <div className="assistant-model-picker-empty">先读取供应商模型，或直接输入自定义模型 ID。</div>}
+            </div>
+            <div className="assistant-model-custom"><input value={customModelId} onChange={(event) => setCustomModelId(event.target.value)} placeholder="输入 ID 添加自定义模型" aria-label="自定义模型 ID" /><button type="button" onClick={addCustomModel} aria-label="添加自定义模型"><Plus size={14} /></button></div>
+          </div>}
         </div>
 
         <div className="assistant-detail-footer">

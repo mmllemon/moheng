@@ -1,5 +1,4 @@
-import { type CSSProperties } from 'react';
-import { Check, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import AppIcon from '../components/AppIcon';
 import { PageHeader } from '../components/Ui';
 import { APP_ICON_IDS, APP_ICON_PALETTES } from '../lib/app-icon';
@@ -55,58 +54,28 @@ export default function AppearanceSettingsPage() {
   return <div className="page-wrap appearance-settings-page">
     <PageHeader title="界面" subtitle="调整主题、纸张质感与工作区显示。设置只影响当前浏览器。" />
     <section className="settings-section" aria-labelledby="appearance-theme-title">
-      <h2 id="appearance-theme-title">主题</h2>
-      <div className="settings-theme-grid" role="group" aria-label="主题">
-        {themes.map((choice) => <button
-          key={choice.value}
-          type="button"
-          className={`settings-theme-card ${theme === choice.value ? 'is-active' : ''}`}
-          data-theme={choice.value}
-          aria-pressed={theme === choice.value}
-          onClick={() => setTheme(choice.value)}
-        >
-          <span className="settings-theme-swatch" style={{ '--theme-bg': choice.bg, '--theme-sidebar': choice.sidebar, '--theme-card': choice.card } as CSSProperties} />
-          <span className="settings-theme-copy"><strong>{choice.label}</strong><small>{choice.note}</small></span>
-          <span className="settings-theme-check">{theme === choice.value && <Check size={13} />}</span>
-        </button>)}
-      </div>
-    </section>
-
-    <section className="settings-section" aria-labelledby="appearance-icon-title">
-      <h2 id="appearance-icon-title">应用图标</h2>
-      <div className="settings-icon-grid" role="group" aria-label="应用图标">
-        {APP_ICON_IDS.map((id) => <button
-          key={id}
-          type="button"
-          className={`settings-icon-card ${appIcon === id ? 'is-active' : ''}`}
-          aria-pressed={appIcon === id}
-          title={APP_ICON_PALETTES[id].note}
-          onClick={() => setAppIcon(id)}
-        >
-          <AppIcon id={id} className="settings-icon-preview" />
-          <span>{APP_ICON_PALETTES[id].label}</span>
-        </button>)}
-      </div>
-      <div className="settings-inline-foot">
-        <span>浏览器页签图标会同步更新。</span>
-        <button type="button" className="settings-inline-reset" disabled={appIcon === 'ink'} onClick={() => setAppIcon('ink')}>恢复默认</button>
-      </div>
-    </section>
-
-    <section className="settings-section" aria-labelledby="appearance-type-title">
-      <h2 id="appearance-type-title">标题字体</h2>
-      <div className="settings-font-sample" style={{ fontFamily: headingFontFamily }} aria-hidden="true">账目有据，经营有度。 <span>MOHENG 2026</span></div>
-      <div className="settings-font-grid" role="group" aria-label="标题字体">
-        {headingFonts.map((font) => <button
-          key={font.value}
-          type="button"
-          className={`settings-font-card ${headingFont === font.value ? 'is-active' : ''}`}
-          aria-pressed={headingFont === font.value}
-          onClick={() => setHeadingFont(font.value)}
-        >
-          <span className="settings-font-card-sample" style={{ fontFamily: font.family }}>{font.value === 'latin' ? 'MOHENG' : '经营有据'}</span>
-          <span className="settings-font-card-desc">{font.label} · {font.note}</span>
-        </button>)}
+      <h2 id="appearance-theme-title">主题与外观</h2>
+      <div className="settings-card">
+        <div className="settings-row">
+          <div className="settings-row-copy"><strong>主题</strong><span>选择纸张底色与侧栏墨色；只影响当前浏览器。</span></div>
+          <div className="settings-segment appearance-theme-segment" role="radiogroup" aria-label="主题">
+            {themes.map((choice) => <button key={choice.value} type="button" className={theme === choice.value ? 'is-active' : ''} role="radio" aria-checked={theme === choice.value} onClick={() => setTheme(choice.value)}><i className="appearance-theme-dot" style={{ background: choice.bg }} />{choice.label}</button>)}
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><strong>应用图标</strong><span>浏览器页签图标会同步更新。</span></div>
+          <div className="appearance-icon-row" role="group" aria-label="应用图标">
+            {APP_ICON_IDS.map((id) => <button key={id} type="button" className={`appearance-icon-choice ${appIcon === id ? 'is-active' : ''}`} aria-pressed={appIcon === id} title={APP_ICON_PALETTES[id].note} onClick={() => setAppIcon(id)}><AppIcon id={id} className="appearance-icon-preview" /><span>{APP_ICON_PALETTES[id].label}</span></button>)}
+            <button type="button" className="settings-inline-reset" disabled={appIcon === 'ink'} onClick={() => setAppIcon('ink')}>恢复默认</button>
+          </div>
+        </div>
+        <div className="settings-row">
+          <div className="settings-row-copy"><strong>标题字体</strong><span>用于页面标题、卡片标题与数字标题。</span></div>
+          <div className="settings-segment" role="radiogroup" aria-label="标题字体">
+            {headingFonts.map((font) => <button key={font.value} type="button" className={headingFont === font.value ? 'is-active' : ''} role="radio" aria-checked={headingFont === font.value} style={{ fontFamily: font.family }} onClick={() => setHeadingFont(font.value)}>{font.label}</button>)}
+          </div>
+        </div>
+        <div className="appearance-font-sample settings-font-sample" style={{ fontFamily: headingFontFamily }} aria-hidden="true">账目有据，经营有度。 <span>MOHENG 2026</span></div>
       </div>
     </section>
 

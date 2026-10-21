@@ -3344,6 +3344,33 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   .v6-hero .v6-stats > div + div::before { display: none; }
 }
 
+/* 设置页控件使用标准圆角，比 squircle 在 11px 时更圆润 */
+.settings-content .settings-row-control input,
+.settings-content .settings-row-control textarea,
+.settings-content .settings-row-control .select-control-trigger,
+.settings-content .settings-row-control .date-picker-trigger,
+.settings-content .settings-segment,
+.settings-content .settings-segment button,
+.settings-content .settings-search,
+.settings-content .settings-search input,
+.settings-content .assistant-key-line,
+.settings-content .assistant-field > input,
+.settings-content .assistant-model-add-trigger { corner-shape: round !important; }
+
+/* 界面设置：主题/图标/字体使用 Hana settings rows */
+.appearance-theme-segment { height: 32px; }
+.appearance-theme-segment button { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px; font-size: 10.5px; }
+.appearance-theme-dot { width: 11px; height: 11px; flex: 0 0 11px; border: 1px solid var(--overlay-medium); border-radius: 50%; }
+.appearance-icon-row { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; }
+.appearance-icon-choice { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 50px; height: 50px; padding: 3px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--text-muted); }
+.appearance-icon-choice:hover { background: var(--overlay-subtle); color: var(--text); }
+.appearance-icon-choice.is-active { border-color: color-mix(in srgb, var(--accent) 34%, transparent); background: color-mix(in srgb, var(--accent) 6%, transparent); color: var(--text); }
+.appearance-icon-preview { width: 25px; height: 25px; }
+.appearance-icon-choice span { font-size: 8px; line-height: 1; }
+.appearance-icon-row .settings-inline-reset { margin-left: 4px; }
+.appearance-font-sample.settings-font-sample { min-height: 70px; margin: 0 16px 16px; border: 0; border-radius: 10px; background: var(--overlay-subtle); font-size: 19px; }
+.appearance-font-sample.settings-font-sample span { font-size: 0.68em; }
+
 /* 经营总览区块间距统一到 Hana 24px */
 .overview-page .v6-hero { margin-bottom: var(--space-24); }
 .v6-split { gap: var(--space-24); }
