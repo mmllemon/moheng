@@ -54,7 +54,6 @@ button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .6; }
 input, select, textarea { color: var(--neutral-800); }
-button, a, input, select, textarea { outline-color: var(--accent-500); }
 ::selection { background: transparent; color: var(--accent); }
 
 .app-shell { min-height: 100vh; display: flex; background: var(--neutral-50); }
@@ -233,10 +232,7 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 13px; }
 .form-grid.two-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .form-grid:not(.two-cols) { grid-template-columns: 1fr; }
-.field { display: flex; min-width: 0; flex-direction: column; gap: 6px; }
 .field.span-2 { grid-column: span 2; }
-.field label { color: var(--accent); font-size: 10px; font-weight: 600; }
-.field label b { color: #d7685e; font-weight: 700; }
 .field input, .field select, .field textarea { width: 100%; min-height: 35px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 2px; outline: 0; color: var(--accent); background: #fff; font-size: 11px; transition: border-color .12s, box-shadow .12s; }
 .field textarea { resize: vertical; min-height: 70px; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(83,107,213,.07); }
@@ -578,7 +574,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .login-brand .brand-mark svg, .login-mobile-brand .brand-mark svg { width: 20px; height: 20px; }
 .success-notice, .form-alert { animation: noticeIn .18s ease both; }
 @keyframes noticeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
-:where(button, a, input, select, textarea):focus-visible { outline: 2px solid color-mix(in srgb, var(--accent-500) 80%, transparent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto ; animation-duration: .01ms ; animation-iteration-count: 1 ; transition-duration: .01ms ; }
   .route-transition { animation: none; }
