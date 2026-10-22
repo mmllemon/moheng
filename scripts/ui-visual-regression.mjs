@@ -177,13 +177,12 @@ const shellAudit = await page.evaluate(() => {
     sidebarFooterAlpha: backgroundAlpha('.app-sidebar-footer'),
   };
 });
-// 骨架断言：对齐 hana .float-sidebar 浮片结构
-// 侧栏 left: var(--space-8) = 8px，top: titlebar-h + space-8，高 75vh
+// 骨架断言：侧栏 8px 外边距浮片（x=8），主区从 256 开始
 const shellOk = shellAudit.sidebar?.x === 8
-  && shellAudit.sidebar?.y === 52
+  && shellAudit.sidebar?.y === 8
   && shellAudit.sidebar?.width === 240
   && shellAudit.titlebar?.height === 44
-  && shellAudit.main?.x === 246
+  && shellAudit.main?.x === 256
   && shellAudit.settings?.width === 960
   && shellAudit.settings?.height === 840
   && shellAudit.settingsNav?.width === 208

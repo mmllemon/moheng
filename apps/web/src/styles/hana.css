@@ -387,7 +387,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
    Shell：Hana 的 240px 内嵌纸卡 + 44px 透明标题层
    ============================================================= */
 .app-shell {
-  display: block;
+  /* moheng 的 DOM 是 .app-shell > .app-sidebar + .app-main 同级，
+     与 hana 的 .app-shell > .titlebar + .app > (.sidebar + .main-content) 不同。
+     所以这里用 row 横向排列，侧栏与主区左右占位。 */
+  display: flex;
+  flex-direction: row;
   height: 100vh;
   height: 100dvh;
   min-height: 0;
@@ -395,56 +399,35 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: transparent;
 }
 .app-sidebar {
-  /* 对齐 hana .float-sidebar + .float-sidebar-panel-left 整套机制（styles.css:472-566）。
-
-     hana 的浮出侧栏由两层组成：
-       .float-sidebar            容器，负责 data-stage 驱动的进出场动画
-       .float-sidebar-panel-left 内层，承担圆角外框 + 边框 + 阴影
-
-     moheng 只有一层，所以两者合并：.app-sidebar 既做进出场，也做外框。
-     默认状态是移出视口（transform 负值），由 data-stage="idle" 滑入。 */
-  position: fixed;
-  z-index: 60;
-  top: calc(var(--titlebar-h) + var(--space-8));
-  left: var(--space-8);
-  height: 75vh;
+  /* 圆角细框 + 双层阴影，对齐 hana .float-sidebar-panel-left（styles.css:544）。
+     用户明确要这个视觉。不要用“弹层 vs 常驻”的概念去否定它。 */
+  position: relative;
+  flex-shrink: 0;
   width: var(--sidebar-width);
+  height: calc(100% - var(--space-8) * 2);
+  margin: var(--space-8);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--sidebar-bg);
+  /* hana 的侧栏分线是 .sidebar 的 border-right（styles.css:626），
+     加上圆角外框后两者叠加：外框走圆角卡片，中间竖线走右边。 */
   border: 1px solid var(--overlay-medium);
-  border-radius: calc(var(--radius-lg) * var(--corner-radius-scale, 1));
+  border-right-color: var(--overlay-light);
+  /* hana 的 warm-paper 主题把 --radius-lg 重定义为 4px（themes/new-warm-paper.css:68），
+     不是 styles.css 里基础定义的 12px。实际渲染 = 4 × 1.8408964 ≅ 7.4px。 */
+  border-radius: calc(4px * var(--corner-radius-scale, 1));
   corner-shape: squircle;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
   color: var(--text);
-  transform: translateX(calc(-100% - var(--panel-edge-gap)));
+  z-index: 10;
+  transition: width var(--duration-slow) var(--ease-out), border-color var(--duration-slow) var(--ease-out);
 }
 /* hana .float-sidebar[data-stage] 的动画参数：--duration-slow + --ease-smooth，forwards 保留终态 */
-.app-sidebar[data-stage="enter"],
-.app-sidebar[data-stage="exit"] {
-  animation-duration: var(--duration-slow);
-  animation-timing-function: var(--ease-smooth);
-  animation-fill-mode: forwards;
-}
-.app-sidebar[data-stage="enter"] { animation-name: app-sidebar-in-left; }
-.app-sidebar[data-stage="exit"] { animation-name: app-sidebar-out-left; }
-.app-sidebar[data-stage="idle"] { transform: translateX(0); }
-@keyframes app-sidebar-in-left {
-  from { transform: translateX(calc(-100% - var(--panel-edge-gap))); }
-  to { transform: translateX(0); }
-}
-@keyframes app-sidebar-out-left {
-  from { transform: translateX(0); }
-  to { transform: translateX(calc(-100% - var(--panel-edge-gap))); }
-}
-/* 无障碍：减弱动效时不播动画，直接到位（hana styles.css:526） */
-@media (prefers-reduced-motion: reduce) {
-  .app-sidebar[data-stage="enter"],
-  .app-sidebar[data-stage="exit"] { animation: none; }
-  .app-sidebar[data-stage="enter"],
-  .app-sidebar[data-stage="idle"] { transform: translateX(0); }
-}
+/* hana .sidebar.collapsed（styles.css:633）：宽度归零 + 边框透明，内部内容 opacity 归零 */
+.app-shell.sidebar-collapsed .app-sidebar { width: 0; border-right-color: transparent; overflow: hidden; }
+.app-shell.sidebar-collapsed .app-sidebar > * { opacity: 0; pointer-events: none; transition: opacity var(--duration-fast) var(--ease-out); }
+.app-shell.sidebar-collapsed .titlebar-restore { display: inline-grid !important; }
 .app-sidebar::before,
 .app-sidebar::after {
   content: "";
@@ -535,9 +518,10 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 50%;
-  border: 1px solid var(--overlay-medium);
-  background: var(--bg-card);
+  /* AppIcon 自带 rx=14 的圆角方形，不要再切成圆，也不再加边框。 */
+  border-radius: 0;
+  border: 0;
+  background: transparent;
   color: var(--text);
 }
 .sidebar-brand-mark .brand-mark {
@@ -630,6 +614,8 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .sidebar-projects {
   margin-top: var(--space-2);
   padding-top: var(--space-10);
+  /* hana 的侧栏内分隔线走 --border（warm-paper 里是 rgba(122,96,88,.18)），
+     比 --overlay-light 明显。这不是多余元素，是 hana 原有的视觉分隔。 */
   border-top: 1px solid var(--border);
 }
 .sidebar-project-list { display: flex; flex-direction: column; gap: 1px; }
@@ -687,6 +673,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .sidebar-project-all:hover { background: var(--overlay-light); color: var(--accent); }
 
 .app-sidebar-footer {
+  /* hana 侧栏底部同样用 --border 一条横线分隔固定区。 */
   flex: 0 0 auto;
   padding: var(--space-8);
   border-top: 1px solid var(--border);
@@ -719,15 +706,14 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .sidebar-footer-icon { width: 32px; height: 32px; flex-basis: 32px; }
 
 .app-main {
-  height: 100vh;
-  height: 100dvh;
+  flex: 1;
+  height: 100%;
   min-width: 0;
-  margin-left: calc(var(--sidebar-width) + var(--panel-edge-gap));
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   position: relative;
-  transition: margin-left var(--duration-slow) var(--ease-out);
+  overflow: hidden;
 }
 .app-titlebar {
   position: relative;
