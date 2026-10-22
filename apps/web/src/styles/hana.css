@@ -727,9 +727,9 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   max-width: 32vw;
   overflow: hidden;
   color: var(--text);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: none;
   white-space: nowrap;
   text-overflow: ellipsis;
