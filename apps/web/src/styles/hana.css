@@ -749,11 +749,18 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .titlebar-context .titlebar-wordmark { color: var(--text-light); font-weight: 600; letter-spacing: 0.14em; }
 .titlebar-context .titlebar-separator { color: color-mix(in srgb, var(--text-muted) 45%, transparent); }
 .titlebar-context strong {
+  /* 对齐 hana 会话标题（ChatTranscript ._chatTitleText）：
+       font-size: var(--fs-title)  = 1rem = 16px
+       font-weight: 700
+       line-height: 1.08
+       color: var(--accent)
+     hana 顶栏本身只有图标按钮，页面标题是叠在它上面的会话标题层。 */
   max-width: 32vw;
   overflow: hidden;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
+  color: var(--accent);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.08;
   letter-spacing: 0.01em;
   text-transform: none;
   white-space: nowrap;
