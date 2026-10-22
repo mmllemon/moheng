@@ -88,6 +88,7 @@
   --duration-instant: 0.1s;
   --duration-fast: 0.15s;
   --duration-slow: 0.25s;
+  --duration-spinner: 0.8s;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-smooth: cubic-bezier(0.22, 0.68, 0, 1);
@@ -691,6 +692,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
   transition: margin-left var(--duration-slow) var(--ease-out);
 }
 .app-titlebar {
@@ -2484,7 +2486,7 @@ html[data-paper-texture] .dialog::after {
 .empty-state h3 { font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
 .empty-state p { max-width: 360px; margin: 5px 0 14px; color: var(--text-muted); font-size: 11px; line-height: 1.65; }
 .loading-block { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 34px; color: var(--text-muted); font-size: 11px; }
-.spinner { width: 14px; height: 14px; border: 1.5px solid var(--overlay-strong); border-top-color: var(--accent); border-radius: 50%; animation: hana-spin 0.8s linear infinite; }
+.spinner { width: 14px; height: 14px; border: 1.5px solid var(--overlay-strong); border-top-color: var(--accent); border-radius: 50%; animation: hana-spin var(--duration-spinner) linear infinite; }
 .full-screen-loading { min-height: 100vh; display: grid; place-items: center; background: var(--bg); }
 
 /* Hana 右键菜单 */
