@@ -42,26 +42,10 @@
 }
 
 *{box-sizing:border-box}
-html,body{margin:0;min-height:100%}
-body{
-  background:var(--paper);
-  background-image:url("/textures/xuan-1024.webp"),linear-gradient(180deg,#faf8f2 0%,#f4f1e7 100%);
-  background-size:1024px 1024px,cover;
-  background-repeat:repeat,no-repeat;
-  background-attachment:fixed,scroll;
-  background-blend-mode:multiply,normal;
-  color:var(--ink-2);
-  font:12.5px/1.65 var(--font);
-  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
-}
 body *::before,body *::after{box-sizing:border-box}
 h1,h2,h3,h4,h5,h6,p,dl,dd,dt,figure{margin:0}
-h1{font-family:var(--serif);font-size:34px;font-weight:600;line-height:1.35;letter-spacing:.04em;color:var(--ink)}
-h2{font-family:var(--serif);font-size:21px;font-weight:600;line-height:1.4;letter-spacing:.03em;color:var(--ink)}
 h3{font-size:15px;font-weight:600;line-height:1.45;color:var(--ink);letter-spacing:.02em}
 p{font-size:12.5px;line-height:1.7;color:var(--meta)}
-small{font-size:11px}
-a{color:var(--accent);text-decoration:none}
 button{font-family:var(--font)}
 ::selection{background:#e7d7b6;color:var(--ink)}
 :where(button,a,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--bronze);outline-offset:2px}
