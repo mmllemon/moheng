@@ -72,14 +72,14 @@ const settingsSearchAliases: Record<string, string[]> = {
   '/audit-logs': ['审计', '日志', '操作记录', '追溯'],
 };
 const costWorkspacePages = [
-  { to: '/cost', label: '项目驾驶舱' },
-  { to: '/cost/contracts', label: '业主主合同' },
-  { to: '/cost/budget', label: '预算与目标成本' },
-  { to: '/cost/progress-bills', label: '进度款管理' },
+  { to: '/cost', label: '驾驶舱' },
+  { to: '/cost/contracts', label: '主合同' },
+  { to: '/cost/budget', label: '预算成本' },
+  { to: '/cost/progress-bills', label: '进度款' },
   { to: '/cost/changes', label: '变更签证' },
-  { to: '/cost/owner-finance', label: '竣工结算与应收' },
-  { to: '/cost/downstream', label: '分供合同与结算' },
-  { to: '/cost/costs', label: '实际成本录入' },
+  { to: '/cost/owner-finance', label: '结算与应收' },
+  { to: '/cost/downstream', label: '分供合同' },
+  { to: '/cost/costs', label: '实际成本' },
   { to: '/cost/analysis', label: '成本分析' },
 ];
 type QuickItem = { kind: 'page' | 'project'; id: string; title: string; sub: string; to: string };
