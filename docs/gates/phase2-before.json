@@ -1,0 +1,76 @@
+{
+ "sidebarTitlebar": {
+  "w": 238,
+  "h": 44,
+  "x": 7,
+  "y": 7,
+  "padding": "0px 10px",
+  "paddingLeft": "10px",
+  "display": "flex",
+  "gap": "4px"
+ },
+ "toggles": [
+  {
+   "w": 32,
+   "h": 32,
+   "x": 17
+  },
+  {
+   "w": 32,
+   "h": 32,
+   "x": 53
+  }
+ ],
+ "sidebarProfile": {
+  "w": 238,
+  "h": 45,
+  "x": 7,
+  "y": 51,
+  "padding": "6px 12px 8px",
+  "paddingLeft": "12px",
+  "display": "flex",
+  "gap": "8px"
+ },
+ "sidebarScroll": {
+  "w": 238,
+  "h": 740,
+  "x": 7,
+  "y": 96,
+  "padding": "2px 8px 8px",
+  "paddingLeft": "8px",
+  "display": "block",
+  "gap": "normal"
+ },
+ "sidebarFooter": {
+  "w": 238,
+  "h": 57,
+  "x": 7,
+  "y": 836,
+  "padding": "8px",
+  "paddingLeft": "8px",
+  "display": "block",
+  "gap": "normal"
+ },
+ "sidebarUserRow": {
+  "w": 222,
+  "h": 40,
+  "x": 15,
+  "y": 845,
+  "padding": "4px",
+  "paddingLeft": "4px",
+  "display": "flex",
+  "gap": "8px"
+ },
+ "appTitlebar": {
+  "w": 1194,
+  "h": 44,
+  "x": 246,
+  "y": 0,
+  "padding": "0px 12px 0px 24px",
+  "paddingLeft": "24px",
+  "display": "flex",
+  "gap": "12px"
+ },
+ "firstToggleOffset": 11,
+ "titlebarFirstChildX": 0
+}
