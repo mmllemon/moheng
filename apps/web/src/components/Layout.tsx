@@ -13,6 +13,7 @@ import { useAuthStore, useUiStore } from '../auth-store';
 import type { Project } from '../types';
 
 import BrandMark from './BrandMark';
+import AppIcon from './AppIcon';
 import ConfirmHost from './ConfirmDialog';
 import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
@@ -108,6 +109,7 @@ export default function Layout() {
   const setSelectedProjectId = useUiStore((state) => state.setSelectedProjectId);
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  const appIcon = useUiStore((state) => state.appIcon);
   const [quickSearch, setQuickSearch] = useState('');
   const [commandScope, setCommandScope] = useState<CommandScope>('all');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -409,7 +411,7 @@ export default function Layout() {
         <span className="sidebar-toolbar-spacer" />
       </div>
       <div className="app-sidebar-profile">
-        <span className="sidebar-brand-mark"><BrandMark /></span>
+        <span className="sidebar-brand-mark"><AppIcon id={appIcon} /></span>
         <div className="sidebar-wordmark"><strong>墨衡</strong><span>工程经营管理</span></div>
         <button type="button" className="sidebar-profile-action" onClick={() => navigate('/projects')} data-tooltip="项目档案" aria-label="打开项目档案"><FolderKanban size={14} /></button>
       </div>
