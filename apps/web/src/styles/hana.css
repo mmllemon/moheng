@@ -414,9 +414,11 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
      加上圆角外框后两者叠加：外框走圆角卡片，中间竖线走右边。 */
   border: 1px solid var(--overlay-medium);
   border-right-color: var(--overlay-light);
-  /* hana 的 warm-paper 主题把 --radius-lg 重定义为 4px（themes/new-warm-paper.css:68），
-     不是 styles.css 里基础定义的 12px。实际渲染 = 4 × 1.8408964 ≅ 7.4px。 */
-  border-radius: calc(4px * var(--corner-radius-scale, 1));
+  /* 圆角取 --radius-lg 基础值 12px × 1.8408964 = 22.09px。
+     hana 实际只加载 themes/warm-paper.css，该文件没有 radius 重定义，
+     所以用的是 styles.css:28 的 12px。（new-warm-paper.css 里确实有 4px，
+     但那不是当前加载的主题文件。） */
+  border-radius: calc(var(--radius-lg) * var(--corner-radius-scale, 1));
   corner-shape: squircle;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
   color: var(--text);
@@ -613,9 +615,8 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 
 .sidebar-projects {
   margin-top: var(--space-2);
+  margin-inline: var(--space-12);
   padding-top: var(--space-10);
-  /* hana 的侧栏内分隔线走 --border（warm-paper 里是 rgba(122,96,88,.18)），
-     比 --overlay-light 明显。这不是多余元素，是 hana 原有的视觉分隔。 */
   border-top: 1px solid var(--border);
 }
 .sidebar-project-list { display: flex; flex-direction: column; gap: 1px; }
@@ -673,9 +674,9 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .sidebar-project-all:hover { background: var(--overlay-light); color: var(--accent); }
 
 .app-sidebar-footer {
-  /* hana 侧栏底部同样用 --border 一条横线分隔固定区。 */
   flex: 0 0 auto;
-  padding: var(--space-8);
+  margin-inline: var(--space-12);
+  padding: var(--space-8) 0;
   border-top: 1px solid var(--border);
   background: transparent;
 }
@@ -724,7 +725,11 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   align-items: center;
   gap: var(--space-12);
   padding: 0 var(--space-12);
-  /* 对齐 hana .titlebar：有底色 + 一条细底边，不是透明悬浮。 */
+  /* hana 主界面 .titlebar（styles.css:356）：
+     background-color: var(--bg) + border-bottom: 1px solid var(--overlay-light)。
+     --overlay-light 只有 5% 不透明度，所以底边极淡。
+     （注：ChatTranscript 里的 ._topbar 是看图/预览模式的全屏遮罩，
+       深色渐变配白字，不适用于主界面。） */
   background: var(--bg);
   border-bottom: 1px solid var(--overlay-light);
   pointer-events: none;
