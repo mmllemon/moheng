@@ -2176,28 +2176,80 @@ html .filter-bar input[type="search"] {
 .v6-todo-meta { color: var(--text-muted); font-size: 9.5px; }
 
 /* 成本工作台：从下划线 tab 改为 Hana 的轻量 pill 导航 */
+.cost-workspace { min-height: 100%; position: relative; }
+/* 底部悬浮胶囊导航
+   定位机制照 hana .input-area（mobile-kfy_1ie4.css）：
+     position: absolute; bottom: 0; left: 0; right: 0
+     z-index: 5; padding: 0 --space-24 --space-24
+     background: transparent; pointer-events: none
+   胶囊本体照 hana ._input-wrapper（PlanModeButton.css）：
+     background: --bg-card; border: 1px solid --overlay-medium
+     border-radius: calc(--radius-chat-surface * --corner-radius-scale)
+     box-shadow: --shadow-xs-soft
+   子元素 max-width: --chat-input-column-width 且居中（.input-area > *） */
 .cost-workspace { min-height: 100%; }
+/* 底部悬浮胶囊导航
+   定位机制照 hana .input-area（mobile-kfy_1ie4.css）：
+     position: absolute; bottom: 0; left: 0; right: 0
+     background: transparent; pointer-events: none
+   胶囊本体照 hana ._input-wrapper（PlanModeButton.css）：
+     background: --bg-card; border: 1px solid --overlay-medium
+     border-radius: calc(--radius-chat-surface * --corner-radius-scale)
+     box-shadow: --shadow-xs-soft
+   注意：不能用 absolute 相对 .cost-workspace —— 它随内容长高，
+   胶囊会被推到页面外。改用 sticky + bottom，让它在滚动容器里钉在底部。 */
 .cost-workspace-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 25;
+  /* 底部悬浮胶囊。用 fixed 钉在视口底部，
+     水平居中于卡片区（卡片 x=246，宽 1188）。
+     对齐 hana .input-area：bottom: 0 + padding-bottom: --space-24。 */
+  position: fixed;
+  bottom: var(--space-24);
+  /* 左侧留出侧栏宽度 + 边距，让胶囊在卡片区内居中 */
+  left: calc(var(--sidebar-width) + var(--panel-edge-gap) * 2);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0;
+  width: fit-content;
+  max-width: calc(100% - var(--space-24) * 2);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-12);
+  overflow: visible;
+  background: var(--bg-card);
+  border: 1px solid var(--overlay-medium);
+  border-radius: calc(var(--radius-chat-surface, 16px) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  box-shadow: var(--shadow-xs-soft);
+  transition: border-color var(--duration-slow) var(--ease-out), box-shadow var(--duration-slow) var(--ease-out);
+}
+.cost-workspace-tabs:hover { border-color: #00000024; box-shadow: 0 1px 2px #00000008; }
+/* 侧栏折叠时胶囊跟着往左靠 */
+.app-shell.sidebar-collapsed .cost-workspace-tabs { left: 0; }
+.cost-workspace-tabs::-webkit-scrollbar { display: none; }
+.cost-workspace-nav-overview,
+.cost-workspace-nav-group,
+.cost-workspace-nav-group-tabs {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-6) var(--space-32);
-  overflow-x: auto;
+  gap: 2px;
+  background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
   box-shadow: none;
-  backdrop-filter: blur(16px);
-  scrollbar-width: none;
+  pointer-events: auto;
 }
-.cost-workspace-tabs::-webkit-scrollbar { display: none; }
-.cost-workspace-nav-overview, .cost-workspace-nav-group, .cost-workspace-nav-group-tabs { display: flex; align-items: center; gap: 2px; background: transparent; border: 0; box-shadow: none; }
-.cost-workspace-nav-separator { width: 1px; height: 14px; margin: 0 8px; background: var(--border); display: inline-flex; flex: 0 0 1px; }
+.cost-workspace-nav-overview { padding-left: var(--space-8); }
+.cost-workspace-nav-group:last-child { padding-right: var(--space-8); }
+.cost-workspace-nav-separator {
+  width: 1px;
+  height: 14px;
+  margin: 0 var(--space-8);
+  background: var(--border);
+  display: inline-flex;
+  flex: 0 0 1px;
+  pointer-events: auto;
+}
 .cost-workspace-tab {
   display: inline-flex;
   align-items: center;
@@ -2218,7 +2270,7 @@ html .filter-bar input[type="search"] {
 .cost-workspace-tab:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent-light); }
 .cost-workspace-tab.active { background: var(--accent-light); border-color: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); font-weight: 600; }
 .cost-workspace-tab.active::before { display: none !important; content: none !important; }
-.cost-workspace-content .page-wrap { padding-top: 20px; }
+.cost-workspace-content .page-wrap { padding-top: 20px; padding-bottom: 120px; }
 
 /* =============================================================
    外观菜单
