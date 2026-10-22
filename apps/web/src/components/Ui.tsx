@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { ArrowDownRight, ArrowUpRight, Plus, Search, type LucideIcon } from 'lucide-react';
 
 export function Section({ title, subtitle, actions, icon: Icon, children, className = '' }: {
@@ -26,15 +27,21 @@ export function SettingsSection({ title, description, actions, children, hidden 
 }
 
 export function PageHeader({ title: _title, subtitle, context, actions }: { title: string; subtitle?: string; context?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
-  /* 对齐 hana 的页面骨架：hana 的会话窗口没有页面级大标题，
-     当前所在位置由顶栏的会话标题层承担（对应 moheng 顶栏的页面名）。
-     这里保留 title 参数以兼容调用方，但不再渲染 h1。
-     说明文字和操作按钮仍然保留。 */
-  const body = context ?? (subtitle ? <p>{subtitle}</p> : null);
-  if (!body && !actions) return null;
+  /* 对齐 hana 的页面骨架：会话窗口没有页面级大标题，
+     当前上下文由顶栏的会话标题层承担（对应 moheng 顶栏的页面名）。
+     副标题（说明文字）也上提到顶栏，跟标题并排（hana ._chatTitleStack）。
+     这里用 effect 把副标题写入顶栏的 [data-page-subtitle] 容器，
+     页面主体不再渲染页头。 */
+  useEffect(() => {
+    const slot = document.querySelector('[data-page-subtitle]');
+    if (!slot) return;
+    slot.textContent = subtitle ?? '';
+    return () => { slot.textContent = ''; };
+  }, [subtitle]);
+
+  if (!actions) return null;
   return <div className="page-header">
-    {body ? <div className="page-header-copy">{body}</div> : null}
-    {actions && <div className="page-actions">{actions}</div>}
+    <div className="page-actions">{actions}</div>
   </div>;
 }
 

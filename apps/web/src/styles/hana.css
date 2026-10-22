@@ -88,6 +88,10 @@
      会话窗口的内容列是 max-width + margin auto 居中，这里同样处理。 */
   --page-column-width: 720px;
   --page-column-width-wide: 1080px;
+  /* hana 的阅读/聊天宽度四档（SettingsModalShell.js 里的 vf 数组）：
+       640 / 720 / 800 / unlimited
+     默认 720。这里用 data-page-width 属性切换。 */
+  --page-column-measure: var(--page-column-width);
 
   --duration-instant: 0.1s;
   --duration-fast: 0.15s;
@@ -721,33 +725,39 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   overflow: hidden;
 }
 .app-titlebar {
+  /* 对齐 hana 会话标题层 ._chatTitleBar（ChatTranscript）：
+       width: 100%; max-width: 100%; flex: 1 1 auto
+     它跟内容同宽，不是通栏。宽度由 .app-main 决定。
+     （hana 的 _windowTitlebar 26px 是桌面窗口拖拽条，里面只有品牌图标+名字，
+       不属于浏览器端 moheng 需要复刻的范围。） */
   position: relative;
   z-index: 50;
   flex: 0 0 44px;
   height: 44px;
+  /* 与内容列同宽（用户要求：标题栏和聊天宽度同宽）。
+     宽度取 --page-column-measure，跟 .page-wrap 一致，居中。 */
+  width: 100%;
+  max-width: var(--page-column-measure);
+  margin: 0 auto;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: var(--space-12);
+  gap: var(--space-8);
   padding: 0 var(--space-12);
-  /* hana 主界面 .titlebar（styles.css:356）：
-     background-color: var(--bg) + border-bottom: 1px solid var(--overlay-light)。
-     --overlay-light 只有 5% 不透明度，所以底边极淡。
-     （注：ChatTranscript 里的 ._topbar 是看图/预览模式的全屏遮罩，
-       深色渐变配白字，不适用于主界面。） */
-  background: var(--bg);
-  border-bottom: 1px solid var(--overlay-light);
+  /* hana 的会话标题层没有底色也没有底边，只是浮在内容上的一段文字。 */
+  background: transparent;
   pointer-events: none;
 }
 .titlebar-context {
+  /* 对齐 hana ._chatTitleStack：inline-flex, align-items: flex-end, gap: var(--space-8)
+     标题与副标题并排，不是上下堆叠。 */
   min-width: 0;
-  flex: 0 1 auto;
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: var(--space-8);
   color: var(--text-muted);
-  font-size: 10.5px;
-  letter-spacing: 0.085em;
-  text-transform: uppercase;
   pointer-events: auto;
 }
 .titlebar-context .titlebar-wordmark { color: var(--text-light); font-weight: 600; letter-spacing: 0.14em; }
@@ -770,6 +780,24 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* 副标题：对齐 hana ._chatTitleStatus
+     font-size: var(--fs-hint)
+     color: var(--text-muted)
+     opacity: .78
+     与标题并排，基线对齐（align-items: flex-end） */
+.titlebar-subtitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  font-weight: 500;
+  line-height: 1;
+  opacity: 0.78;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.titlebar-subtitle:empty { display: none; }
 .titlebar-actions {
   margin-left: auto;
   display: flex;
@@ -894,14 +922,19 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   /* 对齐 hana 会话窗口骨架（ChatTranscript ._virtualTranscriptItemInner）：
        max-width: var(--chat-column-width)
        margin-left: auto; margin-right: auto
-     内容列固定宽度、居中，不随视口拉伸。
-     moheng 原来写死 1320px，宽度不受控。 */
+     内容列固定宽度、居中。宽度由 --page-column-measure 控制，
+     对应 hana 的四档：640 / 720 / 800 / unlimited。 */
   width: 100%;
-  max-width: var(--page-column-width-wide);
+  max-width: var(--page-column-measure);
   margin: 0 auto;
   padding: 22px 28px 44px;
   animation: none;
 }
+/* 四档宽度，对齐 hana vf 数组 */
+html[data-page-width="640"] { --page-column-measure: 640px; }
+html[data-page-width="720"] { --page-column-measure: 720px; }
+html[data-page-width="800"] { --page-column-measure: 800px; }
+html[data-page-width="unlimited"] { --page-column-measure: 100%; }
 .page-header {
   display: flex;
   align-items: flex-end;
@@ -3131,6 +3164,37 @@ html[data-paper-texture] .settings-window::after { display: block; }
   background: var(--overlay-medium);
   cursor: pointer;
   transition: background var(--duration-fast);
+}
+/* 内容宽度四档选择器（对齐 hana readingWidth 的分段控件） */
+.settings-width-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--overlay-light);
+}
+.settings-width-option {
+  min-width: 46px;
+  padding: var(--space-4) var(--space-10);
+  border: 0;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.settings-width-option:hover { color: var(--text-light); }
+.settings-width-option.is-active {
+  background: var(--bg-card);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px var(--shadow);
 }
 .settings-toggle i { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; corner-shape: round; background: var(--bg-card); box-shadow: var(--shadow-xs); transition: transform var(--duration-fast) var(--ease-out); }
 .settings-toggle.is-on { background: var(--accent); }

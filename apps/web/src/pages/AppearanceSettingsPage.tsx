@@ -35,7 +35,8 @@ export default function AppearanceSettingsPage() {
   const theme = useUiStore((state) => state.theme);
   const density = useUiStore((state) => state.density);
   const reduceMotion = useUiStore((state) => state.reduceMotion);
-  const wideContent = useUiStore((state) => state.wideContent);
+  const pageWidth = useUiStore((state) => state.pageWidth);
+  const setPageWidth = useUiStore((state) => state.setPageWidth);
   const paperTexture = useUiStore((state) => state.paperTexture);
   const paperTextureStrength = useUiStore((state) => state.paperTextureStrength);
   const headingFont = useUiStore((state) => state.headingFont);
@@ -44,7 +45,6 @@ export default function AppearanceSettingsPage() {
   const setTheme = useUiStore((state) => state.setTheme);
   const setDensity = useUiStore((state) => state.setDensity);
   const toggleReduceMotion = useUiStore((state) => state.toggleReduceMotion);
-  const toggleWideContent = useUiStore((state) => state.toggleWideContent);
   const setPaperTexture = useUiStore((state) => state.setPaperTexture);
   const setPaperTextureStrength = useUiStore((state) => state.setPaperTextureStrength);
   const setHeadingFont = useUiStore((state) => state.setHeadingFont);
@@ -131,8 +131,12 @@ export default function AppearanceSettingsPage() {
           </div>
         </div>
         <div className="settings-row">
-          <div className="settings-row-copy"><strong>宽屏内容</strong><span>减少两侧留白，显示更多业务列。</span></div>
-          <button type="button" className={`settings-toggle ${wideContent ? 'is-on' : ''}`} role="switch" aria-checked={wideContent} aria-label="宽屏内容" onClick={toggleWideContent}><i /></button>
+          <div className="settings-row-copy"><strong>内容宽度</strong><span>控制页面正文的最大宽度，对齐 Hana 的阅读宽度四档。</span></div>
+          <div className="settings-width-choice" role="radiogroup" aria-label="内容宽度">
+            {([['640', '640'], ['720', '720'], ['800', '800'], ['unlimited', '不限']] as const).map(([value, label]) => (
+              <button key={value} type="button" role="radio" aria-checked={pageWidth === value} className={`settings-width-option ${pageWidth === value ? 'is-active' : ''}`} onClick={() => setPageWidth(value)}>{label}</button>
+            ))}
+          </div>
         </div>
       </div>
     </section>

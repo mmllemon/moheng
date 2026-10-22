@@ -469,6 +469,7 @@ export default function Layout() {
         <button type="button" className="titlebar-icon titlebar-mobile-menu" data-tooltip={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={17} /> : <Menu size={17} />}</button>
         <div className="titlebar-context">
           <strong>{currentPageLabel}</strong>
+          <span className="titlebar-subtitle" data-page-subtitle />
           {!isGlobalContext && activeProject && <><span className="titlebar-separator">·</span><span className="titlebar-project-code">{activeProject.code}</span></>}
         </div>
         <div className="titlebar-actions">

@@ -3,6 +3,13 @@ import { applyAppIcon, normalizeAppIcon, type AppIconId } from './lib/app-icon';
 import type { User } from './types';
 
 export type RestrictedAuthFlow = 'mfa-enrollment' | 'password-change';
+/* 内容宽度四档，对齐 hana readingWidth（SettingsModalShell 的 vf 数组）：
+   640 / 720 / 800 / unlimited，默认 720。 */
+export type PageWidth = '640' | '720' | '800' | 'unlimited';
+export const PAGE_WIDTHS: PageWidth[] = ['640', '720', '800', 'unlimited'];
+export function normalizePageWidth(value: unknown): PageWidth {
+  return value === '640' || value === '800' || value === 'unlimited' ? value : '720';
+}
 type AuthState = {
   accessToken: string | null;
   user: User | null;
@@ -41,6 +48,10 @@ type UiPreferences = {
   density: UiDensity;
   accent: UiAccent;
   reduceMotion: boolean;
+  /* 内容宽度四档，对齐 hana 的 readingWidth（SettingsModalShell vf 数组）：
+     '640' | '720' | '800' | 'unlimited'，默认 '720'。
+     旧的布尔 wideContent 保留字段但不再驱动宽度，避免旧配置丢失。 */
+  pageWidth: PageWidth;
   wideContent: boolean;
   paperTexture: PaperTextureStyle;
   paperTextureStrength: number;
@@ -54,6 +65,7 @@ const defaultUiPreferences: UiPreferences = {
   density: 'comfortable',
   accent: 'theme',
   reduceMotion: false,
+  pageWidth: '720',
   wideContent: false,
   paperTexture: 'rice',
   paperTextureStrength: 1,
@@ -76,6 +88,7 @@ function readUiPreferences(): UiPreferences {
       density: value.density === 'compact' ? 'compact' : 'comfortable',
       accent: value.accent === 'indigo' || value.accent === 'jade' || value.accent === 'cinnabar' ? value.accent : 'theme',
       reduceMotion: Boolean(value.reduceMotion),
+      pageWidth: normalizePageWidth(value.pageWidth),
       wideContent: Boolean(value.wideContent),
       paperTexture,
       paperTextureStrength: normalizePaperTextureStrength(Number(value.paperTextureStrength ?? 1)),
@@ -96,6 +109,7 @@ export function applyUiPreferences(value: UiPreferences) {
   root.dataset.theme = value.theme;
   root.dataset.density = value.density;
   root.dataset.motion = value.reduceMotion ? 'reduced' : 'full';
+  root.dataset.pageWidth = value.pageWidth;
   root.dataset.contentWidth = value.wideContent ? 'wide' : 'standard';
   root.dataset.headingFont = value.headingFont;
   root.dataset.appIcon = value.appIcon;
@@ -125,6 +139,7 @@ type UiState = UiPreferences & {
   setDensity: (density: UiDensity) => void;
   setAccent: (accent: UiAccent) => void;
   toggleReduceMotion: () => void;
+  setPageWidth: (width: PageWidth) => void;
   toggleWideContent: () => void;
   setPaperTexture: (texture: PaperTextureStyle) => void;
   setPaperTextureStrength: (strength: number) => void;
@@ -140,6 +155,7 @@ function preferencesFromState(state: UiState): UiPreferences {
     density: state.density,
     accent: state.accent,
     reduceMotion: state.reduceMotion,
+    pageWidth: state.pageWidth,
     wideContent: state.wideContent,
     paperTexture: state.paperTexture,
     paperTextureStrength: state.paperTextureStrength,
@@ -167,6 +183,7 @@ export const useUiStore = create<UiState>((set) => ({
   setDensity: (density) => set((state) => updateUiPreferences(set, state, { density })),
   setAccent: (accent) => set((state) => updateUiPreferences(set, state, { accent })),
   toggleReduceMotion: () => set((state) => updateUiPreferences(set, state, { reduceMotion: !state.reduceMotion })),
+  setPageWidth: (pageWidth) => set((state) => updateUiPreferences(set, state, { pageWidth })),
   toggleWideContent: () => set((state) => updateUiPreferences(set, state, { wideContent: !state.wideContent })),
   setPaperTexture: (paperTexture) => set((state) => updateUiPreferences(set, state, { paperTexture })),
   setPaperTextureStrength: (strength) => set((state) => updateUiPreferences(set, state, { paperTextureStrength: normalizePaperTextureStrength(strength) })),
