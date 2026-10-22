@@ -194,8 +194,6 @@ kbd{padding:1px 5px;border:1px solid var(--line);border-radius:2px;background:#f
 .data-table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;background:transparent}
 .data-table tbody td{padding:11px 12px;border-bottom:1px solid var(--line);background:transparent;color:var(--ink-2);font-size:12.5px;vertical-align:middle}
 .data-table tbody tr td:first-child{border-radius:0}
-.data-table tbody tr:hover td{background:#f6f1e5}
-.data-table tbody tr:hover td:first-child{box-shadow:inset 2px 0 0 var(--bronze)}
 .data-table th:first-child,.data-table td:first-child{padding-left:12px}
 .data-table th:last-child,.data-table td:last-child{padding-right:12px}
 .data-table .num,.data-table .align-right{text-align:right;white-space:nowrap}

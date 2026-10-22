@@ -274,7 +274,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .table-heading-actions { display: flex; align-items: center; gap: 8px; }
 .table-scroll { width: 100%; overflow-x: auto; }
 .data-table tbody td { padding: 11px 13px; border-bottom: 1px solid #f0f2f6; color: var(--accent); vertical-align: middle; }
-.data-table tbody tr:hover td { background: #fcfcff; }
 .data-table tfoot td { padding: 12px 13px; border-top: 1px solid var(--line); color: var(--accent); background: #fafbff; font-size: 10px; font-weight: 700; }
 .numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .align-right { text-align: right ; }
