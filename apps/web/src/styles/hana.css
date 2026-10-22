@@ -884,7 +884,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   margin-top: var(--space-6);
   color: var(--text-muted);
   font-size: 11.5px;
-  line-height: 1.65;
+  line-height: 1.7;
   letter-spacing: 0.01em;
 }
 .page-context {
@@ -5073,7 +5073,7 @@ html[data-paper-texture] .settings-content .page-header::after { display: block;
 /* 系统设置内容：标题更克制，说明更短 */
 .settings-content .page-header { margin-bottom: 22px; padding-right: 84px; }
 .settings-content .page-header h1 { font-family: var(--font-ui); font-size: 17px; font-weight: 600; letter-spacing: 0.05em; }
-.settings-content .page-header p { max-width: 760px; margin-top: 5px; font-size: 11px; line-height: 1.6; }
+.settings-content .page-header p { max-width: 760px; margin-top: 5px; font-size: 11px; line-height: 1.7; }
 .settings-content .page-actions { padding-top: 0; }
 .settings-content .eyebrow { display: none; }
 .settings-content .sys-tabs { margin-top: 2px; margin-bottom: 18px; }
