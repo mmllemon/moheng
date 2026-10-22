@@ -203,10 +203,7 @@ kbd{padding:1px 5px;border:1px solid var(--line);border-radius:2px;background:#f
 
 /* ---------- 面板 ---------- */
 .panel,.data-table-panel,.contract-summary-card,.change-summary-card{background:transparent;border:0;border-top:1px solid var(--line-2);border-radius:0;box-shadow:none;padding:0}
-.panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:13px 0 10px;border-bottom:1px solid var(--line)}
-.panel-heading h3{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600;color:var(--ink);letter-spacing:.02em}
 .panel-heading h3::before{content:"";width:12px;height:1px;background:var(--bronze);opacity:.9}
-.panel-heading p{margin-top:3px;font-size:10.5px;color:var(--meta)}
 .panel-header-action{border:0;background:transparent;color:var(--accent);font-size:11.5px;cursor:pointer}
 .analysis-chart-panel,.table-panel{border-top:1px solid var(--line-2)}
 
@@ -232,9 +229,6 @@ kbd{padding:1px 5px;border:1px solid var(--line);border-radius:2px;background:#f
 .status-dot{display:none}
 .status-blue{color:var(--accent);border-color:rgba(44,90,81,.35)}
 .status-green{color:var(--ok);border-color:rgba(47,107,79,.35)}
-.status-orange{color:var(--warn);border-color:rgba(138,95,26,.35)}
-.status-red{color:var(--danger);border-color:rgba(162,58,42,.35)}
-.status-gray{color:var(--meta);border-color:var(--line-2)}
 /* ---------- 按钮 / 表单 ---------- */
 
 label{font-size:11px;color:var(--meta)}
@@ -595,12 +589,8 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .projects-page .project-card-ratios{align-content:start}
 .budget-association,.data-table a,.report-report-option a{color:var(--accent)}
 .data-table a:hover{text-decoration:underline}
-.notice-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 0 18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
-.notice-summary-card{padding:13px 18px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent}
-.notice-summary-card:first-child{border-left:0;padding-left:0}
 .notice-summary-icon{display:none}
 .notice-summary-card strong{font-family:var(--num);font-size:24px;color:var(--ink);font-weight:600}
-.notice-summary-card span,.notice-summary-card small{font-size:10.5px;color:var(--meta)}
 .system-overview-empty{background:transparent;border:1px dashed var(--line-2);border-radius:2px}
 .system-overview-empty>svg{color:var(--bronze)}
 .system-overview-readiness-tag,.system-readiness-tag{border:1px solid var(--line-2);border-radius:2px;background:var(--paper-2);color:var(--meta);font-size:10px}

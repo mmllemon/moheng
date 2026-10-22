@@ -122,13 +122,7 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .project-switcher > svg { position: absolute; right: 0; pointer-events: none; }
 .context-right { color: var(--meta); font-size: 10px; white-space: nowrap; }
 .context-separator { padding: 0 7px; color: var(--dim); }
-.status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 2px; white-space: nowrap; font-size: var(--text-2xs); line-height: 1.5; font-weight: 600; }
 .status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .85; }
-.status-blue { color: var(--accent); background: transparent; }
-.status-green { color: #2d926e; background: #e7f7ef; }
-.status-orange { color: #b97826; background: #fff4e4; }
-.status-red { color: #cc5d53; background: #fff0ed; }
-.status-gray { color: var(--meta); background: #eff1f5; }
 .content-area { width: 100%; max-width: 1800px; flex: 1; padding: 26px 30px 38px; margin: 0 auto; }
 .app-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 30px; color: var(--meta); border-top: 1px solid var(--line); background: #fcfcfe; font-size: var(--text-2xs); }
 .app-footer span:last-child { display: flex; align-items: center; gap: 7px; }
@@ -174,9 +168,8 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .last-updated span { width: 5px; height: 5px; border-radius: 50%; background: #64ba92; }
 .dashboard-lower-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .9fr); gap: 14px; margin: 20px 0 15px; }
 .panel { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-card); background: #fff; box-shadow: var(--shadow-card); }
-.panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 16px 18px 13px; }
-.panel-heading h3 { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--accent); font-size: 12px; font-weight: 700; }
-.panel-heading p { display: flex; align-items: center; gap: 5px; margin: 4px 0 0; color: var(--meta); font-size: 10px; }
+/* display/align-items/gap 仍是承重属性：hana.css 的 .panel-heading p 只声明了排版，没声明布局 */
+.panel-heading p { display: flex; align-items: center; gap: 5px; }
 .chart-panel { padding-bottom: 3px; }
 .chart-legend { display: inline-flex; align-items: center; gap: 6px; color: var(--meta); font-size: var(--text-2xs); white-space: nowrap; }
 .chart-legend i { width: 7px; height: 7px; border-radius: 2px; background: var(--accent); }
@@ -235,7 +228,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 
 .contract-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(250px, .75fr); gap: 15px; align-items: start; }
 .contract-form { padding-bottom: 0; }
-.panel-icon { width: 31px; height: 31px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 2px; color: var(--accent); background: transparent; }
 .contract-form > .panel-heading { border-bottom: 1px solid #f0f2f6; margin-bottom: 4px; }
 .contract-form .form-grid { padding: 16px 18px 20px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 13px; }
@@ -283,7 +275,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .budget-summary-item strong em { color: var(--meta); font-size: 10px; font-style: normal; font-weight: 500; }
 .budget-summary-item small { color: var(--meta); font-size: var(--text-2xs); }
 .data-table-panel { overflow: hidden; }
-.data-table-panel > .panel-heading { border-bottom: 1px solid #eef1f5; }
 .table-heading-actions { display: flex; align-items: center; gap: 8px; }
 .table-scroll { width: 100%; overflow-x: auto; }
 .data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10px; }
@@ -610,7 +601,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .role-legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 18px 18px; }
 .role-legend span { border: 1px solid var(--line); border-radius: 2px; padding: 4px 7px; color: var(--accent); background: #f8fafc; font-size: 10px; }
 .user-table-panel { margin-top: 16px; }
-.user-table-panel .panel-heading { border-bottom: 1px solid #eef1f5; }
 .table-count { white-space: nowrap; padding: 5px 8px; border-radius: 2px; color: var(--accent); background: #f3f6fa; font-size: 10px; }
 .text-muted { color: var(--meta); font-size: 11px; }
 @media (max-width: 1080px) { .two-panel-grid { grid-template-columns: 1fr; } }
@@ -698,7 +688,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .owner-contract-amount-card strong { color: var(--accent); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .owner-contract-amount-card small { color: var(--meta); font-size: var(--text-2xs); line-height: 1.5; }
 .owner-contract-detail-panel { overflow: hidden; }
-.owner-contract-detail-panel .panel-heading { align-items: center; }
 .owner-contract-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: transparent; border-top: 1px solid var(--line); }
 .owner-contract-detail-grid > div { display: flex; flex-direction: column; gap: 7px; min-width: 0; padding: 15px 18px; background: #fff; }
 .owner-contract-detail-grid span { color: var(--meta); font-size: 10px; }
@@ -1050,7 +1039,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .owner-finance-tab-panel { min-width: 0; overflow: hidden; animation: ownerPanelIn .18s ease both; }
 @keyframes ownerPanelIn { from { opacity: .7; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 .owner-finance-tab-panel > .panel-heading { align-items: center; min-height: 73px; padding: 15px 19px 13px; border-bottom: 1px solid var(--line); }
-.owner-finance-tab-panel .panel-heading h3 { font-size: 13px; }
 .owner-finance-tab-panel .panel-heading p { max-width: 820px; line-height: 1.6; }
 .owner-finance-tab-panel .table-count { padding: 5px 8px; border: 1px solid var(--line); border-radius: 2px; color: var(--accent); background: #fafbfe; font-size: 10px; white-space: nowrap; }
 .owner-finance-table-wrap { max-height: min(58vh, 660px); overflow: auto; overscroll-behavior: contain; }
@@ -1207,9 +1195,8 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
   border-color: var(--card-border); background: var(--card-bg); box-shadow: var(--shadow-card);
 }
 .panel { border-radius: 2px; backdrop-filter: blur(8px); }
-.panel-heading { border-color: var(--card-border); }
-.panel-heading h3, .section-heading h2 { color: var(--neutral-800); font-size: 13px; }
-.panel-heading p, .section-heading p { color: var(--text-muted); }
+.section-heading h2 { color: var(--neutral-800); font-size: 13px; }
+.section-heading p { color: var(--text-muted); }
 .metric-top, .metric-bottom, .metric-card .metric-top { color: var(--text-secondary); }
 .metric-value, .project-card-name, .project-list-card h3, .project-list-details strong, .downstream-analysis-grid strong { color: var(--neutral-800); font-variant-numeric: tabular-nums; }
 .project-card-metric, .project-list-details, .project-list-meta, .activity-row, .pending-item, .chart-footnote { border-color: var(--card-border); }
@@ -1231,12 +1218,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .data-table tbody tr:focus-visible td { box-shadow: inset 0 1px var(--accent-500), inset 0 -1px var(--accent-500); }
 .data-table tfoot td { border-color: var(--card-border); color: var(--neutral-700); background: var(--table-head-bg); font-size: 11px; }
 .numeric, .align-right, time, .project-card-metric strong, .owner-metric > strong, .owner-metric-dual > div > strong { font-variant-numeric: tabular-nums; }
-.status-badge, .owner-status { border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 600; }
-.status-blue { color: var(--accent); background: rgba(79,70,229,.10); }
-.status-green { color: #19815f; background: rgba(16,185,129,.12); }
-.status-orange { color: #a66b1b; background: rgba(245,158,11,.13); }
-.status-red { color: #bf4058; background: rgba(244,63,94,.12); }
-.status-gray { color: var(--text-secondary); background: color-mix(in srgb, var(--neutral-200) 52%, transparent); }
+.owner-status { border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 600; }
 .cost-workspace-tabs, .owner-finance-tabs { border-color: var(--card-border); background: var(--card-bg); box-shadow: 0 4px 12px -10px rgba(15,23,42,.2); }
 .cost-workspace-nav-overview { border-color: var(--card-border); }
 .cost-workspace-nav-income, .cost-workspace-nav-cost { background: color-mix(in srgb, var(--accent-50) 28%, var(--card-bg)); }
@@ -1851,16 +1833,12 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .report-catalog-copy em { color:var(--text-tertiary); font-size:var(--text-2xs); font-style:normal; margin-top:2px; }
 .report-catalog-action { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; color: var(--text-tertiary); }
 .report-catalog-card.is-selected .report-catalog-action { color: var(--accent-700); }
-.notice-summary-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
-.notice-summary-card { display: flex; align-items: center; gap: 12px; padding: 15px 16px; }
 .notice-summary-icon { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 2px; }
 .notice-summary-icon.danger { color: var(--danger-600,#b42318); background: color-mix(in srgb,#e5484d 12%,var(--card-bg)); }
 .notice-summary-icon.warning { color: #9b681b; background: color-mix(in srgb,#d99a2b 14%,var(--card-bg)); }
 .notice-summary-icon.info { color: var(--accent-700); background: var(--accent-50); }
 .notice-summary-card > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
-.notice-summary-card small { color: var(--text-secondary); font-size: 11px; }
 .notice-summary-card strong { color: var(--text-primary); font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.notice-summary-card span:last-child { color: var(--text-tertiary); font-size: 10px; }
 .notice-list-panel { padding: 18px; }
 .notice-list-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding-bottom: 15px; border-bottom: 1px solid var(--border-light); }
 .notice-list-heading > div:first-child { display: grid; gap: 4px; }
@@ -2361,8 +2339,6 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .system-overview-metric > a:hover { color: var(--accent-700); background: var(--surface-muted); }
 .system-overview-two-column { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 16px; margin-bottom: 20px; align-items: start; }
 .system-overview-two-column > .panel { min-width: 0; }
-.system-overview-events .panel-heading, .system-overview-readiness .panel-heading { align-items: flex-start; }
-.system-overview-events .panel-heading h3, .system-overview-readiness .panel-heading h3 { display: flex; align-items: center; gap: 8px; }
 .system-overview-empty { display: flex; align-items: flex-start; gap: 10px; margin: 4px 18px 18px; padding: 14px; border: 1px dashed var(--line); border-radius: 2px; color: var(--text-secondary); background: var(--surface-muted); }
 .system-overview-empty > svg { flex: 0 0 auto; color: var(--accent-600); }
 .system-overview-empty > span { display: grid; gap: 5px; }
@@ -2420,8 +2396,6 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .system-expansion-form input:focus, .system-expansion-form select:focus, .system-expansion-table input:focus, .system-expansion-table select:focus, .system-secret-controls input:focus { outline: 2px solid color-mix(in srgb, var(--accent-500) 32%, transparent); outline-offset: 1px; }
 .system-expansion-form button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 7px 11px; border: 1px solid transparent; border-radius: 2px; font: inherit; font-size: 10px; font-weight: 600; cursor: pointer; }
 .system-expansion-form button:disabled, .system-expansion-page button:disabled { cursor: not-allowed; opacity: .5; }
-.system-expansion-page .panel-heading { align-items: center; }
-.system-expansion-page .panel-heading h3 { display: flex; align-items: center; gap: 7px; }
 .system-expansion-page .panel-heading p { max-width: 850px; line-height: 1.65; }
 .system-expansion-table { min-width: 690px; }
 .system-expansion-table th { white-space: nowrap; }
