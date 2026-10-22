@@ -177,12 +177,15 @@ const shellAudit = await page.evaluate(() => {
     sidebarFooterAlpha: backgroundAlpha('.app-sidebar-footer'),
   };
 });
-// 骨架断言：侧栏 8px 外边距浮片（x=8），主区从 256 开始
-const shellOk = shellAudit.sidebar?.x === 8
-  && shellAudit.sidebar?.y === 8
+// 骨架断言：对齐 hana 的大卡片骨架
+//   侧栏 margin: var(--panel-edge-gap) = 6px（hana ._fp_f9c75）
+//   卡片 margin 同为 6px，上边缘与侧栏对齐
+//   标题栏 36px（hana ._titlebarFrame = 6*2 + 24）
+const shellOk = shellAudit.sidebar?.x === 6
+  && shellAudit.sidebar?.y === 6
   && shellAudit.sidebar?.width === 240
   && shellAudit.titlebar?.height === 36
-  && shellAudit.main?.x === 256
+  && shellAudit.main?.x === 246
   && shellAudit.settings?.width === 960
   && shellAudit.settings?.height === 840
   && shellAudit.settingsNav?.width === 208

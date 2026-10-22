@@ -24,6 +24,17 @@
   --radius-sm: 5px;
   --radius-md: 8px;
   --radius-lg: 12px;
+  /* hana 的卡片圆角 token（styles.css:28-30）：
+       --panel-edge-gap: 6px
+       --panel-card-radius: var(--radius-lg)           ← 默认 12px
+     但 Windows 平台有一条覆盖（styles.css:295）：
+       html[data-platform="win32"]:not([data-windows-card-radius="off"]) {
+         --panel-card-radius: min(var(--radius-lg), 7px);   ← 实际 7px
+       }
+     hana 在 Windows 上真正的卡片圆角是 7px，不是 12px。
+     之前我用 12px × 1.8409 = 22.09px 算大了 9px，原因就在这里。 */
+  --panel-edge-gap: 6px;
+  --panel-card-radius: var(--radius-lg);
   --corner-radius-scale: 1;
   --border-width: 1px;
   --radius-input: 6px;
@@ -142,6 +153,16 @@
 }
 @supports (corner-shape: squircle) {
   :root { --corner-radius-scale: 1.8408964152537137; }
+}
+/* Windows 卡片圆角覆盖，对齐 hana styles.css:295：
+   html[data-platform="win32"]:not([data-windows-card-radius="off"]) {
+     --panel-card-radius: min(var(--radius-lg), 7px);
+   }
+   moheng 跑在 Windows 上，但浏览器版没有 data-platform，
+   所以直接按平台声明（navigator.userAgentData 不可靠，用 CSS 无法检测，
+   由 Layout 写入 data-platform）。默认先给 Windows 值，与 hana 实机一致。 */
+html[data-platform="win32"]:not([data-windows-card-radius="off"]) {
+  --panel-card-radius: min(var(--radius-lg), 7px);
 }
 
 html[data-heading-font="sans"] { --font-heading: var(--font-ui); }
@@ -420,21 +441,23 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   position: relative;
   flex-shrink: 0;
   width: var(--sidebar-width);
-  height: calc(100% - var(--space-8) * 2);
-  margin: var(--space-8);
+  height: calc(100% - var(--panel-edge-gap) * 2);
+  margin: var(--panel-edge-gap);
+  margin-right: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--sidebar-bg);
-  /* hana 的侧栏分线是 .sidebar 的 border-right（styles.css:626），
-     加上圆角外框后两者叠加：外框走圆角卡片，中间竖线走右边。 */
-  border: 1px solid var(--overlay-medium);
-  border-right-color: var(--overlay-light);
-  /* 圆角取 --radius-lg 基础值 12px × 1.8408964 = 22.09px。
-     hana 实际只加载 themes/warm-paper.css，该文件没有 radius 重定义，
-     所以用的是 styles.css:28 的 12px。（new-warm-paper.css 里确实有 4px，
-     但那不是当前加载的主题文件。） */
-  border-radius: calc(var(--radius-lg) * var(--corner-radius-scale, 1));
+  /* 对齐 hana ._fp_f9c75（浮出侧栏）：
+       border: var(--panel-card-border)  →  1px solid rgba(0,0,0,.08)
+       box-shadow: 0 4px 32px #0000000d
+     侧栏有边框和阴影，大卡片没有 —— 这就是“侧栏浮起来、主区融进背景”的差异。 */
+  border: var(--panel-card-border);
+  /* 圆角取 --panel-card-radius × --corner-radius-scale。
+     hana 的卡片圆角在 Windows 上是 min(12px, 7px) = 7px
+     （styles.css:295 的 html[data-platform="win32"] 覆盖）。
+     之前用 12px × 1.8409 = 22.09px，比 hana 大 9px。 */
+  border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1));
   corner-shape: squircle;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
   color: var(--text);
@@ -733,12 +756,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   overflow: hidden;
 }
 .app-titlebar {
-  /* 对齐 hana ._titlebarFrame（ChatTranscript）：
-       position: absolute; top: 0; left: 0; right: 0
-       height: calc(6px * 2 + 24px) = 36px
-       pointer-events: none
-     关键：它是绝对定位的浮层，不占布局空间，内容可以滚到它下面。
-     我上一版做成 flex: 0 0 44px 的实体横条，把内容往下推了 44px，这是错的。 */
+  /* 标题层相对卡片定位（卡片已有 6px 外边距，标题层内嵌在其内） */
   position: absolute;
   top: 0;
   left: 0;
@@ -874,11 +892,28 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .titlebar-mobile-menu { display: none !important; }
 
 .app-content {
+  /* 对齐 hana ._tileShell：会话页面是一张浮起的大卡片。
+       --tile-gutter: calc(--panel-edge-gap / 2) = 3px
+       width/height: calc(100% - 2 * --tile-gutter)
+       margin: var(--tile-gutter)
+       border-radius: calc(--panel-card-radius * --corner-radius-scale)
+       corner-shape: squircle
+     关键：没有 border、没有 box-shadow。卡片与背景同色（--bg），
+     靠圆角 + 间隙与画布区分，视觉上“融为一体”。
+     侧栏相反：有 border 和 box-shadow，所以看起来浮在画布上。 */
   flex: 1;
   min-height: 0;
+  /* 与侧栏共享 --panel-edge-gap，让卡片上边缘和侧栏上边缘对齐。
+     hana 里侧栏是 margin: 6px、卡片是 margin: 3px（各自独立），
+     但用户明确要求两者上边缘对齐，所以统一用 6px。 */
+  margin: var(--panel-edge-gap);
+  margin-left: 0;
   overflow: auto;
   position: relative;
   scroll-behavior: smooth;
+  background: var(--bg);
+  border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
 }
 .route-transition { min-height: 100%; }
 .app-footer { display: none !important; }

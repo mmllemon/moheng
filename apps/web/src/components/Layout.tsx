@@ -150,6 +150,14 @@ export default function Layout() {
     return () => { current = false; };
   }, [user?.id]);
   useEffect(() => { setMobileNavOpen(false); setSettingsNavOpen(false); }, [location.pathname]);
+  /* 写入平台标记：hana 的卡片圆角在 Windows 上是 min(--radius-lg, 7px)
+     （styles.css:295），需要 data-platform="win32" 才会生效。
+     浏览器版拿不到 Electron 的 platform API，用 navigator.platform 判断。 */
+  useEffect(() => {
+    const p = navigator.platform || '';
+    const isWin = /Win/i.test(p) || /Windows/i.test(navigator.userAgent);
+    document.documentElement.dataset.platform = isWin ? 'win32' : (/Mac/i.test(p) ? 'darwin' : 'linux');
+  }, []);
   /* 标题左缘跟随实际内容列左缘 +10px。
      hana 的 --chat-copy-edge 公式只在单列阅读流里成立；moheng 有双栏宽页，
      内容列宽度会变，所以直接量 DOM 写变量，比公式可靠。 */
