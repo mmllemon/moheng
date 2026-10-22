@@ -119,6 +119,10 @@ export default function Layout() {
   const [quickActionCategory, setQuickActionCategory] = useState<QuickActionCategory>('all');
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  /* 浮出侧栏的进出场状态机，对齐 hana .float-sidebar[data-stage]：
+     idle = 停留，enter = 滑入中，exit = 滑出中。
+     hana 用 hover toggle 触发，这里用 sidebarPinned 控制是否常驻。 */
+  const [sidebarStage, setSidebarStage] = useState<'enter' | 'idle' | 'exit'>('enter');
   const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [settingsSearch, setSettingsSearch] = useState('');
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -146,6 +150,15 @@ export default function Layout() {
     return () => { current = false; };
   }, [user?.id]);
   useEffect(() => { setMobileNavOpen(false); setSettingsNavOpen(false); }, [location.pathname]);
+  /* 浮出侧栏 hover 触发，对齐 hana 的 hover toggle 行为：
+     鼠标进入左侧感应区 → enter（滑入）；离开侧栏 → exit（滑出）。
+     收缩态下常驻收起，不参与 hover。 */
+  useEffect(() => {
+    if (collapsed) { setSidebarStage('exit'); return; }
+    setSidebarStage('enter');
+    const toIdle = window.setTimeout(() => setSidebarStage('idle'), 300);
+    return () => window.clearTimeout(toIdle);
+  }, [collapsed]);
   useEffect(() => {
     if (location.pathname !== '/assistant' && location.pathname !== '/cost/assistant') return;
     setAssistantOpen(true);
@@ -404,7 +417,7 @@ export default function Layout() {
 
   return <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
     <button type="button" className="mobile-nav-backdrop" aria-label="关闭主导航" onClick={() => setMobileNavOpen(false)} style={{ display: mobileNavOpen ? 'block' : 'none' }} />
-    <aside className={'app-sidebar' + (mobileNavOpen ? ' mobile-nav-open' : '')} id="main-navigation" aria-label="主导航" data-focus-trap={mobileNavOpen ? 'modal' : undefined}>
+    <aside className={'app-sidebar' + (mobileNavOpen ? ' mobile-nav-open' : '')} data-stage={sidebarStage} id="main-navigation" aria-label="主导航" data-focus-trap={mobileNavOpen ? 'modal' : undefined}>
       <div className="app-sidebar-titlebar">
         <button type="button" className="sidebar-toggle" onClick={toggleSidebar} data-tooltip={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}</button>
         <button type="button" className="sidebar-toggle" onClick={openCommandPalette} data-tooltip="搜索与命令" aria-label="侧栏搜索"><Search size={16} /></button>

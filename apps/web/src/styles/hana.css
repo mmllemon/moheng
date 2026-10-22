@@ -395,14 +395,19 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   background: transparent;
 }
 .app-sidebar {
-  /* 对齐 hana .float-sidebar-panel-left：圆角卡片外框 + 边框 + 双层阴影。
-     hana 有两套侧栏：.sidebar 是平地带 border-right，
-     .float-sidebar-panel-left 是圆角浮片。实际界面用的是后者。 */
+  /* 对齐 hana .float-sidebar + .float-sidebar-panel-left 整套机制（styles.css:472-566）。
+
+     hana 的浮出侧栏由两层组成：
+       .float-sidebar            容器，负责 data-stage 驱动的进出场动画
+       .float-sidebar-panel-left 内层，承担圆角外框 + 边框 + 阴影
+
+     moheng 只有一层，所以两者合并：.app-sidebar 既做进出场，也做外框。
+     默认状态是移出视口（transform 负值），由 data-stage="idle" 滑入。 */
   position: fixed;
   z-index: 60;
-  top: var(--panel-edge-gap);
-  bottom: var(--panel-edge-gap);
-  left: var(--panel-edge-gap);
+  top: calc(var(--titlebar-h) + var(--space-8));
+  left: var(--space-8);
+  height: 75vh;
   width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
@@ -413,7 +418,32 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   corner-shape: squircle;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
   color: var(--text);
-  transition: transform var(--duration-slow) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+  transform: translateX(calc(-100% - var(--panel-edge-gap)));
+}
+/* hana .float-sidebar[data-stage] 的动画参数：--duration-slow + --ease-smooth，forwards 保留终态 */
+.app-sidebar[data-stage="enter"],
+.app-sidebar[data-stage="exit"] {
+  animation-duration: var(--duration-slow);
+  animation-timing-function: var(--ease-smooth);
+  animation-fill-mode: forwards;
+}
+.app-sidebar[data-stage="enter"] { animation-name: app-sidebar-in-left; }
+.app-sidebar[data-stage="exit"] { animation-name: app-sidebar-out-left; }
+.app-sidebar[data-stage="idle"] { transform: translateX(0); }
+@keyframes app-sidebar-in-left {
+  from { transform: translateX(calc(-100% - var(--panel-edge-gap))); }
+  to { transform: translateX(0); }
+}
+@keyframes app-sidebar-out-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100% - var(--panel-edge-gap))); }
+}
+/* 无障碍：减弱动效时不播动画，直接到位（hana styles.css:526） */
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar[data-stage="enter"],
+  .app-sidebar[data-stage="exit"] { animation: none; }
+  .app-sidebar[data-stage="enter"],
+  .app-sidebar[data-stage="idle"] { transform: translateX(0); }
 }
 .app-sidebar::before,
 .app-sidebar::after {

@@ -1,0 +1,76 @@
+/* ── 浮出侧栏（hover 触发滑入滑出）─────────────────────────────
+   对齐 hana styles.css:472-566
+
+   hana 的机制：
+   - .float-sidebar 是 fixed 定位的容器，[data-side] 决定方向
+   - [data-stage] 驱动动画：enter / idle / exit
+   - enter/exit 用 keyframes，animation-fill-mode: forwards
+   - idle 直接 transform: translateX(0)
+   - 动画参数：--duration-slow + --ease-smooth
+   - 内层面板 .float-sidebar-panel-left 承担圆角外框
+   - prefers-reduced-motion 时禁用动画
+
+   moheng 的映射：
+   - .app-sidebar → .float-sidebar（容器，负责进出场）
+   - .app-sidebar 自身兼任 .float-sidebar-panel-left（圆角外框）
+   因为 moheng 只有一层，不需要额外包裹。
+*/
+
+.app-sidebar {
+  position: fixed;
+  z-index: 60;
+  top: var(--panel-edge-gap);
+  bottom: auto;
+  left: 0;
+  height: calc(100vh - var(--titlebar-h) - var(--panel-edge-gap));
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--overlay-medium);
+  border-radius: calc(var(--radius-lg) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
+  color: var(--text);
+  /* 默认隐藏：完整移出视口左侧 */
+  transform: translateX(calc(-100% - var(--panel-edge-gap)));
+}
+
+/* 进场 / 退场：与 hana 相同的动画参数 */
+.app-sidebar[data-stage="enter"],
+.app-sidebar[data-stage="exit"] {
+  animation-duration: var(--duration-slow);
+  animation-timing-function: var(--ease-smooth);
+  animation-fill-mode: forwards;
+}
+
+.app-sidebar[data-stage="enter"] { animation-name: app-sidebar-in-left; }
+.app-sidebar[data-stage="exit"]  { animation-name: app-sidebar-out-left; }
+
+/* 停留态 */
+.app-sidebar[data-stage="idle"] {
+  transform: translateX(0);
+}
+
+@keyframes app-sidebar-in-left {
+  from { transform: translateX(calc(-100% - var(--panel-edge-gap))); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes app-sidebar-out-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(calc(-100% - var(--panel-edge-gap))); }
+}
+
+/* 无障碍：减弱动效时不播放动画，直接到位 */
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar[data-stage="enter"],
+  .app-sidebar[data-stage="exit"] {
+    animation: none;
+  }
+  .app-sidebar[data-stage="enter"],
+  .app-sidebar[data-stage="idle"] {
+    transform: translateX(0);
+  }
+}
