@@ -1,16 +1,13 @@
 // 精确验证可变字重：避开容器宽度上限，用 scrollWidth + 单字测量
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2200);
+await login(page);
 
 const result = await page.evaluate(async () => {
   await document.fonts.ready;

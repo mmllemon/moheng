@@ -1,6 +1,7 @@
 // 把全站的图标按钮按「所属容器」归拢，看清 201 个实例到底散在哪
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
@@ -17,11 +18,7 @@ const ROUTES = [
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 const all = [];
 for (const route of ROUTES) {

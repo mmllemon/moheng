@@ -1,6 +1,7 @@
 // 深度页面健康检查：更全面的塌陷判据
 // 新增：元素重叠、文字溢出容器、按钮不可见、表格列错位、z-index 层级错乱
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -25,11 +26,7 @@ const page = await ctx.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message.slice(0, 200)));
 
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 const results = [];
 

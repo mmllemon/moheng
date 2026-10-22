@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { assertApiUp, assertLoggedIn } from './_harness.mjs';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
@@ -11,6 +12,7 @@ const routes = [
 ];
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+await assertApiUp();
 // 复用已登录的 storageState，避免每次运行都触发登录限流（12 次 / 15 分钟）
 // 若 state 不存在则回退到直接登录
 const STATE = process.env.AUTH_STATE ?? 'D:/WorkSpace/hana/moheng/.auth/state.json';
@@ -30,6 +32,9 @@ if (page.url().includes('/login')) {
   await page.locator('button[type=submit]').first().click();
   await page.waitForTimeout(2200);
 }
+// 关键：确认真的登录了。API 不在线时登录会静默失败，
+// 所有路由都会变成登录页的重复，检查却仍会通过。
+await assertLoggedIn(page);
 
 const failures = [];
 const routeResults = [];

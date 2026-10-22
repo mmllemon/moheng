@@ -1,5 +1,6 @@
 // 交互元素诊断 v2：用确实存在控件的页面
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -12,11 +13,7 @@ const page = await ctx.newPage();
 const consoleErrors = [];
 page.on('pageerror', (e) => consoleErrors.push(e.message));
 
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 const rect = (sel) => page.evaluate((s) => {
   const el = document.querySelector(s);

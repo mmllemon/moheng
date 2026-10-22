@@ -58,6 +58,31 @@ export async function login(page, { timeout = 4000 } = {}) {
 }
 
 /**
+ * 确认当前页面已进入应用（不是登录页）。
+ * 用于那些自己管理登录态的脚本（如复用 storageState 的），
+ * 它们不走 login()，但仍需要这道防线。
+ */
+export async function assertLoggedIn(page) {
+  const st = await page.evaluate(() => ({
+    onLogin: !!document.querySelector('.login-screen'),
+    url: location.pathname,
+    bodyLen: (document.body.innerText || '').trim().length,
+  }));
+  if (st.onLogin || st.url === '/login') {
+    const msg = await page
+      .evaluate(() => {
+        const e = document.querySelector('.login-error, .form-error, [role=alert]');
+        return e ? e.textContent.trim().slice(0, 120) : '(无错误提示)';
+      })
+      .catch(() => '(无法读取)');
+    throw new Error(`未登录：页面停在登录页（${st.url}）。提示: ${msg}`);
+  }
+  if (st.bodyLen < 20) {
+    throw new Error(`未登录或渲染失败：页面文本只有 ${st.bodyLen} 字符（${st.url}）`);
+  }
+}
+
+/**
  * 导航到某路由，并确认渲染出了内容（不是空白）。
  */
 export async function gotoRoute(page, route, { settle = 950 } = {}) {
@@ -75,4 +100,29 @@ export async function gotoRoute(page, route, { settle = 950 } = {}) {
   if (info.onLogin) throw new Error(`${route}: 被弹回登录页（会话失效）`);
   if (info.bodyLen < 20) throw new Error(`${route}: 页面几乎空白（${info.bodyLen} 字符）`);
   return info;
+}
+
+/**
+ * 等待页面稳定：元素数与文本长度连续两次不变。
+ * 防止拿骨架屏跟真实内容比。
+ */
+export async function waitStable(page, { minMs = 450, maxMs = 6000 } = {}) {
+  const t0 = Date.now();
+  let last = -1;
+  let same = 0;
+  while (Date.now() - t0 < maxMs) {
+    await page.waitForTimeout(minMs);
+    const sig = await page.evaluate(() => {
+      const n = document.querySelectorAll('body *').length;
+      const t = (document.body.innerText || '').length;
+      return n * 1000000 + t;
+    });
+    if (sig === last) {
+      if (++same >= 2) return { stable: true, waited: Date.now() - t0 };
+    } else {
+      same = 0;
+      last = sig;
+    }
+  }
+  return { stable: false, waited: Date.now() - t0 };
 }

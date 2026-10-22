@@ -3,6 +3,7 @@
 // 再结合 !important 与顺序推断胜出者；拿不到精确胜出者的，标记为不确定。
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
@@ -19,11 +20,7 @@ const ROUTES = [
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 // 在页面里收集所有含 .button 的规则，带上来源文件名与顺序
 const collectScript = `
@@ -105,7 +102,7 @@ for (const route of ROUTES) {
         const candidates = list.filter((d) => {
           const v = norm(d.value);
           // 变量、calc 等无法字面对比，先标记为「不可判定」
-          if (/var\\(|calc\\(|color-mix|clamp\\(/.test(v)) return false;
+          if (/var\(|calc\(|color-mix|clamp\(/.test(v)) return false;
           return norm(computed) === v || norm(computed).startsWith(v) || v.startsWith(norm(computed).split(' ')[0]);
         });
         let winnerKey;

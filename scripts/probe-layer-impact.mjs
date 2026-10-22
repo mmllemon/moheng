@@ -1,6 +1,7 @@
 // 修正版：SPA 内导航（不重建 document），确保禁用状态持续
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
@@ -10,11 +11,7 @@ const TARGETS = ['.app-sidebar', '.app-titlebar', '.page-wrap', '.page-header h1
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2200);
+await login(page);
 
 const routes = ['/', '/projects', '/system/accounts', '/settings/appearance'];
 

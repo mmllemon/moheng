@@ -1,6 +1,7 @@
 // 全站扫描：所有禁用按钮在 hover 前后是否发生视觉变化
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
@@ -17,11 +18,7 @@ const ROUTES = [
 const b = await chromium.launch({ executablePath: CHROME, headless: true });
 const c = await b.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const p = await c.newPage();
-await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await p.locator('input[type=email]').first().fill('admin@local.test');
-await p.locator('input[type=password]').first().fill('ChangeMe123!');
-await p.locator('button[type=submit]').first().click();
-await p.waitForTimeout(2600);
+await login(p);
 
 let checked = 0;
 const bad = [];

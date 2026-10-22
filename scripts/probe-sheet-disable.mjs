@@ -1,15 +1,12 @@
 // 先确认 sheet 禁用是否真的生效：禁用全部 sheet 应该让页面明显变化
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2200);
+await login(page);
 
 const probe = await page.evaluate(() => {
   const sheets = Array.from(document.styleSheets);

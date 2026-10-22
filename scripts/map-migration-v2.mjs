@@ -1,6 +1,7 @@
 // 修正分类精度：一个属性只有「在所有匹配元素上都被覆盖」才算已覆盖
 // 之前的问题：同一条规则匹配多个元素时，A 元素覆盖、B 元素不覆盖，属性会同时进两个集合
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -40,11 +41,7 @@ const APPEARANCE = new Set([
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 // 全局累积：规则 → 属性 → { total: 见过的元素数, covered: 被覆盖的元素数 }
 const acc = new Map();

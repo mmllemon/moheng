@@ -9,6 +9,7 @@
 // 覆盖：多路由 × 多交互状态（日期框、命令面板、账号菜单、对话框、设置子页）
 // 采集：所有元素 + ::before/::after 伪元素 + 关键属性
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
@@ -36,11 +37,7 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
 
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 // 识别样式表（dev 模式下 Vite 给每个 css 注入 data-vite-dev-id）
 async function sheetIds() {

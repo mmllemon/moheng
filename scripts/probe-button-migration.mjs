@@ -1,5 +1,6 @@
 // 修正版迁移探针：正确处理 @layer 包裹，并先验证删除真的生效
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -57,11 +58,7 @@ async function run(mode) {
     });
   }
 
-  await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-  await page.locator('input[type=email]').first().fill('admin@local.test');
-  await page.locator('input[type=password]').first().fill('ChangeMe123!');
-  await page.locator('button[type=submit]').first().click();
-  await page.waitForTimeout(2600);
+  await login(page);
 
   const stripLog = mode === 'strip' ? await page.evaluate(() => window.__stripLog) : null;
 

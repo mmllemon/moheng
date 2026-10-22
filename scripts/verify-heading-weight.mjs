@@ -1,14 +1,11 @@
 // 验证真实页面的标题/正文在修正声明后的实际渲染字重
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const b = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
 const p = await b.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
-await p.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await p.locator('input[type=email]').first().fill('admin@local.test');
-await p.locator('input[type=password]').first().fill('ChangeMe123!');
-await p.locator('button[type=submit]').first().click();
-await p.waitForTimeout(2200);
+await login(p);
 
 await p.goto(BASE + '/projects', { waitUntil: 'networkidle' });
 await p.waitForTimeout(700);

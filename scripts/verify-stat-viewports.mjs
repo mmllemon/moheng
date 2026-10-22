@@ -1,6 +1,7 @@
 // 多视口验收：确认不折行、无错位、system/operations 已生效
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
@@ -20,11 +21,7 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
 const ctx = await browser.newContext({ locale: 'zh-CN' });
 const page = await ctx.newPage();
 await page.setViewportSize({ width: 1440, height: 900 });
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 let fails = 0;
 for (const vp of VIEWPORTS) {

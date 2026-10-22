@@ -1,17 +1,14 @@
 // 验证 P0/P1 改动是否真的生效：squircle 覆盖、阴影 token、字重、对比度档位
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
 const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2200);
+await login(page);
 
 const report = {};
 for (const route of ['/', '/settings/appearance', '/cost/contracts', '/system/accounts']) {

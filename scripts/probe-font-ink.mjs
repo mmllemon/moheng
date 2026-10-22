@@ -1,13 +1,10 @@
 // canvas 墨量测量（修正 font 简写语法：font 属性必须完整，family 放最后）
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const b = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
 const p = await b.newPage();
-await p.goto('http://localhost:5173/login', { waitUntil: 'networkidle' });
-await p.locator('input[type=email]').first().fill('admin@local.test');
-await p.locator('input[type=password]').first().fill('ChangeMe123!');
-await p.locator('button[type=submit]').first().click();
-await p.waitForTimeout(2000);
+await login(p);
 
 const out = await p.evaluate(async () => {
   await document.fonts.ready;

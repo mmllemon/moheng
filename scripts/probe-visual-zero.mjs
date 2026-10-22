@@ -1,16 +1,13 @@
 // 终极验证：禁用 legacy/v6 后截图对比像素差异
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { readFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2200);
+await login(page);
 
 // 移走鼠标，避免 hover 干扰
 await page.mouse.move(5, 880);

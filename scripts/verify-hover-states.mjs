@@ -1,14 +1,11 @@
 // 验证正常按钮 hover 时的三色联动是否生效
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const b = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
 const c = await b.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const p = await c.newPage();
-await p.goto('http://localhost:5173/login', { waitUntil: 'networkidle' });
-await p.locator('input[type=email]').first().fill('admin@local.test');
-await p.locator('input[type=password]').first().fill('ChangeMe123!');
-await p.locator('button[type=submit]').first().click();
-await p.waitForTimeout(2600);
+await login(p);
 
 const CASES = [
   ['/projects', 'button-primary', '进入驾驶舱'],

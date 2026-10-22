@@ -1,4 +1,5 @@
 import { chromium } from 'playwright-core';
+import { assertApiUp, assertLoggedIn } from './_harness.mjs';
 import axe from 'axe-core';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
@@ -6,6 +7,7 @@ const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Applic
 const routes = (process.env.AXE_ROUTES ?? '/,/projects,/notifications,/settings/appearance,/account/security,/cost/contracts,/cost/changes,/cost/budget,/system,/system/accounts,/system/assistant,/system/security,/system/authorization,/system/policies,/system/governance,/system/dictionaries,/system/parameters,/system/operations,/audit-logs,/reports').split(',');
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
+await assertApiUp();
 // 复用已登录的 storageState，避免每次运行都触发登录限流（12 次 / 15 分钟）
 const STATE = process.env.AUTH_STATE ?? 'D:/WorkSpace/hana/moheng/.auth/state.json';
 let ctx;
@@ -22,6 +24,9 @@ if (page.url().includes('/login')) {
   await page.locator('button[type=submit]').first().click();
   await page.waitForTimeout(2200);
 }
+// API 不在线时登录会静默失败，无障碍审计就会把登录页当应用审：
+// 那不是「没有问题」，而是根本没审到东西。
+await assertLoggedIn(page);
 
 const results = [];
 for (const route of routes) {

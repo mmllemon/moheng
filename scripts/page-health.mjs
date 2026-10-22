@@ -1,5 +1,6 @@
 // 全量页面健康检查 v2：单次登录 + SPA 导航，避免重复 refresh 触发限流
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -32,11 +33,7 @@ page.on('console', (m) => {
 });
 
 // 单次登录
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 const results = [];
 

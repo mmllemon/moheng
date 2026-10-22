@@ -1,5 +1,6 @@
 // 截图：记录整改后的统计区效果
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { mkdirSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -10,11 +11,7 @@ mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN', deviceScaleFactor: 2 });
 const page = await ctx.newPage();
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 const shots = [
   ['progress-bills', '/cost/progress-bills', '.bill-summary-grid'],

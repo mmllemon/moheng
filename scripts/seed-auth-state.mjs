@@ -1,6 +1,7 @@
 // 一次性登录并把 storageState 存盘，后续测试复用，避免触发登录限流
 // 用法：node scripts/seed-auth-state.mjs
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { mkdirSync } from 'node:fs';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173';
@@ -13,11 +14,7 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
 
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2500);
+await login(page);
 
 const url = page.url();
 const ok = !url.includes('/login');

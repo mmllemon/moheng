@@ -1,6 +1,7 @@
 // 视觉基线：给关键状态拍全量截图 + 记录布局骨架
 // 基线是后续所有改动的判据：任何改动后重跑，与基线比对
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { mkdirSync, writeFileSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -72,11 +73,7 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
 
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email], #email').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 await page.mouse.move(3, 890);
 
 const meta = {};

@@ -1,5 +1,6 @@
 // 多视口健康检查：排查响应式导致的崩溃
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -29,11 +30,7 @@ for (const vp of VIEWPORTS) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 150)));
 
-  await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-  await page.locator('input[type=email], #email').first().fill('admin@local.test');
-  await page.locator('input[type=password], #password').first().fill('ChangeMe123!');
-  await page.locator('button[type=submit]').first().click();
-  await page.waitForTimeout(2400);
+  await login(page);
 
   console.log(`\n===== ${vp.name} (${vp.w}x${vp.h}) =====`);
 

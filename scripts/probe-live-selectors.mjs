@@ -2,6 +2,7 @@
 // 方法：注入一个探针，遍历页面上所有元素，检查是否有元素命中 legacy/v6 的 orphan 选择器
 // 用 CSS.supports + 实际 DOM 匹配（querySelectorAll）判断
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { readFileSync } from 'node:fs';
 
 const STYLES = 'D:/WorkSpace/hana/moheng/apps/web/src/styles';
@@ -41,11 +42,7 @@ const v6Sel = selectors(v6);
 
 const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2200);
+await login(page);
 
 const routes = ['/', '/projects', '/cost/contracts', '/system/accounts', '/settings/appearance', '/reports'];
 const hitCount = new Map();

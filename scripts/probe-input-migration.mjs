@@ -1,6 +1,7 @@
 // 输入控件族迁移探针：移除 legacy/v6 里的输入相关规则后比对渲染
 // 复用按钮族的验证方案：先确认删除数 > 0，再比对
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -70,11 +71,7 @@ async function run(mode) {
     });
   }
 
-  await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-  await page.locator('input[type=email]').first().fill('admin@local.test');
-  await page.locator('input[type=password]').first().fill('ChangeMe123!');
-  await page.locator('button[type=submit]').first().click();
-  await page.waitForTimeout(2600);
+  await login(page);
 
   const stripLog = mode === 'strip' ? await page.evaluate(() => window.__stripLog) : null;
   const data = {};

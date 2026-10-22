@@ -2,6 +2,7 @@
 // 判据：规则声明的每个「外观属性」，hana.css 是否在「同样能匹配到该元素」的规则里也声明了
 // 输出：完全被覆盖（可删）/ 部分覆盖（需接管）/ 未被覆盖（必须保留）
 import { chromium } from 'playwright-core';
+import { login } from './_harness.mjs';
 import { writeFileSync } from 'node:fs';
 
 const BASE = 'http://localhost:5173';
@@ -42,11 +43,7 @@ const APPEARANCE = [
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' });
 const page = await ctx.newPage();
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2600);
+await login(page);
 
 // 累积：规则 → 它在多少元素上「有属性被 hana 覆盖 / 未被覆盖」
 const ruleStats = new Map(); // key: sheet|sel → { sheet, sel, decls:[], coveredProps:Set, uncoveredProps:Set, hits }

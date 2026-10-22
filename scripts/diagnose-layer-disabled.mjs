@@ -1,6 +1,7 @@
 // 诊断：禁用 legacy/v6 后哪些页面元素消失或错位
 import { chromium } from 'playwright-core';
 
+import { login } from './_harness.mjs';
 const BASE = 'http://localhost:5173';
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const browser = await chromium.launch({ executablePath: CHROME, headless: true });
@@ -9,11 +10,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, loc
 page.on('pageerror', (e) => console.log('PAGE ERROR:', e.message));
 page.on('console', (m) => { if (m.type() === 'error') console.log('CONSOLE ERROR:', m.text().slice(0, 200)); });
 
-await page.goto(BASE + '/login', { waitUntil: 'networkidle' });
-await page.locator('input[type=email]').first().fill('admin@local.test');
-await page.locator('input[type=password]').first().fill('ChangeMe123!');
-await page.locator('button[type=submit]').first().click();
-await page.waitForTimeout(2500);
+await login(page);
 
 const state = await page.evaluate(() => {
   const btn = Array.from(document.querySelectorAll('button')).map((b) => b.textContent?.trim().slice(0, 20));
