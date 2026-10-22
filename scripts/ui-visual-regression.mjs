@@ -177,6 +177,8 @@ const shellAudit = await page.evaluate(() => {
     sidebarFooterAlpha: backgroundAlpha('.app-sidebar-footer'),
   };
 });
+// 骨架断言：对齐 hana .float-sidebar-panel-left 的浮片结构
+// 侧栏四周留 --panel-edge-gap(6px)，主区用 margin-left 让位
 const shellOk = shellAudit.sidebar?.x === 6
   && shellAudit.sidebar?.y === 6
   && shellAudit.sidebar?.width === 240
