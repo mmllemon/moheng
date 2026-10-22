@@ -135,11 +135,7 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .app-footer i { width: 4px; height: 4px; border-radius: 50%; background: #6bbb97; }
 .page-wrap { width: 100%; max-width: 1480px; margin: 0 auto; animation: fadeIn .2s ease both; }
 @keyframes fadeIn { from { opacity: .5; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
-.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
-.page-header h1 { margin: 4px 0 5px; color: var(--ink); font-size: 25px; font-weight: 700; line-height: 1.3; letter-spacing: -.04em; }
-.page-header p { margin: 0; color: var(--accent); font-size: 12px; }
 .eyebrow { display: block; color: var(--accent); font-size: var(--text-2xs); font-weight: 700; letter-spacing: .12em; line-height: 1.7; }
-.page-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
 .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .metric-card { position: relative; min-width: 0; padding: 16px 17px 13px; border: 1px solid var(--line); border-radius: 2px; background: var(--surface); box-shadow: var(--shadow-card); }
@@ -324,7 +320,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .cost-type-card strong { margin-top: 7px; overflow: hidden; max-width: 100%; color: var(--accent); text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .cost-type-card small { margin-top: 3px; color: var(--meta); font-size: var(--text-2xs); }
 .table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 17px; border-bottom: 1px solid #f0f2f6; }
-.table-toolbar .toolbar-search { width: min(390px, 70%); }
 .muted-note { color: var(--meta); font-size: var(--text-2xs); }
 .cost-kind-pill { display: inline-flex; padding: 3px 6px; border-radius: 2px; font-size: var(--text-2xs); white-space: nowrap; }
 .budget-association { color: var(--accent); font-size: var(--text-2xs); }
@@ -1024,9 +1019,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 
 /* Restructured owner settlement/receivables workspace. */
 .owner-finance-page { max-width: 1680px; min-width: 0; }
-.owner-finance-page .page-header { align-items: center; margin-bottom: 18px; gap: 16px; }
-.owner-finance-page .page-header h1 { font-size: 23px; }
-.owner-finance-page .page-header p { line-height: 1.65; }
 .owner-finance-page .page-actions { flex-wrap: wrap; justify-content: flex-end; }
 .owner-finance-page .success-notice, .owner-finance-page .form-alert { display: flex; align-items: center; gap: 9px; margin: 0 0 12px; }
 .owner-finance-page .success-notice > span, .owner-finance-page .form-alert > span { flex: 1; }
@@ -1210,9 +1202,6 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .content-area { max-width: 1900px; padding: 25px 26px 36px; }
 :root[data-content-width="wide"] .content-area { max-width: none; }
 .page-wrap { max-width: 1560px; }
-.page-header { align-items: flex-end; margin-bottom: 22px; }
-.page-header h1 { color: var(--neutral-800); font-size: 26px; font-weight: 700; letter-spacing: -.045em; }
-.page-header p { color: var(--text-muted); font-size: 12px; }
 .eyebrow { color: var(--text-muted); font-size: 10px; letter-spacing: .13em; }
 .panel, .metric-card, .project-overview-card, .project-list-card, .owner-metric, .owner-special-balances article, .downstream-analysis-grid > div {
   border-color: var(--card-border); background: var(--card-bg); box-shadow: var(--shadow-card);

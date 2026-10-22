@@ -882,6 +882,7 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   color: var(--text-muted);
   font-size: 11.5px;
   line-height: 1.65;
+  letter-spacing: 0.01em;
 }
 .page-context {
   display: flex;

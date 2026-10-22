@@ -1,0 +1,25 @@
+{
+  "legacy.css": {
+    "removed": 0,
+    "before": 311587,
+    "after": 311587,
+    "failures": [
+      ".page-header",
+      ".page-header h1",
+      ".page-actions",
+      ".page-header p",
+      ".owner-finance-page .page-header",
+      ".owner-finance-page .page-header h1",
+      ".owner-finance-page .page-header p",
+      ".owner-finance-page .page-actions",
+      ".table-toolbar .toolbar-search",
+      ".system-management-page .page-header"
+    ]
+  },
+  "v6.css": {
+    "removed": 6,
+    "before": 93052,
+    "after": 92634,
+    "failures": []
+  }
+}
