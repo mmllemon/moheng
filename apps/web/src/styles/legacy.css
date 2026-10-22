@@ -277,13 +277,9 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .data-table-panel { overflow: hidden; }
 .table-heading-actions { display: flex; align-items: center; gap: 8px; }
 .table-scroll { width: 100%; overflow-x: auto; }
-.data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10px; }
-.data-table thead th { padding: 11px 13px; border-bottom: 1px solid var(--line); color: var(--meta); background: #fafbfc; text-align: left; white-space: nowrap; font-size: var(--text-2xs); font-weight: 600; }
 .data-table tbody td { padding: 11px 13px; border-bottom: 1px solid #f0f2f6; color: var(--accent); vertical-align: middle; }
 .data-table tbody tr:hover td { background: #fcfcff; }
-.data-table tbody tr:last-child td { border-bottom-color: var(--line); }
 .data-table tfoot td { padding: 12px 13px; border-top: 1px solid var(--line); color: var(--accent); background: #fafbff; font-size: 10px; font-weight: 700; }
-.data-table th:first-child, .data-table td:first-child { padding-left: 18px; }
 .numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .align-right { text-align: right ; }
 .budget-table { min-width: 860px; }
@@ -296,8 +292,6 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .table-action:hover { color: var(--accent); background: transparent; }
 .table-action-danger { color: #c7675d; }
 .table-action-danger:hover { color: #ad443b; background: #fff0ee; }
-.table-primary-text { color: var(--accent); font-size: 10px; font-weight: 600; }
-.table-subtext { display: block; margin-top: 4px; color: var(--meta); font-size: var(--text-2xs); }
 .data-note { display: flex; align-items: flex-start; gap: 8px; padding: 11px 13px; margin-top: 13px; border: 1px solid var(--line); border-radius: 2px; color: var(--accent); background: #fbfcfe; font-size: var(--text-2xs); line-height: 1.8; }
 .note-mark { width: 14px; height: 14px; display: inline-flex; flex: 0 0 14px; align-items: center; justify-content: center; margin-top: 1px; border: 1px solid var(--line); border-radius: 50%; color: var(--accent); font: 700 9px/1 system-ui, sans-serif; }
 .text-danger { color: #cc6056 ; }.text-success { color: #2f946e ; }
