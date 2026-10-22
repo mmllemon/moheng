@@ -181,7 +181,7 @@ const shellAudit = await page.evaluate(() => {
 const shellOk = shellAudit.sidebar?.x === 8
   && shellAudit.sidebar?.y === 8
   && shellAudit.sidebar?.width === 240
-  && shellAudit.titlebar?.height === 44
+  && shellAudit.titlebar?.height === 36
   && shellAudit.main?.x === 256
   && shellAudit.settings?.width === 960
   && shellAudit.settings?.height === 840

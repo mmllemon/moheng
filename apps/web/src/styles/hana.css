@@ -84,8 +84,16 @@
   --titlebar-h: 44px;
   --sidebar-width: 240px;
   --panel-edge-gap: 6px;
-  /* 内容列宽：对齐 hana 会话窗口的 --chat-column-width（mobile-kfy_1ie4.css）。
-     会话窗口的内容列是 max-width + margin auto 居中，这里同样处理。 */
+  /* 内容列宽：对齐 hana 会话窗口（styles.css 的结构 token）。
+     正文列 --chat-column-width = 720px，输入列额外 +1.25rem = 740px，两者不同宽。 */
+  --chat-column-width: 720px;
+  --chat-input-column-extra: 1.25rem;
+  --chat-input-column-width: calc(var(--chat-column-width) + var(--chat-input-column-extra));
+  --chat-copy-column: var(--chat-column-width);
+  /* hana ChatTranscript ._titlebarFrame 的标题左边距公式：
+       max(--space-24, (100% - --chat-copy-column) / 2) + --space-8 + --space-2
+     即正文列左缘再往内 10px（8+2）。 */
+  --chat-copy-edge: calc(max(var(--space-24), (100% - var(--chat-copy-column)) / 2) + var(--space-8) + var(--space-2));
   --page-column-width: 720px;
   --page-column-width-wide: 1080px;
   /* hana 的阅读/聊天宽度四档（SettingsModalShell.js 里的 vf 数组）：
@@ -725,26 +733,26 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   overflow: hidden;
 }
 .app-titlebar {
-  /* 对齐 hana 会话标题层 ._chatTitleBar（ChatTranscript）：
-       width: 100%; max-width: 100%; flex: 1 1 auto
-     它跟内容同宽，不是通栏。宽度由 .app-main 决定。
-     （hana 的 _windowTitlebar 26px 是桌面窗口拖拽条，里面只有品牌图标+名字，
-       不属于浏览器端 moheng 需要复刻的范围。） */
-  position: relative;
+  /* 对齐 hana ._titlebarFrame（ChatTranscript）：
+       position: absolute; top: 0; left: 0; right: 0
+       height: calc(6px * 2 + 24px) = 36px
+       pointer-events: none
+     关键：它是绝对定位的浮层，不占布局空间，内容可以滚到它下面。
+     我上一版做成 flex: 0 0 44px 的实体横条，把内容往下推了 44px，这是错的。 */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
-  flex: 0 0 44px;
-  height: 44px;
-  /* 与内容列同宽（用户要求：标题栏和聊天宽度同宽）。
-     宽度取 --page-column-measure，跟 .page-wrap 一致，居中。 */
-  width: 100%;
-  max-width: var(--page-column-measure);
-  margin: 0 auto;
-  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: var(--space-8);
-  padding: 0 var(--space-12);
-  /* hana 的会话标题层没有底色也没有底边，只是浮在内容上的一段文字。 */
+  column-gap: var(--space-8);
+  height: 36px;
+  /* 标题左边距：优先用实测偏移量（--titlebar-copy-offset，由 Layout 写入），
+     回退到 hana 的 --chat-copy-edge 公式。 */
+  padding: calc(var(--space-6) - var(--space-2)) var(--space-12);
+  padding-left: var(--titlebar-copy-offset, var(--chat-copy-edge));
+  box-sizing: border-box;
   background: transparent;
   pointer-events: none;
 }
@@ -922,13 +930,29 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
   /* 对齐 hana 会话窗口骨架（ChatTranscript ._virtualTranscriptItemInner）：
        max-width: var(--chat-column-width)
        margin-left: auto; margin-right: auto
-     内容列固定宽度、居中。宽度由 --page-column-measure 控制，
-     对应 hana 的四档：640 / 720 / 800 / unlimited。 */
+     但 hana 的 720px 是**单列阅读流**的宽度：每条消息各自 max-width，容器不限。
+     直接把它套到容器上，双栏业务页（列表+详情、表格+侧栏）会被压塌。
+     所以用容器查询：页面内部需要更宽时自动放宽到满宽。 */
   width: 100%;
-  max-width: var(--page-column-measure);
   margin: 0 auto;
-  padding: 22px 28px 44px;
+  padding: 56px 28px 44px;
   animation: none;
+}
+/* 单列阅读型：默认吃列宽四档 */
+.page-wrap {
+  max-width: var(--page-column-measure);
+}
+/* 内部有双栏网格/宽表格时自动放宽 —— 精确枚举已知的宽布局 */
+.page-wrap:has(.projects-ledger-layout),
+.page-wrap:has(.projects-table),
+.page-wrap:has(.data-table),
+.page-wrap:has(.table-scroll),
+.page-wrap:has(.system-policy-table),
+.page-wrap:has(.audit-log-table),
+.page-wrap:has(.members-table-panel),
+.page-wrap:has(.report-studio-layout),
+.page-wrap:has(.costs-layout) {
+  max-width: 100%;
 }
 /* 四档宽度，对齐 hana vf 数组 */
 html[data-page-width="640"] { --page-column-measure: 640px; }

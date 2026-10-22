@@ -150,6 +150,26 @@ export default function Layout() {
     return () => { current = false; };
   }, [user?.id]);
   useEffect(() => { setMobileNavOpen(false); setSettingsNavOpen(false); }, [location.pathname]);
+  /* 标题左缘跟随实际内容列左缘 +10px。
+     hana 的 --chat-copy-edge 公式只在单列阅读流里成立；moheng 有双栏宽页，
+     内容列宽度会变，所以直接量 DOM 写变量，比公式可靠。 */
+  useLayoutEffect(() => {
+    const sync = () => {
+      const wrap = document.querySelector('.page-wrap');
+      const main = document.querySelector('.app-main');
+      if (!wrap || !main) return;
+      const wr = wrap.getBoundingClientRect();
+      const mr = main.getBoundingClientRect();
+      const padLeft = Number.parseFloat(getComputedStyle(wrap).paddingLeft) || 0;
+      document.documentElement.style.setProperty('--titlebar-copy-offset', `${Math.round(wr.x - mr.x + padLeft)}px`);
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    const wrap = document.querySelector('.page-wrap');
+    if (wrap) ro.observe(wrap);
+    const t = window.setTimeout(sync, 120);
+    return () => { ro.disconnect(); window.clearTimeout(t); };
+  }, [location.pathname]);
   /* 浮出侧栏 hover 触发，对齐 hana 的 hover toggle 行为：
      鼠标进入左侧感应区 → enter（滑入）；离开侧栏 → exit（滑出）。
      收缩态下常驻收起，不参与 hover。 */
