@@ -84,6 +84,10 @@
   --titlebar-h: 44px;
   --sidebar-width: 240px;
   --panel-edge-gap: 6px;
+  /* 内容列宽：对齐 hana 会话窗口的 --chat-column-width（mobile-kfy_1ie4.css）。
+     会话窗口的内容列是 max-width + margin auto 居中，这里同样处理。 */
+  --page-column-width: 720px;
+  --page-column-width-wide: 1080px;
 
   --duration-instant: 0.1s;
   --duration-fast: 0.15s;
@@ -887,8 +891,13 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
    页面骨架
    ============================================================= */
 .page-wrap {
+  /* 对齐 hana 会话窗口骨架（ChatTranscript ._virtualTranscriptItemInner）：
+       max-width: var(--chat-column-width)
+       margin-left: auto; margin-right: auto
+     内容列固定宽度、居中，不随视口拉伸。
+     moheng 原来写死 1320px，宽度不受控。 */
   width: 100%;
-  max-width: 1320px;
+  max-width: var(--page-column-width-wide);
   margin: 0 auto;
   padding: 22px 28px 44px;
   animation: none;

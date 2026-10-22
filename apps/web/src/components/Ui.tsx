@@ -25,9 +25,15 @@ export function SettingsSection({ title, description, actions, children, hidden 
   </section>;
 }
 
-export function PageHeader({ title, subtitle, context, actions }: { title: string; subtitle?: string; context?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
+export function PageHeader({ title: _title, subtitle, context, actions }: { title: string; subtitle?: string; context?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
+  /* 对齐 hana 的页面骨架：hana 的会话窗口没有页面级大标题，
+     当前所在位置由顶栏的会话标题层承担（对应 moheng 顶栏的页面名）。
+     这里保留 title 参数以兼容调用方，但不再渲染 h1。
+     说明文字和操作按钮仍然保留。 */
+  const body = context ?? (subtitle ? <p>{subtitle}</p> : null);
+  if (!body && !actions) return null;
   return <div className="page-header">
-    <div><h1>{title}</h1>{context ? <div className="page-context">{context}</div> : subtitle && <p>{subtitle}</p>}</div>
+    {body ? <div className="page-header-copy">{body}</div> : null}
     {actions && <div className="page-actions">{actions}</div>}
   </div>;
 }
