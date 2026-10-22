@@ -36,6 +36,12 @@
   --panel-edge-gap: 6px;
   --panel-card-radius: var(--radius-lg);
   --corner-radius-scale: 1;
+  /* hana 的空间变化时长与缓动（ChatTranscript 的 --chalkboard-motion-*）：
+       --chalkboard-motion-duration-space: .4s
+       --chalkboard-motion-ease-ios: cubic-bezier(.22, 1, .36, 1)
+     侧栏收起/展开用这一对，因为它是“空间变化”不是“元素进出”。 */
+  --duration-space: 0.4s;
+  --ease-ios: cubic-bezier(0.22, 1, 0.36, 1);
   --border-width: 1px;
   --radius-input: 6px;
   --radius-card-base: 8px;
@@ -462,12 +468,21 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
   color: var(--text);
   z-index: 10;
-  transition: width var(--duration-slow) var(--ease-out), border-color var(--duration-slow) var(--ease-out);
+  /* 对齐 hana ._fp_f9c75 的 transition：
+       transition: width    var(--chalkboard-motion-duration-space) var(--chalkboard-motion-ease-ios),
+                   margin   ...
+                   opacity  ...
+                   border-color ...
+     --chalkboard-motion-duration-space: .4s
+     --chalkboard-motion-ease-ios: cubic-bezier(.22, 1, .36, 1)
+     四个属性一起动，所以宽度收窄、外边距消失、透明度降低、边框褪去是同步的。 */
+  transition: width var(--duration-space) var(--ease-ios),
+              margin var(--duration-space) var(--ease-ios),
+              opacity var(--duration-space) var(--ease-ios),
+              border-color var(--duration-space) var(--ease-ios);
 }
-/* hana .float-sidebar[data-stage] 的动画参数：--duration-slow + --ease-smooth，forwards 保留终态 */
-/* hana .sidebar.collapsed（styles.css:633）：宽度归零 + 边框透明，内部内容 opacity 归零 */
-.app-shell.sidebar-collapsed .app-sidebar { width: 0; border-right-color: transparent; overflow: hidden; }
-.app-shell.sidebar-collapsed .app-sidebar > * { opacity: 0; pointer-events: none; transition: opacity var(--duration-fast) var(--ease-out); }
+/* 折叠时内部内容淡出（与宽度动画同步，0.4s 同一缓动） */
+.app-shell.sidebar-collapsed .app-sidebar > * { opacity: 0; pointer-events: none; transition: opacity var(--duration-space) var(--ease-ios); }
 .app-shell.sidebar-collapsed .titlebar-restore { display: inline-grid !important; }
 .app-sidebar::before,
 .app-sidebar::after {
@@ -918,9 +933,21 @@ html[data-paper-texture] .app-sidebar::after { display: block; }
 .route-transition { min-height: 100%; }
 .app-footer { display: none !important; }
 
-/* 折叠：只留一条可恢复的标题层按钮 */
-.app-shell.sidebar-collapsed .app-sidebar { transform: translateX(calc(-1 * (var(--sidebar-width) + var(--panel-edge-gap) + 14px))); opacity: 0; pointer-events: none; }
-.app-shell.sidebar-collapsed .app-main { margin-left: 0; }
+/* 折叠：对齐 hana ._fpCollapsed_（ChatTranscript）：
+     width: 0; margin-left: 0; margin-right: 0
+     opacity: 0; border-color: transparent; pointer-events: none
+   收起靠宽度归零，主区自动撑开（flex 分配剩余空间），
+   不需要给 .app-main 写 margin 或宽度。
+   之前用 transform: translateX 是错的 —— 它只做视觉位移，
+   侧栏仍占着布局宽度，主区永远不会撑开。 */
+.app-shell.sidebar-collapsed .app-sidebar {
+  width: 0;
+  margin-left: 0;
+  margin-right: 0;
+  opacity: 0;
+  border-color: transparent;
+  pointer-events: none;
+}
 .app-shell.sidebar-collapsed .titlebar-restore { display: inline-grid !important; }
 .titlebar-restore { display: none !important; margin-right: 4px; }
 .app-shell.sidebar-collapsed .app-titlebar { padding-left: 14px; }
