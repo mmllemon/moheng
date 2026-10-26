@@ -2723,86 +2723,107 @@ html .filter-bar input[type="search"] {
 .projects-ledger-page .projects-dossier-ratio,
 .projects-ledger-page .projects-dossier-note { border-bottom-color: color-mix(in srgb, var(--card-border) 62%, transparent); }
 
+/* =============================================================
+   业务数据表 —— 借 hana 的 row 语言，不用 Markdown 表格的格线
+   -------------------------------------------------------------
+   之前的做法是照 .cm-table-widget（hana 的 Markdown 编辑器表格）：
+     全格线 1px + 表头淡底 + hover 整行 7% 灰
+   那是「文档里画表格」的形态，不是业务台账。
+
+   hana 处理列表数据的唯一范式是 row（._projectRow / _agentActivityRow）：
+     min-height 28-34px；padding 4-8px；每行自己是 squircle 圆角矩形；
+     hover 只改背景（overlay-light），无边框、无阴影、无斑马纹。
+
+   表格要保住横向对齐/排序/表头冻结，所以形态仍是 table，
+   但视觉换成 row：只保表头下 1 条线，行间无线，hover 是圆角浮起的背景。
+   ============================================================= */
 .data-table {
   width: 100%;
+  /* separate 是 hover 圆角的前提：collapse 下 td 的 border-radius 无效 */
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 12.5px;
-  color: var(--text-light);
+  font-size: var(--fs-caption, 12.48px);
+  color: var(--text);
 }
-/* 表头：Hana 的阅读态表格用 13px / 600 + 淡色底区分，不靠加粗也不靠竖线 */
+
+/* 表头：透明底 + 1 条下边线。不做淡色底块，避免「表头是一块灰条」。 */
 .data-table thead th {
-  height: 36px;
-  padding: 0 var(--space-12);
+  height: 32px;
+  padding: 0 var(--space-10);
+  border: 0;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--text) 3.5%, transparent);
+  background: transparent;
   color: var(--text-muted);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: var(--fs-hint, 11.2px);
+  font-weight: 500;
   letter-spacing: 0.02em;
   text-align: left;
   white-space: nowrap;
 }
+
+/* 行内单元格：无格线、无边框，靠行高与内边距分隔 */
 .data-table tbody td {
-  height: 40px;
-  padding: var(--space-8) var(--space-12);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  height: 34px;
+  padding: var(--space-6) var(--space-10);
+  border: 0;
   background: transparent;
   vertical-align: middle;
 }
-/* 业务数据表：对齐 hana .cm-table-widget
-     th, td { border: 1px solid var(--border); padding: .3em .6em; text-align: left; }
-     th     { background: var(--overlay-light); font-weight: 600; }
 
-   注意：moheng 原来用的是「斑马纹 + 无格线」：
-     .data-table tbody tr:nth-child(even) td { background: color-mix(--text 4.5%, transparent) }
-
-   那个 4.5% 在 hana 里只用于 **Markdown 预览表格**
-   （._previewPanelBody_11fea .preview-markdown tbody tr:nth-child(2n) td），
-   是文档渲染的排版规则，不是业务台账表。
-   hana 的业务表靠格线区分单元格，不靠斑马纹。 */
-
-.data-table tbody tr:nth-child(even) td {
-  background: transparent;
-}
-
-/* 格线：对齐 .cm-table-widget th/td */
-.data-table th,
-.data-table td {
-  border: 1px solid var(--border);
-}
-
-/* 表头底色：对齐 .cm-table-widget th */
-.data-table thead th {
-  background: var(--overlay-light);
-  font-weight: 600;
-}
+/* 行：hover 时整行圆角浮起（hana 的 row 行为）
+   hana 的 _projectRow / _agentActivityRow hover 用 --overlay-light（0.05），
+   不是 --overlay-subtle（0.03）；后者在纸色底上几乎看不见。 */
 .data-table tbody tr {
-  transition: background var(--duration-fast);
+  transition: background var(--duration-fast) var(--ease-out);
 }
-/* hover 需盖过斑马纹，用略深的底色 */
 .data-table tbody tr:hover td {
-  background: color-mix(in srgb, var(--text) 7%, transparent);
+  background: var(--overlay-light);
 }
-.data-table tbody tr:hover td:first-child { padding-left: 12px; box-shadow: none; }
+.data-table tbody tr:hover td:first-child {
+  border-top-left-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-bottom-left-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+}
+.data-table tbody tr:hover td:last-child {
+  border-top-right-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-bottom-right-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+}
+
+/* 选中 / 聚焦：沿用 accent 系，不用描边 */
 .data-table tbody tr:focus,
-.data-table tbody tr:focus-visible { background: color-mix(in srgb, var(--accent) 4%, var(--bg-card)); outline: 1px solid var(--state-focus-ring); outline-offset: -1px; }
+.data-table tbody tr:focus-visible {
+  outline: none;
+}
 .data-table tbody tr:focus td,
-.data-table tbody tr:focus-visible td { background: color-mix(in srgb, var(--accent) 4%, var(--bg-card)); box-shadow: none; }
-.data-table tbody tr[aria-selected="true"] td { background: var(--state-selected-bg); }
-.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr:focus-visible td {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.data-table tbody tr[aria-selected="true"] td {
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+/* 表格底部合计行：一条上边线 + 无底色块 */
 .data-table tfoot td {
-  padding: var(--space-8) var(--space-12);
+  padding: var(--space-8) var(--space-10);
+  border: 0;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  background: transparent;
   color: var(--text);
-  font-size: 10.5px;
+  font-size: var(--fs-hint, 11.2px);
   font-weight: 500;
 }
 .data-table .numeric, .numeric { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 .data-table .align-right, .align-right { text-align: right; }
 .table-primary-text { display: block; color: var(--text); font-size: 12px; font-weight: 500; line-height: 1.4; }
-.table-subtext { display: block; margin-top: 2px; color: var(--text-muted); font-size: 9.8px; line-height: 1.4; }
+.table-subtext { display: block; margin-top: 2px; color: var(--text-muted); font-size: var(--fs-hint, 11.2px); line-height: 1.4; /* 副文本不折行：单元格里的长文本（如「审批：2026/10/24 14:30」）
+   在窄列里会折成 4 行，把整行行高从 34px 撑到 88px，
+   导致相邻行的行高不一致。改为单行省略。 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 /* 表格滚动容器：必须能横向滚动。父级不能 overflow: hidden，
    否则窄视口下 min-width 表格的右侧列会被裁掉（不是滚动，是直接消失）。 */
 .table-scroll { overflow-x: auto; overflow-y: visible; }
@@ -4533,8 +4554,8 @@ html[data-paper-texture] .settings-window::after { display: block; }
   .appearance-theme-swatch { width: 52px; height: 30px; flex: 0 0 52px; }
 }
 
-html[data-density="compact"] .data-table thead th { height: 32px; }
-html[data-density="compact"] .data-table tbody td { height: 32px; padding-top: var(--space-4); padding-bottom: var(--space-4); }
+html[data-density="compact"] .data-table thead th { height: 30px; }
+html[data-density="compact"] .data-table tbody td { height: 30px; padding-top: var(--space-4); padding-bottom: var(--space-4); }
 html[data-density="compact"] .sidebar-nav-link { height: 29px; }
 html[data-density="compact"] .v6-log-row { padding-top: 7px; padding-bottom: 7px; }
 html[data-content-width="wide"] .page-wrap { max-width: 1600px; }
@@ -5670,10 +5691,8 @@ select { corner-shape: squircle !important; }
   .projects-ledger-page .projects-kpi-strip > div:nth-child(3)::before { display: none; }
 }
 
-/* 卡片内分隔线统一内缩，表格上下不画封口线 */
-.data-table thead th { border-top: 0 !important; }
-.data-table tbody tr:last-child td { border-bottom: 0; }
-.data-table tfoot td { border-bottom: 0; }
+/* 卡片内分隔线统一内缩 */
+.data-table thead th { border-top: 0; }
 
 .settings-row { border-bottom: 0; position: relative; }
 .settings-row + .settings-row::before { content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: 1px; background: color-mix(in srgb, var(--border) 66%, transparent); pointer-events: none; }

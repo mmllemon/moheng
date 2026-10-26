@@ -269,7 +269,7 @@ check('appearance page keeps the settings nav (hana three-column structure)',
   && !hana.includes('.settings-window.is-appearance-only .settings-nav { display: none }')
   && hana.includes('.settings-body {')
   && hana.includes('display: flex'));
-check('card dividers are inset and table edges have no rules', hana.includes('.settings-row + .settings-row::before') && hana.includes('.data-table thead th { border-top: 0 !important; }'));
+check('card dividers are inset and table edges have no rules', hana.includes('.settings-row + .settings-row::before') && /\.data-table thead th \{[^}]*border:\s*0;[^}]*border-bottom:\s*1px solid var\(--border\)/.test(hana));
 check('divider geometry uses Hana border and spacing tokens', hana.includes('--card-divider-width: var(--border-width') && hana.includes('--card-divider-inset: var(--space-16)'));
 /* 断言意图：交互控件走 32px 高度与带缩放的 radius token。
 

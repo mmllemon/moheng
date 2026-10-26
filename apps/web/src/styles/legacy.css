@@ -273,8 +273,15 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .data-table-panel { overflow: hidden; }
 .table-heading-actions { display: flex; align-items: center; gap: 8px; }
 .table-scroll { width: 100%; overflow-x: auto; }
+/* 2026-10-26 退役：旧表格单元格样式（v6 体系）。
+   padding 11px 13px 把行高撑到 88px（新规则是 6px 10px / 34px），
+   border-bottom: 1px solid #f0f2f6 是蓝灰色底边线（纸色底上偏冷），
+   且 color: var(--accent) 让整个单元格文字都是蓝色。
+   现由 hana.css 的 .data-table tbody td 接管：无边框、--text 色、6px 10px。 */
+/*
 .data-table tbody td { padding: 11px 13px; border-bottom: 1px solid #f0f2f6; color: var(--accent); vertical-align: middle; }
 .data-table tfoot td { padding: 12px 13px; border-top: 1px solid var(--line); color: var(--accent); background: #fafbff; font-size: 10px; font-weight: 700; }
+*/
 .numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .align-right { text-align: right ; }
 .budget-table { min-width: 860px; }
@@ -546,9 +553,14 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .nav-link > svg { transition: transform .16s ease, color .16s ease; }
 .nav-link:hover > svg { transform: translateX(2px); }
 .project-overview-card:hover, .project-list-card:hover, .metric-card:hover, .cost-type-card:hover { transform: translateY(-2px); }
+/* 2026-10-26 退役：旧 hover 底色 #fafbff（蓝紫调）直接上在 tr 上，
+   盖过 td 的 --overlay-light（暖灰），截图里看起来偏蓝。
+   新规则用 tr:hover td { background: var(--overlay-light) }。 */
+/*
 .data-table tbody tr { transition: background-color .14s ease; }
 .data-table tbody tr:hover { background: #fafbff; }
 .data-table tbody tr td { transition: background-color .14s ease, color .14s ease; }
+*/
 .field input:focus, .field select:focus, .field textarea:focus, .input-with-icon:focus-within, .toolbar-search:focus-within {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(91, 112, 210, .10);
@@ -1195,6 +1207,19 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .toolbar-search input, .owner-finance-search input, .field input, .field select, .field textarea, .form-stack input, .data-table select { color: var(--neutral-800); }
 .field input, .field select, .field textarea, .form-stack input, .data-table select { border-color: var(--card-border); background: var(--card-bg); }
 .field label, .form-stack .field label { color: var(--text-secondary); }
+/* =============================================================
+   2026-10-26 退役：旧表格样式（v6/legacy 体系）
+   -------------------------------------------------------------
+   这批规则被 hana.css 里新的 .data-table 规则取代：
+     · border-spacing: 0 3px  →  0（行间不需要间隙）
+     · padding: var(--row-padding)（11px 14px）→ 6px 10px
+     · background: var(--card-bg)（不透明底）→ transparent
+     · td:first-child 圆角 2px → 9.2px（squircle）
+     · hover: var(--row-hover)（蓝色系）→ var(--overlay-subtle)（暖灰）
+     · hover td:first-child { padding-left: 18px }（位移）→ 取消
+   保留在这里作为回溯参照，不再生效。
+   若要彻底删除，确认无页面依赖 --row-hover / --table-head-bg 后整块删掉。 */
+/*
 .data-table { border-collapse: separate; border-spacing: 0 3px; font-size: 12px; font-variant-numeric: tabular-nums; }
 .data-table thead th { padding: 10px 14px; border-bottom: 1px solid var(--card-border); color: var(--text-muted); background: var(--table-head-bg); font-size: 10px; letter-spacing: .025em; }
 .data-table tbody td { padding: var(--row-padding); border-bottom: 0; color: var(--text-secondary); background: var(--card-bg); font-size: 11px; }
@@ -1205,6 +1230,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .data-table tbody tr:focus { outline: none; }
 .data-table tbody tr:focus-visible td { box-shadow: inset 0 1px var(--accent-500), inset 0 -1px var(--accent-500); }
 .data-table tfoot td { border-color: var(--card-border); color: var(--neutral-700); background: var(--table-head-bg); font-size: 11px; }
+*/
 .numeric, .align-right, time, .project-card-metric strong, .owner-metric > strong, .owner-metric-dual > div > strong { font-variant-numeric: tabular-nums; }
 .owner-status { border-radius: 999px; padding: 3px 8px; font-size: 10px; font-weight: 600; }
 .cost-workspace-tabs, .owner-finance-tabs { border-color: var(--card-border); background: var(--card-bg); box-shadow: 0 4px 12px -10px rgba(15,23,42,.2); }

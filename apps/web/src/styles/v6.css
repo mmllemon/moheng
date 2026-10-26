@@ -190,12 +190,23 @@ kbd{padding:1px 5px;border:1px solid var(--line);border-radius:2px;background:#f
 .panel-header-action{border:0;background:transparent;color:var(--accent);font-size:11.5px;cursor:pointer}
 .analysis-chart-panel,.table-panel{border-top:1px solid var(--line-2)}
 
-/* ---------- 表格 ---------- */
+/* ---------- 表格 ----------
+   2026-10-26 退役：v6 表格样式（第三套旧定义）。
+   border-collapse: collapse 会让 td 的 border-radius 失效，
+   与 hana row 语言的「hover 整行圆角浮起」根本冲突；
+   padding 11px 12px 又把行高撑到 88px。
+   现由 hana.css 的 .data-table 接管。 */
+/*
 .data-table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;background:transparent}
 .data-table tbody td{padding:11px 12px;border-bottom:1px solid var(--line);background:transparent;color:var(--ink-2);font-size:12.5px;vertical-align:middle}
 .data-table tbody tr td:first-child{border-radius:0}
+*/
+/* 2026-10-26 退役：首/末列额外 12px 内边距会覆盖新规则的 padding，
+   导致首列文字比表头内缩 2px。新规则统一用 6px 10px。 */
+/*
 .data-table th:first-child,.data-table td:first-child{padding-left:12px}
 .data-table th:last-child,.data-table td:last-child{padding-right:12px}
+*/
 .data-table .num,.data-table .align-right{text-align:right;white-space:nowrap}
 .table-scroll{width:100%;overflow-x:auto}
 .row-actions{display:flex;justify-content:flex-end;gap:2px}
@@ -394,7 +405,7 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .note-mark{border-color:var(--line-2);color:var(--bronze)}
 
 /* budget/cost code & chips */
-.budget-code,.note-mark,.tree-branch{border:1px solid var(--line-2);border-radius:2px;background:var(--paper-2);color:#6f6757;font-family:var(--mono);font-size:10.5px}
+.budget-code,.note-mark,.tree-branch{border:1px solid var(--line-2);border-radius:calc(var(--radius-compact) * var(--corner-radius-scale, 1));corner-shape:squircle;background:var(--overlay-light);color:var(--text-muted);font-family:var(--font-mono);font-size:var(--fs-hint)}
 .tree-branch{color:var(--bronze)}
 .tree-leaf-dot{background:var(--line-2)}
 .cost-kind-pill{border:1px solid var(--line-2);border-radius:2px;background:transparent;color:var(--meta);font-size:10.5px}
