@@ -108,8 +108,11 @@ html .report-studio-entry-grid {
 
 html .assistant-check-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
-/* /parties 只有 2 个真指标 + 1 段跨列说明 */
-html .business-party-summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* /parties 只有 2 个真指标 + 1 段跨列说明。
+   2 项时用 1fr 让它们平分整行（之前限 320px 会让右侧空 651px）。 */
+html .business-party-summary-strip {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
 /* 带页面前缀的容器：同时按页面前缀+html 前缀重写一遍 */
 html .ds-section-card .downstream-summary-grid,
@@ -239,42 +242,42 @@ html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
    用 .panel 同时挂名，直接把特异度拉到 32+。 */
 html .system-overview-metrics > article.system-overview-metric:nth-child(odd),
 html :is(.business-party-summary-strip, .system-authorization-scope-grid, .report-studio-entry-grid) > :nth-child(odd) {
-  padding-left: 0;
+  padding-left: var(--space-16);
   border-left: 0;
 }
 html .system-overview-metrics > article.system-overview-metric:nth-child(even),
 html :is(.business-party-summary-strip, .system-authorization-scope-grid, .report-studio-entry-grid) > :nth-child(even) {
-  padding-right: 0;
+  padding-right: var(--space-16);
   padding-left: var(--space-16);
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 
 /* 三列布局（/system/security 等）：3n+1 行首，3n 行末 */
 html :is(.security-metrics, .notice-summary-grid, .audit-summary-grid) > :nth-child(3n + 1) {
-  padding-left: 0;
+  padding-left: var(--space-16);
   border-left: 0;
 }
 html :is(.security-metrics, .notice-summary-grid, .audit-summary-grid) > :nth-child(3n) {
-  padding-right: 0;
+  padding-right: var(--space-16);
 }
 /* /system/operations 是四列 */
 html .system-ops-summary > :nth-child(4n + 1) {
-  padding-left: 0;
+  padding-left: var(--space-16);
   border-left: 0;
 }
 html .system-ops-summary > :nth-child(4n) {
-  padding-right: 0;
+  padding-right: var(--space-16);
 }
 
 /* 五列布局（/cost/contracts 是 3 项 + 2 项跨列，非标准 5 列） */
 html .downstream-summary-grid > :nth-child(5n + 1),
 html .assistant-check-grid > :nth-child(5n + 1) {
-  padding-left: 0;
+  padding-left: var(--space-16);
   border-left: 0;
 }
 html .downstream-summary-grid > :nth-child(5n),
 html .assistant-check-grid > :nth-child(5n) {
-  padding-right: 0;
+  padding-right: var(--space-16);
 }
 
 /* /cost/contracts 的 span-detail-wide 是跨列项，
@@ -286,12 +289,13 @@ html .owner-contract-detail-grid > .span-detail-wide {
 }
 /* 标准 5 列那里只有前 3 项同行 */
 html .owner-contract-detail-grid > :nth-child(3) {
-  padding-right: 0;
+  padding-right: var(--space-16);
 }
 
 /* /parties 的说明段落跨满整行，不参与逐行竖线 */
 html .business-party-summary-strip > p {
-  padding-left: 0;
+  grid-column: 1 / -1;
+  padding-left: var(--space-16);
   border-left: 0;
 }
 
@@ -563,7 +567,7 @@ html .system-ops-summary .system-ops-summary-cell {
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 html .system-ops-summary .system-ops-summary-cell:first-child {
-  padding-left: 0;
+  padding-left: var(--space-16);
   border-left: 0;
 }
 html .system-ops-summary .system-ops-summary-cell:last-child {
@@ -662,7 +666,7 @@ html article.panel.system-overview-metric:first-child,
 html article.panel.notice-summary-card:first-child,
 html article.panel.audit-summary-card:first-child,
 html article.panel.report-studio-entry-card:first-child {
-  padding-left: 0;
+  padding-left: var(--space-16);
   border-left: 0;
 }
 html article.panel.change-summary:last-child,
@@ -680,7 +684,7 @@ html article.panel.report-studio-entry-card:last-child {
    旧规则用 flex-wrap 让它撑满一行；转成 grid 后它会占掉一个列位，
    导致指标只剩 2 列且高度不齐。这里让它跨满整行。 */
 html .business-party-summary-strip {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* 列宽由上方（第 112 行附近）的 320px 上限规则控制，这里不再重复声明。 */
   row-gap: 0;
 }
 html .business-party-summary-strip > p {
