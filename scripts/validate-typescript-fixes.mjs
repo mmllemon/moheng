@@ -38,7 +38,21 @@ check('ExcelJS Buffer compatibility is cast at method parameter boundary', [budg
 check('Lucide icon prop uses library icon type and Button exposes small size', ui.includes('type LucideIcon') && ui.includes('icon: LucideIcon') && ui.includes("size?: 'sm' | 'md'") && ui.includes('button-small'));
 check('React 19 refs that write current use explicit nullable generic', selectField.includes('useRef<HTMLSelectElement | null>(null)') && datePicker.includes('useRef<HTMLInputElement | null>(null)'));
 check('required React hooks are imported and owner advance type includes notes', projectsPage.includes('useEffect, useMemo, useRef') && ownerFinancePage.includes('advanceMovements: {') && ownerFinancePage.includes('notes?: string | null'));
-check('legacy theme mapping and missing preview path are type-narrowed', authStore.includes("theme?: UiTheme | 'light' | 'dark'") && designer.includes('!preview ? <ErrorBlock'));
+/* 断言意图：legacy 主题值（旧版的 'light' / 'dark'）不能被原样接受，
+   必须显式收窄为 UiTheme；同时 ReportDesigner 在缺少预览数据时给出 ErrorBlock。
+
+   2026-10-23 修正：原断言找 "theme?: UiTheme | 'light' | 'dark'"，
+   但实现已改为「先当 string 读入、再逐个比对收窄」（auth-store.ts:81-83），
+   那是更正确的写法（localStorage 里可能是任意脏值，不只是 'light'/'dark'）。
+   断言跟着实现走，而不是让实现回退去迎合字符串匹配。 */
+const authStoreNarrowsLegacyTheme = authStore.includes("{ theme?: string }") &&
+  authStore.includes("const savedTheme = value.theme");
+  // 旧值不能直接赋给 UiTheme：必须经过枚举比对
+check('legacy theme mapping and missing preview path are type-narrowed',
+  authStoreNarrowsLegacyTheme &&
+  authStore.includes("savedTheme === 'plain-white' || savedTheme === 'midnight'") &&
+  authStore.includes("const theme: UiTheme =") &&
+  designer.includes('!preview ? <ErrorBlock'));
 check('MFA decrypt hex inputs are narrowed before Buffer.from under noUncheckedIndexedAccess', authLib.includes('const ivHex = parts[1]') && authLib.includes("typeof ivHex !== 'string'") && authLib.includes("Buffer.from(ivHex, 'hex')") && authLib.includes("Buffer.from(authTagHex, 'hex')") && authLib.includes("Buffer.from(ciphertextHex, 'hex')"));
 check('system-management registers authentication hook instead of invoking it as a normal function', systemManagement.includes("app.addHook('preHandler', authRequired)") && !systemManagement.includes('await authRequired(request, reply)'));
 check('readonly as-const event payload arrays are accepted by AssistantEventJsonValue', assistantEvents.includes('readonly AssistantEventJsonValue[]') && assistantEvents.includes('readonly [key: string]: AssistantEventJsonValue'));

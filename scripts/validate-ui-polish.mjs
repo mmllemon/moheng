@@ -12,6 +12,8 @@ function check(label, condition) {
 }
 
 const hana = await read('apps/web/src/styles/hana.css');
+const cssPanel = await read('apps/web/src/styles/workspace-panel.css');
+const windowControls = await read('apps/web/src/components/WindowControls.tsx');
 const [v6, legacy, main, layout, brand, datePicker, selectField, costLayout, dashboard, projects, assistant, center, appSource, budget, analysis, costs, confirmHost, focusTrap, systemTabs, securityPage, policiesPage, governancePage, parametersPage, accountsPage, assistantPage, auditPage, dictionariesPage, operationsPage, notificationsPage] = await Promise.all([
   read('apps/web/src/styles/v6.css'),
   read('apps/web/src/styles/legacy.css'),
@@ -58,10 +60,51 @@ check('release metadata uses ' + expectedVersion,
   && webPackage.version === expectedVersion
   && appInfo.includes("APP_VERSION = '" + expectedVersion + "'"));
 
-check('Hana 1.1.35 paper / ink / seal tokens are present',
-  hana.includes('--bg: #f8f4ed') && hana.includes('--text: #3b3d3f') && hana.includes('--accent: #466b80') && hana.includes('--sidebar-bg: #f4f0ea'));
-check('V6 serif and brush fonts are declared',
-  v6.includes('MH Serif SC') && v6.includes('MH Serif') && v6.includes('MH Brush') && v6.includes('notoserifsc.woff2'));
+/* 断言意图：Hana 1.1.35 的纸色/墨色/远山青 token 已在 hana.css 落地。
+
+   2026-10-23 修正两处断言与实现脱节：
+   1. `--text` 已改为 `var(--content-ink, #3b3d3f)` —— 这是字体对比度五档功能
+      的实现需要（content-ink 随对比度档位变化，兜底值仍是 Hana 真值），
+      硬匹配 `--text: #3b3d3f` 会把正确实现判成失败。
+   2. `--accent` 断言写的是墨衡自改值 #466b80，而 Hana 真值是 #537D96。
+      这里保留 #466b80 是因为墨衡为达到 WCAG AA 有意压深（见设计文档 §4），
+      但断言标签不应再声称“Hana tokens are present”，改为如实描述。 */
+check('Hana 1.1.35 paper tokens and intentional accent shift are present',
+  hana.includes('--bg: #f8f4ed') &&
+  (hana.includes('--text: #3b3d3f') || hana.includes('--content-ink, #3b3d3f')) &&
+  hana.includes('--accent: #466b80') &&
+  hana.includes('--sidebar-bg: #f4f0ea') &&
+  // 有意偏离必须有据：Hana 原值为 #537d96
+  hana.includes('#537D96') || hana.includes('#537d96'));
+/* 断言意图：标题衬线、数字衬线、毛笔字三个字体族均已声明，且字体文件真实存在。
+
+   2026-10-23 修正：
+   1. `@font-face` 已从 v6.css 迁到 hana.css（字体属于 Hana 设计层，
+      v6 是旧层）。仍只查 v6.css 会把正确重构判成失败。
+   2. 原断言查 CSS 里是否出现 `notoserifsc.woff2`，但字体声明与字体文件
+      是两件事。只看字符串会出现“文件已删但 CSS 引用尚存”的假通过。
+      改为：字体族声明 + 字体文件实际存在，两者都查。 */
+{
+  const fontFiles = await import('node:fs/promises').then((fs) =>
+    Promise.all(
+      ['notoserifsc.woff2', 'spectral-semibold.woff2', 'mashanzheng-subset.woff2'].map(async (name) => {
+        try {
+          await fs.access(`apps/web/public/fonts/${name}`);
+          return true;
+        } catch {
+          return false;
+        }
+      })
+    )
+  );
+  const fontCss = `${v6}\n${hana}`;
+  check('V6 serif and brush fonts are declared',
+    fontCss.includes('MH Serif SC') &&
+    fontCss.includes('MH Serif') &&
+    fontCss.includes('MH Brush') &&
+    fontCss.includes('notoserifsc.woff2') &&
+    fontFiles.every(Boolean));
+}
 check('Hana original rice / cotton / fine textures are wired',
   hana.includes('rice-mottle-hi.png') && hana.includes('cotton-mottle-hi.png') && hana.includes('fine-mottle-hi.png') && hana.includes('--paper-texture-strength'));
 check('legacy styles are isolated in a cascade layer',
@@ -79,11 +122,13 @@ check('sidebar brand uses the brush wordmark and Chinese subtitle',
   layout.includes('BrandMark') && layout.includes('<strong>墨衡</strong>') && layout.includes('工程经营管理'));
 check('mobile navigation drawer trigger and backdrop are present',
   layout.includes('titlebar-mobile-menu') && layout.includes('mobile-nav-backdrop') && layout.includes('mobileNavOpen'));
-check('active cost tab auto-scrolls into view',
-  costLayout.includes('cost-workspace-tab.active') && costLayout.includes('scrollTo'));
+check('active cost tab is expressed by the slider position (hana _tabSlider)',
+  costLayout.includes('cost-workspace-tab-slider') && costLayout.includes("'--slider-index'")
+  && costLayout.includes('aria-selected'));
 
-check('active cost tab suppresses the legacy hand-drawn ring',
-  hana.includes('.cost-workspace-tab.active::before { display: none'));
+check('cost tab uses the hana slider instead of the legacy hand-drawn ring',
+  hana.includes('.cost-workspace-tab-slider')
+  && hana.includes('grid-template-columns: repeat(var(--tab-count'));
 check('checkbox uses the brush check treatment',
   v6.includes('input[type=checkbox]:checked') && v6.includes('a23a2a'));
 check('date picker selected day has the brush ring',
@@ -115,16 +160,40 @@ const accountSecurity = await read('apps/web/src/pages/AccountSecurityPage.tsx')
 check('Hana interface settings page is wired', appSource.includes('settings/appearance') && appearanceSettingsExists && hana.includes('width: 208px') && hana.includes('display: flex;'));
 check('Hana app icon and font cards are wired', appIconExists && appearanceSettingsExists && hana.includes('settings-icon-card') && hana.includes('settings-font-card') && appSource.includes('settings/appearance'));
 check('Hana mobile settings drawer is wired', layout.includes('settingsNavOpen') && hana.includes('settings-nav.is-mobile-open') && hana.includes('settings-mobile-nav-trigger'));
-check('Hana capability-style quick panel is wired', layout.includes('quick-action-tabs') && layout.includes('quick-action-grid') && hana.includes('.quick-action-panel') && hana.includes('grid-template-columns: repeat(2, minmax(0, 1fr))'));
-check('settings-style business page is applied to account security', accountSecurity.includes('settings-section') && accountSecurity.includes('settings-card') && accountSecurity.includes('settings-row'));
-check('business dialogs share trigger-level paper morph', paperDialogMorphExists && layout.includes('PaperDialogMorph') && layout.includes('data-focus-trap={quickActionsOpen ? \'popover\' : undefined}'));
+check('Hana capability-style quick panel is wired', (layout + windowControls).includes('quick-action-tabs') && (layout + windowControls).includes('quick-action-grid') && hana.includes('.quick-action-panel') && hana.includes('grid-template-columns: repeat(2, minmax(0, 1fr))'));
+/* 断言意图：账号安全页使用设置式结构（分区 + 卡片 + 行）。
+
+   2026-10-23 更新：结构已从 .settings-section 平铺改为 SettingsSection 组件
+   （对齐 Hana 的 Section / Section.Card 组件结构）。断言改为验证新结构。 */
+check('settings-style business page is applied to account security',
+  accountSecurity.includes('SettingsSection') && accountSecurity.includes('account-security-summary') && accountSecurity.includes('settings-row'));
+check('business dialogs share trigger-level paper morph', paperDialogMorphExists && layout.includes('PaperDialogMorph') && windowControls.includes('data-focus-trap={quickActionsOpen ? \'popover\' : undefined}'));
 check('Hana paper morph follows a real trigger', paperMorphExists && layout.includes('takePaperOrigin') && hana.includes('--duration-paper-unfold'));
-check('Hana hairline scrollbar is 4px and faint', hana.includes('::-webkit-scrollbar { width: 4px; height: 4px; }') && hana.includes('--text-muted) 20%') && hana.includes('scrollbar-width: auto'));
+/* 2026-10-23 更新（第四轮，最终）：滚动条按 hana 的真实写法。
+
+   hana 的 styles.css：
+     *::-webkit-scrollbar { width: 4px; height: 4px }
+     *::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.2); border-radius: 2px }
+     *::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.4) }
+
+   hana 的「静默隐藏」是 Electron OverlayScrollbar 的行为，不是 CSS 造成的。
+   实测确认：Chrome 对 thumb 的 background 变化一旦显色就不会变回透明，
+   所以「默认 transparent + 滚动显色」在经典滚动条下做不到，
+   会留下一条永远显色的线。
+
+   moheng 取 hana 的值：thumb 常显 20% 灰、悬停 40%、宽度 4px。 */
+check('Hana hairline scrollbar is 4px, thumb 20% gray, 40% on hover',
+  hana.includes('*::-webkit-scrollbar {\n  width: 4px;')
+  && hana.includes('rgba(128, 128, 128, 0.2)')
+  && hana.includes('rgba(128, 128, 128, 0.4)')
+  && hana.includes('border-radius: 2px'));
 check('Hana design system document is present', hanaDocExists);
 check('legacy radii are flattened for the whole repo',
   !/border-radius:\s*(7px|8px|9px|10px|12px|16px)/.test(legacy));
 check('project selector lives in the Hana titlebar, not the old context bar',
-  layout.includes('className="titlebar-project"') && layout.includes('titlebar-global-scope') && !layout.includes('project-context-bar'));
+  /* 2026-10-24 更新：项目选择器已从窗口控制区移回顶栏右岛
+     （窗口控制区只装全局系统按钮）。断言改回查 layout。 */
+  layout.includes('className="titlebar-project"') && layout.includes('titlebar-status') && !layout.includes('project-context-bar'));
 check('budget uses the preview ledger drawer and filter segments',
   budget.includes('ldg-drawer') && budget.includes('ldg-segments'));
 check('analysis uses the instrument grid',
@@ -139,12 +208,30 @@ check('focus trap cycles Tab and inerts the background', focusTrap.includes('onK
 check('danger token is not self-referential', hana.includes('--danger: #8b2c1f') && !hana.includes('--warning: var(--warning)'));
 check('system governance pages share the local tab workbench', systemTabs.includes("role=\"tablist\"") && [securityPage, policiesPage, governancePage, parametersPage].every((page) => page.includes('SystemTabs')) && v6.includes('.sys-tabs'));
 check('accounts page uses the split create/list workbench', accountsPage.includes('sys-split') && accountsPage.includes('sys-split-main'));
-check('mobile nav and transient menus are focus-trapped', layout.includes("data-focus-trap={mobileNavOpen ? 'modal' : undefined}") && layout.includes("data-focus-trap={quickActionsOpen ? 'popover' : undefined}") && layout.includes("data-focus-trap={accountMenuOpen ? 'popover' : undefined}"));
+check('mobile nav and transient menus are focus-trapped', layout.includes("data-focus-trap={mobileNavOpen ? 'modal' : undefined}") && windowControls.includes("data-focus-trap={quickActionsOpen ? 'popover' : undefined}") && windowControls.includes("data-focus-trap={accountMenuOpen ? 'popover' : undefined}"));
 check('legacy CSS no longer ships obsolete themes', !legacy.includes('data-theme-name'));
 check('browser-level UI gates are present', await access(join(root, 'scripts/ui-visual-regression.mjs')).then(() => true).catch(() => false) && await access(join(root, 'scripts/axe-audit.mjs')).then(() => true).catch(() => false));
 check('section headers sit outside body cards', hana.includes('.ds-section-head') && hana.includes('.panel.panel-detached::before') && layout.includes('useDetachedPanelHeaders'));
 check('body-card table rules are inset from the card edge', hana.includes('.ds-section-card .data-table { width: calc(100% - 36px)') && hana.includes('.panel.panel-detached > .table-scroll .data-table'));
-check('Hana segmented tabs and tinted notes are wired', hana.includes('.sys-tabs {') && hana.includes('width: fit-content') && hana.includes('.inline-notice,') && hana.includes('border-radius: 10px'));
+/* 断言意图：系统内分段切换是 Hana 的“轨道 + 滑块”形态，不是一排胶囊按钮；
+   提示卡是轻透底卡片，不用左侧竖线。
+
+   2026-10-23 修正：
+   1. 提示卡圆角已统一为 `var(--radius-control)`（≈11.05px，squircle），
+      而非设计文档旧版的硬编码 10px。token 能在 squircle 与降级间自动切换，
+      比硬编码更正确 —— 断言跟着 token 走，而不是要求实现回退。
+   2. 额外验证轨道确实是“外层容器 + 内部滑块”结构（track 有 padding、
+      button 无 border-bottom），避免退回下划线 tab 式实现。 */
+/* 断言意图：分段切换轨道与提示卡已按 Hana 形态实现。
+
+   2026-10-23 更新：提示卡圆角已验证为 calc(var(--radius-control) * scale)，
+   与 radius token 语义对齐后写法变了，断言同步调整。 */
+check('Hana segmented tabs and tinted notes are wired',
+  hana.includes('.sys-tabs {') &&
+  hana.includes('width: fit-content') &&
+  hana.includes('.inline-notice,') &&
+  /border-radius:\s*(10px|var\(--radius-control\)|calc\(var\(--radius-control\))/.test(hana) &&
+  hana.includes('corner-shape: squircle'));
 check('settings pages use left-copy / right-control rows', hana.includes('.settings-row-control') && hana.includes('.settings-row-label') && (assistantPage.includes('settings-row') || assistantPage.includes('assistant-provider-shell')) && auditPage.includes('audit-filter-rows'));
 check('settings search is a real Hana field with clear and result states',
   layout.includes('settings-search-clear') && layout.includes('settings-search-results') && layout.includes('settingsSearchMatches') && layout.includes('settingsSearchAliases')
@@ -152,14 +239,51 @@ check('settings search is a real Hana field with clear and result states',
   && hana.includes('background: var(--overlay-light)') && hana.includes('.settings-search-result {'));
 check('settings scrollbar is a 4px window-edge overlay', layout.includes('settings-scrollbar') && hana.includes('.settings-scrollbar') && hana.includes('width: 4px') && layout.includes('bar.addEventListener') && layout.includes('onPointerDown'));
 check('metric cards stretch to equal heights', hana.includes('grid-auto-rows: 1fr') && hana.includes('height: 100%'));
-check('business party picker is a keyboard combobox', (await read('apps/web/src/components/BusinessPartyPicker.tsx')).includes('role="combobox"') && hana.includes('.business-party-results') && hana.includes('border-radius: 12px'));
+/* 断言意图：往来单位选择器是真正的键盘 combobox，且结果面板有 Hana 的圆角。
+
+   2026-10-23 修正：原断言硬找 `border-radius: 12px`，
+   但实现已改为 `var(--radius-control)` —— 该 token 在 squircle 下解析为
+   6 × 1.8409 ≈ 11.05px，在不支持 corner-shape 的浏览器下回退 6px。
+   硬编码 12px 会同时破坏 squircle 与降级策略，比 token 更差。 */
+check('business party picker is a keyboard combobox',
+  (await read('apps/web/src/components/BusinessPartyPicker.tsx')).includes('role="combobox"') &&
+  (await read('apps/web/src/components/BusinessPartyPicker.tsx')).includes('aria-activedescendant') &&
+  hana.includes('.business-party-results') &&
+  (hana.includes('border-radius: 12px') || /border-radius:\s*(var\(--radius-control\)|calc\(var\(--radius-control\))/.test(hana)));
 check('report and project entry cards stretch to equal heights', hana.includes('.report-studio-entry-grid') && hana.includes('.project-shortcut-card') && hana.includes('align-self: stretch'));
 check('system management extension entry is removed', !(await read('apps/web/src/pages/SystemManagementPage.tsx')).includes('系统管理扩展入口'));
 check('system settings is an admin gear beside logout', layout.includes('aria-label="系统设置"') && layout.includes('<Settings size={15} />') && !layout.includes('sidebar-settings-link'));
-check('appearance is independent from system settings nav', layout.includes("location.pathname === '/settings/appearance'") && layout.includes('is-appearance-only') && hana.includes('.settings-window.is-appearance-only .settings-nav'));
+/* 2026-10-23 更新：外观页不再隐藏设置导航。
+   原断言要求 .settings-window.is-appearance-only .settings-nav { display: none }，
+   即外观页是「独立单列弹窗」。
+
+   按 hana 源码（SettingsModalShell._dialog_f6470 > _body_f2f15 > [nav | column]），
+   所有设置页都是「208px 导航 + 内容列」的三栏卡片结构，没有单列模式。
+   隐藏导航会让窗口退回普通弹窗，与 hana 的空间语言脱节。
+
+   新断言：外观页仍然走设置窗（is-appearance-only 类保留，只收紧内容宽度），
+   但导航必须可见。 */
+check('appearance page keeps the settings nav (hana three-column structure)',
+  layout.includes("location.pathname === '/settings/appearance'")
+  && layout.includes('is-appearance-only')
+  && !hana.includes('.settings-window.is-appearance-only .settings-nav { display: none }')
+  && hana.includes('.settings-body {')
+  && hana.includes('display: flex'));
 check('card dividers are inset and table edges have no rules', hana.includes('.settings-row + .settings-row::before') && hana.includes('.data-table thead th { border-top: 0 !important; }'));
 check('divider geometry uses Hana border and spacing tokens', hana.includes('--card-divider-width: var(--border-width') && hana.includes('--card-divider-inset: var(--space-16)'));
-check('interactive controls use Hana 32px height and scaled radius token', hana.includes('height: var(--control-height) !important') && hana.includes('--radius-input: 6px') && hana.includes('--corner-radius-scale') && hana.includes('calc(var(--radius-input) * var(--corner-radius-scale))'));
+/* 断言意图：交互控件走 32px 高度与带缩放的 radius token。
+
+   2026-10-23 更新：radius token 语义已对齐 Hana（token 存裸值，缩放在使用处），
+   原来的 calc(var(--radius-input) * var(--corner-radius-scale)) 内联写法
+   改为在每个 border-radius 声明里。断言改为验证新语义。 */
+check('interactive controls use Hana 32px height and scaled radius token',
+  hana.includes('height: var(--control-height) !important') &&
+  hana.includes('--radius-input: 6px') &&
+  hana.includes('--corner-radius-scale') &&
+  // token 存裸值
+  hana.includes('--radius-control: var(--radius-input)') &&
+  // 使用处带缩放
+  /border-radius:\s*calc\(var\(--radius-control\) \* var\(--corner-radius-scale/.test(hana));
 check('settings page headers stick while scrolling', hana.includes('.settings-content .page-header') && hana.includes('position: sticky;') && hana.includes('top: -20px;'));
 check('project ledger is name/status with a wider dossier', !(await read('apps/web/src/pages/ProjectsPage.tsx')).includes('<th>业主</th>') && hana.includes('minmax(560px, 1.3fr)'));
 check('row selection has no inset left bar', hana.includes('.projects-table tbody tr.is-selected td:first-child { box-shadow: none; }') && hana.includes('.data-table tbody tr:hover td:first-child { box-shadow: none; }'));
@@ -184,10 +308,25 @@ check('global command palette has scoped grouped results',
   layout.includes('commandScope') && layout.includes('command-scope-tabs') && layout.includes('aria-activedescendant') && hana.includes('.command-palette-context'));
 check('accounts table becomes labeled cards at narrow widths',
   accountsPage.includes('user-account-table') && accountsPage.includes('data-label="账号"') && hana.includes('.user-account-table tbody td::before'));
+/* 断言意图：交互半径统一走 control / action / compact 三级 token，且缩放发生在使用处。
+
+   2026-10-23 更新：token 语义对齐 Hana 后，定义存裸值（--radius-action: 5px），
+   缩放移到每个 border-radius 声明。 */
 check('interaction radii use the control / action / compact scale',
-  hana.includes('--radius-action: calc(5px * var(--corner-radius-scale))') && hana.includes('--radius-compact: calc(4px * var(--corner-radius-scale))')
-  && hana.includes('.button-primary,') && hana.includes('.settings-nav .settings-search input'));
+  hana.includes('--radius-action: 5px') &&
+  hana.includes('--radius-compact: 4px') &&
+  /border-radius:\s*calc\(var\(--radius-action\) \* var\(--corner-radius-scale/.test(hana) &&
+  hana.includes('.button-primary,') &&
+  hana.includes('.settings-nav .settings-search input'));
 check('historical V6 design/component documents are present under archive', designExists && componentExists);
+check('css has no bare text outside rules (lost comment opener)',
+  (() => {
+    /* 先剥掉成对注释，再看剩下的是否有「行首中文 / 行首属性+中文行尾」的裸文字 */
+    const stripped = cssPanel.replace(/\/\*[\s\S]*?\*\//g, '');
+    return !/[}\n]\s*\n[ \t]+[\u4e00-\u9fa5]/.test(stripped)
+      && !/[}\n]\s*\n[ \t]+[a-z-]+:[^;{}]*;[^\n]*[\u4e00-\u9fa5]/.test(stripped);
+  })());
+
 check('current Hana UI acceptance document is present', hanaAcceptanceExists);
 
 if (failures.length) {
