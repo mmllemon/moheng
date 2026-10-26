@@ -1,3 +1,0 @@
-assistant-model-line
-assistant-rail-note
-button-ghost
