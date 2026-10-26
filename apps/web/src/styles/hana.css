@@ -2790,7 +2790,9 @@ html .filter-bar input[type="search"] {
   corner-shape: squircle;
 }
 
-/* 选中 / 聚焦：沿用 accent 系，不用描边 */
+/* 选中 / 聚焦：沿用 accent 系，不用描边。
+   选中行也要有与 hover 相同的圆角，否则同一张表里
+   选中行是直角、悬停行是圆角，观感不一致。 */
 .data-table tbody tr:focus,
 .data-table tbody tr:focus-visible {
   outline: none;
@@ -2799,8 +2801,25 @@ html .filter-bar input[type="search"] {
 .data-table tbody tr:focus-visible td {
   background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
-.data-table tbody tr[aria-selected="true"] td {
+.data-table tbody tr[aria-selected="true"] td,
+.data-table tbody tr.is-selected td {
   background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.data-table tbody tr[aria-selected="true"] td:first-child,
+.data-table tbody tr.is-selected td:first-child,
+.data-table tbody tr:focus td:first-child,
+.data-table tbody tr:focus-visible td:first-child {
+  border-top-left-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-bottom-left-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+}
+.data-table tbody tr[aria-selected="true"] td:last-child,
+.data-table tbody tr.is-selected td:last-child,
+.data-table tbody tr:focus td:last-child,
+.data-table tbody tr:focus-visible td:last-child {
+  border-top-right-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-bottom-right-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
 }
 
 /* 表格底部合计行：一条上边线 + 无底色块 */
@@ -4976,8 +4995,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   pointer-events: none;
 }
 .panel.panel-detached > * { position: relative; z-index: 1; }
-/* 卡片内容区内缩：除了卡头、分隔线、通栅表格与通栅行，其余子元素统一 16px 左右边距。
-   之前是逐个子元素写 margin（如 table-scroll 用 18px），
+/* 卡片内容区内缩：除了卡头、分隔线、通栅表格与通栅行，其余子元素统一 16px 左右边距。   之前是逐个子元素写 margin（如 table-scroll 用 18px），
    新增内容很容易漏，就出现「内容贴着卡片边框」。
    注意：通栅行（自己带 padding 且 width:100%）不能再加 margin，否则右边溢出。 */
 .panel.panel-detached > :not(.panel-heading):not(.notice-list-heading):not(.audit-filter-heading):not(.table-scroll):not(.table-toolbar):not([class*="-row"]):not([class*="-list"]):not([class*="-item"]) {
@@ -4987,7 +5005,26 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .panel.panel-detached > :not(.panel-heading):last-child {
   margin-bottom: var(--space-16);
 }
-/* 通栅表格自己负责内缩（width: calc(100% - 36px) + margin: 0 18px），不叠加。 */
+/* =============================================================
+   卡片底部留白（2026-10-26）
+   -------------------------------------------------------------
+   问题：panel-detached 自身 padding: 0，子元素的 margin-bottom
+   会穿透（margin 塔陷），落到 ::before 画出的卡片外面，
+   导致最后一行/最后一个内容块与卡片底边零间距。
+   实测 23 个卡片里有 11 个受影响：表格、空状态、加载更多、日志列表。
+
+   hana 的 ._cardScroll 是 padding: 12px 16px 16px，底部始终留 16px。
+   这里把 margin-bottom 换成 padding-bottom，计入卡片高度。
+   ============================================================= */
+.panel.panel-detached > :last-child:not(.panel-heading) {
+  margin-bottom: 0;
+  padding-bottom: var(--space-16);
+}
+/* 通栅元素自己已有内边距，不重复叠加（否则双重留白）。 */
+.panel.panel-detached > .table-toolbar:last-child,
+.panel.panel-detached > .panel-heading:last-child {
+  margin-bottom: 0;
+}
 /* 卡内空状态：虚线框内要有内边距，否则文字贴边。 */
 .panel.panel-detached > [class*="-empty"],
 .panel.panel-detached > .empty-state {
@@ -5660,7 +5697,7 @@ select { corner-shape: squircle !important; }
 
 /* 选中态统一为浅 accent 底，不再用左侧竖条 */
 .data-table tbody tr:hover td:first-child { box-shadow: none; }
-.projects-table tbody tr.is-selected td { background: color-mix(in srgb, var(--accent) 6%, var(--bg-card)); }
+.projects-table tbody tr.is-selected td { background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .projects-table tbody tr.is-selected td:first-child { box-shadow: none; }
 .system-dictionary-card.is-selected { box-shadow: none; background: color-mix(in srgb, var(--accent) 6%, transparent); }
 
@@ -5668,7 +5705,16 @@ select { corner-shape: squircle !important; }
 .projects-ledger-page .projects-kpi-strip { padding: 0; overflow: hidden; border: 1px solid var(--card-border); border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1)); background: var(--bg-card); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
 .projects-ledger-page .projects-kpi-strip > div { position: relative; padding: 14px 16px; border-left: 0; }
 .projects-ledger-page .projects-kpi-strip > div + div::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); }
-.projects-ledger .table-scroll { overflow-x: auto; border: 1px solid var(--card-border); border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1)); background: var(--bg-card); }
+.projects-ledger .table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  background: var(--bg-card);
+  /* table-scroll 自己就是卡片（画了 border/radius/bg），
+     但表格的 margin-bottom 在它内部，若不给 padding-bottom，
+     最后一行会直接贴到卡片下边框。对齐 hana ._cardScroll 的 16px 底部留白。 */
+  padding-bottom: var(--space-16);
+}
 .projects-table { width: calc(100% - 36px); margin: 0 18px; }
 .projects-table thead th { border-top: 0; }
 .projects-table tbody tr:last-child td { border-bottom: 0; }
