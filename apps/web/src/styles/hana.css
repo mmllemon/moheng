@@ -3418,12 +3418,22 @@ html .filter-bar input[type="search"] {
 .dialog, .ldg-drawer {
   position: relative;
   isolation: isolate;
-  border: 1px solid var(--overlay-medium) !important;
-  border-radius: 20px !important;
+  /* 对齐 hana 的 ._dialog_4aa1f / ._confirmDialog_da969：
+     background: var(--bg-card)（不是 --bg）;
+     border-radius: calc(var(--radius-lg) * var(--corner-radius-scale)) → 22.09px;
+     border: 1px solid var(--border); box-shadow: var(--shadow-2xl); overflow: hidden。
+     之前写的 20px 硬编码 + --bg，与卡片体系脱节。 */
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius-lg) * var(--corner-radius-scale, 1)) !important;
   corner-shape: squircle;
-  background: var(--bg) !important;
+  background: var(--bg-card) !important;
   color: var(--text) !important;
   box-shadow: var(--shadow-2xl) !important;
+  /* moheng 的弹窗结构是 dialog > header + form（含 fields + footer），
+     没有 .dialog-body 中间层，滚动必须留在 dialog 自己身上。
+     所以只关横向，纵向保留 auto，否则长表单会被截断。 */
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 html[data-paper-texture] .dialog::before,
 html[data-paper-texture] .dialog::after {
@@ -3441,27 +3451,48 @@ html[data-paper-texture] .dialog::after {
   mask-size: var(--paper-texture-tile-size);
 }
 html[data-paper-texture] .dialog::before {
-  background: oklch(from var(--bg) calc(l + var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  background: oklch(from var(--bg-card) calc(l + var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
   -webkit-mask-image: var(--paper-texture-mask-hi);
   mask-image: var(--paper-texture-mask-hi);
 }
 html[data-paper-texture] .dialog::after {
-  background: oklch(from var(--bg) calc(l - var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
+  background: oklch(from var(--bg-card) calc(l - var(--paper-texture-peak) * var(--paper-texture-strength, 1)) c h);
   -webkit-mask-image: var(--paper-texture-mask-lo);
   mask-image: var(--paper-texture-mask-lo);
 }
 .dialog > * { position: relative; z-index: 1; }
 .dialog-header, .dialog-footer { border-color: color-mix(in srgb, var(--border) 78%, transparent) !important; background: transparent !important; }
 .dialog-header { padding: 20px 22px 10px !important; border-bottom: 0 !important; }
-.dialog-header h2, .dialog-title { margin: 0 0 3px; font-family: var(--font-ui) !important; font-size: 17px !important; font-weight: 600 !important; letter-spacing: 0.01em; }
-.dialog-header p { margin: 0; font-size: 11px !important; line-height: 1.55; }
+.dialog-header h2, .dialog-title {
+  margin: 0 0 3px;
+  font-family: var(--font-ui) !important;
+  /* 对齐 hana 的标题层级：._settingsConfirmLabel_f578f 是 1.35rem / 600，
+     但那是强调型标签；弹窗标题用 --fs-title（16px）/ 600 更合适。 */
+  font-size: var(--fs-title, 16px) !important;
+  font-weight: 600 !important;
+  line-height: 1.35;
+  letter-spacing: 0;
+  color: var(--text) !important;
+}
+.dialog-header p { margin: 0; font-size: var(--fs-caption, 12.48px) !important; line-height: 1.55; color: var(--text-muted); }
 .dialog-header .icon-button { width: 32px; height: 32px; margin: -5px -5px 0 0; border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); }
 .dialog-body { font-size: 13px !important; line-height: 1.65; color: var(--text-light); }
 .dialog form { padding: 10px 22px 0 !important; }
-.dialog-footer { padding: 14px 22px 18px !important; margin: 16px -22px 0 !important; border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent) !important; }
-.dialog .form-section-title { padding: 16px 0 10px; color: var(--text-muted); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; }
+/* 按钮区：对齐 hana 的 ._cronConfirmActions { display: flex; gap: 4px }
+   与 ._confirmDialog_da969 { padding: 16px } 的紧凑间距。 */
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-8, 8px) !important;
+  padding: 14px 22px 18px !important;
+  margin: 16px -22px 0 !important;
+  border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent) !important;
+  background: transparent !important;
+}
+.dialog .form-section-title { padding: 16px 0 10px; color: var(--text-muted); font-size: var(--fs-hint, 11.2px); font-weight: 600; letter-spacing: 0.08em; }
 .dialog .form-section-title span { display: none; }
-.dialog .field label { color: var(--text-muted); font-size: 11px; }
+.dialog .field label { color: var(--text-muted); font-size: var(--fs-hint, 11.2px); }
 .dialog .field input, .dialog .field select, .dialog .field textarea { border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); }
 
 /* 通知 / 成功 / 错误 */

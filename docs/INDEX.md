@@ -124,3 +124,4 @@
 - [项目下拉最终位置](顶栏项目下拉与主内容区纸纹.md) — 放右岛最左端（chrome 之前），阅读顺序「先上下文后操作」；左岛标题栈 182px 不含下拉
 - [右侧浮层纸纹层](右侧浮层纸纹层.md) — 卡片外那层是 tray（--bg + --paper-texture-surface + isolation:isolate），纸纹层 Hd 是它的首个子元素；原来自制的 ::before 用了未定义的 --paper-texture-mottle，只有平涂没纹理
 - [底栏纸纹](底栏纸纹.md) — .cost-workspace-dock 的 linear-gradient 渐变底（z-index 40）盖住了纸纹层（-1）；hana 的 .input-area 是 background: transparent，已改
+- [弹窗按 hana token 精修](弹窗按hana-token精修.md) — _cronConfirmCard 是死代码（CSS 28 条、JS 0 处渲染）；弹窗改 --bg-card + radius-lg×1.84 + squircle + shadow-2xl；overflow 保留纵向 auto 因 moheng 无 dialog-body 中间层
