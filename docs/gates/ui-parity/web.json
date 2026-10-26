@@ -1,0 +1,337 @@
+{
+  "generatedAt": "2026-10-26T01:16:59.064Z",
+  "target": "web",
+  "summarize": {
+    "web": {
+      "target": "web",
+      "chromiumMajor": 156,
+      "cornerShapeSupported": true,
+      "innerWidth": 1440,
+      "innerHeight": 900,
+      "dpr": 1,
+      "routeCount": 26,
+      "failureCount": 0,
+      "failures": []
+    }
+  },
+  "raw": {
+    "web": {
+      "target": "web",
+      "env": {
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "dpr": 1,
+        "innerWidth": 1440,
+        "innerHeight": 900,
+        "cornerShapeAccepted": true,
+        "chromiumMajor": 156,
+        "cornerShapeSupported": true
+      },
+      "routes": [
+        {
+          "route": "/",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 29,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/projects",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 28,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/notifications",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 33,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 1,
+          "errors": []
+        },
+        {
+          "route": "/settings/appearance",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 45,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/account/security",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 26,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/cost",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 39,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 2,
+          "errors": []
+        },
+        {
+          "route": "/cost/contracts",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 34,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 2,
+          "errors": []
+        },
+        {
+          "route": "/cost/budget",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 45,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/cost/progress-bills",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 37,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 2,
+          "errors": []
+        },
+        {
+          "route": "/cost/changes",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 40,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 1,
+          "errors": []
+        },
+        {
+          "route": "/cost/owner-finance",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 42,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 1,
+          "errors": []
+        },
+        {
+          "route": "/cost/costs",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 41,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/cost/analysis",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 32,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/system",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 42,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 2,
+          "errors": []
+        },
+        {
+          "route": "/system/accounts",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 49,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 2,
+          "errors": []
+        },
+        {
+          "route": "/system/assistant",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 47,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/system/security",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 43,
+          "cornerShapeAccepted": true,
+          "tabs": 2,
+          "visiblePanels": 1,
+          "errors": []
+        },
+        {
+          "route": "/system/authorization",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 42,
+          "cornerShapeAccepted": true,
+          "tabs": 2,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/system/policies",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 40,
+          "cornerShapeAccepted": true,
+          "tabs": 2,
+          "visiblePanels": 2,
+          "errors": []
+        },
+        {
+          "route": "/system/governance",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 56,
+          "cornerShapeAccepted": true,
+          "tabs": 4,
+          "visiblePanels": 2,
+          "errors": []
+        },
+        {
+          "route": "/system/dictionaries",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 44,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 4,
+          "errors": []
+        },
+        {
+          "route": "/system/parameters",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 47,
+          "cornerShapeAccepted": true,
+          "tabs": 3,
+          "visiblePanels": 1,
+          "errors": []
+        },
+        {
+          "route": "/system/operations",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 40,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 3,
+          "errors": []
+        },
+        {
+          "route": "/audit-logs",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 50,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        },
+        {
+          "route": "/reports",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 31,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 1,
+          "errors": []
+        },
+        {
+          "route": "/parties",
+          "viewport": 1440,
+          "scrollWidth": 1440,
+          "rounded": 29,
+          "cornerShapeAccepted": true,
+          "tabs": 0,
+          "visiblePanels": 0,
+          "errors": []
+        }
+      ],
+      "shell": {
+        "sidebar": {
+          "x": 6,
+          "y": 6,
+          "width": 240,
+          "height": 888
+        },
+        "titlebar": {
+          "x": 246,
+          "y": 6,
+          "width": 1188,
+          "height": 44
+        },
+        "main": {
+          "x": 246,
+          "y": 0,
+          "width": 1194,
+          "height": 900
+        },
+        "settings": {
+          "x": 240,
+          "y": 30,
+          "width": 960,
+          "height": 840
+        },
+        "settingsNav": {
+          "x": 241,
+          "y": 31,
+          "width": 208,
+          "height": 838
+        },
+        "settingsNavAlpha": 0,
+        "sidebarFooterAlpha": 0
+      },
+      "dialog": {
+        "trapped": true,
+        "restored": true
+      },
+      "mobileDrawer": {
+        "trapped": true,
+        "closed": true
+      },
+      "mobileOverflow": 0,
+      "failures": []
+    }
+  }
+}
