@@ -18,6 +18,8 @@ import { projectRoutes } from '../routes/projects.js';
 import { reportRoutes } from '../routes/reports.js';
 import { reportStudioRoutes } from '../routes/report-studio.js';
 import { systemManagementRoutes } from '../routes/system-management.js';
+import { workspaceRoutes } from '../routes/workspace.js';
+import { projectArtifactRoutes } from '../routes/project-artifacts.js';
 
 /**
  * A registry for the modular monolith. Each module owns its route plugin and URL prefix;
@@ -36,6 +38,8 @@ export const apiModules = [
   { id: 'assistant-poc', name: '只读 AI 助手 PoC', description: '开发阶段只读工具验证，默认关闭且不对外公布为正式模块', mountPrefix: '/api/assistant-poc', plugin: assistantPocRoutes, integrationVisible: false },
   { id: 'auth', name: '身份认证', description: '登录、会话与访问凭证', mountPrefix: '/api/auth', plugin: authRoutes, integrationVisible: true },
   { id: 'projects', name: '项目管理', description: '项目档案、项目成员与项目范围权限', mountPrefix: '/api/projects', plugin: projectRoutes, integrationVisible: true },
+  { id: 'workspace', name: '项目工作区', description: '项目目录树、文件预览、上传与删除', mountPrefix: '/api/projects', plugin: workspaceRoutes, integrationVisible: false },
+  { id: 'project-artifacts', name: '项目产物', description: '变更单外部凭证附件的聚合列表与预览', mountPrefix: '/api/projects', plugin: projectArtifactRoutes, integrationVisible: false },
   { id: 'main-contracts', name: '业主主合同', description: '主合同档案与收入侧合同基础数据', mountPrefix: '/api/projects', plugin: contractRoutes, integrationVisible: true },
   { id: 'downstream-contracts', name: '分供合同', description: '分包、采购、租赁和服务合同及调整', mountPrefix: '/api/projects', plugin: downstreamContractRoutes, integrationVisible: true },
   { id: 'downstream-finance', name: '分供结算与应付', description: '分供结算、应付、付款、退款、发票与质保金', mountPrefix: '/api/projects', plugin: downstreamFinanceRoutes, integrationVisible: true },

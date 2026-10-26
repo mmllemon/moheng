@@ -16,10 +16,25 @@ import { APP_VERSION, API_MAJOR_VERSION } from './platform/app-info.js';
 import { getApiModuleCatalog, registerApiModules } from './platform/module-registry.js';
 import { failure, success } from './lib/http.js';
 import { startBackgroundWorker } from './lib/background-job-worker.js';
+import {
+  RUNTIME_MODES,
+  READY_FILE_ENV,
+  buildReadyInfo,
+  parseDbScheme,
+  resolvePortPolicy,
+  validateDatabaseForMode,
+  type RuntimeMode,
+} from './platform/runtime-contract.js';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().int().positive().default(3001),
+  /* RUNTIME_MODE 决定端口与数据库的合法形态：
+       standalone（默认，现有 web 形态）：端口必须 > 0，只接受远程 Postgres
+       embedded（桌面端）：允许 PORT=0，允许 pglite（适配器未就绪时显式拒绝） */
+  RUNTIME_MODE: z.enum(RUNTIME_MODES).default('standalone'),
+  /* PORT=0 表示由操作系统分配空闲端口。仅在 embedded 形态下允许，
+     具体约束由 resolvePortPolicy 按形态校验，此处只放宽语法。 */
+  PORT: z.coerce.number().int().min(0).max(65535).default(3001),
   HOST: z.string().default('127.0.0.1'),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET 至少 32 个字符'),
@@ -48,6 +63,31 @@ if (!envResult.success) {
   process.exit(1);
 }
 const env = envResult.data;
+
+/* ---- 运行形态契约校验 ----
+   顺序很重要：先确认端口策略，再确认数据库形态，最后才是公网模式。
+   任何一项不满足都直接退出，不做静默降级。 */
+const runtimeMode: RuntimeMode = env.RUNTIME_MODE;
+const portPolicy = resolvePortPolicy(runtimeMode);
+const portResult = portPolicy.safeParse(env.PORT);
+if (!portResult.success) {
+  console.error('端口配置无效：', portResult.error.issues.map((issue) => issue.message).join(' '));
+  process.exit(1);
+}
+const databaseScheme = parseDbScheme(env.DATABASE_URL);
+if (!databaseScheme) {
+  console.error(
+    'DATABASE_URL 的 scheme 无法识别。仅支持 postgresql:// 、postgres:// （以及 embedded 形态下的 pglite:）。\n' +
+      '提示：完整 URL 形如 postgresql://user:password@127.0.0.1:5432/db?schema=public'
+  );
+  process.exit(1);
+}
+const databaseModeError = validateDatabaseForMode(runtimeMode, databaseScheme);
+if (databaseModeError) {
+  console.error('数据库与运行形态不匹配：', databaseModeError);
+  process.exit(1);
+}
+
 if (env.PUBLIC_BASE_URL) {
   const publicUrl = new URL(env.PUBLIC_BASE_URL);
   const unsafeProxyRange = env.TRUST_PROXY?.split(',').some((entry) => entry.trim().endsWith('/0')) ?? false;
@@ -205,11 +245,39 @@ process.once('SIGTERM', () => void shutdown('SIGTERM'));
 
 try {
   await prisma.$connect();
-  await app.listen({ port: env.PORT, host: env.HOST });
+  /* Fastify 的 listen 返回实际监听地址（字符串形式）。
+     PORT=0 时必须靠这个回读取系统分配的端口 —— 不能自己猜，也不能只打日志。 */
+  const listenAddress = await app.listen({ port: env.PORT, host: env.HOST });
+
+  /* 从监听地址解析真实 host/port。
+     Fastify 返回形如 http://127.0.0.1:38217 或 http://[::1]:38217 。 */
+  const parsedAddress = new URL(listenAddress);
+  const actualPort = Number(parsedAddress.port) || (parsedAddress.protocol === 'https:' ? 443 : 80);
+  const actualHost = parsedAddress.hostname.replace(/^\[|\]$/g, '');
+
+  const readyInfo = buildReadyInfo({
+    host: actualHost,
+    port: actualPort,
+    mode: runtimeMode,
+    databaseScheme,
+    version: APP_VERSION,
+    publicMode: Boolean(env.PUBLIC_BASE_URL),
+  });
+
+  /* 就绪握手文件：桌面端（Electron 主进程）靠读这个文件拿到真实端口，
+     而不是去 grep 启动日志。未设 MOHENG_READY_FILE 时不写，独立部署行为不变。 */
+  const readyFile = process.env[READY_FILE_ENV]?.trim();
+  if (readyFile) {
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(readyFile, JSON.stringify(readyInfo, null, 2), 'utf8');
+  }
+
   if (env.BACKGROUND_WORKER_ENABLED === 'true') {
     stopBackgroundWorker = startBackgroundWorker(app.log, { pollIntervalMs: env.BACKGROUND_JOB_POLL_MS });
   }
-  app.log.info(`Cost Management API listening on ${env.HOST}:${env.PORT}`);
+  app.log.info(
+    `Cost Management API listening on ${readyInfo.baseUrl} (mode=${readyInfo.mode}, db=${readyInfo.databaseScheme})`
+  );
 } catch (error) {
   app.log.error(error);
   process.exit(1);

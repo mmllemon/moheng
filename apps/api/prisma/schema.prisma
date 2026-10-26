@@ -590,6 +590,10 @@ model Project {
   updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?
 
+  /** 工作区目录名（相对 WORKSPACE_STORAGE_DIR/projects），为空时用项目 id。
+      只存相对路径，不存绝对路径 —— 绝对路径在多实例部署和容器迁移时会失效。 */
+  workspaceRoot  String?
+
   @@index([status, deletedAt])
   @@index([ownerPartyId])
 }

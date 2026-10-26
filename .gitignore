@@ -11,6 +11,22 @@ apps/api/logs/
 
 apps/api/data/evidence/
 apps/api/data/jobs/
+apps/api/data/workspace/
+
+# 运行时进程文件与临时输出
+.dev.pid
+_os-icons.txt
+.verify-contract.log
+service.log
+service.err.log
+api-dev.log
+
+# 从 hana 提取的参考素材（不是 moheng 交付物，均未被跟踪）
+hana-electron-shell/
+hana-frontend-recovered/
+preview-explorers/
+bootstrap.cjs
+preload.bundle.cjs
 
 # Local UI review screenshots and audit scripts (never source inputs)
 .ui-review/
