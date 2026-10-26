@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T10:28:19.119Z",
+  "generatedAt": "2026-10-26T11:17:09.285Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -91,7 +91,7 @@
           "route": "/cost/contracts",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 35,
+          "rounded": 34,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 2,
@@ -231,7 +231,7 @@
           "route": "/system/dictionaries",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 44,
+          "rounded": 43,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 4,
@@ -271,7 +271,7 @@
           "route": "/reports",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 31,
+          "rounded": 29,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 1,

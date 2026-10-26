@@ -49,7 +49,6 @@ html .an-stats,
 html .business-party-summary-strip,
 html .report-studio-entry-grid,
 html .system-authorization-scope-grid,
-html .owner-contract-detail-grid,
 html .system-ops-summary,
 html .assistant-check-grid {
   display: grid;
@@ -91,6 +90,16 @@ html .downstream-summary-grid,
 html .owner-contract-detail-grid {
   /* 5 项：3 列 → 3+2，比 4 列的 4+1 均衡。 */
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+/* owner-contract-detail-grid 是「合同关键条款」的字段网格，
+   不是指标区——已从上面的卡片容器列表移除。这里补回它需要的 grid 布局，
+   但不给 border/bg/radius（否则卡中卡）。 */
+html .owner-contract-detail-grid {
+  display: grid;
+  gap: 0;
+  /* 外层已由 panel-detached 的通用规则给 16px 左右 margin，
+     这里不再重复 padding，避免 32px 双重内缩。 */
+  padding: 0 0 var(--space-16);
 }
 
 html .notice-summary-grid,
@@ -193,7 +202,6 @@ html .an-stats > *,
 html .business-party-summary-strip > *,
 html .report-studio-entry-card,
 html .system-authorization-scope-card,
-html .owner-contract-detail-grid > *,
 html .system-ops-summary-cell,
 html .assistant-check-item {
   display: flex;
@@ -221,7 +229,7 @@ html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
     .downstream-summary-grid, .security-metrics, .system-overview-metrics,
     .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip, .ldg-stats,
     .an-stats, .business-party-summary-strip, .report-studio-entry-grid,
-    .system-authorization-scope-grid, .owner-contract-detail-grid,
+    .system-authorization-scope-grid,
     .system-ops-summary, .assistant-check-grid) > :first-child {
   border-left: 0;
 }
@@ -286,6 +294,10 @@ html .owner-contract-detail-grid > .span-detail-wide {
   padding-right: 0;
   padding-left: 0;
   border-left: 0;
+  /* 跨列项的横线延伸到卡片边缘：grid 有 16px 左右 margin，
+     横线原本只到 632px 处，与卡片边框（664px）不对齐。 */
+  margin-inline: calc(-1 * var(--space-16));
+  padding-inline: var(--space-16);
 }
 /* 标准 5 列那里只有前 3 项同行 */
 html .owner-contract-detail-grid > :nth-child(3) {

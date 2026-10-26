@@ -103,7 +103,11 @@
   --font-mono: "SF Mono", "JetBrains Mono", Consolas, ui-monospace, monospace;
   --font: var(--font-ui);
   --serif: var(--font-serif);
-  --num: "MH Serif", Georgia, "Times New Roman", serif;
+  /* 数字字体：hana 的指标数值（._metric_53489 dd）用 --font-ui（无衬线）
+     + font-variant-numeric: tabular-nums，**不用 mono**。
+     mono 只用于代码、时间戳、播放时间这类。
+     之前写成衬线（"MH Serif", Georgia, serif），与旁边无衬线中文标签不协调。 */
+  --num: var(--font-ui);
   --mono: var(--font-mono);
 
   --titlebar-h: 44px;
@@ -4925,7 +4929,9 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 /* 旧业务 panel：标题测量后移到卡片外，卡片只包正文 */
 .panel.panel-detached {
   position: relative;
-  margin: 0 0 var(--space-24);
+  /* 卡头在卡外，所以卡头上方需要真实间距（不是 padding，因为 ::before 从卡头底部算起）。
+     之前只有下间距，卡头会紧贴上方的卡（实测间距 0）。 */
+  margin: var(--space-24) 0;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -5337,7 +5343,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .panel.data-table-panel.panel-detached > .table-scroll .data-table,
 .ldg-table,
 .projects-table { width: calc(100% - (var(--card-divider-inset) + var(--card-divider-inset))); margin-left: var(--card-divider-inset); margin-right: var(--card-divider-inset); }
-.owner-contract-detail-grid { padding: 0 var(--card-divider-inset) 16px; }
+.owner-contract-detail-grid { padding: 0 0 16px; }
 .owner-contract-detail-grid > div:nth-child(4)::before,
 .owner-contract-detail-grid > div:nth-child(5)::before { left: 0; right: 0; }
 
@@ -7046,7 +7052,7 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .owner-contract-figures small { display: block; margin-top: 3px; color: var(--text-muted); font-size: 9px; line-height: 1.45; }
 .owner-contract-effective { padding: 2px 0 2px 22px; }
 .owner-contract-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0 var(--card-inset) var(--card-inset); }
-.owner-contract-detail-grid > div { padding: 13px 14px 13px 0; }
+.owner-contract-detail-grid > div { padding: 13px 14px; }
 .owner-contract-detail-grid > div + div { padding-left: 14px; border-left: 1px solid color-mix(in srgb, var(--card-border) 58%, transparent); }
 .owner-contract-detail-grid > div:nth-child(4),
 .owner-contract-detail-grid > div:nth-child(5) { padding-left: 0; border-left: 0; }
