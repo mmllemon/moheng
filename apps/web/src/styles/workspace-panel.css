@@ -1,0 +1,1773 @@
+/* ============================================================
+   项目工作区右侧面板
+   ============================================================
+
+   结构真值来自 hana 的 CardShell：
+
+     _previewPanel_2e3ae        580px 面板，border-left 1px，可折叠
+     _rightWorkspaceSection     树区，search 30 + toolbar 25 + tree
+     _treeItem_ee604            三列网格，28px 高，缩进 12px/层
+     _previewPanelBody          预览主体
+
+   与 hana 的一处差异：hana 的树占满高度、预览是覆盖式；
+   这里用 flex 上下分区（树 flex:1，预览按需出现），
+   因为 moheng 的文件名更长，树需要更多纵向空间。 */
+
+/* 对齐 hana 的 _previewPanel_2e3ae：
+     与 app-content 是 flex row 的兄弟项，
+     flex-shrink: 0 + 固定宽度，主内容靠 flex: 1 自动收缩（让位，不是覆盖）。 */
+.workspace-panel {
+  /* hana: --preview-panel-width: 580px 是 CSS 默认值，但卡片 sizing 的
+     defaultPx 是 400（Ts）。moheng 用 400 作为初始值，与 sizing 一致。 */
+  width: var(--preview-panel-width, 400px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* 不用 height:100% —— 加上 margin 后会超出容器（实测底部差 12px）。
+     用 align-self: stretch + margin 让 flex 自己算高度。 */
+  align-self: stretch;
+  position: relative;
+  /* 面板底色：对齐 hana 的 ._tray_8a862 —— background: var(--bg)
+     卡片用 --bg-card，两者不同色，卡片才会浮出来。
+     之前写成 --bg-card 与卡片同色，实测看不出层次。 */
+  background: var(--bg);
+  /* 面板是「侧边栏」，不是卡片 —— 对齐 hana 的 ._previewPanel_2e3ae：
+     background: var(--bg); border-left: 1px solid var(--overlay-light);
+     overflow: hidden; z-index: 10;
+     **没有 border-radius，也没有 box-shadow**。
+     卡片才是唯一的「纸」，圆角 22.09px。
+     我之前把两者反过来（panel 22px 圆角 + 阴影，卡片 14.73px），
+     视觉上就成了「大卡套小卡」。 */
+  box-shadow: none;
+  border-radius: 0;
+  border-left: 1px solid var(--overlay-light);
+  /* hana 的纸纹开关：声明自己是纸，由 ::before 渲染纹理 */
+  --paper-texture-surface: var(--bg);
+  isolation: isolate;
+  /* 与 hana 一致：宽度变化带动画，主内容跟着 flex 自动过渡 */
+  transition: width var(--duration-slow) var(--ease-out);
+  z-index: 10;
+  /* 与卡片壳对齐：四周 6px 间隙 */
+  /* 对齐 hana 的 ._previewPanel_2e3ae：**无 margin、无 padding**。
+     它只是侧边栏容器，间距全部交给内部卡片的 margin。
+     这样：panel y=0，卡片 y=6（padding），与侧栏的 margin 6px 平齐。
+     之前 panel 带 margin 6px + padding 6px，卡片就低了 12px。 */
+  margin: 0;
+  gap: var(--panel-edge-gap, 6px);
+  padding: var(--panel-edge-gap, 6px);
+  /* 底部不再留 46px：抽屉已经移到文件卡内部（对齐 hana 的 Ket），
+     面板内不需要给浮起的抽屉留位置。之前那 46px 变成了一条空白带。 */
+  corner-shape: squircle;
+  overflow: hidden;
+}
+
+/* ── 两张卡片：对齐 hana 的 cardStack + card ──
+
+   hana 结构（CapabilitiesPanel 的 Nr 组件）：
+     tray（浮层容器）
+       └─ cardStack（flex column，margin 6px）
+            ├─ card（flex: 1, min-height: 0）
+            │    ├─ cardTop（卡头：标题 + 按钮组）
+            │    └─ cardScroll（内容滚动）
+            └─ card（同上）
+
+   关键：两张卡是 **flex 平铺**，不是「大卡占满 + 小卡绝对定位」。
+   截图实测比例 436 : 507 ≈ 0.46 : 0.54，接近平分。 */
+
+.workspace-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;   /* absolute 抽屉的定位基准 */
+  /* 叠纸变量：对齐 hana 的 ._workspaceCardSurface_cbdb6 ——
+     drawer-radius = panel-card-radius - 1px
+     drawer-outer  = drawer-radius + 1px
+     overlap       = 10px
+     shadow        = 0 2px 4px -2px shadow 62% */
+  --workspace-drawer-radius: calc(var(--panel-card-radius) - 1px);
+  --workspace-drawer-outer-radius: calc(var(--workspace-drawer-radius) + 1px);
+  --workspace-drawer-overlap: 10px;
+  --workspace-drawer-shadow: 0 2px 4px -2px color-mix(in srgb, var(--shadow) 62%, transparent);
+  /* 卡片是唯一的「纸」—— 对齐 hana 的 ._previewPanelBody_11fea：
+     border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1)) = 22.09px
+     不是 --radius-md（14.73px）。 */
+  border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--card-border-color, var(--overlay-light));
+  box-shadow: var(--panel-card-shadow, var(--shadow-xs));
+}
+
+/* 有抽屉时：主区只保下沿圆角，抽屉从下方露出 —— 对齐
+   ._workspaceCardSurface[data-workspace-drawers] ._workspaceCardMain */
+
+
+
+/* 两张卡平分高度（对齐 hana 的 ._card_6a18e { flex: 1 }） */
+.workspace-card-main,
+.workspace-card-studio {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* 对话文件页工具条：只有排序 —— 对齐 hana 的 ._sessionFilesToolbar_ 与 sortButton
+   没有搜索、没有添加文件夹、没有预览开关。 */
+.workspace-files-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8, 8px);
+  padding: var(--space-8, 8px) var(--space-12, 12px) var(--space-4, 4px);
+}
+
+.workspace-files-count {
+  font-size: var(--fs-hint, 11.2px);
+  color: var(--text-light);
+}
+
+.workspace-files-sort-wrap {
+  position: relative;
+}
+
+.workspace-files-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4, 4px);
+  height: 24px;
+  padding: 0 var(--space-8, 8px);
+  border: none;
+  background: none;
+  border-radius: calc(var(--radius-compact, 4px) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--text-muted);
+  font-size: var(--fs-hint, 11.2px);
+  cursor: pointer;
+  transition: background var(--duration-fast, 120ms) var(--ease-out);
+}
+.workspace-files-sort:hover {
+  background: var(--overlay-subtle);
+  color: var(--text);
+}
+
+/* 卡头：对齐 hana 的 ._cardTop_7790b —— padding 12px 16px 8px，gap 8px */
+.workspace-card-top {
+  /* 对齐 hana 的 ._tileTop_931a2 + ._cardTop_7790b：
+     position: absolute 浮在内容之上，不占布局空间；
+     height 固定 --titlebar-h（44px）；
+     padding 只有 12px 16px 8px —— 让位交给内部的 titlebarFrame，
+     这里不加 clearance（之前的 165px 右 padding 把 × 推到了卡片中间）。 */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8, 8px);
+  height: var(--titlebar-h, 44px);
+  /* 让位：对齐 hana 的 ._titlebarFrame_29cb1 ——
+     padding-right: max(基础值, --ttb-clearance-right)。
+     不加这段，× 会被右上角的窗口控制区盖住（实测 165px 重叠）。 */
+  padding: var(--space-12, 12px) max(var(--space-16, 16px), var(--ttb-clearance-right, 0px))
+    var(--space-8, 8px) max(var(--space-16, 16px), var(--ttb-clearance, 0px));
+  background: transparent;
+  pointer-events: none;
+}
+
+/* 卡头子元素恢复可点（对齐 hana 的
+   ._titlebarActionIsland_d8891>[data-chrome-action-id] { pointer-events: auto }）；
+   只给可交互元素恢复，标题不恢复 —— 否则它作为 height 44px 的盒子会
+   挡住卡头下方的 tab 栏。 */
+.workspace-card-top > button,
+.workspace-card-top > .workspace-card-actions {
+  /* 靠右（space-between 下 title 与 actions 分居两端） */
+  margin-left: auto;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 2px);
+  pointer-events: auto;
+}
+
+/* 卡内容滚动区：对齐 hana 的 ._cardScroll_14d83 */
+.workspace-card-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-12, 12px) var(--space-16, 16px) var(--space-16, 16px);
+}
+
+/* 卡标题：对齐 hana 的 ._tbTitle_bbf9b（tve 组件的真实样式）——
+   font-size: --tb-title-size（默认 --fs-body = 14px）;
+   font-weight: --tb-title-weight（默认 500）; line-height: 1;
+   color: --accent。
+   注意不是 _chatTitleText（16px/700），那是聊天卡自定义标题段的样式。 */
+.workspace-card-title {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  max-width: 220px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 var(--space-8, 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: var(--tb-title-size, var(--fs-body, 14px));
+  font-weight: var(--tb-title-weight, 500);
+  line-height: 1;
+  color: var(--accent);
+}
+
+/* 卡头按钮组 */
+.workspace-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 4px);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+
+/* 卡内主区：对齐 hana 的 ._workspaceCardMain_a2a0f ——
+   position: relative; display: flex; flex-direction: column;
+   flex: 1 1 auto; min-height: 0。 */
+.workspace-card-surface-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* 卡头是 absolute 浮层（对齐 hana 的 ._tileTop_931a2），
+     内容用 margin-top 让出它的高度 —— 对应
+     ._tileShell[data-has-title]>header+* { margin-top: calc(--card-top-inset*2 + --card-top-btn-size) }
+     = 6*2 + 24 = 36px，但卡头实际高 44，取 44。 */
+  margin-top: var(--titlebar-h, 44px);
+}
+
+
+/* 抽屉栈：对齐 hana 的 ._workspaceDrawerStack_a0cbd ——
+   flex: 0 0 auto; display: flex; flex-direction: column; min-height: 0; max-height: 64%
+   它是卡片主区之后的兄弟，每层是一张独立纸。 */
+.workspace-drawer-stack {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 64%;
+  position: relative;
+}
+
+/* 卡片一：文件。卡头 + 标签栏 + 内容 */
+.workspace-card-main {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--card-border-color, var(--overlay-light));
+}
+
+/* 两张卡的容器：对齐 hana 的 layout group ——
+   display: grid; grid-template-rows 由 JS 写入（minmax(0, rfr) 0px minmax(0, (1-r)fr)） */
+.workspace-card-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 100%;
+  gap: 0;
+}
+
+.workspace-card-grid > .workspace-card {
+  min-height: 0;
+  margin: 0;
+}
+
+/* 把手所在的 grid 行：高度 0，靠 handle 的 margin-block 向外撑开热区 */
+/* 有抽屉时：主区只保下沿圆角 + 边框 + 投影 —— 对齐
+   ._workspaceCardSurface[data-workspace-drawers] ._workspaceCardMain
+   这样主区看起来是「上面那张卡」，抽屉是「下面那张」，上卡压住下卡上沿 10px。 */
+.workspace-card-main:has(.workspace-drawer-stack) .workspace-card-surface-main {
+  z-index: calc(var(--workspace-drawer-count, 1) + 1);
+  background: var(--panel-card-bg, var(--bg-card));
+  border-radius: 0 0 calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1))
+    calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  border: 1px solid var(--card-border-color, var(--overlay-light));
+  border-top: 0;
+  margin-inline: -1px;
+  box-shadow: var(--workspace-drawer-shadow);
+}
+
+/* 有抽屉时卡片本身不能裁切，否则主区投影和抽屉圆角会被切掉 */
+.workspace-card-main:has(.workspace-drawer-stack) {
+  overflow: visible;
+}
+
+/* ── 卡片高度调节把手：逐字对齐 hana 的 ._separator_704ed ──
+   height 6px（grid 行真实占位）；margin-block: -3px 把热区从布局上吃掉；
+   :after 是 44×3px 的 accent 条，默认 scaleX(.12) + opacity 0，悬停时 scaleX(1) + opacity .35。 */
+.card-split-handle {
+  position: relative;
+  z-index: 4;
+  flex-shrink: 0;
+  background: transparent;
+  touch-action: none;
+  /* grid 行是 6px（热区真实占位）；负 margin 把它从布局上吃掉，
+     所以两张卡看起来是直接相接的，而鼠标仍有 6px 的命中区。 */
+  align-self: stretch;
+  height: 6px;
+  /* 不再用负 margin：hana 的卡片栈 gap 是 --panel-edge-gap（6px），
+     两张卡之间应该有真实间隙。之前 margin-block: -3px 把它吃成 0，
+     两张卡看起来粘在一起、没有圆角分隔感。 */
+  margin-block: 0;
+  cursor: row-resize;
+  outline: none;
+  overflow: visible;
+}
+
+/* 扩大命中区：把手本体只有 6px，再加 ±6px 透明热区（总 18px），
+   对应 hana cu() 的「坐标 ± 容差内算命中」。
+   这样即便指针没正对着 6px 的细线，也能抓到把手，不会「拖一次后就再也 hover 不到」。 */
+.card-split-handle::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -6px;
+  bottom: -6px;
+  z-index: -1;
+}
+
+.card-split-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  opacity: 0;
+  background: var(--accent);
+  border-radius: 2px;
+  corner-shape: round;
+  pointer-events: none;
+  height: 3px;
+  width: 44px;
+  transform: translate(-50%, -50%) scaleX(0.12);
+  transition: opacity 0.18s var(--ease-out) var(--duration-instant, 80ms),
+    transform 0.18s cubic-bezier(0.32, 0.72, 0, 1) var(--duration-instant, 80ms);
+}
+
+.card-split-handle:hover::after,
+.card-split-handle:active::after,
+.card-split-handle[data-hold]::after,
+.card-split-handle[data-dragging]::after {
+  opacity: 0.35;
+  transform: translate(-50%, -50%) scaleX(1);
+}
+
+.card-split-handle:focus-visible::after {
+  opacity: 0.55;
+  transform: translate(-50%, -50%) scaleX(1);
+}
+
+/* 预览卡内容区：允许上下压缩（配合把手拖动） */
+/* 卡片二：预览。对齐 hana 的 [By] 预览卡定义 ——
+   surface: "card"、closable: true，所以它用 --bg-card + overlay-light 边框，
+   与文件卡完全同款。暖米色（#FAF0E2）是「笺」抽屉的专属色，不是预览卡。 */
+.workspace-card-studio {
+  background: var(--bg-card);
+  border: 1px solid var(--overlay-light);
+  box-shadow: none;
+}
+
+.workspace-studio-file {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--fs-hint);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-studio-hint {
+  padding: 0 12px 12px;
+  font-size: var(--fs-hint);
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* 纸纹层：改用 PaperTextureLayer 组件（对齐 hana 的 Hd）——
+   之前用 ::before + --paper-texture-mottle，但那变量从未定义，
+   mask-image 为空，只剩一层 oklch 平涂，看不到纹理。
+   真值：._tray_8a862 { --paper-texture-surface: var(--bg); isolation: isolate }，
+   纸纹层是 tray 的直接子元素（z-index: --z-under）。 */
+
+/* ── 头部：项目名 + 操作 ── */
+.workspace-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px 6px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.workspace-head-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.workspace-head-label {
+  flex: 0 0 auto;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--accent);
+  font-family: var(--font-serif, var(--font-ui));
+}
+
+.workspace-head-text strong {
+  min-width: 0;
+  font-size: var(--fs-hint);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 对齐 hana 的 ._sdbBtn_e792e / ._tileTopBtn_8667c：
+     width/height = 24px + 2px*2 = 28px；border: 3px solid transparent；
+     background-clip: padding-box（悬停底色只填内部 22×22）。 */
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  corner-shape: squircle;
+  background-color: transparent;
+  color: var(--text-muted);
+  cursor: default;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.workspace-icon-btn:hover {
+  background: var(--overlay-subtle);
+  color: var(--text);
+}
+
+.workspace-icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ── 搜索：hana --right-workspace-search-height: 30px ── */
+.workspace-search {
+  flex-shrink: 0;
+  height: 30px;
+  /* chrome 的 searchSlot 已给 padding，这里不再加左右 margin */
+  margin: 0;
+  display: flex;
+  align-items: center;
+  /* 凹槽感：比卡片底色（--bg-card）深 3%，与侧栏搜索框同一做法 */
+  background: color-mix(in srgb, var(--bg-card) 92%, var(--text) 8%);
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  corner-shape: squircle;
+  /* 加一条内描边，避免在纸色上完全看不出边界 */
+  box-shadow: inset 0 0 0 1px var(--overlay-light);
+}
+
+.workspace-search-input {
+  width: 100%;
+  height: 26px !important;
+  padding: 0 8px !important;
+  border: none !important;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale)) !important;
+  corner-shape: squircle;
+  /* 与侧栏搜索框同一做法：容器色 = sidebar-bg 97% + text 3%，输入层透明 */
+  background: transparent !important;
+  color: var(--text);
+  font-size: var(--fs-caption);
+  outline: none;
+}
+
+.workspace-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.workspace-search:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline-offset: 1px;
+}
+
+/* ── 工具条：对齐 hana 的 ._toolbar_cb021 ──
+   左侧预览开关，右侧筛选 + 排序。
+   hana 真值：margin 6px 6px 0，height = 6*2 + 24 = 36px。 */
+.workspace-toolbar {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8, 8px);
+  margin: var(--card-top-inset, 6px) var(--card-top-inset, 6px) 0;
+  height: calc(var(--card-top-inset, 6px) * 2 + var(--card-top-btn-size, 24px));
+  box-sizing: border-box;
+}
+
+.workspace-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 4px);
+}
+
+.workspace-toolbar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--card-top-btn-size, 24px) + var(--card-top-btn-pad, 2px) * 2);
+  height: calc(var(--card-top-btn-size, 24px) + var(--card-top-btn-pad, 2px) * 2);
+  box-sizing: border-box;
+  padding: 0;
+  background: transparent;
+  border: var(--card-top-btn-hover-inset, 3px) solid transparent;
+  background-clip: padding-box;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--text-muted);
+  cursor: default;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.workspace-toolbar-btn:hover {
+  background: var(--overlay-light);
+  background-clip: padding-box;
+  color: var(--text);
+}
+
+.workspace-toolbar-btn[aria-pressed="true"],
+.workspace-toolbar-btn.is-active {
+  color: var(--accent);
+}
+
+/* 带文字的工具栏按钮：对齐 hana 的 ._sortBtn_d43c7 ——
+   min-height: 20px; padding: 2px 8px; font-size: --fs-hint; color: --text-muted；
+   icon + 文字，图标 14×14 opacity .6。
+   之前用 28×28 纯图标，与 hana 的「图标+文字」扁平按钮不一致。 */
+.workspace-toolbar-btn-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4, 4px);
+  width: auto;
+  height: auto;
+  min-height: 20px;
+  padding: var(--space-2, 2px) var(--space-8, 8px);
+  border: 0;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-hint, 11.2px);
+  font-family: inherit;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.workspace-toolbar-btn-text > svg {
+  display: block;
+  flex: 0 0 auto;
+  opacity: 0.6;
+}
+
+.workspace-toolbar-btn-text:hover {
+  background: var(--overlay-subtle);
+  color: var(--text);
+}
+
+.workspace-toolbar-btn-text.is-active {
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* 菜单容器：相对定位，弹层 absolute */
+.workspace-menu-wrap {
+  position: relative;
+}
+
+/* 菜单弹层：对齐 hana 的 panelMenu —— min-width 144px，padding 4px，
+   bg --bg，border overlay-light，radius-md × squircle。 */
+.workspace-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 144px;
+  padding: var(--space-4, 4px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12));
+}
+
+.workspace-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6, 6px);
+  width: 100%;
+  min-height: 28px;
+  padding: 0 var(--space-8, 8px);
+  border: 0;
+  border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-ui, 13.12px);
+  text-align: left;
+  cursor: default;
+}
+
+.workspace-menu-item:hover {
+  background: var(--overlay-light);
+}
+
+/* 勾选点：4×4 accent 圆点（对齐 hana 的 panelMenuIconSlot 活动点） */
+.workspace-menu-check {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: transparent;
+}
+
+.workspace-menu-check[data-checked] {
+  background: var(--accent);
+}
+
+/* ── chrome：对齐 hana 的 ._chrome_07e19 ──
+   三段：返回（lead）+ 搜索（slot）+ 添加（trail）。
+   hana 真值：padding 4px 8px，gap 4px。 */
+.workspace-chrome {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 4px);
+  min-width: 0;
+  padding: var(--space-4, 4px) var(--space-8, 8px);
+}
+
+/* 返回 / 添加：收起时宽度归零 + 透明（对齐 hana 的 :not([data-open])） */
+.workspace-chrome-lead,
+.workspace-chrome-trail {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: var(--control-height, 32px);
+  opacity: 1;
+  transition: width var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+}
+
+.workspace-chrome-lead:not([data-open]),
+.workspace-chrome-trail:not([data-open]) {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.workspace-search-slot {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── 提示条 ── */
+.workspace-notice {
+  margin: 0 8px 6px;
+  padding: 6px 8px;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+  font-size: var(--fs-hint);
+  line-height: 1.4;
+}
+
+/* ── 树：hana 的 tree 用 padding 4px 2px ── */
+/* 浮层模式下树区应撑满剩余空间（之前嵌在档案区里才需要按内容收缩）。 */
+/* 树区：外层 .workspace-card-scroll 已负责滚动（对齐 hana 的 cardScroll），
+   这里不能再开滚动，否则双重滚动条。 */
+.workspace-tree {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  /* 抽屉是文档流卡片（对齐 hana 会话抽屉 _card_13ba9），自己占布局空间；
+     但它的 layer 有 margin-top: -10px（叠纸），上沿会侵入本区 10px，
+     所以列表底部要多留 10px，最后一行才能滚到叠纸区上方。 */
+  padding: 4px 2px calc(10px + var(--space-8, 8px));
+  scroll-padding-bottom: calc(10px + var(--space-8, 8px));
+}
+
+.workspace-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  text-align: center;
+}
+
+.workspace-download {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── 树行：hana _treeItem 的三列网格 ── */
+.tree-item {
+  --tree-leading-inset: 0px;
+  --tree-indent-step: 12px;
+  position: relative;
+  box-sizing: border-box;
+  width: calc(100% - 4px);
+  display: grid;
+  /* 缩进独立成列，不挤占名称宽度 —— 深层目录的文件名不会过早省略号。
+     第二列 26px：放得下 chevron 12px + 图标 14px。
+     （hana 是 22px 单列，因为它的 chevron 与图标叠放；moheng 并排所以加宽） */
+  grid-template-columns:
+    calc(var(--tree-leading-inset) + (var(--tree-depth, 0) * var(--tree-indent-step)))
+    26px
+    minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0;
+  min-width: 0;
+  height: 28px;
+  padding: 0 var(--space-8) 0 var(--space-2);
+  margin: 0 var(--space-2);
+  border-radius: calc(4px * var(--corner-radius-scale));
+  corner-shape: squircle;
+  color: var(--text);
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+  cursor: default;
+  user-select: none;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+
+.tree-item:hover {
+  background: var(--overlay-subtle);
+}
+
+.tree-item.is-selected {
+  /* hana: rgba(var(--accent-rgb), .1) */
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.tree-item.is-selected:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.tree-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline-offset: -1px;
+}
+
+.tree-indent {
+  /* 占位，宽度由 grid-template-columns 的第一列给出 */
+  display: block;
+}
+
+.tree-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-muted);
+  /* 固定宽度 22px 内要放下「chevron 12px + 图标 14px」，
+     不加 flex-shrink: 0 会被压缩（实测 svg 从 14px → 10.77px）。 */
+  overflow: visible;
+}
+
+.tree-icon svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+}
+
+.tree-chevron {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.tree-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.tree-chevron-placeholder {
+  display: inline-block;
+  width: 12px;
+}
+
+.tree-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  transition: padding-right var(--duration-fast) var(--ease-out);
+}
+
+/* 悬停时给操作按钮让位，hana 实测 122px */
+.tree-item:hover .tree-main,
+.tree-item:focus-within .tree-main {
+  padding-right: 122px;
+}
+
+.tree-name {
+  color: var(--text);
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-meta {
+  /* 窄面板（如 320px）时 meta 不能硬撑——
+     用 flex-shrink + 省略号，否则会把整行推出面板右缘。 */
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 内容区两态：对齐 hana 的 sr.stage + sr.layers ——
+   外层（data-inner 缺失）= 挂载点列表；内层（data-inner 存在）= 目录树。
+   stage 自己滚，不用 cardScroll 包（chrome / toolbar 不滚）。 */
+.workspace-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 树状态：对齐 hana 的 data-studio-tree-state */
+.workspace-tree[data-studio-tree-state="loading"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--fs-hint, 11.2px);
+}
+
+.workspace-tree[data-studio-tree-state="failed"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--fs-hint, 11.2px);
+}
+
+/* ── 抽屉：对齐 hana 的 _jianDrawer_57159 ──
+   暖米色便签卡，absolute 定位在面板底部，开 320px / 合 40px。
+   hana 真值：header 46px、body = 320-48 = 272px、ease cubic-bezier(.22,1,.36,1)。 */
+/* 抽屉：对齐 hana 的 ._jianDrawer_57159 ——
+   **absolute 浮在卡片上**（不是文档流，也不是靠负 margin 焊接）。
+   左右各内缩 6px、底部 6px、四角全圆 14.73px。
+   列表用 padding-bottom: calc(reserved + panel-edge-gap) 给它让位。 */
+/* 叠纸层：对齐 hana 的 ._workspaceDrawerLayer_322c5 ——
+   上沿藏到上一张卡片下面 10px（margin-top: -10px），
+   padding-top 补回来让内容不被裁；
+   z-index 递减，越靠前 z 越高。
+   左右内缩 6px：对齐 ._jianDrawer_57159 的 left/right: var(--panel-edge-gap)。 */
+.workspace-drawer-layer {
+  position: relative;
+  z-index: calc(var(--workspace-drawer-count, 1) - var(--workspace-drawer-index, 0));
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* 对齐 hana 的 ._workspaceDrawerLayer_322c5 —— 它没有左右 margin，满宽。
+     之前加了 margin-inline: 6px，抽屉比主卡窄 12px，接缝就露出来了。 */
+  margin: 0;
+  background: var(--panel-card-bg, var(--bg-card));
+  /* 叠纸：上沿藏到上面那张卡下面 10px。
+     padding-top 补回来，让内容不被负 margin 裁掉。 */
+  margin-top: calc(-1 * var(--workspace-drawer-overlap, 10px));
+  padding-top: var(--workspace-drawer-overlap, 10px);
+}
+
+/* 非末层：只保下沿圆角 + 下边框 + 投影 —— 对齐
+   ._workspaceDrawerStack ._workspaceDrawerLayer:not(:last-child) */
+/* 最后一层（也是唯一一层）：四角全圆 —— 对齐 hana 的
+   ._card_eb32e { border-radius: calc(var(--radius-lg) * scale); corner-shape: squircle }
+   非最后一层只保下沿（叠纸时下卡只露尾巴）。 */
+.workspace-drawer-stack > .workspace-drawer-layer:last-child {
+  border-radius: calc(var(--radius-lg) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  border: 1px solid var(--card-border-color, var(--overlay-light));
+  box-shadow: var(--workspace-drawer-shadow);
+}
+
+.workspace-drawer-stack > .workspace-drawer-layer:not(:last-child) {
+  border-radius: 0 0 calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1))
+    calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  border: 1px solid var(--card-border-color, var(--overlay-light));
+  border-top: 0;
+  box-shadow: var(--workspace-drawer-shadow);
+}
+
+/* 便签本体：暖米色，高度开关 —— 对齐 hana 的 _jianDrawer_57159 */
+.workspace-jian-drawer {
+  --workspace-jian-open-height: 320px;
+  --workspace-jian-closed-height: 40px;
+  --workspace-jian-open-dur: 0.4s;
+  --workspace-jian-close-dur: var(--duration-slow);
+  --workspace-jian-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 对齐 hana 的 ._workspaceDrawerStack ._workspaceDrawerLayer > * ——
+     内部卡片被强制剥光：border 0 / radius 0 / bg transparent / shadow none。
+     圆角、边框、底色全部由外层 ._workspaceDrawerLayer 提供。 */
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 4px);
+  height: var(--workspace-jian-open-height);
+  padding: var(--space-8, 8px) var(--space-16, 16px);
+  overflow: hidden;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transition: height var(--workspace-jian-open-dur) var(--workspace-jian-ease);
+}
+
+.workspace-jian-drawer[data-open="false"] {
+  height: var(--workspace-jian-closed-height);
+  transition-duration: var(--workspace-jian-close-dur);
+}
+
+/* header：对齐 hana 的 ._header_99ff6 ——
+   display: flex; align-items: center; justify-content: space-between; width: 100%。
+   无 padding：外层 ._card_13ba9 已有 padding: 8px 16px。
+   46px 高度 + 底边框来自 ._jianHeader_3f897（那是「笺」的，保留作为分隔）。 */
+.workspace-jian-header {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--space-4, 4px);
+  padding: 0;
+  border-bottom: 0;
+}
+
+.workspace-jian-drawer[data-open="false"] .workspace-jian-header {
+  height: var(--workspace-jian-closed-height);
+  border-bottom: 0;
+}
+
+/* 标题：对齐 hana 会话抽屉的 ._title_06306（fn.title → zYe）——
+   font-family: --font-ui; font-size: --fs-body（14px）;
+   font-weight: 500; line-height: 1; color: --accent。
+   注意不是「笺」的 _jianTitle_cc28c（0.94rem / 600 / --text-light）：
+   那是笔记便签的标题，这里是「本次对话」这类会话抽屉的标题。 */
+.workspace-jian-title {
+  min-width: 0;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body, 14px);
+  font-weight: 500;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* body：272px（= 320 - 48），收起时下移 24px 并禁用交互 */
+.workspace-jian-body {
+  height: calc(var(--workspace-jian-open-height) - 48px);
+  overflow-y: auto;
+  padding: var(--space-8, 8px);
+  transform: translateY(0);
+  transition: transform var(--workspace-jian-open-dur) var(--workspace-jian-ease);
+}
+
+.workspace-jian-drawer[data-open="false"] .workspace-jian-body {
+  transform: translateY(24px);
+  pointer-events: none;
+  transition-duration: var(--workspace-jian-close-dur);
+}
+
+.workspace-jian-empty {
+  padding: var(--space-24, 24px) var(--space-16, 16px);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--fs-hint, 11.2px);
+  line-height: 1.6;
+}
+
+.workspace-jian-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6, 6px);
+  width: 100%;
+  padding: 5px var(--space-8, 8px);
+  border: 0;
+  background: transparent;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--text);
+  font-size: var(--fs-caption, 12.48px);
+  text-align: left;
+  cursor: default;
+}
+
+.workspace-jian-row:hover {
+  background: color-mix(in srgb, var(--jian-note-border, rgba(200, 160, 110, 0.2)) 50%, transparent);
+}
+
+.workspace-jian-row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-jian-row-meta {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: var(--fs-hint, 11.2px);
+  opacity: 0.8;
+}
+
+/* 开关：28×28，在 header 内右侧（不 absolute，避免压住列表） */
+.workspace-jian-toggle {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: default;
+  transition: border-color var(--duration-fast), color var(--duration-fast), background var(--duration-fast);
+}
+
+.workspace-jian-toggle:hover {
+  background: color-mix(in srgb, var(--jian-note-border, rgba(200, 160, 110, 0.2)) 50%, transparent);
+  color: var(--text);
+}
+
+/* ── 拖动宽度把手：对齐 hana 的 .resize-handle-left ──
+   8px 热区贴在面板左缘，hover/拖动时显现 3×44px 的 accent 条。 */
+.workspace-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* 面板有 overflow: hidden（圆角裁切卡片），把手只能在内部贴左缘 */
+  left: 0;
+  width: 8px;
+  z-index: 20;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.workspace-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 44px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transform: translate(-50%, -50%) scaleY(0.12);
+  transition: opacity 0.18s var(--ease-out), transform 0.18s var(--ease-out);
+}
+
+.workspace-resize-handle:hover::after,
+.workspace-resize-handle:focus-visible::after,
+.workspace-panel[data-resizing] .workspace-resize-handle::after {
+  opacity: 0.35;
+  transform: translate(-50%, -50%) scaleY(1);
+}
+
+/* 拖动期间禁用面板宽度过渡，否则宽度跟手滞后 */
+.workspace-panel[data-resizing] {
+  transition: none;
+}
+
+/* ── 产物列表（对话文件标签）：复用 tree-item 的行骨架，只是数据源不同 ── */
+/* 产物列表：同样不能自己滚（外层 cardScroll 负责） */
+.workspace-artifact-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  /* 同上：滚动容器自己留出抽屉位 */
+  padding: var(--space-2) 0 calc(40px + var(--panel-edge-gap, 6px) * 2);
+  scroll-padding-bottom: calc(40px + var(--panel-edge-gap, 6px) * 2);
+}
+
+/* ── 外层态：挂载点列表：对齐 hana 的 $et（_layerList）──
+   每项是一行：图标 22 + 名称 + 身份标签 + 右侧箭头。 */
+.workspace-mount-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4, 4px) var(--space-8, 8px);
+}
+
+.workspace-mount-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8, 8px);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-8, 8px);
+  border: 0;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-ui, 13.12px);
+  text-align: left;
+  cursor: default;
+  transition: background var(--duration-fast, 120ms) var(--ease-out);
+}
+.workspace-mount-row:hover { background: var(--overlay-subtle); }
+.workspace-mount-row:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.workspace-mount-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--text-muted);
+}
+
+.workspace-mount-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.workspace-mount-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-ui, 13.12px);
+  font-weight: 500;
+  color: var(--text);
+}
+
+.workspace-mount-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-hint, 11.2px);
+  color: var(--text-muted);
+}
+
+.workspace-mount-chevron {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* ── 悬停操作区：hana 的渐变遮罩做法 ── */
+.tree-actions {
+  position: absolute;
+  top: 50%;
+  right: var(--space-6);
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-8);
+  background: linear-gradient(90deg, transparent, var(--overlay-subtle) 10px, var(--overlay-subtle));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-instant) var(--ease-out);
+}
+
+.tree-item:hover .tree-actions,
+.tree-item:focus-within .tree-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tree-item.is-selected:hover .tree-actions,
+.tree-item.is-selected:focus-within .tree-actions {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 14%, transparent) 10px, color-mix(in srgb, var(--accent) 14%, transparent));
+}
+
+.tree-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  background: transparent;
+  color: var(--text-muted);
+  cursor: default;
+  text-decoration: none;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.tree-action:hover {
+  background: var(--overlay-light);
+  color: var(--text);
+}
+
+/* ── 预览区（现在是工作室卡片的内容）── */
+/* 预览卡的内容区不用通用 cardScroll ——
+   预览需要撑满剩余高度（iframe/img 靠 flex:1），
+   而 cardScroll 的 overflow-y:auto 会让 flex 子项高度塌成 0。 */
+.workspace-card-studio .workspace-card-scroll {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* ── 预览标签栏：逐字对齐 hana 的 VDe ──
+   ._tabBar_2e5d8   padding:6px 14px 4px; gap:4px; flex-shrink:0
+   ._tabList_83fb3  flex; gap:4px; overflow-x:auto; flex:1; min-width:0; scrollbar 无 */
+.preview-tab-bar {
+  display: flex;
+  align-items: center;
+  padding: var(--panel-edge-gap, 6px) var(--space-14, 14px) var(--space-2, 4px);
+  gap: var(--space-4, 4px);
+  flex-shrink: 0;
+}
+
+.preview-tab-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4, 4px);
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+  /* 无标签时留出与有标签时等高，避免标签栏变成一条 8px 的断线 */
+  min-height: 20px;
+  scrollbar-width: none;
+}
+.preview-tab-list::-webkit-scrollbar { display: none; }
+
+/* ._tab_8db96: inline-flex; gap:.35rem; padding:.3rem .55rem; fs-hint;
+   border:1px solid transparent; radius-md×scale; max-width:160px */
+.preview-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  font-size: var(--fs-hint, 11.2px);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  cursor: default;
+  white-space: nowrap;
+  max-width: 160px;
+  flex-shrink: 0;
+  transition: color var(--duration-instant, 80ms), background var(--duration-instant, 80ms),
+    border-color var(--duration-instant, 80ms);
+}
+.preview-tab:hover { color: var(--text); background: var(--overlay-subtle); }
+.preview-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 2px;
+}
+
+/* ._tabActive_a1938: bg-card + overlay-light + shadow-xs-strong */
+.preview-tab.is-active {
+  color: var(--text);
+  background: var(--bg-card);
+  border-color: var(--overlay-light);
+  box-shadow: var(--shadow-xs-strong);
+}
+.preview-tab.is-active .preview-tab-close { opacity: 0.5; }
+
+.preview-tab-icon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ._tabTitle_7a948: overflow hidden; ellipsis; max-width:110px */
+.preview-tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+/* ._tabClose_95e62: 20×20; margin-right:-4px; opacity:.35 */
+.preview-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: -4px;
+  color: var(--text-muted);
+  cursor: default;
+  opacity: 0.35;
+  flex-shrink: 0;
+  border-radius: calc(calc(var(--radius-md) - 2px) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  transition: opacity var(--duration-instant, 80ms), background var(--duration-instant, 80ms),
+    color var(--duration-instant, 80ms);
+}
+.preview-tab-close:hover {
+  opacity: 1;
+  color: var(--tab-close-danger, var(--danger, #b56b66));
+  background: rgba(var(--tab-close-danger-rgb, 181, 107, 102), 0.1);
+}
+
+/* ._closePanel_b19b5: margin-left:auto; 24×24; opacity:.5 */
+.preview-tab-collapse {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--text-muted);
+  cursor: default;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  transition: opacity var(--duration-instant, 80ms), background var(--duration-instant, 80ms);
+}
+.preview-tab-collapse:hover { opacity: 1; background: var(--overlay-light); }
+
+/* ── 预览空态选择器：逐字对齐 hana 的 zq ──
+   ._root_aaf29     grid + place-items center; min-height:100%; padding:24px; padding-bottom:64px
+   ._actions_f7aad  flex column; gap:16px; width:min(100%,16rem)
+   ._entry_b9036    width:100%
+   ._entryLabel_cf0a5 color:--text-muted */
+.preview-new-tab {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-24, 24px);
+  padding-bottom: calc(var(--space-24, 24px) + var(--space-40, 40px));
+  text-align: center;
+  transition: background var(--duration-fast, 120ms) var(--ease-out);
+}
+.preview-new-tab[data-dragging] {
+  background: var(--accent-light);
+  outline: 1px dashed var(--accent);
+  outline-offset: -8px;
+}
+
+.preview-new-tab-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16, 16px);
+  width: min(100%, 16rem);
+  min-width: 0;
+}
+
+/* 按钮 secondary + lg: padding .55rem 1.4rem; font-size --fs-body;
+   background --overlay-subtle; color --text; border transparent */
+.preview-new-tab-entry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8, 8px);
+  width: 100%;
+  padding: 0.55rem 1.4rem;
+  font-family: inherit;
+  font-size: var(--fs-body, 14px);
+  color: var(--text);
+  background: var(--overlay-subtle);
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  cursor: default;
+  transition: background var(--duration-fast, 120ms) var(--ease-out);
+}
+.preview-new-tab-entry:hover { background: var(--overlay-medium, var(--overlay-light)); }
+
+.preview-new-tab-entry-label {
+  color: var(--text-muted);
+}
+
+.preview-new-tab-hint {
+  font-size: var(--fs-hint, 11.2px);
+  color: var(--text-light);
+}
+
+.workspace-preview {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* 卡片自身已有底色和圆角，这里不再重复 */
+  background: transparent;
+  /* iframe 用 calc(100% + 20px) 裁左右边距，会超出这层 ——
+     不裁就会多出横向滚动条。 */
+  overflow: hidden;
+}
+
+.workspace-preview-name {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-preview-body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* 裁掉 iframe 放大后的边缘（见 .workspace-preview-frame） */
+  position: relative;
+  overflow: hidden;
+  /* PDF 插件的页边距是浅灰，与白页面对比会显得“脏”。
+     统一用插件自己的页边距色（#525659 系列偏暗，这里用中性灰白）。 */
+  background: #ffffff;
+}
+
+.workspace-preview-frame {
+  /* 只放大宽度裁左右，不动高度 ——
+     放大高度会让 iframe 超出 body 底部，
+     露出的那条会被 .workspace-preview-body 的 overflow:hidden 裁掉，
+     但底部会多一条深色带。 */
+  width: calc(100% + 20px);
+  height: 100%;
+  margin: 0 -10px;
+  border: none;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.workspace-preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+}
+
+.workspace-preview-text {
+  margin: 0;
+  padding: 8px 12px 16px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+
+/* ── 面板菜单：对齐 hana 的 _panelMenu 系列 ──
+
+   hana 真值：
+     ._panelMenu_fb4a3 {
+       min-width: 180px; padding: var(--space-4);
+       background: var(--bg); border: 1px solid var(--border);
+       border-radius: calc(--radius-md * scale); corner-shape: squircle;
+       animation: hana-fade-up var(--duration-fast) var(--ease-out);
+     }
+     ._panelMenuItem_ed7eb {
+       min-height: 28px; padding: 0 var(--space-8); gap: var(--space-4);
+       font-size: var(--fs-ui); line-height: 20px;
+       border-radius: calc(--radius-sm * scale); corner-shape: squircle;
+     }
+     ._panelMenuItem:hover, [data-highlighted] { background: var(--overlay-light); }
+     ._panelMenuItem:disabled { color: --text-muted; opacity: .58; }
+     ._panelMenuIconSlot_34bf3 { 16×16; 活动点 5×5 圆点 accent; } */
+
+.panel-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.panel-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  /* 对齐 hana 顶栏菜单按钮的 minWidth: 144
+     （之前写的 180 是另一个面板菜单的值，不是顶栏这个） */
+  min-width: 144px;
+  padding: var(--space-4);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12));
+  animation: panel-menu-fade-up var(--duration-fast) var(--ease-out);
+}
+
+@keyframes panel-menu-fade-up {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.panel-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 28px;
+  padding: 0 var(--space-8);
+  border: none;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  font-size: var(--fs-ui);
+  font-family: inherit;
+  line-height: 20px;
+  color: var(--text);
+  text-align: left;
+  cursor: default;
+  transition: background var(--duration-instant) var(--ease-out);
+}
+
+.panel-menu-item:hover:not(:disabled),
+.panel-menu-item:focus-visible {
+  background: var(--overlay-light);
+  outline: none;
+}
+
+.panel-menu-item:disabled {
+  color: var(--text-muted);
+  opacity: 0.58;
+}
+
+.panel-menu-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--text-muted);
+  transition: color var(--duration-instant) var(--ease-out);
+}
+
+.panel-menu-icon[data-checked] {
+  color: var(--accent);
+}
+
+.panel-menu-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 选中标记：5×5 圆点，对齐 hana 的 _panelMenuActivityDot */
+.panel-menu-check {
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--accent);
+}
+
+/* 触发按钮上的活动点（菜单关闭时提示有面板开着） */
+.panel-menu-dot {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  corner-shape: round;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.panel-menu-wrap .titlebar-icon {
+  position: relative;
+}
+
+/* ── 标签栏：对齐 hana 的 _tabBar_2e5d8 + _tabs_22ed1 ──
+
+   hana 真值：
+     ._tabBar_2e5d8 {
+       display: flex; align-items: center;
+       padding: var(--panel-edge-gap) var(--space-14) var(--space-2);   // 6px 14px 4px
+       gap: var(--space-4); flex-shrink: 0;
+     }
+     ._tabs_22ed1 {
+       position: relative; flex: 0 0 auto;
+       display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+       gap: var(--space-2);                              // 2px
+       margin: 0 var(--space-8); padding: var(--space-2);
+       border-radius: calc(--radius-sm * scale);
+       corner-shape: squircle;
+       background: var(--overlay-subtle);
+       border: 1px solid var(--overlay-light);
+       box-shadow: var(--shadow-xs-soft);
+       overflow: hidden;
+     }
+     ._tabSlider_f4978 {
+       position: absolute; top/bottom/left: var(--space-2);
+       z-index: 0;
+       width: calc((100% - 6px) / 2);
+       border-radius: calc(max(2px, calc(--radius-sm - 2px)) * scale);
+       corner-shape: squircle;
+       background: var(--bg-card);
+       box-shadow: 0 1px 3px var(--shadow);
+       transform: translate(var(--right-workspace-tab-slider-offset));
+       transition: transform var(--duration-slow) cubic-bezier(.4,0,.2,1),
+                   width var(--duration-slow) cubic-bezier(.4,0,.2,1);
+     }
+     ._tab_72cc3 {
+       position: relative; z-index: 1; min-width: 0; height: 20px;
+       border: none; background: transparent;
+       color: var(--text-muted); font-size: var(--fs-hint);
+       border-radius: calc(max(2px, calc(--radius-sm - 2px)) * scale);
+       corner-shape: squircle;
+     }
+     ._tab_72cc3:hover, ._tabActive_6f0df { color: var(--text-muted); } */
+
+.workspace-tab-bar {
+  display: flex;
+  align-items: center;
+  /* 对齐 hana：_tabs_22ed1 直接是 workspaceCardMain 的第一个子元素，
+     没有外层包裹。所以这里不加左右 padding ——
+     _tabs 自己带 margin: 0 var(--space-8)。
+     之前写的 padding: 6px 14px 4px 是 _tabBar_2e5d8（预览卡多文件 tab）的规格，
+     不是这一套。 */
+  padding: var(--space-4, 4px) 0;
+  gap: var(--space-4, 4px);
+  flex-shrink: 0;
+}
+
+.workspace-tabs {
+  position: relative;
+  /* 对齐 hana 的 ._tabs_22ed1：填满可用宽度，两列等分。
+     之前写 flex: 0 0 auto 导致容器按内容收缩，
+     滑块 calc((100% - 6px)/2) 算出的宽度就很小（实测 45px）。 */
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2, 2px);
+  margin: 0 var(--space-8, 8px);
+  padding: var(--space-2, 2px);
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--overlay-subtle);
+  border: 1px solid var(--overlay-light);
+  box-shadow: var(--shadow-xs-soft, var(--shadow-xs));
+  overflow: hidden;
+}
+
+/* 滑块：两个标签的滑动指示器。宽度 = (100% - 6px) / 2，
+   offset 由内联 --right-workspace-tab-slider-offset 控制。 */
+.workspace-tab-slider {
+  position: absolute;
+  top: var(--space-2, 2px);
+  bottom: var(--space-2, 2px);
+  left: var(--space-2, 2px);
+  z-index: 0;
+  width: calc((100% - 6px) / 2);
+  border-radius: calc(max(2px, calc(var(--radius-sm) - 2px)) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
+  box-shadow: 0 1px 3px var(--shadow);
+  transform: translate(var(--right-workspace-tab-slider-offset, 0px));
+  transition:
+    transform var(--duration-slow) cubic-bezier(0.4, 0, 0.2, 1),
+    width var(--duration-slow) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.workspace-tab {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  height: 20px;
+  border: none;
+  border-radius: calc(max(2px, calc(var(--radius-sm) - 2px)) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: var(--fs-hint);
+  font-weight: 400;
+  cursor: default;
+  transition: color var(--duration-fast) var(--ease-out);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-tab:hover,
+.workspace-tab.is-active {
+  color: var(--text-muted);
+}
+
+.workspace-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* 标签栏右侧的操作按钮组（上传/刷新/关闭） */
+.workspace-tab-bar .workspace-head-actions {
+  margin-left: auto;
+}
+
+

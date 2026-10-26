@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpRight, CircleAlert, Copy, Edit3, FolderPlus, Plus, Search, Users2, X } from 'lucide-react';
+import { ArrowUpRight, CircleAlert, Copy, Edit3, FolderOpen, FolderPlus, Plus, Search, Users2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
@@ -113,6 +113,7 @@ export default function ProjectsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const setSelectedProjectId = useUiStore((state) => state.setSelectedProjectId);
+  const setWorkspaceOpen = useUiStore((state) => state.setWorkspaceOpen);
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
   const dashboardQuery = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<ProjectDashboardSnapshot>('/dashboard') });
   const [q, setQ] = useState('');
@@ -130,7 +131,8 @@ export default function ProjectsPage() {
     return matchQ && (status === 'ALL' || project.status === status);
   }), [projects, q, status]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  useEffect(() => {
+  /** 右侧详情标签：项目档案 / 工作区 */
+  const [dossierTab, setDossierTab] = useState<'dossier' | 'files'>('dossier');  useEffect(() => {
     if (!filtered.length) return;
     setSelectedId((current) => current && filtered.some((project) => project.id === current) ? current : filtered[0]!.id);
   }, [filtered]);
@@ -188,7 +190,11 @@ export default function ProjectsPage() {
       {selected && <aside className="projects-dossier" aria-label="当前项目档案">
         <div className="projects-dossier-head">
           <div><span className="eyebrow">PROJECT DOSSIER</span><h2>{selected.name}</h2><p>{selected.code} · {selected.ownerName}</p></div>
-          <div className="projects-dossier-tools"><StatusBadge status={selected.status} /><button type="button" className="icon-button" title="编辑项目档案" aria-label={'编辑' + selected.name} onClick={() => setDialog({ open: true, project: selected })}><Edit3 size={15} /></button></div>
+          <div className="projects-dossier-tools">
+            <StatusBadge status={selected.status} />
+            <button type="button" className="icon-button" title="打开工作区文件" aria-label={`打开 ${selected.name} 的工作区`} onClick={() => { setSelectedProjectId(selected.id); setWorkspaceOpen(true); }}><FolderOpen size={15} /></button>
+            <button type="button" className="icon-button" title="编辑项目档案" aria-label={'编辑' + selected.name} onClick={() => setDialog({ open: true, project: selected })}><Edit3 size={15} /></button>
+          </div>
         </div>
         <div className="projects-dossier-facts">
           <div><span>工程类型</span><strong>{projectTypes[selected.type] ?? selected.type}</strong></div>

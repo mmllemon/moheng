@@ -15,7 +15,7 @@
   grid-template-columns: 190px minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
   background: var(--bg-card);
 }
 .assistant-provider-rail {
@@ -47,7 +47,7 @@
 .assistant-field > span { color: var(--text-muted); font-size: 10px; }
 .assistant-field > input,
 .assistant-field .select-control { width: 100%; }
-.assistant-key-line { display: flex; align-items: center; gap: 4px; height: 32px; padding-left: 9px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-muted); }
+.assistant-key-line { display: flex; align-items: center; gap: 4px; height: 32px; padding-left: 9px; border: 1px solid var(--border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); background: var(--bg-card); color: var(--text-muted); }
 .assistant-key-line:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
 .assistant-key-line input { width: 100%; height: 30px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; font-size: 11px; }
 .assistant-key-line input:focus { box-shadow: none; }
@@ -58,7 +58,7 @@
 .assistant-model-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .assistant-model-line .select-control { flex: 1; min-width: 0; }
 .assistant-model-line > input { flex: 1; min-width: 0; }
-.assistant-model-line .button-ghost { height: 32px; padding: 0 7px; border-radius: var(--radius-control); color: var(--text-muted); font-size: 10px; }
+.assistant-model-line .button-ghost { height: 32px; padding: 0 7px; border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); color: var(--text-muted); font-size: 10px; }
 
 .assistant-model-tabs { display: flex; align-items: center; gap: 14px; margin-top: 8px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
 .assistant-model-tabs button { padding: 8px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--text-muted); font-size: 10px; }
@@ -67,12 +67,12 @@
 .assistant-added-label { margin: 8px 0 2px; color: var(--text-muted); font-size: 8.5px; }
 .assistant-added-label b { margin-left: 4px; color: var(--text); font-weight: 500; }
 .assistant-model-add { position: relative; display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
-.assistant-model-add-trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--bg-card); color: var(--text-muted); font-size: 11px; text-align: left; }
+.assistant-model-add-trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); background: var(--bg-card); color: var(--text-muted); font-size: 11px; text-align: left; }
 .assistant-model-add-trigger[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
 .assistant-model-add-trigger svg { flex: 0 0 auto; }
-.assistant-model-add .button-ghost { height: 32px; padding: 0 8px; border-radius: var(--radius-control); color: var(--text-muted); font-size: 10px; }
+.assistant-model-add .button-ghost { height: 32px; padding: 0 8px; border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); color: var(--text-muted); font-size: 10px; }
 .assistant-model-picker { z-index: 1200; overflow: hidden; border: 1px solid var(--card-border); border-radius: 12px; background: var(--bg-card); box-shadow: var(--shadow-2xl); }
-.assistant-model-picker-search { display: flex; align-items: center; gap: 7px; margin: 8px; height: 32px; padding: 0 9px; border: 1px solid var(--border); border-radius: var(--radius-control); color: var(--text-muted); }
+.assistant-model-picker-search { display: flex; align-items: center; gap: 7px; margin: 8px; height: 32px; padding: 0 9px; border: 1px solid var(--border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); color: var(--text-muted); }
 .assistant-model-picker-search input { flex: 1; min-width: 0; height: 30px; padding: 0; border: 0; outline: none; background: transparent; color: var(--text); font-size: 11px; }
 .assistant-model-picker-list { max-height: 260px; overflow-y: auto; padding: 4px 6px 6px; }
 .assistant-model-option { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 34px; padding: 6px 8px; border: 0; border-radius: 7px; background: transparent; color: var(--text); text-align: left; }
@@ -99,9 +99,9 @@
 .assistant-detail-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
 .assistant-footer-note { min-width: 0; overflow: hidden; color: var(--text-muted); font-size: 8.5px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
 .assistant-detail-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-.assistant-detail-actions .button { height: 32px; min-height: 32px; padding: 0 9px; border-radius: var(--radius-control); font-size: 10px; }
+.assistant-detail-actions .button { height: 32px; min-height: 32px; padding: 0 9px; border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); font-size: 10px; }
 
-.assistant-check-panel { margin-top: 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
+.assistant-check-panel { margin-top: 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1)); background: var(--bg-card); }
 .assistant-check-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
 .assistant-check-summary::-webkit-details-marker { display: none; }
 .assistant-check-summary > span:first-child { color: var(--text); font-size: 12px; font-weight: 600; }

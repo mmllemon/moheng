@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Clock3, Globe, Monitor, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone, UserRoundX } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, StatusBadge, TitlebarActions } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 import SystemTabs from '../components/SystemTabs';
 
@@ -54,7 +54,16 @@ export default function SystemSecurityPage() {
   const activeSessions = sessions.filter((session) => session.isValid).length;
   const deniedEvents = events.filter((event) => event.outcome === 'DENIED' || event.outcome === 'BLOCKED' || event.outcome === 'SESSION_REVOKED').length;
   return <div className="page-wrap system-security-page">
-    <PageHeader eyebrow="SYSTEM / SECURITY CENTER" title="登录安全中心" subtitle="查看近期登录安全事件、检查活跃会话，并在发现异常时撤销远程访问。IP 地址与设备信息属于受限安全数据。" actions={<Button variant="secondary" onClick={() => { void sessionsQuery.refetch(); void eventsQuery.refetch(); }}><RefreshCcw size={15} />刷新</Button>} />
+    <PageHeader eyebrow="SYSTEM / SECURITY CENTER" title="登录安全中心" subtitle="查看近期登录安全事件、检查活跃会话，并在发现异常时撤销远程访问。IP 地址与设备信息属于受限安全数据。" />
+
+    {/* 刷新按钮：注入到设置窗标题栏的 actions 插槽
+         （对齐 hana ._titlebar_7cee1 的 space-between 三段结构：
+           [标题] [页面级操作] [关闭]）。
+         用 portal 而不是改 Layout，是因为刷新属于页面自己的动作，
+         Layout 不该知道哪个页面有刷新按钮。 */}
+    <TitlebarActions>
+      <Button variant="secondary" onClick={() => { void sessionsQuery.refetch(); void eventsQuery.refetch(); }}><RefreshCcw size={15} />刷新</Button>
+    </TitlebarActions>
 
     <section className="security-metrics">
       <article className="security-metric"><span className="security-metric-icon"><Monitor size={18} /></span><div><small>有效会话</small><strong>{activeSessions}</strong><span>最多显示最近 200 条记录</span></div></article>

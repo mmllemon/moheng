@@ -19,8 +19,17 @@ import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
 import PaperDialogMorph from './PaperDialogMorph';
 import UiPreferencesBar from './UiPreferencesBar';
+import { ProjectList } from './ProjectList';
+import { PanelMenu } from './PanelMenu';
+import { WindowControls } from './WindowControls';
+import { useTitlebarClearance } from '../lib/use-titlebar-clearance';
+import { WorkspacePanelIcon } from './PanelIcons';
+import { WorkspacePanel } from './WorkspacePanel';
+import { useSidebarResize } from '../lib/use-sidebar-resize';
+import type { SortMode, DisplayMode } from './SortMenu';
 const AssistantModal = lazy(() => import('./assistant/AssistantModal'));
 import { useAnimatedPresence } from './useAnimatedPresence';
+import PaperTextureLayer from './PaperTextureLayer';
 import { animatePaperIn, animatePaperOut, rememberPaperOrigin, takePaperOrigin } from '../lib/paper-morph';
 import { useDetachedPanelHeaders } from '../lib/use-detached-panel-headers';
 
@@ -33,7 +42,9 @@ const navigation: NavigationItem[] = [
   { to: '/cost', label: '成本工作台', icon: ClipboardList, group: '工作台', end: false },
   { to: '/projects', label: '项目档案', icon: FolderKanban, group: '项目管理', end: true },
   { to: '/projects/members', label: '项目成员与权限', icon: Users, group: '项目管理', end: true },
-  { to: '/system', label: '系统管理', icon: SlidersHorizontal, group: '系统管理', end: false, adminOnly: true },
+  // 「系统管理」导航项已移除（2026-10-23）。
+  // 入口统一走侧栏页脚的齿轮按钮（data-tooltip="系统设置"），
+  // 避免同一个入口在导航列表和页脚各出现一次。
 ];
 
 const systemNavigation: NavigationItem[] = [
@@ -107,8 +118,15 @@ export default function Layout() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const selectedProjectId = useUiStore((state) => state.selectedProjectId);
   const setSelectedProjectId = useUiStore((state) => state.setSelectedProjectId);
+  const workspaceOpen = useUiStore((state) => state.workspaceOpen);
+  const setWorkspaceOpen = useUiStore((state) => state.setWorkspaceOpen);
+  const workspaceTab = useUiStore((state) => state.workspaceTab);
+  const setWorkspaceTab = useUiStore((state) => state.setWorkspaceTab);
   const collapsed = useUiStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useUiStore((state) => state.toggleSidebar);
+  // 侧栏拖动宽度：对齐 hana 的 _fpResizeHandle —— 拖动时改 CSS 变量，
+  // 主内容靠 flex: 1 自动让位，不需要额外的偏移量。
+  const sidebarResize = useSidebarResize();
   const appIcon = useUiStore((state) => state.appIcon);
   const [quickSearch, setQuickSearch] = useState('');
   const [commandScope, setCommandScope] = useState<CommandScope>('all');
@@ -123,6 +141,19 @@ export default function Layout() {
      idle = 停留，enter = 滑入中，exit = 滑出中。
      hana 用 hover toggle 触发，这里用 sidebarPinned 控制是否常驻。 */
   const [sidebarStage, setSidebarStage] = useState<'enter' | 'idle' | 'exit'>('enter');
+  /* 悬停抽屉（对齐 hana 的 overlay 态，2026-10-23）：
+     侧栏收起后，鼠标移到左上角开关按钮附近时滑出一份浮层副本，
+     离开按钮和浮层后 300ms 自动关闭。
+
+     hana 源码（contributed-keybindings-BWxnaFR2.js）的关键参数：
+       - 关闭延迟 rc = 300ms
+       - 保活条件：鼠标在触发区（按钮矩形）内 **或** 在抽屉内
+       - 进出场：x 从 -(width + 12) 滑到 0
+
+     moheng 用 CSS transition 实现（不引入 motion 库）。 */
+  const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
+  const sidebarToggleRef = useRef<HTMLButtonElement>(null);
+  const sidebarDrawerRef = useRef<HTMLDivElement>(null);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [settingsSearch, setSettingsSearch] = useState('');
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -131,13 +162,82 @@ export default function Layout() {
   useDetachedPanelHeaders();
   const commandInputRef = useRef<HTMLInputElement>(null);
   const settingsWindowRef = useRef<HTMLElement>(null);
+  /** 卡片元素（.app-content）：用于测量顶栏让位量 */
+  const contentRef = useRef<HTMLElement>(null);
+  const titlebarClearance = useTitlebarClearance(contentRef);
   const settingsOriginRef = useRef<HTMLElement | null>(null);
   const settingsBarRef = useRef<HTMLDivElement>(null);
   const settingsContentRef = useRef<HTMLDivElement>(null);
+
   const settingsScrollbarRef = useRef<HTMLDivElement>(null);
 
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
   const projects = projectsQuery.data ?? [];
+
+  /* ============================================================
+     项目列表交互（对齐 hana 会话列表）
+     ============================================================
+     hana 的会话列表有一套完整交互：
+       - 搜索框：30px 高，内含图标 + 输入 + 清除按钮
+       - 行悬停：背景变化 + 右侧操作按钮淡入
+       - 置顶按钮：默认 opacity 0，悬停时 0.5，悬停自身时 1
+       - 拖拽重排：通过 POST /api/session-projects/projects/reorder 持久化
+
+     moheng 对应到项目列表，交互语义相同：搜索、置顶、拖拽排序。 */
+  const [projectSearch, setProjectSearch] = useState('');
+  const [pinnedProjectIds, setPinnedProjectIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('moheng.pinnedProjects');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
+  /* 排序与显示模式（对齐 hana sidebar.view.sorting / sidebar.view.display）。
+     hana 的排序方式：time / project / agent；显示方式：singleLine / twoLine。
+     moheng 对应：名称 / 编码 / 最近；单行 / 双行。 */
+  const [projectSort, setProjectSort] = useState<SortMode>(() => {
+    try {
+      const raw = localStorage.getItem('moheng.projectSort');
+      // 只认 time / status。旧版本可能存了 'recent'（已废弃），回落 time。
+      return raw === 'time' || raw === 'status' ? raw : 'time';
+    } catch { return 'time'; }
+  });
+  const [projectDisplay, setProjectDisplay] = useState<DisplayMode>(() => {
+    try {
+      const raw = localStorage.getItem('moheng.projectDisplay');
+      return (raw as DisplayMode) || 'two-line';
+    } catch { return 'two-line'; }
+  });
+
+  /* 贴纸行显隐（对齐 hana chalkboardShowPrimaryAgentHeader）。
+     hana 隐藏贴纸后，导航区（flex: 1）自然向上补位。
+     moheng 的「贴纸」是侧栏顶部品牌区，同样由 flex 布局自然补位。 */
+  const [showSidebarBrand, setShowSidebarBrand] = useState<boolean>(() => {
+    try { return localStorage.getItem('moheng.sidebarBrand') !== 'hidden'; } catch { return true; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem('moheng.pinnedProjects', JSON.stringify(pinnedProjectIds)); } catch { /* 存储不可用时忽略 */ }
+  }, [pinnedProjectIds]);
+
+  useEffect(() => {
+    try { localStorage.setItem('moheng.projectSort', projectSort); } catch { /* 存储不可用时忽略 */ }
+  }, [projectSort]);
+
+  useEffect(() => {
+    try { localStorage.setItem('moheng.projectDisplay', projectDisplay); } catch { /* 存储不可用时忽略 */ }
+  }, [projectDisplay]);
+
+  useEffect(() => {
+    try { localStorage.setItem('moheng.sidebarBrand', showSidebarBrand ? 'shown' : 'hidden'); } catch { /* 存储不可用时忽略 */ }
+  }, [showSidebarBrand]);
+
+  const togglePinnedProject = (projectId: string) => {
+    setPinnedProjectIds((prev) => prev.includes(projectId)
+      ? prev.filter((id) => id !== projectId)
+      : [...prev, projectId]);
+  };
+
+
   useEffect(() => {
     if (!projects.length) { if (selectedProjectId) setSelectedProjectId(null); return; }
     if (!selectedProjectId || !projects.some((project) => project.id === selectedProjectId)) setSelectedProjectId(projects[0].id);
@@ -150,34 +250,18 @@ export default function Layout() {
     return () => { current = false; };
   }, [user?.id]);
   useEffect(() => { setMobileNavOpen(false); setSettingsNavOpen(false); }, [location.pathname]);
-  /* 写入平台标记：hana 的卡片圆角在 Windows 上是 min(--radius-lg, 7px)
-     （styles.css:295），需要 data-platform="win32" 才会生效。
-     浏览器版拿不到 Electron 的 platform API，用 navigator.platform 判断。 */
+  /* 写入平台标记：hana 的卡片圆角在 Windows 上是 min(--radius-lg, 7px)，
+     需要 data-platform="win32" 才会生效（styles.css:295）。
+     浏览器版拿不到 Electron 的 platform API，用 navigator.platform 判断。
+
+     注意：这个标记本身不决定是否封顶。真正的开关是 data-windows-card-radius，
+     由用户偏好 windowsCardRadius 控制（见 auth-store 的 applyUiPreferences）。
+     moheng 默认 Windows 也走 Web 观感，即写入 off 属性。 */
   useEffect(() => {
     const p = navigator.platform || '';
     const isWin = /Win/i.test(p) || /Windows/i.test(navigator.userAgent);
     document.documentElement.dataset.platform = isWin ? 'win32' : (/Mac/i.test(p) ? 'darwin' : 'linux');
   }, []);
-  /* 标题左缘跟随实际内容列左缘 +10px。
-     hana 的 --chat-copy-edge 公式只在单列阅读流里成立；moheng 有双栏宽页，
-     内容列宽度会变，所以直接量 DOM 写变量，比公式可靠。 */
-  useLayoutEffect(() => {
-    const sync = () => {
-      const wrap = document.querySelector('.page-wrap');
-      const main = document.querySelector('.app-main');
-      if (!wrap || !main) return;
-      const wr = wrap.getBoundingClientRect();
-      const mr = main.getBoundingClientRect();
-      const padLeft = Number.parseFloat(getComputedStyle(wrap).paddingLeft) || 0;
-      document.documentElement.style.setProperty('--titlebar-copy-offset', `${Math.round(wr.x - mr.x + padLeft)}px`);
-    };
-    sync();
-    const ro = new ResizeObserver(sync);
-    const wrap = document.querySelector('.page-wrap');
-    if (wrap) ro.observe(wrap);
-    const t = window.setTimeout(sync, 120);
-    return () => { ro.disconnect(); window.clearTimeout(t); };
-  }, [location.pathname]);
   /* 浮出侧栏 hover 触发，对齐 hana 的 hover toggle 行为：
      鼠标进入左侧感应区 → enter（滑入）；离开侧栏 → exit（滑出）。
      收缩态下常驻收起，不参与 hover。 */
@@ -186,6 +270,50 @@ export default function Layout() {
     setSidebarStage('enter');
     const toIdle = window.setTimeout(() => setSidebarStage('idle'), 300);
     return () => window.clearTimeout(toIdle);
+  }, [collapsed]);
+  /* 悬停抽屉探测：对齐 hana 的 mousemove 逻辑。
+     只在收起态生效。鼠标在触发区（开关按钮）或抽屉内 → 保持；
+     两者都不在 → 300ms 后关闭。
+
+     hana 的 300ms 是为了容错：鼠标从按钮移到抽屉的路径上会短暂
+     离开两个区域，300ms 足够跨过缝隙，不会闪断。 */
+  useEffect(() => {
+    if (!collapsed) { setSidebarDrawerOpen(false); return; }
+
+    let timer: number | null = null;
+    const clearTimer = () => {
+      if (timer !== null) { window.clearTimeout(timer); timer = null; }
+    };
+
+    const onMouseMove = (event: MouseEvent) => {
+      const btn = sidebarToggleRef.current?.getBoundingClientRect();
+      const drawer = sidebarDrawerRef.current?.getBoundingClientRect();
+      const inBtn = !!btn
+        && event.clientX >= btn.left && event.clientX <= btn.right
+        && event.clientY >= btn.top && event.clientY <= btn.bottom;
+      const inDrawer = !!drawer
+        && event.clientX >= drawer.left && event.clientX <= drawer.right
+        && event.clientY >= drawer.top && event.clientY <= drawer.bottom;
+
+      if (inBtn || inDrawer) {
+        clearTimer();
+        setSidebarDrawerOpen(true);
+        return;
+      }
+
+      if (timer === null) {
+        timer = window.setTimeout(() => {
+          timer = null;
+          setSidebarDrawerOpen(false);
+        }, 300);
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      clearTimer();
+    };
   }, [collapsed]);
   useEffect(() => {
     if (location.pathname !== '/assistant' && location.pathname !== '/cost/assistant') return;
@@ -444,45 +572,143 @@ export default function Layout() {
   }
 
   return <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
+    {/* 侧栏拖动宽度把手：对齐 hana 的 _fpResizeHandle ——
+        fixed 定位，left = calc(6px + 宽度 + 3px)，3×44px 的 accent 条。
+        收起时（collapsed）不渲染。 */}
+    {!collapsed && (
+      <div
+        className="fp-resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="拖动调整侧栏宽度"
+        aria-valuenow={sidebarResize.width}
+        aria-valuemin={200}
+        aria-valuemax={420}
+        tabIndex={0}
+        onPointerDown={sidebarResize.startResize}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowLeft') { event.preventDefault(); sidebarResize.nudgeWidth(-8); }
+          if (event.key === 'ArrowRight') { event.preventDefault(); sidebarResize.nudgeWidth(8); }
+          if (event.key === 'Home') { event.preventDefault(); sidebarResize.resetWidth(); }
+        }}
+        data-resizing={sidebarResize.resizing || undefined}
+      />
+    )}
+    {/* 侧栏开关：对齐 hana ._trafficStrip —— fixed 定位、在侧栏之外、z-index 最高。
+        放在侧栏里的话，侧栏宽度归零时按钮也跟着消失，只能再放第二个按钮展开，
+        这就是“两个按钮”的成因。hana 把它独立出来，一个按钮切换两种状态。 */}
+    <div className="shell-traffic-strip" data-collapsed={collapsed || undefined} aria-hidden={false}>
+      <button ref={sidebarToggleRef} type="button" className="shell-toggle-btn" onClick={toggleSidebar} data-tooltip={sidebarDrawerOpen ? undefined : (collapsed ? '展开导航' : '收起导航')} aria-label={collapsed ? '展开导航' : '收起导航'} aria-expanded={!collapsed} aria-controls="main-navigation">{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}</button>
+    </div>
+    {/* 悬停抽屉：对齐 hana ._fpOverlay —— 收起后鼠标移入开关按钮时滑出的浮层副本。
+        用 CSS transition 实现（x 从 -(240+12) 到 0），不引入 motion 库。 */}
+    {collapsed && <div ref={sidebarDrawerRef} className={`sidebar-drawer ${sidebarDrawerOpen ? 'is-open' : ''}`} aria-hidden={!sidebarDrawerOpen}>
+      <div className="sidebar-drawer-inner">
+        {/* titlebar 占位：与主侧栏 .app-sidebar-titlebar 同高（16px），
+            保证抽屉的 profile 位置与主侧栏完全对齐。 */}
+        <div className="app-sidebar-titlebar">
+          <span className="sidebar-toolbar-spacer" />
+        </div>
+        {/* 贴纸行：对齐 hana chalkboardShowPrimaryAgentHeader。
+            隐藏后导航区（flex: 1）自然向上补位，不需要额外布局代码。 */}
+        {showSidebarBrand && <div className="app-sidebar-profile">
+          <span className="sidebar-brand-mark"><AppIcon id={appIcon} /></span>
+          <div className="sidebar-wordmark"><strong>墨衡</strong><span>工程经营管理</span></div>
+        </div>}
+        <div className="app-sidebar-scroll">
+          <nav aria-label="业务导航（抽屉）">
+            {/* 对齐 hana ._panelNav：导航项平铺，无分组标题。
+                hana 的侧栏功能按钮区没有「经营中心/工作台」这类分组标签，
+                所有按钮平铺，用 data-selected 表达选中态。 */}
+            <div className="sidebar-panel-nav">
+              {navigation.filter((item) => !item.adminOnly || user?.role === 'ADMIN').map((item) => {
+                const Icon = item.icon;
+                return <NavLink key={`drawer-${item.to}`} to={item.to} end={item.end ?? false} title={item.label} aria-label={item.label} className={({ isActive }) => `sidebar-activity-bar${isActive ? ' is-selected' : ''}`}>
+                  <Icon size={16} strokeWidth={1.65} /><span>{item.label}</span>
+                </NavLink>;
+              })}
+            </div>
+          </nav>
+          {/* 项目列表：与主侧栏同一套组件（含搜索/置顶/拖拽），抽屉里只展示前 5 项。 */}
+          <ProjectList
+            projects={projects}
+            loading={projectsQuery.isLoading}
+            selectedProjectId={activeProject?.id ?? null}
+            onSelect={(id) => { setSelectedProjectId(id); navigate('/cost'); }}
+            onManage={() => navigate('/projects')}
+            search={projectSearch}
+            onSearchChange={setProjectSearch}
+            pinnedIds={pinnedProjectIds}
+            onTogglePin={togglePinnedProject}
+            limit={5}
+            sort={projectSort}
+            display={projectDisplay}
+            onSortChange={setProjectSort}
+            onDisplayChange={setProjectDisplay}
+          />
+        </div>
+        {/* 页脚用户区：与主侧栏一致，抽屉里保留完整的账号操作入口。 */}
+        <div className="app-sidebar-footer">
+          <div className="sidebar-user-row">
+            {/* 左组：身份（头像 + 名字），可收缩 */}
+            <div className="sidebar-user-identity">
+              <div className="sidebar-user-avatar">{user?.name?.slice(0, 1) ?? '管'}</div>
+              <div className="sidebar-user-copy"><strong>{user?.name ?? '用户'}</strong>{user?.name !== (user?.role === 'ADMIN' ? '系统管理员' : '项目成员') && <span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span>}</div>
+            </div>
+            {/* 右组：操作按钮，不收缩 */}
+            <div className="sidebar-footer-actions">
+              {user?.role === 'ADMIN' && <button type="button" data-tooltip="系统设置" data-tooltip-align="end" aria-label="系统设置" className="sidebar-footer-icon" onClick={(event) => { rememberPaperOrigin(event.currentTarget); navigate('/system'); }}><Settings size={15} /></button>}
+              <button data-tooltip="退出登录" data-tooltip-align="end" aria-label="退出登录" className="sidebar-footer-icon" onClick={logout}><LogOut size={15} /></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>}
     <button type="button" className="mobile-nav-backdrop" aria-label="关闭主导航" onClick={() => setMobileNavOpen(false)} style={{ display: mobileNavOpen ? 'block' : 'none' }} />
     <aside className={'app-sidebar' + (mobileNavOpen ? ' mobile-nav-open' : '')} data-stage={sidebarStage} id="main-navigation" aria-label="主导航" data-focus-trap={mobileNavOpen ? 'modal' : undefined}>
       <div className="app-sidebar-titlebar">
-        <button type="button" className="sidebar-toggle" onClick={toggleSidebar} data-tooltip={collapsed ? '展开导航' : '收起导航'} aria-label={collapsed ? '展开导航' : '收起导航'}>{collapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}</button>
-        <button type="button" className="sidebar-toggle" onClick={openCommandPalette} data-tooltip="搜索与命令" aria-label="侧栏搜索"><Search size={16} /></button>
         <span className="sidebar-toolbar-spacer" />
       </div>
-      <div className="app-sidebar-profile">
+      {/* 贴纸行：隐藏后导航区自动补位（flex: 1 吃掉释放的空间）。 */}
+      {showSidebarBrand && <div className="app-sidebar-profile">
         <span className="sidebar-brand-mark"><AppIcon id={appIcon} /></span>
         <div className="sidebar-wordmark"><strong>墨衡</strong><span>工程经营管理</span></div>
-        <button type="button" className="sidebar-profile-action" onClick={() => navigate('/projects')} data-tooltip="项目档案" aria-label="打开项目档案"><FolderKanban size={14} /></button>
-      </div>
+      </div>}
       <div className="app-sidebar-scroll">
         <nav aria-label="业务导航">
-          {primaryGroups.map((group) => <div className="sidebar-nav-group" key={group}>
-            <div className="sidebar-group-title"><span>{group}</span></div>
-            {navigation.filter((item) => item.group === group && (!item.adminOnly || user?.role === 'ADMIN')).map((item) => {
+          {/* 对齐 hana ._panelNav：平铺，无分组标题 */}
+          <div className="sidebar-panel-nav">
+            {navigation.filter((item) => !item.adminOnly || user?.role === 'ADMIN').map((item) => {
               const Icon = item.icon;
-              return <NavLink key={item.to} to={item.to} end={item.end ?? false} title={item.label} aria-label={item.label} className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''}`}>
+              return <NavLink key={item.to} to={item.to} end={item.end ?? false} title={item.label} aria-label={item.label} className={({ isActive }) => `sidebar-activity-bar${isActive ? ' is-selected' : ''}`}>
                 <Icon size={16} strokeWidth={1.65} /><span>{item.label}</span>
               </NavLink>;
             })}
-          </div>)}
-        </nav>
-        <section className="sidebar-projects" aria-label="快速切换项目">
-          <div className="sidebar-group-title"><span>项目</span><button type="button" className="sidebar-project-all" onClick={() => navigate('/projects')} aria-label="管理项目"><Plus size={12} /></button></div>
-          <div className="sidebar-project-list">
-            {projectsQuery.isLoading ? <div className="sidebar-project-empty">正在加载项目…</div> : projects.length === 0 ? <div className="sidebar-project-empty">暂无可访问项目</div> : projects.slice(0, 4).map((project) => <button type="button" key={project.id} className={`sidebar-project ${project.id === activeProject?.id ? 'is-active' : ''}`} onClick={() => { setSelectedProjectId(project.id); navigate('/cost'); }} title={`${project.name} · ${project.code}`}>
-              <span className="sidebar-project-mark">{project.name.slice(0, 1)}</span>
-              <span className="sidebar-project-copy"><strong>{project.name}</strong><small>{project.code}</small></span>
-            </button>)}
           </div>
-          {projects.length > 4 && <button type="button" className="sidebar-project-all" onClick={() => navigate('/projects')}>查看全部 {projects.length} 个项目<ChevronRight size={11} /></button>}
-        </section>
+        </nav>
+        <ProjectList
+          projects={projects}
+          loading={projectsQuery.isLoading}
+          selectedProjectId={activeProject?.id ?? null}
+          onSelect={(id) => { setSelectedProjectId(id); navigate('/cost'); }}
+          onManage={() => navigate('/projects')}
+          search={projectSearch}
+          onSearchChange={setProjectSearch}
+          pinnedIds={pinnedProjectIds}
+          onTogglePin={togglePinnedProject}
+          limit={4}
+          sort={projectSort}
+          display={projectDisplay}
+          onSortChange={setProjectSort}
+          onDisplayChange={setProjectDisplay}
+        />
       </div>
       <div className="app-sidebar-footer">
         <div className="sidebar-user-row">
-          <div className="sidebar-user-avatar">{user?.name?.slice(0, 1) ?? '管'}</div>
-          <div className="sidebar-user-copy"><strong>{user?.name ?? '用户'}</strong><span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span></div>
+          <div className="sidebar-user-identity">
+            <div className="sidebar-user-avatar">{user?.name?.slice(0, 1) ?? '管'}</div>
+            <div className="sidebar-user-copy"><strong>{user?.name ?? '用户'}</strong>{user?.name !== (user?.role === 'ADMIN' ? '系统管理员' : '项目成员') && <span>{user?.role === 'ADMIN' ? '系统管理员' : '项目成员'}</span>}</div>
+          </div>
           <div className="sidebar-footer-actions">
             {user?.role === 'ADMIN' && <button type="button" data-tooltip="系统设置" data-tooltip-align="end" aria-label="系统设置" className="sidebar-footer-icon" onClick={(event) => { rememberPaperOrigin(event.currentTarget); navigate('/system'); }}><Settings size={15} /></button>}
             <button data-tooltip="退出登录" data-tooltip-align="end" aria-label="退出登录" className="sidebar-footer-icon" onClick={logout}><LogOut size={15} /></button>
@@ -492,63 +718,117 @@ export default function Layout() {
     </aside>
 
     <div className="app-main">
-      <header className="app-titlebar">
-        {collapsed && <button type="button" className="titlebar-icon titlebar-restore" onClick={toggleSidebar} data-tooltip="展开导航" aria-label="展开导航"><PanelLeft size={17} /></button>}
-        <button type="button" className="titlebar-icon titlebar-mobile-menu" data-tooltip={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={17} /> : <Menu size={17} />}</button>
-        <div className="titlebar-context">
-          <strong>{currentPageLabel}</strong>
-          <span className="titlebar-subtitle" data-page-subtitle />
-          {!isGlobalContext && activeProject && <><span className="titlebar-separator">·</span><span className="titlebar-project-code">{activeProject.code}</span></>}
-        </div>
-        <div className="titlebar-actions">
-          {isGlobalContext ? <span className="titlebar-global-scope"><i />全公司</span> : <div className="titlebar-project"><SelectField value={selectedProjectId ?? ''} onChange={(event) => setSelectedProjectId(event.target.value || null)} aria-label="切换当前项目">{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</SelectField></div>}
-          <div className="titlebar-cluster">
-            <button type="button" className="titlebar-icon" onClick={openCommandPalette} data-tooltip="搜索与命令 ⌘K" aria-label="打开全局搜索"><Search size={15} /></button>
-            <button type="button" className={`titlebar-icon ${location.pathname === '/notifications' ? 'is-active' : ''}`} onClick={() => navigate('/notifications')} data-tooltip="待办与预警" aria-label="打开待办与预警"><BellRing size={15} /></button>
-            {assistantEnabled && <button type="button" className={`titlebar-icon ${assistantOpen ? 'is-active' : ''}`} data-tooltip="成本助手" aria-label="打开成本助手" aria-expanded={assistantOpen} onClick={() => { setCommandPaletteOpen(false); setQuickActionsOpen(false); setAccountMenuOpen(false); setAssistantOpen(true); }}><Sparkles size={15} /></button>}
-            <div className="quick-actions-wrap">
-              <button type="button" className={`titlebar-icon ${quickActionsOpen ? 'is-active' : ''}`} data-tooltip="快捷操作" aria-label="打开快捷操作" aria-expanded={quickActionsOpen} aria-controls="quick-actions-panel" onClick={() => { setCommandPaletteOpen(false); setAccountMenuOpen(false); setQuickActionCategory('all'); setQuickActionsOpen((open) => !open); }}><Zap size={15} /></button>
-              {quickActionsOpen && <button type="button" className="quick-action-dismiss" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)} />}
-              {quickActionsPresence.mounted && <div id="quick-actions-panel" className={`quick-action-panel ${quickActionsPresence.visible ? 'is-visible' : 'is-closing'}`} role="dialog" aria-label="快捷操作" aria-hidden={!quickActionsOpen} data-focus-trap={quickActionsOpen ? 'popover' : undefined}>
-                <div className="quick-action-tabs" role="tablist" aria-label="快捷操作分类" onKeyDown={(event) => {
-                  if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
-                  const tabs = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]'));
-                  const currentIndex = tabs.indexOf(document.activeElement as HTMLButtonElement);
-                  if (currentIndex < 0) return;
-                  const nextIndex = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : event.key === 'ArrowRight' ? (currentIndex + 1) % tabs.length : (currentIndex - 1 + tabs.length) % tabs.length;
-                  event.preventDefault();
-                  tabs[nextIndex]?.focus();
-                  tabs[nextIndex]?.click();
-                }}>
-                  {quickActionCategories.map((category) => <button key={category.key} type="button" role="tab" tabIndex={quickActionCategory === category.key ? 0 : -1} aria-selected={quickActionCategory === category.key} className={quickActionCategory === category.key ? 'is-active' : ''} onClick={() => setQuickActionCategory(category.key)}>{category.label}</button>)}
-                  <button type="button" className="quick-action-close" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)}><X size={15} /></button>
-                </div>
-                <div className="quick-action-heading"><div><strong>常用业务入口</strong><span>按当前项目进入对应工作台</span></div><span className="quick-action-count">{visibleQuickActions.length} 项</span></div>
-                <div className="quick-action-grid" role="tabpanel" aria-label={quickActionCategories.find((category) => category.key === quickActionCategory)?.label ?? '全部'}>
-                  {visibleQuickActions.map((action) => { const Icon = action.icon; return <button type="button" className="quick-action-item" key={action.title} onClick={() => { navigate(action.to); setQuickActionsOpen(false); }}><span className="quick-action-icon"><Icon size={16} /></span><span className="quick-action-copy"><strong>{action.title}</strong><small>{action.description}</small></span><ChevronRight size={15} className="quick-action-arrow" /></button>; })}
-                </div>
-                <div className="quick-action-foot"><span>进入成本工作台后可按项目切换</span><button type="button" onClick={() => { navigate('/cost'); setQuickActionsOpen(false); }}>打开工作台<ArrowUpRight size={13} /></button></div>
-              </div>}
-            </div>
-            <UiPreferencesBar compact />
-            <div className="account-menu-wrap">
-              <button type="button" className={`titlebar-avatar ${accountMenuOpen ? 'is-active' : ''}`} aria-haspopup="menu" aria-expanded={accountMenuOpen} aria-label={`账号菜单：${user?.name ?? '用户'}`} data-tooltip={user?.name ?? '账号'} data-tooltip-align="end" onClick={() => { setQuickActionsOpen(false); setAccountMenuOpen((open) => !open); }}><UserRound size={15} strokeWidth={1.7} /></button>
-              {accountMenuOpen && <>
-                <button type="button" className="account-menu-dismiss" aria-label="关闭账号菜单" onClick={() => setAccountMenuOpen(false)} />
-                <div className="account-menu" role="menu" aria-label="个人账号菜单" data-focus-trap={accountMenuOpen ? 'popover' : undefined}>
-                  <div className="account-menu-identity"><strong>{user?.name ?? '用户'}</strong><span>{user?.email ?? ''}</span><small>{user?.role === 'ADMIN' ? '系统管理员' : '普通成员'}</small></div>
-                  <button type="button" role="menuitem" onClick={() => { navigate('/account/security'); setAccountMenuOpen(false); }}><UserRound size={15} /><span>个人中心与账号安全</span></button>
-                  {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={() => { navigate('/system/security'); setAccountMenuOpen(false); }}><ShieldCheck size={15} /><span>登录安全中心</span></button>}
-                  {user?.role === 'ADMIN' && <button type="button" role="menuitem" onClick={(event) => { rememberPaperOrigin(event.currentTarget); navigate('/system'); setAccountMenuOpen(false); }}><SlidersHorizontal size={15} /><span>系统设置</span></button>}
-                  <button type="button" role="menuitem" className="account-menu-logout" onClick={() => { setAccountMenuOpen(false); void logout(); }}><LogOut size={15} /><span>退出登录</span></button>
-                </div>
-              </>}
+      <main className="app-content" ref={contentRef} aria-hidden={isSettingsArea ? true : undefined}>
+        {/* 纸纹层：对齐 hana 的 ._layer_0d743 ——
+            absolute 铺满卡片壳、z-index: --z-under（-1）在内容下方、pointer-events none。
+            默认 display:none，html[data-paper-texture] 打开。
+            不放进 route-transition：那里是滚动容器，纸纹会跟着内容滚走。 */}
+        <PaperTextureLayer />
+        {/* 标题层在卡片内部，对齐 hana ._titlebarFrame —— 它是 ._tileShell 的子元素。
+
+            结构真值（rve 组件）：
+              const hasLeft = leftActions.length > 0 || titleSegment != null;
+              <div data-islands={hasLeft ? "both" : "right"}>
+                {hasLeft && <div data-titlebar-slot="left">{...leftActions, titleSegment}</div>}
+                <div data-titlebar-slot="right">{...rightActions}</div>
+              </div>
+
+            关键：**titleSegment 存在时 data-islands 就是 "both"**，标题在左岛。
+            所以 chat 卡片也有左岛，里面装的是标题段（不是面板按钮）。
+            面板按钮 chrome 全在 titlebar-right，order 10/20/30。 */}
+        <header
+          className="app-titlebar"
+          data-titlebar-frame
+          data-islands="both"
+          style={{
+            /* 让位量：对齐 hana 的 titlebarClearancePx / titlebarClearanceRightPx
+               —— 卡片与窗口控制区重叠时，顶栏右侧 padding 加上重叠宽度。 */
+            ['--titlebar-clearance-right' as string]: `${titlebarClearance.right ?? 0}px`,
+            ['--titlebar-clearance-left' as string]: `${titlebarClearance.left ?? 0}px`,
+          }}
+        >
+          {/* 左岛：标题段（对齐 hana 把 titleSegment 放在 left 岛的做法） */}
+          <div className="titlebar-island titlebar-island-left" data-titlebar-slot="left" data-titlebar-action-island="left">
+            <button type="button" className="titlebar-icon titlebar-mobile-menu" data-tooltip={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-label={mobileNavOpen ? '关闭主导航' : '打开主导航'} aria-expanded={mobileNavOpen} aria-controls="main-navigation" onClick={() => setMobileNavOpen((open) => !open)}>{mobileNavOpen ? <X size={17} /> : <Menu size={17} />}</button>
+            <div className="titlebar-context" data-titlebar-slot="title">
+              {/* 对齐 hana ._chatTitleStack：
+                    - 标题 16px/700/accent（--fs-title）
+                    - 状态段独立容器，用 3px 实心圆点分隔
+                    - 整栈 width: fit-content，不撑满顶栏 */}
+              <strong data-page-title>{currentPageLabel}</strong>
+              <span className="titlebar-status">
+                {!isGlobalContext && activeProject && (
+                  <><span className="titlebar-status-part">{activeProject.code}</span><span className="titlebar-status-dot" aria-hidden="true" /></>
+                )}
+                <span className="titlebar-status-part">{isGlobalContext ? '全公司' : '项目'}</span>
+              </span>
             </div>
           </div>
-        </div>
-      </header>
 
-      <main className="app-content" aria-hidden={isSettingsArea ? true : undefined}>
+          {/* 右岛：工作区开关 + 菜单（对齐 hana 的 chrome 定义，全在 titlebar-right）
+              按需求删除了「预览」开关，只保留「工作区」+ 菜单。 */}
+          <div className="titlebar-island titlebar-island-right" data-titlebar-slot="right" data-titlebar-action-island="right">
+            {/* 项目选择器：moheng 独有（hana 顶栏没有）。
+                放右岛最左端（chrome 之前）—— 阅读顺序是「先看上下文，再用操作」，
+                且不挤进左岛的标题栈、也不把两个面板按钮撑开。
+                只在项目上下文显示（!isGlobalContext）。 */}
+            {!isGlobalContext ? (
+              <div className="titlebar-project">
+                <SelectField
+                  value={selectedProjectId ?? ''}
+                  onChange={(event) => setSelectedProjectId(event.target.value || null)}
+                  aria-label="切换当前项目"
+                >
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>{project.name}</option>
+                  ))}
+                </SelectField>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="titlebar-icon"
+              aria-label={workspaceOpen && workspaceTab === 'studio' ? '关闭工作区' : '打开工作区'}
+              aria-pressed={workspaceOpen && workspaceTab === 'studio'}
+              data-chrome-button-action-id="chalkboard.chat.panel-workspace"
+              data-tooltip="工作区"
+              onClick={() => {
+                if (workspaceOpen && workspaceTab === 'studio') setWorkspaceOpen(false);
+                else { setWorkspaceTab('studio'); setWorkspaceOpen(true); }
+              }}
+            >
+              <WorkspacePanelIcon />
+            </button>
+            <PanelMenu />
+          </div>
+        </header>
+        {/* 窗口控制区：对齐 hana 的 ._windowControlsIsland_5f7ae ——
+            fixed 定位在窗口右上角，装系统按钮 + 窗口按钮。
+            卡片右缘与本区左缘重叠时，顶栏右侧要让位（见 wot 算法）。 */}
+        <WindowControls
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          setSelectedProjectId={setSelectedProjectId}
+          isGlobalContext={isGlobalContext}
+          location={location}
+          navigate={navigate}
+          openCommandPalette={openCommandPalette}
+          quickActionsOpen={quickActionsOpen}
+          setQuickActionsOpen={setQuickActionsOpen}
+          quickActionsPresence={quickActionsPresence}
+          quickActionCategory={quickActionCategory}
+          setQuickActionCategory={setQuickActionCategory}
+          quickActionCategories={quickActionCategories}
+          visibleQuickActions={visibleQuickActions}
+          accountMenuOpen={accountMenuOpen}
+          setAccountMenuOpen={setAccountMenuOpen}
+          assistantEnabled={assistantEnabled}
+          assistantOpen={assistantOpen}
+          setAssistantOpen={setAssistantOpen}
+          setCommandPaletteOpen={setCommandPaletteOpen}
+          rememberPaperOrigin={rememberPaperOrigin}
+          logout={logout}
+        />
         {isSettingsArea ? <div className="settings-underlay" aria-hidden="true" /> : <div className="route-transition" key={location.pathname}><Outlet /></div>}
       </main>
       <FocusTrap />
@@ -556,6 +836,10 @@ export default function Layout() {
       <ConfirmHost />
       <ToastHost />
     </div>
+    {/* 工作区浮层：对齐 hana 的 _previewPanel ——
+        必须与 .app-main 并列（app-shell 的直接子项），
+        否则 flex 让位不会发生，主内容也不会收缩。 */}
+    <WorkspacePanel />
 
     {isSettingsArea && <div className="settings-overlay" role="presentation">
       <section ref={settingsWindowRef} className={`settings-window ${settingsNavOpen ? 'is-mobile-nav-open' : ''} ${isAppearanceSettings ? 'is-appearance-only' : ''}`} role="dialog" aria-modal="true" aria-label="设置" data-focus-trap="modal">
@@ -594,7 +878,24 @@ export default function Layout() {
               {!availableSettingsGroups.length && <div className="settings-nav-empty">没有匹配的设置</div>}
             </div>}
           </nav>
-          <div ref={settingsContentRef} className="settings-content" aria-hidden={settingsNavOpen ? true : undefined}><div className="route-transition" key={location.pathname}><Outlet /></div></div>
+          {/* 内容列：对齐 hana ._column_41544
+                display: flex; flex: 1; flex-direction: column;
+               内部再分 titlebar(52px) + main(可滚) */}
+          <div className="settings-column">
+            {/* 标题栏：对齐 hana ._titlebar_7cee1（min-height 52px） */}
+            {/* 标题栏：对齐 hana ._titlebar_7cee1（justify-content: space-between）
+                 三段结构：[标题] [页面级操作] [关闭]
+                 页面级操作由各页通过 portal 注入到 #settings-titlebar-actions，
+                 这样刷新之类的按钮留在标题栏里，不额外占一行。 */}
+            <div className="settings-titlebar">
+              <h1 className="settings-titlebar-title">{currentPageLabel}</h1>
+              <div className="settings-titlebar-actions" id="settings-titlebar-actions" />
+              <button type="button" className="settings-titlebar-close" onClick={closeSettings} aria-label="关闭设置">
+                <X size={14} />
+              </button>
+            </div>
+            <div ref={settingsContentRef} className="settings-content" aria-hidden={settingsNavOpen ? true : undefined}><div className="route-transition" key={location.pathname}><Outlet /></div></div>
+          </div>
         </div>
         <div ref={settingsScrollbarRef} className="settings-scrollbar" aria-hidden="true"><span /></div>
       </section>

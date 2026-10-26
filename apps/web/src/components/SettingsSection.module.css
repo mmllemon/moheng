@@ -1,0 +1,199 @@
+/* ===========================================================================
+   SettingsSection —— Hana Section 组件的源码级复刻
+   ===========================================================================
+
+   溯源：
+     Hana 1.1.35 的 Section 组件从 AnimationPrimitives chunk 导出
+     （import { J as ae } from "./AnimationPrimitives-O85oXpjE.js"）
+     实际定义：function PM({ title, description, context, variant, surface, children, className })
+
+   下面的 CSS 全部取自 AnimationPrimitives-alJC4Pbo.css 的原文值，
+   不是推测。类名 hash 已替换为语义名。
+
+   与 moheng 现有 .settings-section 的关键差异：
+     1. 分区下间距 40px（现有 24px）
+     2. 标题与说明的间距联动：有 description 时 header 的 margin-bottom
+        从 12px 收窄到 4px（现有是固定 8px）
+     3. surface 是独立层（surfaceCard / surfacePlain），不是直接给卡片
+        这和 Hana 用 <Jm variant> 包一层是同一结构
+   =========================================================================== */
+
+/* 分区容器：Hana ._section_b489b */
+.section {
+  margin-bottom: var(--space-40);
+}
+
+/* 标题行：Hana ._sectionHeader_a7886 */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
+  margin-bottom: var(--space-12);
+}
+
+/* 有说明时收窄：Hana ._sectionHeaderWithDescription_2b236 */
+.headerWithDescription {
+  margin-bottom: var(--space-4);
+}
+
+/* 标题：Hana ._sectionTitle_f4979
+
+   Hana 原式没有 display:flex，因为它传的是纯文本。
+   moheng 有些页面传的是 <><Icon />文字</>，需要 flex 让图标与文字同行。
+   加上 flex 后，纯文本场景也不受影响（单个文本节点不会因 flex 换行）。 */
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-inline-start: var(--settings-heading-inset, 0);
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.title svg {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+/* 标题右侧上下文：Hana ._sectionContext_93eb0 */
+.context {
+  flex-shrink: 0;
+}
+
+/* 说明：Hana ._sectionDescription_8c542 */
+.description {
+  margin: 0 0 var(--space-16);
+  padding-inline-start: var(--settings-heading-inset, 0);
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+/* 正文容器：Hana ._sectionBody_5c316 */
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- surface 层：Hana ._surface_759ae / ._surfaceCard / ._surfacePlain --- */
+
+.surface {
+  width: 100%;
+  min-width: 0;
+}
+
+.surfaceCard {
+  display: flex;
+  flex-direction: column;
+  border: var(--settings-outline-width, var(--border-width, 1px)) solid
+    var(--settings-card-border, var(--border));
+  /*
+    Hana 原式：calc(var(--settings-surface-radius, var(--radius-card, 8px)) * var(--corner-radius-scale, 1))
+
+    moheng 现已与 Hana 语义对齐：--radius-card 存裸值（8px），
+    缩放移到使用处。因此这里可以原样沿用 Hana 的写法。
+  */
+  border-radius: calc(var(--settings-surface-radius, var(--radius-card)) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
+}
+
+.surfacePlain {
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+/* 卡片内缩变体（moheng 补充，Hana 的 _surfaceCard 本身无 padding）。
+   原因：Hana 卡片内是 markdown 等自带内缩的元素；moheng 卡片内常有 table，
+   需要由卡片提供 padding。这是有意识的差异。 */
+.cardPadded {
+  padding: var(--card-inset, var(--space-16));
+}
+
+.cardPaddedDense {
+  padding: var(--space-14);
+}
+
+/* --- 子组件 --- */
+
+/* 页脚：Hana ._sectionFooter_1de1e */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-8) var(--space-16);
+  border-top: var(--border-width, 1px) solid var(--settings-divider, var(--border));
+}
+
+/* 提示：Hana ._sectionNote_ac852 */
+.note {
+  position: relative;
+  padding: var(--space-8) var(--space-16);
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  line-height: 1.4;
+}
+
+/* 警示：Hana ._sectionWarning_861b4 */
+.warning {
+  position: relative;
+  padding: var(--space-8) var(--space-16);
+  color: var(--danger, #b56b66);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+/* 子块：Hana ._subBlock_27d05 */
+.subBlock {
+  margin-bottom: var(--space-16);
+}
+
+/* 子块标题：Hana ._subBlockTitle_32dd6 */
+.subBlockTitle {
+  margin: 0 0 var(--space-8) 0;
+  color: var(--text-light);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+/* --- 变体 --- */
+
+/* hero：Hana ._sectionHero_c64e4 */
+.hero {
+  padding: var(--space-40) var(--space-16);
+  text-align: center;
+}
+
+.hero .body {
+  align-items: center;
+}
+
+/* list：Hana ._sectionList_03dac 的行样式
+   注意：Hana 精确限定到 ._row_f2301（行组件），不是所有子元素。
+   moheng 没有行组件，用 .row 类约定代替，避免误伤卡片。 */
+.list > .body > .row {
+  padding: var(--space-6) var(--space-12);
+  transition: background var(--duration-fast);
+}
+
+.list > .body > .row:hover {
+  background: var(--overlay-light);
+}
+
+/* list 与 plain 都取消行分隔线（Hana 行为） */
+.list > .body > .row + .row::before,
+.plain > .body > .row + .row::before {
+  display: none;
+}
+
+/* plain 变体：内部行取消左右内缩（Hana 行为）。
+   同样限定到 .row，不能写成 * —— 否则会把 Section.Card 的 padding 清零。 */
+.plain > .body > .row {
+  padding-left: 0;
+  padding-right: 0;
+}

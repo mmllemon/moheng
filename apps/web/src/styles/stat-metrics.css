@@ -35,14 +35,17 @@
    auto-fit 会判定"还能再塞"而压少列数，导致 4 项变两行。
    改为按项数确定列数（见 grid-template-columns 逐条）。
    ------------------------------------------------------------- */
+/* 2026-10-23：.settings-content .security-metrics 已从此规则排除。
+   理由：hana 的 ._metrics_2473c 是「gap: 16px 的独立卡片网格」，
+   容器无 border / 无 background；而这条规则是「KPI 条」——
+   gap: 0 + 上下细线 + 透明底，把卡片压成一条分隔带。
+   两者空间语言不同，登录安全页按 hana 走独立卡片。 */
 html .projects-ledger-page .projects-kpi-strip,
 html .analysis-page .an-stats,
-html .settings-content .security-metrics,
 html .change-summary-grid,
 html .bill-summary-grid,
 html .owner-finance-metrics,
 html .downstream-summary-grid,
-html .security-metrics,
 html .system-overview-metrics,
 html .notice-summary-grid,
 html .audit-summary-grid,
@@ -82,7 +85,6 @@ html .owner-finance-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); 
 html .downstream-summary-grid,
 html .owner-contract-detail-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
-html .security-metrics,
 html .notice-summary-grid,
 html .audit-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
@@ -348,7 +350,7 @@ html .system-ops-summary-cell > small {
 html .change-summary strong,
 html .bill-summary strong,
 html .owner-metric > strong,
-html .security-metric > div > strong,
+
 html .system-overview-metric > div > strong,
 html .notice-summary-card > div > strong,
 html .audit-summary-card > div > strong,
@@ -373,7 +375,7 @@ html .assistant-check-item strong {
 }
 
 /* 数值单位：12px / 500 / muted */
-html .change-summary strong small,
+html .change-summary strong small
 html .change-summary strong span,
 html .bill-summary strong small,
 html .owner-metric > strong small,
@@ -801,14 +803,14 @@ html .toolbar-view-toggle {
   gap: var(--space-2, 2px);
   padding: 2px;
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  border-radius: var(--radius-action, 8px);
+  border-radius: calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1));
   background: transparent;
 }
 html .toolbar-view-button {
   height: 26px;
   padding: 0 var(--space-10, 10px);
   border: 0;
-  border-radius: calc(var(--radius-action, 8px) - 2px);
+  border-radius: calc(calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1)) - 2px);
   background: transparent;
   color: var(--text-muted);
   font-size: 11.5px;

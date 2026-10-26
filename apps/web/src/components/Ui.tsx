@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowDownRight, ArrowUpRight, Plus, Search, type LucideIcon } from 'lucide-react';
 
 export function Section({ title, subtitle, actions, icon: Icon, children, className = '' }: {
@@ -29,14 +30,17 @@ export function SettingsSection({ title, description, actions, children, hidden 
 export function PageHeader({ title: _title, subtitle, context, actions }: { title: string; subtitle?: string; context?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
   /* 对齐 hana 的页面骨架：会话窗口没有页面级大标题，
      当前上下文由顶栏的会话标题层承担（对应 moheng 顶栏的页面名）。
-     副标题（说明文字）也上提到顶栏，跟标题并排（hana ._chatTitleStack）。
-     这里用 effect 把副标题写入顶栏的 [data-page-subtitle] 容器，
-     页面主体不再渲染页头。 */
+
+     长说明的处理（2026-10-23 改）：
+     hana 的顶栏只放短状态标记（工作区名、记忆开关），不放段落说明。
+     moheng 的 subtitle 是 30-86 字的业务口径说明，塞进顶栏会撑满整行、
+     挤压右侧图标。因此不再作为文本显示，改为标题的悬停提示（title 属性）。 */
   useEffect(() => {
-    const slot = document.querySelector('[data-page-subtitle]');
-    if (!slot) return;
-    slot.textContent = subtitle ?? '';
-    return () => { slot.textContent = ''; };
+    const titleEl = document.querySelector('[data-page-title]');
+    if (!titleEl) return;
+    if (subtitle) titleEl.setAttribute('title', subtitle);
+    else titleEl.removeAttribute('title');
+    return () => { titleEl.removeAttribute('title'); };
   }, [subtitle]);
 
   if (!actions) return null;
@@ -128,4 +132,27 @@ export function formatDate(value?: string | null) {
 }
 export function percentage(value: number | null | undefined) {
   return value == null || !Number.isFinite(value) ? '—' : `${(value * 100).toFixed(1)}%`;
+}
+
+
+/**
+ * 设置窗标题栏的页面级操作插槽。
+ *
+ * 对齐 hana ._titlebar_7cee1 的 space-between 三段结构：
+ *   [标题] [页面级操作] [关闭]
+ *
+ * 页面把自己的操作（刷新、导出等）portal 到 Layout 预留的
+ * #settings-titlebar-actions 容器里，这样按钮留在标题栏内，
+ * 不会额外占一行，也不形成第二层固定栏。
+ *
+ * 容器不存在时（比如非设置页）静默不渲染。
+ */
+export function TitlebarActions({ children }: { children: ReactNode }) {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setHost(document.getElementById('settings-titlebar-actions'));
+  }, []);
+
+  return host ? createPortal(children, host) : null;
 }

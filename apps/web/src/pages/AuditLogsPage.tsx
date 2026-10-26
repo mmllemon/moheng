@@ -5,6 +5,7 @@ import { api } from '../api';
 import type { Project } from '../types';
 import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
+import SettingsSection from '../components/SettingsSection';
 import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 
 type AuditEntry = {
@@ -142,8 +143,12 @@ export default function AuditLogsPage() {
       {exportMessage && <div className={`audit-inline-message ${exportMessage.startsWith('导出失败') ? 'is-error' : ''}`} role="status">{exportMessage}</div>}
     </form>
 
-    <section className="panel audit-table-panel">
-      <div className="panel-heading"><div><h3><Activity size={17} />操作流水</h3><p>展开任意记录可查看该操作保存的变更快照。</p></div><Button variant="ghost" onClick={() => void logsQuery.refetch()} disabled={logsQuery.isFetching}><RefreshCw size={14} className={logsQuery.isFetching ? 'audit-refreshing' : ''} />刷新</Button></div>
+    <SettingsSection
+      title={<><Activity size={17} />操作流水</>}
+      description="展开任意记录可查看该操作保存的变更快照。"
+      context={<Button variant="ghost" onClick={() => void logsQuery.refetch()} disabled={logsQuery.isFetching}><RefreshCw size={14} className={logsQuery.isFetching ? 'audit-refreshing' : ''} />刷新</Button>}
+    >
+      <SettingsSection.Card density="padded" className="audit-table-panel">
       {logsQuery.isLoading ? <LoadingBlock label="正在加载操作记录…" /> : logsQuery.error ? <ErrorBlock message={(logsQuery.error as Error).message} retry={() => void logsQuery.refetch()} /> : !result?.items.length ? <EmptyState title="没有匹配的操作记录" description="可以调整项目、业务对象或日期范围，或者重置筛选条件。" action={resetFilters} /> : <>
         <div className="table-scroll"><table className="data-table audit-log-table"><thead><tr><th>操作时间</th><th>操作人</th><th>项目</th><th>业务对象</th><th>操作类型</th><th>变更摘要</th><th>详情</th></tr></thead><tbody>{result.items.map((item) => <Fragment key={item.id}>
           <tr key={item.id} className={`audit-log-row ${expandedId === item.id ? 'is-expanded' : ''}`}>
@@ -159,6 +164,7 @@ export default function AuditLogsPage() {
         </Fragment>)}</tbody></table></div>
         <div className="audit-pagination"><span>共 {result.total.toLocaleString('zh-CN')} 条记录</span><div><Button variant="secondary" disabled={page <= 1 || logsQuery.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={14} />上一页</Button><span>第 <strong>{result.page}</strong> / {Math.max(1, result.pageCount)} 页</span><Button variant="secondary" disabled={page >= result.pageCount || logsQuery.isFetching} onClick={() => setPage((value) => value + 1)}>下一页<ChevronRight size={14} /></Button></div></div>
       </>}
-    </section>
+      </SettingsSection.Card>
+    </SettingsSection>
   </div>;
 }

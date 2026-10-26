@@ -1,5 +1,7 @@
 import { RotateCcw } from 'lucide-react';
 import AppIcon from '../components/AppIcon';
+import SettingsSection, { SettingsSectionCard } from '../components/SettingsSection';
+import { StepSlider } from '../components/StepSlider';
 import { PageHeader } from '../components/Ui';
 import { APP_ICON_IDS, APP_ICON_PALETTES } from '../lib/app-icon';
 import { toast } from '../lib/toast';
@@ -45,6 +47,8 @@ export default function AppearanceSettingsPage() {
   const setTheme = useUiStore((state) => state.setTheme);
   const setDensity = useUiStore((state) => state.setDensity);
   const toggleReduceMotion = useUiStore((state) => state.toggleReduceMotion);
+  const windowsCardRadius = useUiStore((state) => state.windowsCardRadius);
+  const toggleWindowsCardRadius = useUiStore((state) => state.toggleWindowsCardRadius);
   const setPaperTexture = useUiStore((state) => state.setPaperTexture);
   const setPaperTextureStrength = useUiStore((state) => state.setPaperTextureStrength);
   const setHeadingFont = useUiStore((state) => state.setHeadingFont);
@@ -57,9 +61,8 @@ export default function AppearanceSettingsPage() {
 
   return <div className="page-wrap appearance-settings-page">
     <PageHeader title="界面" subtitle="调整主题、纸张质感与工作区显示。设置只影响当前浏览器。" />
-    <section className="settings-section" aria-labelledby="appearance-theme-title">
-      <h2 id="appearance-theme-title">主题与外观</h2>
-      <div className="settings-card">
+    <SettingsSection title="主题与外观">
+      <SettingsSectionCard>
         <div className="settings-row">
           <div className="settings-row-copy"><strong>主题</strong><span>选择纸张底色与侧栏墨色；只影响当前浏览器。</span></div>
           <div className="settings-segment appearance-theme-segment" role="radiogroup" aria-label="主题">
@@ -80,12 +83,11 @@ export default function AppearanceSettingsPage() {
           </div>
         </div>
         <div className="appearance-font-sample settings-font-sample" style={{ fontFamily: headingFontFamily }} aria-hidden="true">账目有据，经营有度。 <span>MOHENG 2026</span></div>
-      </div>
-    </section>
+      </SettingsSectionCard>
+    </SettingsSection>
 
-    <section className="settings-section" aria-labelledby="appearance-surface-title">
-      <h2 id="appearance-surface-title">外观</h2>
-      <div className="settings-card">
+    <SettingsSection title="外观">
+      <SettingsSectionCard>
         <div className="settings-row">
           <div className="settings-row-copy"><strong>纸质纹理</strong><span>为页面、侧栏和设置页加上纸张质感。</span></div>
           <div className="settings-segment" role="radiogroup" aria-label="纸质纹理">
@@ -94,22 +96,41 @@ export default function AppearanceSettingsPage() {
         </div>
         <div className="settings-row">
           <div className="settings-row-copy"><strong>纹理强度</strong><span>1 最轻，5 最明显；只改变纸面明暗差。</span></div>
-          <div className={`settings-step-slider ${paperTexture === 'off' ? 'is-disabled' : ''}`}>
-            <input type="range" min="0" max="4" step="1" value={strengthIndex} disabled={paperTexture === 'off'} aria-label="纹理强度" aria-valuetext={`${strengthIndex + 1} 档`} onChange={(event) => setPaperTextureStrength(PAPER_TEXTURE_STRENGTHS[Number(event.target.value)] ?? 1)} />
-            <div className="settings-step-rail" aria-hidden="true">
-              {[0, 1, 2, 3].map((step) => <span key={step} className={step < strengthIndex ? 'is-on' : ''} />)}
-            </div>
-            <div className="settings-step-labels"><span>1</span><span>{strengthIndex + 1}</span><span>5</span></div>
-          </div>
+          <StepSlider
+            ariaLabel="纹理强度"
+            value={strengthIndex}
+            options={['1', '2', '3', '4', '5']}
+            disabled={paperTexture === 'off'}
+            onChange={(index) => setPaperTextureStrength(PAPER_TEXTURE_STRENGTHS[index] ?? 1)}
+          />
         </div>
         <div className="settings-row">
-          <div className="settings-row-copy"><strong>字体对比度</strong><span>如果看着感觉累，可以调整这个滑块。</span></div>
-          <div className="settings-step-slider">
-            <input type="range" min="0" max="4" step="1" value={contrastIndex} aria-label="字体对比度" aria-valuetext={`${CONTENT_CONTRAST_LEVELS[contrastIndex]} 档`} onChange={(event) => setContentContrast(CONTENT_CONTRAST_LEVELS[Number(event.target.value)] ?? '13')} />
-            <div className="settings-step-rail contrast-rail" aria-hidden="true">
-              {CONTENT_CONTRAST_LEVELS.map((level, index) => <span key={level} className={index <= contrastIndex ? 'is-on' : ''} style={{ ['--contrast-bar-h' as string]: `${1.5 + index * 1.4}px` }} />)}
-            </div>
-            <div className="settings-step-labels"><span /><span>{CONTENT_CONTRAST_LEVELS[contrastIndex]}</span><span /></div>
+          <div className="settings-row-copy"><strong>字体对比度</strong><span>如果看着感觉累，可以调整这个档位。</span></div>
+          {/* 字体对比度：对齐 hana 的分段按钮组（不是滑块）
+               hana 的实现（SettingsModalShell）：
+                 te = Sd.map((j) => ({ value: String(j), level: j, label: ri(j), valueLabel: ri(j) }))
+                 Sd = [-2, -1, 0, 1, 2]
+                 ri = (e) => e > 0 ? `+${e}` : String(e)
+                 control = <Vt options={te} value={String(we)} onChange={...} />
+               Vt 是分段按钮组，与「正文字号」「正文字号偏移」同一个控件。
+               moheng 原来错用了滑块，形态不符。 */}
+          <div className="settings-segment" role="radiogroup" aria-label="字体对比度">
+            {CONTENT_CONTRAST_LEVELS.map((level, index) => {
+              const offset = index - 2;   // -2 .. +2
+              const label = offset > 0 ? `+${offset}` : String(offset);
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  role="radio"
+                  aria-checked={index === contrastIndex}
+                  className={index === contrastIndex ? 'is-active' : ''}
+                  onClick={() => setContentContrast(CONTENT_CONTRAST_LEVELS[index] ?? '13')}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="appearance-contrast-sample" aria-hidden="true">永和九年，岁在癸丑。</div>
@@ -117,12 +138,18 @@ export default function AppearanceSettingsPage() {
           <div className="settings-row-copy"><strong>减少动效</strong><span>保留状态反馈，关闭位移与弹性动画。</span></div>
           <button type="button" className={`settings-toggle ${reduceMotion ? 'is-on' : ''}`} role="switch" aria-checked={reduceMotion} aria-label="减少动效" onClick={toggleReduceMotion}><i /></button>
         </div>
-      </div>
-    </section>
+        {/* 对齐 Hana settings.experiments.windowsCardRadius：
+            Windows 上默认用较小卡片圆角；关闭则采用 Hana Web 观感。
+            非 Windows 平台此项不生效，但保留可切换（将来做桌面端时需要）。 */}
+        <div className="settings-row">
+          <div className="settings-row-copy"><strong>适配 Windows 圆角</strong><span>在 Windows 上使用较小的卡片圆角；关闭则使用网页版的圆角尺寸。</span></div>
+          <button type="button" className={`settings-toggle ${windowsCardRadius ? 'is-on' : ''}`} role="switch" aria-checked={windowsCardRadius} aria-label="适配 Windows 圆角" onClick={toggleWindowsCardRadius}><i /></button>
+        </div>
+      </SettingsSectionCard>
+    </SettingsSection>
 
-    <section className="settings-section" aria-labelledby="appearance-workspace-title">
-      <h2 id="appearance-workspace-title">工作区</h2>
-      <div className="settings-card">
+    <SettingsSection title="工作区">
+      <SettingsSectionCard>
         <div className="settings-row">
           <div className="settings-row-copy"><strong>信息密度</strong><span>调整表格和表单的行距。</span></div>
           <div className="settings-segment" role="radiogroup" aria-label="信息密度">
@@ -138,8 +165,8 @@ export default function AppearanceSettingsPage() {
             ))}
           </div>
         </div>
-      </div>
-    </section>
+      </SettingsSectionCard>
+    </SettingsSection>
 
     <div className="settings-page-foot">
       <span>纸纹取自 Hana 1.1.35 原版素材。</span>

@@ -58,6 +58,13 @@ type UiPreferences = {
   headingFont: UiHeadingFont;
   contentContrast: UiContentContrast;
   appIcon: AppIconId;
+  /* 适配 Windows 圆角（对齐 Hana settings.experiments.windowsCardRadius）：
+     true  = 在 Windows 上使用较小卡片圆角（--panel-card-radius: min(--radius-lg, 7px)）
+     false = 使用 Hana Web 观感（--panel-card-radius: --radius-lg，圆角 ≈22.09px）
+
+     与 Hana 的默认值差异：Hana 在 Windows 上默认 true（跟随桌面端）,：
+     moheng 是 Web 应用，默认 false，让用户看到 Hana 的 Web 观感。 */
+  windowsCardRadius: boolean;
 };
 const UI_PREFERENCES_KEY = 'moheng:ui-preferences';
 const defaultUiPreferences: UiPreferences = {
@@ -72,6 +79,7 @@ const defaultUiPreferences: UiPreferences = {
   headingFont: 'serif',
   contentContrast: '13',
   appIcon: 'ink',
+  windowsCardRadius: false,
 };
 
 function readUiPreferences(): UiPreferences {
@@ -95,6 +103,7 @@ function readUiPreferences(): UiPreferences {
       headingFont,
       contentContrast: CONTENT_CONTRAST_LEVELS.includes(value.contentContrast as UiContentContrast) ? (value.contentContrast as UiContentContrast) : '13',
       appIcon: normalizeAppIcon(value.appIcon),
+      windowsCardRadius: Boolean(value.windowsCardRadius),
     };
   } catch { return defaultUiPreferences; }
 }
@@ -113,6 +122,10 @@ export function applyUiPreferences(value: UiPreferences) {
   root.dataset.contentWidth = value.wideContent ? 'wide' : 'standard';
   root.dataset.headingFont = value.headingFont;
   root.dataset.appIcon = value.appIcon;
+  /* 适配 Windows 圆角：true 写 off 属性（关闭封顶，用 Hana Web 观感）；false 则是较小圆角。
+     注意属性名是 off —— 与 Hana 一致：data-windows-card-radius="off" 表示不封顶。 */
+  if (value.windowsCardRadius) root.removeAttribute('data-windows-card-radius');
+  else root.setAttribute('data-windows-card-radius', 'off');
   /* 字体对比度：13 是默认档，不写属性以沿用主题自身 --text */
   if (value.contentContrast === '13') root.removeAttribute('data-content-contrast');
   else root.dataset.contentContrast = value.contentContrast;
@@ -133,12 +146,17 @@ function commitUiPreferences(set: (partial: Partial<UiState>) => void, value: Ui
 type UiState = UiPreferences & {
   selectedProjectId: string | null;
   sidebarCollapsed: boolean;
+  /** 右侧工作区浮层是否展开。对齐 hana 的 previewOpen（全局，不分页面）。 */
+  workspaceOpen: boolean;
   setSelectedProjectId: (id: string | null) => void;
   toggleSidebar: () => void;
+  setWorkspaceOpen: (open: boolean) => void;
+  toggleWorkspace: () => void;
   setTheme: (theme: UiTheme) => void;
   setDensity: (density: UiDensity) => void;
   setAccent: (accent: UiAccent) => void;
   toggleReduceMotion: () => void;
+  toggleWindowsCardRadius: () => void;
   setPageWidth: (width: PageWidth) => void;
   toggleWideContent: () => void;
   setPaperTexture: (texture: PaperTextureStyle) => void;
@@ -162,6 +180,7 @@ function preferencesFromState(state: UiState): UiPreferences {
     headingFont: state.headingFont,
     contentContrast: state.contentContrast,
     appIcon: state.appIcon,
+    windowsCardRadius: state.windowsCardRadius,
   };
 }
 
@@ -173,16 +192,21 @@ function updateUiPreferences(set: (partial: Partial<UiState>) => void, state: Ui
 export const useUiStore = create<UiState>((set) => ({
   selectedProjectId: (() => { try { return localStorage.getItem('cms:selected-project'); } catch { return null; } })(),
   sidebarCollapsed: false,
+  workspaceOpen: false,
   ...readUiPreferences(),
   setSelectedProjectId: (id) => {
     try { if (id) localStorage.setItem('cms:selected-project', id); else localStorage.removeItem('cms:selected-project'); } catch { /* Selected project is also kept in memory. */ }
     set({ selectedProjectId: id });
   },
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  setWorkspaceOpen: (workspaceOpen) => set({ workspaceOpen }),
+  setWorkspaceTab: (workspaceTab) => set({ workspaceTab }),
+  toggleWorkspace: () => set((state) => ({ workspaceOpen: !state.workspaceOpen })),
   setTheme: (theme) => set((state) => updateUiPreferences(set, state, { theme })),
   setDensity: (density) => set((state) => updateUiPreferences(set, state, { density })),
   setAccent: (accent) => set((state) => updateUiPreferences(set, state, { accent })),
   toggleReduceMotion: () => set((state) => updateUiPreferences(set, state, { reduceMotion: !state.reduceMotion })),
+  toggleWindowsCardRadius: () => set((state) => updateUiPreferences(set, state, { windowsCardRadius: !state.windowsCardRadius })),
   setPageWidth: (pageWidth) => set((state) => updateUiPreferences(set, state, { pageWidth })),
   toggleWideContent: () => set((state) => updateUiPreferences(set, state, { wideContent: !state.wideContent })),
   setPaperTexture: (paperTexture) => set((state) => updateUiPreferences(set, state, { paperTexture })),

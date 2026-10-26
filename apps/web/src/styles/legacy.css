@@ -166,7 +166,7 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .last-updated { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: 10px; }
 .last-updated span { width: 5px; height: 5px; border-radius: 50%; background: #64ba92; }
 .dashboard-lower-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(320px, .9fr); gap: 14px; margin: 20px 0 15px; }
-.panel { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-card); background: #fff; box-shadow: var(--shadow-card); }
+.panel { min-width: 0; border: 1px solid var(--line); border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1)); background: #fff; box-shadow: var(--shadow-card); }
 /* display/align-items/gap 仍是承重属性：hana.css 的 .panel-heading p 只声明了排版，没声明布局 */
 .panel-heading p { display: flex; align-items: center; gap: 5px; }
 .chart-panel { padding-bottom: 3px; }
@@ -842,7 +842,7 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .business-party-role-hints { color: var(--text-muted); font-size: 10px; }
 .business-party-create-actions { display: flex; justify-content: flex-end; gap: 8px; }
 .business-parties-page, .business-party-detail-page { display: grid; gap: 17px; }
-.business-party-summary-strip { display: flex; align-items: center; gap: 22px; padding: 14px 17px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }
+.business-party-summary-strip { display: flex; align-items: center; gap: 22px; padding: 14px 17px; border: 1px solid var(--card-border); border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1)); background: var(--card-bg); }
 .business-party-summary-strip > div { display: flex; align-items: center; gap: 9px; color: var(--accent-700); }
 .business-party-summary-strip > div span { display: grid; gap: 2px; }
 .business-party-summary-strip strong { color: var(--neutral-800); font-size: 17px; font-variant-numeric: tabular-nums; }
@@ -869,7 +869,7 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .business-party-profile-title h2 { margin: 0; color: var(--neutral-800); font-size: 20px; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .business-party-profile-identifiers { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 8px 0 11px; color: var(--text-muted); font-size: 10px; }
 .business-party-metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.business-party-metric { display: grid; gap: 7px; min-width: 0; padding: 14px; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }
+.business-party-metric { display: grid; gap: 7px; min-width: 0; padding: 14px; border: 1px solid var(--card-border); border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1)); background: var(--card-bg); }
 .business-party-metric span { color: var(--text-secondary); font-size: 10px; }
 .business-party-metric strong { color: var(--neutral-800); font-size: clamp(14px, 1.35vw, 20px); line-height: 1.25; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .business-party-metric small { color: var(--text-muted); font-size: var(--text-2xs); line-height: 1.45; }
@@ -1481,7 +1481,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .select-control { position: relative; display: block; width: 100%; min-width: 0; color: var(--neutral-800); }
 .select-control-proxy { position: absolute ; width: 1px ; height: 1px ; min-height: 1px ; padding: 0 ; margin: 0 ; border: 0 ; opacity: 0 ; pointer-events: none ; overflow: hidden ; clip-path: inset(50%) ; }
 /* Select and date fields share the same geometry, focus treatment and type scale. */
-.select-control-trigger, .date-picker-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-width: 0; min-height: var(--control-height); padding: 8px 11px; border: 1px solid var(--card-border); border-radius: var(--radius-control); color: var(--neutral-800); background: var(--control-bg); text-align: left; font-size: var(--control-font-size); line-height: 1.4; transition: border-color .17s var(--ease-spring), background .17s var(--ease-spring), box-shadow .17s var(--ease-spring), transform .17s var(--ease-spring); }
+.select-control-trigger, .date-picker-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-width: 0; min-height: var(--control-height); padding: 8px 11px; border: 1px solid var(--card-border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); color: var(--neutral-800); background: var(--control-bg); text-align: left; font-size: var(--control-font-size); line-height: 1.4; transition: border-color .17s var(--ease-spring), background .17s var(--ease-spring), box-shadow .17s var(--ease-spring), transform .17s var(--ease-spring); }
 .select-control-trigger:hover:not(:disabled), .date-picker-trigger:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent-500) 35%, var(--card-border)); background: var(--card-bg); }
 .select-control-trigger:focus-visible, .select-control[data-open="true"] .select-control-trigger, .date-picker-trigger:focus-visible, .date-picker-control[data-open="true"] .date-picker-trigger { border-color: color-mix(in srgb, var(--accent-500) 60%, var(--card-border)); box-shadow: var(--control-focus-ring); outline: 0; }
 .select-control-trigger:active:not(:disabled), .date-picker-trigger:active:not(:disabled) { transform: scale(.995); }

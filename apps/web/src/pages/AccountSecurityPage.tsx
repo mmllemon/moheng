@@ -5,6 +5,7 @@ import { KeyRound, LogOut, ShieldCheck, UserRound } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useAuthStore } from '../auth-store';
 import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import SettingsSection from '../components/SettingsSection';
 
 export default function AccountSecurityPage() {
   const navigate = useNavigate();
@@ -44,20 +45,18 @@ export default function AccountSecurityPage() {
   return <div className="page-wrap account-security-page">
     <PageHeader eyebrow="ACCOUNT / SECURITY" title="个人中心与账号安全" subtitle="维护自己的登录凭据。修改密码后，当前设备和其他设备的已有会话都会失效，需要重新登录。" />
 
-    <section className="settings-section" aria-labelledby="account-identity-title">
-      <h2 id="account-identity-title">当前账号</h2>
+    <SettingsSection title="当前账号">
       <div className="settings-card account-security-summary">
         <span className="account-security-avatar"><UserRound size={21} /></span>
         <div className="account-security-identity"><strong>{user?.name ?? '当前用户'}</strong><span>{user?.email ?? '—'}</span></div>
         <span className="account-security-role">{user?.role === 'ADMIN' ? '系统管理员' : '普通成员'}</span>
       </div>
-    </section>
+    </SettingsSection>
 
     {notice && <div className="success-notice account-security-alert" role="status"><ShieldCheck size={16} />{notice}</div>}
     {error && <div className="form-alert account-security-alert" role="alert">{error}</div>}
 
-    <section className="settings-section" aria-labelledby="account-password-title">
-      <h2 id="account-password-title">登录凭据</h2>
+    <SettingsSection title="登录凭据">
       <form className="settings-card account-security-form" onSubmit={(event) => void submit(event)}>
         <div className="settings-row account-security-field">
           <label className="settings-row-copy" htmlFor="current-password"><strong>当前密码</strong><span>修改前验证当前登录密码。</span></label>
@@ -80,16 +79,15 @@ export default function AccountSecurityPage() {
           <Button type="submit" disabled={busy || meQuery.isLoading || !currentPassword || newPassword.length < 12 || !confirmPassword || Boolean(meQuery.data?.mfaEnabled && !totpCode.trim())}><KeyRound size={15} />{busy ? '正在更新…' : '确认修改密码'}</Button>
         </div>
       </form>
-    </section>
+    </SettingsSection>
 
-    <section className="settings-section" aria-labelledby="account-session-title">
-      <h2 id="account-session-title">会话与恢复</h2>
+    <SettingsSection title="会话与恢复">
       <div className="settings-card">
         <div className="settings-row account-security-note-row">
           <div className="account-session-note-icon"><LogOut size={18} /></div>
           <div className="settings-row-copy"><strong>修改密码后会发生什么？</strong><span>服务端会撤销该账号所有有效会话和刷新令牌，并写入操作审计及安全事件。启用了 MFA 的账号还需通过一次新的验证器验证码或恢复码。当前版本的自助找回密码邮件流程尚未开放。</span></div>
         </div>
       </div>
-    </section>
+    </SettingsSection>
   </div>;
 }

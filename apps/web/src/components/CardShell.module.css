@@ -1,0 +1,127 @@
+/* ===========================================================================
+   CardShell —— Hana 通用卡片壳的源码级复刻
+   ===========================================================================
+
+   溯源：
+     Hana styles.css 定义 --panel-card-* 变量组（本文件避写注释符号）：
+       --panel-card-radius: var(--radius-lg)         约 12px 裸值
+       --panel-card-border: 1px solid rgba(0,0,0,.08)
+       --panel-card-bg:     var(--bg-card, var(--bg))
+       --panel-card-shadow: none
+
+     通用卡片壳（CardShell.css 的 ._previewPanelBody_11fea）使用：
+       border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1))
+       corner-shape: squircle
+       background: var(--panel-card-bg)
+       border: var(--panel-card-border)
+       box-shadow: var(--panel-card-shadow)
+
+   注意：上一版误用了 ._card_28864 作基准，那是 420px 宽的浮动卡片
+   （width: clamp(280px,34vw,420px)），不是通用容器。现改用
+   ._previewPanelBody_11fea —— 它由 --panel-card-* 变量驱动，宽度自适应。
+
+   与 Hana 的差异（均为 Web 场景不需要的）：
+     - 不实现 -webkit-app-region: no-drag（Electron 窗口拖拽区）
+     - 不实现 height:100% / overflow:auto（由使用方的布局决定）
+     - 不实现 --paper-texture-surface（Hana 预览区的独立纸纹，moheng 无此功能）
+   =========================================================================== */
+
+/* 卡片外壳：对应 Hana ._previewPanelBody_11fea 的结构语义 */
+.shell {
+  position: relative;
+  /* --panel-card-radius 在 moheng 已定义（含白纸/素白/青夜三主题），直接用 */
+  border: var(--panel-card-border, 1px solid var(--card-border));
+  border-radius: calc(var(--panel-card-radius, var(--radius-lg)) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--panel-card-bg, var(--bg-card));
+  box-shadow: var(--panel-card-shadow, none);
+}
+
+/* 内缩：默认 16px（对齐 Hana --card-inset: var(--space-16)）
+
+   注意 Hana 的分工：通用卡片壳 ._previewPanelBody_11fea 本身没有 padding，
+   内缩由内部元素各自负责（如 .preview-markdown 自带 padding）。
+
+   moheng 的表格卡片不同：内部是 <table>，让它自己加内缩不现实，
+   所以由卡片壳提供 padding。这是有意识的差异，不是抄错。
+   旧版本误用了 14px（从浮层卡片 ._card_28864 抄来），已改为 16px。 */
+.padded {
+  padding: var(--card-inset, var(--space-16));
+}
+
+/* 密集变体：表格式内容用更小的内缩 14px。
+   仅用于确实需要压缩的密集表格，普通卡片用 default。 */
+.dense {
+  padding: var(--space-14);
+}
+
+/* 无边框变体：卡片内分层用，Hana 排斥"卡片套卡片" */
+.flush {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* --- 标题区 --- */
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-bottom: var(--space-12);
+}
+
+.headingText {
+  min-width: 0;
+}
+
+/* 卡片内标题：Hana ._sectionTitle_f4979 同规格 */
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding-inline-start: var(--settings-heading-inset, 0);
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.title svg {
+  color: var(--text-muted);
+}
+
+/* 卡片内说明：Hana ._sectionDescription_8c542 同规格 */
+.description {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  flex: 0 0 auto;
+}
+
+.body {
+  min-width: 0;
+}
+
+/* 卡内提示条：Hana 用 6% accent 轻透底 */
+.notice {
+  margin: var(--space-12) 0 0;
+  padding: var(--space-10) var(--space-12);
+  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--text-light);
+  font-size: var(--fs-hint);
+  line-height: 1.65;
+}
