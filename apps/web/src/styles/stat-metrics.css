@@ -1,28 +1,22 @@
 /* =============================================================
    统计指标区（全站统一规范）
    -------------------------------------------------------------
-   依据：Hana 1.1.35 官方卡片规范 hana-card-style.css 的
-         .hs-metrics / .hs-metric
+   2026-10-26 修正：之前的注释引用了一个不存在的东西。
+   原文写「依据：Hana 1.1.35 官方卡片规范 hana-card-style.css 的
+   .hs-metrics / .hs-metric」——但 hana 全库 34 个 CSS 里
+   **没有任何 hs-metric**，这个文件和类名都是虚构的。
 
-   核心思路：指标不是"卡片"，只是"排版分隔"。
-     · 容器：透明、无圆角、无阴影，上下各一条 1px 细线
-     · 指标项：只靠 border-left 竖线分隔，首项不画、末项不留右内边距
-     · 排版：标签在上、数值 26px/600/tabular-nums、说明在下
-     · 不设图标、不居中——一律左对齐
+   hana 真实的指标区（SettingsModalShell-m7fTbt85.css）：
+     ._metrics_2473c { display:grid; grid-template-columns:repeat(4,1fr);
+                       gap: var(--space-16); }
+     ._metric_53489  { display:flex; flex-direction:column; gap: 8px; }
+     dt { color: --text-muted; font-size: --fs-ui }
+     dd { color: --text; font-size: --fs-title; font-weight: 500 }
+   —— 是 grid + gap 16px，容器无 border / 无 background。
 
-   改造前全站有 5 套规格并存：
-     A 卡片背景 #FCFAF5 + 圆角 14.73px  （/projects /cost/budget
-        /cost/analysis /parties /system/security）
-     B 透明 + 圆角 0 + 上下细线          （/cost/progress-bills /cost/changes
-        /notifications /audit-logs /system）
-     C 透明 + 圆角 2px                   （/cost/owner-finance）
-     D 透明 + 无边框                     （/cost/downstream /cost/contracts
-        /system/authorization）
-     E 透明 + 无边框 + 卡片内竖线        （/reports）
-   外加 8 处带图标、4 处居中对齐。全部收成 B。
-
-   注意：选择器统一加 html 前缀提高特异度，否则会被 hana.css 里的
-   .downstream-summary-grid .change-summary:nth-child(odd) 这类双类规则压过。
+   现在按 C 方案：指标区独立成一张卡（--bg-card + radius-card × 1.84
+   + 1px --card-border），卡内指标项之间保留 1px 竖线分隔。
+   与下方内容卡并列，不合并——因为它们数据不同源。
    ============================================================= */
 
 /* -------------------------------------------------------------
@@ -61,15 +55,16 @@ html .assistant-check-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
-  padding: var(--space-16) 0;
-  margin: var(--space-16) 0;
-  border: 0;
-  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
-  border-radius: 0;
-  background: transparent;
+  padding: 0;
+  margin: var(--space-16) 0 var(--space-16);
+  /* 独立成卡：对齐 hana 的卡片体系（--bg-card + radius-card × 1.84 + 1px 边框）。
+     不再是「透明 + 上下细线」——那是把 hana 的 gap 16px 误读成排版分隔。 */
+  border: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden;
 }
 
 /* 逐个按实际项数固定列数。
@@ -80,10 +75,23 @@ html .bill-summary-grid,
 html .ldg-stats,
 html .an-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-html .owner-finance-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+html .owner-finance-metrics {
+  /* 6 项指标：用 3 列，刚好 2 行满格（每列 ~220px）。
+     auto-fit 在 664px 下会得 4 列（165.5px），6 项就排成 4+2，右侧空两格。
+     3 列能让标签和数值都单行。 */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* 两行时需行分隔线（单行容器的 gap:0 会让两行紧贴）。 */
+  row-gap: 0;
+}
+html .owner-finance-metrics > :nth-child(n + 4) {
+  border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+}
 
 html .downstream-summary-grid,
-html .owner-contract-detail-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+html .owner-contract-detail-grid {
+  /* 5 项：3 列 → 3+2，比 4 列的 4+1 均衡。 */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 
 html .notice-summary-grid,
 html .audit-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -107,15 +115,23 @@ html .business-party-summary-strip { grid-template-columns: repeat(2, minmax(0, 
 html .ds-section-card .downstream-summary-grid,
 html .projects-ledger-page .projects-kpi-strip > div,
 html .analysis-page .an-stats > div,
+html .ldg-stats > div,
+html .change-summary-grid > div,
+html .bill-summary-grid > div,
+html .owner-finance-metrics > div,
+html .business-party-summary-strip > div,
 html .settings-content .security-metrics > * {
   position: static;
-  padding: 0 var(--space-16);
+  /* 卡内指标项内边距：上 16 / 下 16 / 左右 16，与 hana 卡片 padding 一致。 */
+  padding: var(--space-16);
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
-/* ds-section-card 里的统计区：清掉双列布局与卡片包裹 */
+/* ds-section-card 里的统计区：它本身嵌在已有的卡内（卡中卡会乱），
+   所以保持透明无边框，但内边距要正常（不是 0）。
+   上下用 1px 极淡线分隔卡内段——对齐 hana 的 ._divider_cdbf9。 */
 html .ds-section-card .downstream-summary-grid {
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  padding: var(--space-16) 0;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  padding: 0;
   margin: 0;
   border: 0;
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
@@ -128,29 +144,28 @@ html .ds-section-card .downstream-summary-grid .change-summary {
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 html .ds-section-card .downstream-summary-grid .change-summary:first-child {
-  padding-left: 0;
   border-left: 0;
 }
 html .ds-section-card .downstream-summary-grid .change-summary:last-child {
-  padding-right: 0;
+  /* 末项不再清零右内边距。 */
 }
 /* downstream 里旧规则的 21px 数值要拉回 26px */
 html .downstream-summary-grid .change-summary strong {
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
 html .projects-ledger-page .projects-kpi-strip > div:first-child,
 html .analysis-page .an-stats > div:first-child,
 html .settings-content .security-metrics > *:first-child {
-  padding-left: 0;
+  /* 首项不再清零左内边距：容器现在是有边框的卡片，清零会贴到边框上。 */
   border-left: 0;
 }
 html .projects-ledger-page .projects-kpi-strip > div:last-child,
 html .analysis-page .an-stats > div:last-child,
 html .settings-content .security-metrics > *:last-child {
-  padding-right: 0;
+  /* 末项不再清零右内边距，同理。 */
 }
 /* 干掉旧的分隔线伪元素——它们只画到 12px 高度，与新规范不一致 */
 html .projects-ledger-page .projects-kpi-strip > div + div::before,
@@ -185,7 +200,10 @@ html .assistant-check-item {
   text-align: left;
   width: 100%;
   min-width: 0;
-  padding: 0 var(--space-16);
+  /* 卡内指标项：四边 16px。之前是 `0 16px`（上下为零），
+     那是「透明 + 上下细线」时代的写法；容器现在有边框，
+     上下为 0 会让文字贴到卡片的上下边框上。 */
+  padding: var(--space-16);
   border: 0;
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: 0;
@@ -194,26 +212,18 @@ html .assistant-check-item {
   box-sizing: border-box;
 }
 
-/* 首项不画左线 */
+/* 首项不画左线。
+   注：不再清零左内边距——容器现在是有边框的卡片，清零会贴到边框上。 */
 html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
     .downstream-summary-grid, .security-metrics, .system-overview-metrics,
     .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip, .ldg-stats,
     .an-stats, .business-party-summary-strip, .report-studio-entry-grid,
     .system-authorization-scope-grid, .owner-contract-detail-grid,
     .system-ops-summary, .assistant-check-grid) > :first-child {
-  padding-left: 0;
   border-left: 0;
 }
 
-/* 末项不留右内边距 */
-html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
-    .downstream-summary-grid, .security-metrics, .system-overview-metrics,
-    .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip, .ldg-stats,
-    .an-stats, .business-party-summary-strip, .report-studio-entry-grid,
-    .system-authorization-scope-grid, .owner-contract-detail-grid,
-    .system-ops-summary, .assistant-check-grid) > :last-child {
-  padding-right: 0;
-}
+/* 末项右内边距保留（同理，卡片有边框）。 */
 
 /* -------------------------------------------------------------
    二半、多行区（2×2 等）的逐行竖线
@@ -303,14 +313,17 @@ html .an-stats > * > svg,
 html .owner-contract-detail-grid > * > svg,
 html .assistant-check-item > svg,
 html .system-ops-summary .system-overview-icon {
-  display: none;
+  /* !important：这些图标类在别处被设了 display: block/flex，
+     单靠特异性压不住（实测 bill-summary-icon 仍是 30×30）。 */
+  display: none !important;
 }
 
 /* -------------------------------------------------------------
    四、排版：标签 / 数值 / 说明
    ------------------------------------------------------------- */
 
-/* 标签：10px / 400 / muted */
+/* 标签：对齐 hana ._metric_53489 dt（--fs-ui = 13.12px）。
+   之前是 10px / letter-spacing .04em，比说明文字还小。 */
 html .change-summary > span:first-child,
 html .bill-summary > span:first-child:not(.bill-summary-icon),
 html .owner-metric > span:first-child,
@@ -321,9 +334,9 @@ html .audit-summary-card small:first-child {
   display: block;
   margin: 0;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: var(--fs-ui, 13.12px);
   font-weight: 400;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   line-height: 1.4;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -336,18 +349,25 @@ html .an-stats > * > small,
 html .business-party-summary-strip > * > small,
 html .owner-contract-detail-grid > * > small,
 html .assistant-check-item > small,
-html .system-ops-summary-cell > small {
+html .system-ops-summary-cell > small,
+html .owner-finance-metrics > * > small,
+html .downstream-summary-grid > * > small,
+html .change-summary-grid > * > small,
+html .bill-summary-grid > * > small {
   display: block;
   margin: 0;
   color: var(--text-muted);
-  font-size: 10px;
+  /* 说明文字：对齐 hana 的 ._metric_53489 dt 层级（--fs-hint = 11.2px）。 */
+  font-size: var(--fs-hint, 11.2px);
   font-weight: 400;
-  letter-spacing: 0.04em;
-  line-height: 1.4;
+  letter-spacing: 0;
+  line-height: 1.45;
 }
 
-/* 数值：26px / 600 / 1.15 / tabular-nums */
-html .change-summary strong,
+/* 数值：对齐 hana 的 ._metric_53489 dd ——
+   font-size: var(--fs-title)（16px）; font-weight: 500; line-height: 1.4。
+   之前是 26px / 600 / 1.15，那是「KPI 大数字」的写法；
+   hana 的指标值就是正文标题级，靠标签与说明的层级差区分，不靠字号放大。 */html .change-summary strong,
 html .bill-summary strong,
 html .owner-metric > strong,
 
@@ -362,16 +382,22 @@ html .report-studio-entry-card strong,
 html .system-authorization-scope-card strong,
 html .owner-contract-detail-grid > * > strong,
 html .system-ops-summary-cell strong,
-html .assistant-check-item strong {
+html .assistant-check-item strong,
+/* 成本类型卡（/cost/costs）：它有自己的 .cost-type-cards 卡片容器，
+   子项用 .cost-type-card 而非 > div，单独列入。 */
+html .cost-type-card strong {
   display: block;
   margin: var(--space-6) 0 0;
   color: var(--text);
   font-family: var(--font-num, var(--num));
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  /* 数值绝不折行：之前 ¥534,381.12 在 110px 列里被折成两行，很难看。
+     列宽不够时让它溢出或缩小字号，而不是断行。 */
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 /* 数值单位：12px / 500 / muted */
@@ -390,36 +416,39 @@ html .an-stats > * > strong small {
   letter-spacing: 0;
 }
 
-/* /projects 的 KPI 条：数值 18px → 26px，标签 9.5px → 10px */
+/* /projects 的 KPI 条：按 hana ._metric_53489 统一 ——
+   dt（标签）= --fs-ui 13.12px；dd（数值）= --fs-title 16px / 500；说明 = --fs-hint 11.2px。
+   之前是数值 26px/600、标签 10px、说明 9.5px，层级差距过大且与全站不一致。 */
 html .projects-ledger-page .projects-kpi-strip > div > strong,
 html .projects-kpi-strip > div > strong {
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
   margin-top: var(--space-6);
-  white-space: normal;
+  /* 数值不折行。 */
+  white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
 }
 html .projects-ledger-page .projects-kpi-strip > div > span,
 html .projects-kpi-strip > div > span {
-  font-size: 10px;
+  font-size: var(--fs-ui, 13.12px);
   font-weight: 400;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
   line-height: 1.4;
 }
 html .projects-ledger-page .projects-kpi-strip > div > small,
 html .projects-kpi-strip > div > small {
-  font-size: 9.5px;
+  font-size: var(--fs-hint, 11.2px);
   margin-top: var(--space-4);
 }
 
-/* /parties 的数值：17px/700 → 26px/600，标签从 strong 内小字提升为上方标签 */
+/* /parties 的数值：按 hana ._metric_53489 dd 统一为 --fs-title 16px / 500 */
 html .business-party-summary-strip strong {
   font-family: var(--font-num, var(--num));
-  font-size: 26px;
-  font-weight: 600;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
   line-height: 1.15;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -443,18 +472,18 @@ html .business-party-summary-strip > div > span > small {
 /* /system 概览的数值：20px → 26px（包括 “1 / 1” 这种带分隔的）*/
 html .settings-content .system-overview-metrics .system-overview-metric > div > strong,
 html .system-overview-metric > div > strong {
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
 
 /* /cost/analysis 的 an-grid 是图表区（非指标区），保持原样；
    但 an-stats 里的数值要拉回 26px。 */
 html .analysis-page .an-stats > div > strong {
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
   margin-top: var(--space-6);
 }
@@ -478,12 +507,20 @@ html .an-stats > * > span,
 html .business-party-summary-strip > * > span,
 html .owner-contract-detail-grid > * > span,
 html .system-ops-summary-cell > span,
-html .assistant-check-item > span {
+html .assistant-check-item > span,
+html .owner-finance-metrics > * > span,
+html .downstream-summary-grid > * > span,
+html .change-summary-grid > * > span,
+html .bill-summary-grid > * > span {
   display: block;
-  margin: var(--space-4) 0 0;
+  margin: 0;
   color: var(--text-muted);
-  font-size: 9.5px;
-  line-height: 1.45;
+  /* 标签：对齐 hana 的 ._metric_53489 dt（--fs-ui = 13.12px）。
+     之前是 9.5px，比说明文字还小，层级完全错。 */
+  font-size: var(--fs-ui, 13.12px);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
@@ -559,9 +596,9 @@ html .system-ops-summary .system-ops-summary-copy > strong.ops-version {
   margin: var(--space-6) 0 0;
   color: var(--text);
   font-family: var(--font-num, var(--num));
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
 html .system-ops-summary .system-ops-summary-copy > span {
@@ -696,6 +733,9 @@ html .assistant-check-grid {
    但 /cost/downstream 的「数据概览」是「区块卡 + 指标区」双保险，
    结果指标区外面套了一层带背景与 14.73px 圆角的壳。
    用 :has() 只命中「子元素就是指标区」的区块卡。 */
+/* 2026-10-26 修正：区块卡保留卡片（--bg-card + 圆角 + 边框），
+   指标区作为卡内的一段，不再把整张区块卡清零。
+   之前清零后，整页找不到任何卡片容器，内容全浮在纸纹上。 */
 html .ds-section-card:has(> .downstream-summary-grid),
 html .ds-section-card:has(> .change-summary-grid),
 html .ds-section-card:has(> .bill-summary-grid),
@@ -703,11 +743,12 @@ html .ds-section-card:has(> .owner-finance-metrics),
 html .ds-section-card:has(> .security-metrics),
 html .ds-section-card:has(> .system-overview-metrics) {
   padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden;
 }
 /* 指标区在区块卡里时，上下分隔线已由指标区自己画，不再重复 */
 html .ds-section-card > .change-summary-grid,
@@ -717,22 +758,23 @@ html .ds-section-card > .bill-summary-grid {
 }
 
 /* -------------------------------------------------------------
-   八、/cost/costs 的「成本类型卡」——本质是可点击的指标项
+   八、/cost/costs 的「成本类型卡」—— 本质是可点击的指标项
    -------------------------------------------------------------
    5 个 button 点下去会筛选下方表格，所以不能改成 div；
-   但外观应该是指标而不是「大按钮」：去壳、左对齐、26px 数值。 */
+   外观按 C 方案：独立成卡（--bg-card + radius-card × 1.84 + 1px 边框），
+   卡内项之间用 1px 竖线分隔。不再是「透明 + 上下细线」。 */
 html .cost-type-cards {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0;
-  padding: var(--space-16) 0;
+  padding: 0;
   margin: var(--space-16) 0;
-  border: 0;
-  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
   box-shadow: none;
+  overflow: hidden;
 }
 html .cost-type-card {
   display: flex;
@@ -742,7 +784,8 @@ html .cost-type-card {
   text-align: left;
   width: 100%;
   min-width: 0;
-  padding: 0 var(--space-16);
+  /* 卡内项：四边 16px（同统一容器）。 */
+  padding: var(--space-16);
   border: 0;
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: 0;
@@ -751,11 +794,10 @@ html .cost-type-card {
   cursor: pointer;
 }
 html .cost-type-card:first-child {
-  padding-left: 0;
   border-left: 0;
 }
 html .cost-type-card:last-child {
-  padding-right: 0;
+  /* 卡片有边框，末项保留右内边距。 */
 }
 html .cost-type-card:hover {
   background: transparent;
@@ -777,9 +819,9 @@ html .cost-type-card strong {
   margin: var(--space-6) 0 0;
   color: var(--text);
   font-family: var(--font-num, var(--num));
-  font-size: 26px;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: var(--fs-title, 16px);
+  font-weight: 500;
+  line-height: 1.4;
   font-variant-numeric: tabular-nums;
   transition: color 0.15s ease;
 }
@@ -805,7 +847,13 @@ html .toolbar-view-toggle {
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1));
   background: transparent;
+  /* 可收缩：按钮多时横向滚动，不把工具栏撑到换行。 */
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+html .toolbar-view-toggle::-webkit-scrollbar { display: none; }
 html .toolbar-view-button {
   height: 26px;
   padding: 0 var(--space-10, 10px);

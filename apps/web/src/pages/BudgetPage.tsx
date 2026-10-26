@@ -367,6 +367,7 @@ export default function BudgetPage() {
     </div>
 
     <section className="ldg-section">
+      {/* 卡头在卡外：标题与操作行属于页面结构，卡片只装内容。 */}
       <div className="ldg-section-head"><div><h2>成本清单</h2><p>按清单层级归集目标成本；展开父级查看子项，点击行查看清单明细。</p></div><span className="ldg-section-count">{rows.length} 条清单</span></div>
       <div className="ldg-section-card">
     <div className="ldg-toolbar">

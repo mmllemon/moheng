@@ -1719,6 +1719,15 @@ html[data-page-width="unlimited"] { --page-column-measure: 100%; }
 }
 .page-context-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 10%, transparent); }
 .page-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+/* 页头操作按钮不换行：之前 flex-wrap 会让按钮被压窄，
+   「导入 CSV」这类文字就折成两行（实测高 31px）。 */
+html .page-actions > *,
+html .page-actions .button,
+html .page-actions .button-secondary,
+html .page-actions summary {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .eyebrow { display: none; }
 .environment-pill, .side-label { display: none; }
 
@@ -2219,6 +2228,11 @@ html .toolbar-search {
   min-height: 32px;
   padding: 0 var(--space-10);
   border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1));
+  /* 最小宽度：工具栏里搜索框、分段按钮、单位说明三项并排时，
+     搜索框会被压到 216px 以下，占位文字就被截断。
+     240px 能容纳「搜索费用说明、供应商或关联清单」这类长提示。 */
+  min-width: 240px;
+  flex: 1 1 240px;
 }
 html .toolbar-search input,
 html .toolbar-search > input[type="search"],
@@ -2487,11 +2501,14 @@ html .filter-bar input[type="search"] {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-14);
-  margin-bottom: var(--space-14);
+  /* 卡头在卡外：只保下方间距，无内边距无边框。 */
+  margin: 0 0 var(--space-14);
+  padding: 0;
+  border: 0;
 }
 .panel-heading h3 { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
 .panel-heading h3 svg { color: var(--text-muted); }
-.panel-heading p { margin-top: 4px; color: var(--text-muted); font-size: 11px; line-height: 1.55; }
+.panel-heading p { margin-top: 4px; color: var(--text-muted); font-size: var(--fs-hint, 11.2px); line-height: 1.55; }
 .panel-icon {
   width: 30px;
   height: 30px;
@@ -2607,7 +2624,13 @@ html .filter-bar input[type="search"] {
   background: transparent;
 }
 .projects-ledger-page .projects-ledger-head { margin: 0 0 10px; padding: 0 2px; align-items: flex-end; }
-.projects-ledger-page .projects-ledger-head h2 { font-size: 17px; font-weight: 600; letter-spacing: 0.05em; }
+.projects-ledger-page .projects-ledger-head h2 {
+  /* 卡片标题：对齐 hana 的 ._sectionTitle / ._subBlockTitle = --fs-body（14px）/ 600。
+     之前是 17px / letter-spacing .05em，比卡内指标值（16px）还重，层级倒挂。 */
+  font-size: var(--fs-body, 14px);
+  font-weight: 600;
+  letter-spacing: 0;
+}
 .projects-ledger-page .projects-ledger-head p { margin-top: 4px; font-size: 10.5px; }
 .projects-ledger-page .projects-ledger > .table-scroll {
   border: 1px solid var(--card-border);
@@ -3507,10 +3530,37 @@ html[data-paper-texture] .dialog::after {
 .form-alert, .error-block { padding: 10px 12px; color: var(--danger); font-size: 11px; }
 .data-note { display: flex; align-items: flex-start; gap: 7px; margin-top: 14px; padding: 10px 12px; color: var(--text-muted); font-size: 10px; line-height: 1.6; }
 .note-mark { width: 15px; height: 15px; flex: 0 0 15px; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: 50%; color: var(--text-muted); font: 9px/1 var(--font-mono); }
-.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 52px 20px; border: 1px dashed var(--border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); background: color-mix(in srgb, var(--bg-card) 55%, transparent); text-align: center; }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* 对齐 hana 的 ._emptyState_4aab4：padding 24px。
+     之前是 52px 20px，在卡片里显得空荡荡的。 */
+  padding: var(--space-24) var(--space-16);
+  border: 1px dashed var(--border);
+  border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1));
+  background: color-mix(in srgb, var(--bg-card) 55%, transparent);
+  text-align: center;
+}
 .empty-art { width: 38px; height: 38px; display: grid; place-items: center; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-card); color: var(--text-muted); }
-.empty-state h3 { font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
-.empty-state p { max-width: 360px; margin: 5px 0 14px; color: var(--text-muted); font-size: 11px; line-height: 1.65; }
+.empty-state h3 {
+  /* 对齐 hana 的 ._emptyText_5dbb4：--fs-body（14px）/ 600。之前 17px 偏大。 */
+  font-family: var(--font-ui);
+  font-size: var(--fs-body, 14px);
+  font-weight: 600;
+  color: var(--text);
+}
+.empty-state p { max-width: 360px; margin: var(--space-6) 0 var(--space-16); color: var(--text-muted); font-size: var(--fs-caption, 12.48px); line-height: 1.65; }
+/* 空状态嵌在已有卡内时，不再画第二层边框和底色（双层边框很难看）。 */
+.panel .empty-state,
+.ldg-section-card .empty-state,
+.data-table-panel .empty-state,
+.ds-section-card .empty-state,
+.settings-section-card .empty-state {
+  border: 0;
+  background: transparent;
+}
 .loading-block { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 34px; color: var(--text-muted); font-size: 11px; }
 .spinner { width: 14px; height: 14px; border: 1.5px solid var(--overlay-strong); border-top-color: var(--accent); border-radius: 50%; animation: hana-spin var(--duration-spinner) linear infinite; }
 .full-screen-loading { min-height: 100vh; display: grid; place-items: center; background: var(--bg); }
@@ -4888,6 +4938,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   position: absolute;
   left: 0;
   right: 0;
+  /* 卡头在卡外，所以卡片从卡头高度以下开始。 */
   top: var(--panel-head-h, 0px);
   bottom: 0;
   z-index: 0;
@@ -4900,6 +4951,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .panel.panel-detached > * { position: relative; z-index: 1; }
 .panel.panel-detached > .panel-heading {
   align-items: flex-end;
+  /* 卡头在卡外：只保左侧 2px 微内缩 + 下方 10px，无边框无底色。 */
   padding: 0 var(--space-2) var(--space-10);
   border: 0;
   background: transparent;
@@ -4907,10 +4959,12 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .panel.panel-detached > .panel-heading h3 {
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: 16px;
+  /* 对齐 hana 的 ._sectionTitle：--fs-body（14px）/ 600。
+     之前是 16px / letter-spacing .04em，比卡内指标值还重。 */
+  font-size: var(--fs-body, 14px);
   font-weight: 600;
   line-height: 1.4;
-  letter-spacing: 0.04em;
+  letter-spacing: 0;
 }
 .panel.panel-detached > .panel-heading h3 svg { width: 16px; height: 16px; color: var(--text-muted); }
 .panel.panel-detached > .panel-heading p { margin-top: 4px; color: var(--text-muted); font-size: 10.5px; line-height: 1.55; }
@@ -5646,10 +5700,30 @@ select { corner-shape: squircle !important; }
 .ldg-stats small { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
 
 .ldg-section { margin: 0 0 24px; }
-.ldg-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 0 2px 10px; }
-.ldg-section-head h2 { margin: 0; color: var(--text); font-family: var(--font-ui); font-size: 17px; font-weight: 600; letter-spacing: 0.05em; }
-.ldg-section-head p { margin: 4px 0 0; color: var(--text-muted); font-size: 10.5px; line-height: 1.55; }
-.ldg-section-count { color: var(--text-muted); font-size: 10px; }
+.ldg-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  /* 卡头在卡外：只保左侧 2px 微内缩，下方 10px 间距，无边框。
+     标题属于页面结构，卡片只装内容。 */
+  margin: 0 2px var(--space-10);
+  padding: 0;
+  border: 0;
+}
+.ldg-section-head h2 {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-ui);
+  /* 对齐 hana 的 ._sectionTitle / ._subBlockTitle：--fs-body（14px）/ 600。
+     之前是 17px / 600 / letter-spacing .05em，比卡片内的指标值还大，
+     层级倒挂（标题比数据重）。 */
+  font-size: var(--fs-body, 14px);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.ldg-section-head p { margin: 4px 0 0; color: var(--text-muted); font-size: var(--fs-hint, 11.2px); line-height: 1.55; }
+.ldg-section-count { color: var(--text-muted); font-size: var(--fs-hint, 11.2px); }
 /* 注意：不能用 overflow: hidden。表格有 min-width: 980px，窄视口下需要
    .ldg-table-wrap 的 overflow-x: auto 生效；父级 hidden 会把滚动条裁掉，
    导致右侧列直接消失。圆角由内部元素各自处理。 */
@@ -6611,14 +6685,23 @@ select,
 
 /* 搜索壳内部是真正的输入，不应再画第二层边框和圆角 */
 #root .settings-search input,
-#root .toolbar-search input,
-#root .ldg-search input,
 #root .audit-search-input input,
 #root .business-party-input-wrap input,
 #root .assistant-key-line input,
 #root .owner-finance-search input,
 #root .quick-search-wrap input,
 #root .settings-nav .settings-search input { padding: 0 30px 0 31px !important; }
+
+/* .ldg-search / .toolbar-search 都是 flex 容器（<Search> 图标作为 flex 子项），
+   不是绝对定位图标，所以输入框不需要留 31px 左内边距。
+   之前把它们也列在上面那组里，导致输入框左右各留 30px，可用宽度只剩一半。 */
+#root .ldg-search input,
+#root .toolbar-search input,
+#root .toolbar-search > input[type="search"] {
+  padding: 0 !important;
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
 /* 登录页也使用同一套控件，不再单独回到 3px */
 .login-screen .field input,

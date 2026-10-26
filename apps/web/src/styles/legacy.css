@@ -299,8 +299,8 @@ kbd { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; color
 .cost-type-label { color: var(--meta); font-size: 10px; }
 .cost-type-card strong { margin-top: 7px; overflow: hidden; max-width: 100%; color: var(--accent); text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .cost-type-card small { margin-top: 3px; color: var(--meta); font-size: var(--text-2xs); }
-.table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 17px; border-bottom: 1px solid #f0f2f6; }
-.muted-note { color: var(--meta); font-size: var(--text-2xs); }
+.table-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 17px; border-bottom: 1px solid #f0f2f6; flex-wrap: wrap; }
+.muted-note { color: var(--meta); font-size: var(--text-2xs); white-space: nowrap; }
 .cost-kind-pill { display: inline-flex; padding: 3px 6px; border-radius: 2px; font-size: var(--text-2xs); white-space: nowrap; }
 .budget-association { color: var(--accent); font-size: var(--text-2xs); }
 .amount-strong { color: var(--accent) ; font-weight: 600; }
