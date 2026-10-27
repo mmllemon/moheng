@@ -43,23 +43,23 @@ export function PageHeader({ title: _title, subtitle, context, actions }: { titl
     return () => { titleEl.removeAttribute('title'); };
   }, [subtitle]);
 
-  if (!actions) return null;
-  return <div className="page-header">
-    <div className="page-actions">{actions}</div>
-  </div>;
-}
-
-/* 设置窗内专用：把页面级操作按钮渲染到 .settings-titlebar 的操作区。
-   不能直接在 PageHeader 里查 DOM，因为 Layout 的 DOM 与页面组件
-   是同一次提交的，PageHeader 首次渲染时 slot 还不存在。
-   所以用一个 effect 等挂载后再取。 */
-export function SettingsTitlebarActions({ children }: { children: ReactNode }) {
+  /* 设置窗内：页面级操作按钮注入 .settings-titlebar 的操作区。
+     设置窗已有自己的标题栏（显示当前页名），页内再出一行
+     只有按钮的 page-header 会白占 30px + 22px 间距，
+     且按钮位置与标题栏脱节（实测按钮 top 83、标题栏 top 31）。
+     hana 的 ._titlebar_7cee1 就是三段：[标题][页面级操作][关闭]。
+     用 effect 等 Layout 的 DOM 挂载后再取 slot，
+     不能在同一次提交里同步查。 */
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setSlot(document.getElementById('settings-titlebar-actions'));
   }, []);
-  if (!slot) return null;
-  return createPortal(<>{children}</>, slot);
+
+  if (!actions) return null;
+  if (slot) return createPortal(<>{actions}</>, slot);
+  return <div className="page-header">
+    <div className="page-actions">{actions}</div>
+  </div>;
 }
 
 export function Button({ children, onClick, variant = 'primary', type = 'button', disabled = false, size = 'md', className = '' }: {

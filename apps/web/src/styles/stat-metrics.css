@@ -373,8 +373,10 @@ html .bill-summary-grid > * > small {
   display: block;
   margin: 0;
   color: var(--text-muted);
-  /* 说明文字：对齐 hana 的 ._metric_53489 dt 层级（--fs-hint = 11.2px）。 */
-  font-size: var(--fs-hint, 11.2px);
+  /* 2026-10-26：设置窗内实测 small 10px、span 9.5px，都低于 hana 最小 token。
+     small 是标签（「应用版本」），对齐 ._metric_53489 dt 的 --fs-ui；
+     span 是说明（「Node v24.18.0 · 运行」），用 --fs-hint。 */
+  font-size: var(--fs-ui, 13.12px);
   font-weight: 400;
   letter-spacing: 0;
   line-height: 1.45;
@@ -531,9 +533,8 @@ html .bill-summary-grid > * > span {
   display: block;
   margin: 0;
   color: var(--text-muted);
-  /* 标签：对齐 hana 的 ._metric_53489 dt（--fs-ui = 13.12px）。
-     之前是 9.5px，比说明文字还小，层级完全错。 */
-  font-size: var(--fs-ui, 13.12px);
+  /* 说明文字：--fs-hint（11.2px）。之前是 9.5px，1x 屏上不可读。 */
+  font-size: var(--fs-hint, 11.2px);
   font-weight: 400;
   letter-spacing: 0;
   line-height: 1.4;
@@ -575,7 +576,12 @@ html .system-ops-summary .system-ops-summary-cell {
   flex-direction: column;
   align-items: flex-start;
   gap: 0;
-  padding: 0 var(--space-16);
+  /* 2026-10-26：原为 `0 var(--space-16)`（上下为 0），
+     那是「透明 + 上下细线」时代的写法。
+     设置窗内的指标卡是独立卡片（有 border + bg），
+     上下为 0 会让文字贴到卡片上下边框（实测格子高 70px、
+     标签 10px 从 y=0 开始）。 */
+  padding: 14px var(--space-16);
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
 }
 html .system-ops-summary .system-ops-summary-cell:first-child {
@@ -594,15 +600,28 @@ html .system-ops-summary .system-ops-summary-cell::after {
 html .system-ops-summary .system-ops-summary-label {
   display: flex;
   align-items: baseline;
-  justify-content: flex-start;
+  /* 2026-10-26：原为 flex-start，标签与状态徽标挤在同一行抢空间。
+     实测格宽 166px / 内容区 134px：
+       「数据库连通」small 被压到 68px，折 2 行；
+       徽标占 54px，而标签只需要 68px，明明放得下。
+     改成 space-between，让标签先占满左侧、徽标贴右。 */
+  justify-content: space-between;
   gap: var(--space-6);
   width: 100%;
 }
 html .system-ops-summary .system-ops-summary-label small {
   margin: 0;
   color: var(--text-muted);
-  font-size: 10px;
+  /* 2026-10-26：10px 低于 hana 最小 token（--fs-hint 11.2px），
+     且在设置窗的 166px 格宽里已经能装下 --fs-ui（13.12px）。 */
+  font-size: var(--fs-ui, 13.12px);
   font-weight: 400;
+  /* 标签不收缩、不折行：
+     实测「数据库连通」needW 66px、实际 w 68px，但 h 37（折 2 行）。
+     原因是 flex: 0 1 auto 允许收缩，而父级 flex 容器与徽标争空间时
+     浏览器按最小内容宽度算了两次。flex-shrink: 0 + nowrap 固定它。 */
+  flex: 0 0 auto;
+  white-space: nowrap;
   letter-spacing: 0.04em;
   line-height: 1.4;
 }
@@ -621,7 +640,9 @@ html .system-ops-summary .system-ops-summary-copy > span {
   display: block;
   margin: var(--space-4) 0 0;
   color: var(--text-muted);
-  font-size: 9.5px;
+  /* 2026-10-26：9.5px 低于 hana 最小 token（--fs-hint 11.2px），
+     1x 屏上已经不可读。 */
+  font-size: var(--fs-hint, 11.2px);
   line-height: 1.45;
 }
 

@@ -1738,7 +1738,17 @@ html .page-actions summary {
 /* =============================================================
    控件
    ============================================================= */
-.button {
+/* 基础尺寸：.button-primary / -secondary / -ghost / -danger
+   经常被单独使用（不带 .button 类）。
+   实测 SystemOperationsPage 的「立即执行备份」只有 className="button-primary"：
+   高度 20px（只有 line-height）、padding 0、display block，
+   看上去不像一个按钮。
+   这里让四个变体类也能独立成立。 */
+.button,
+.button-primary,
+.button-secondary,
+.button-ghost,
+.button-danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2846,6 +2856,111 @@ html .filter-bar input[type="search"] {
 /* 表格滚动容器：必须能横向滚动。父级不能 overflow: hidden，
    否则窄视口下 min-width 表格的右侧列会被裁掉（不是滚动，是直接消失）。 */
 .table-scroll { overflow-x: auto; overflow-y: visible; }
+/* 设置窗内指标格：上下 padding 为 0，文字贴格子上下边缘。
+   实测：pad 0px 16px，格子高 70px，内部标签 10px / 值 16px / 说明 9.5px。
+   hana 的 ._metric_53489 是 flex column + gap 8px，上下都有留白。 */
+.settings-content .system-ops-summary-cell {
+  padding: 14px var(--space-16);
+}
+/* 说明文字 9.5px 低于 hana 最小 token（--fs-hint 11.2px）。 */
+.settings-content .system-ops-summary-cell > small,
+.settings-content .system-ops-summary-cell > span:last-child {
+  font-size: var(--fs-hint);
+  line-height: 1.4;
+}
+/* 标签 10px 也偏小，收到 --fs-caption（12.48px）。 */
+.settings-content .system-ops-summary-cell > span:first-child,
+.settings-content .system-ops-summary-cell > small:first-child {
+  font-size: var(--fs-caption);
+}
+/* 禁用按钮：opacity 0.45 + 3% 底 + muted 字，在纸色上几乎看不见。
+   关键操作按钮即使禁用也应该能看清「这里有个按钮」。
+   保持禁用感，但提高可见度：底色提到 6%，文字用 text-light。 */
+.settings-content .settings-row-control > button:disabled,
+.settings-content .settings-row-control > .button-primary:disabled {
+  opacity: 1;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text-light);
+  border-color: transparent;
+  cursor: not-allowed;
+}
+/* 行本身：控件与首行文字对齐（不要 center，否则徽标与按钮高度不同时基线错开）。 */
+.settings-content .settings-row {
+  align-items: flex-start;
+}
+.settings-content .settings-row-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  /* 与首行文字（18px 高）的视觉中心对齐：
+     标签从 14px 开始、高 18px，中心在 23px；
+     控件 20px 高时顶部应为 23 - 10 = 13px，而行 padding 是 14px，
+     所以 margin-top: -1px 即可。 */
+  margin-top: -1px;
+}
+/* 按钮内部的图标与文字必须同行（原来 disp: block 让图标单独占一行）。 */
+.settings-content .settings-row-control > button,
+.settings-content .settings-row-control > .button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+/* 设置窗内的卡头：标题与右侧标签对齐到首行
+   ---------------------------------------------------------
+   panel-heading 是 align-items: flex-end，标签会对齐到
+   整个标题块（h3 + p）的底部。设置窗宽度窄，说明文字折行后
+   标题块高 57px，标签 top 45，与 h3（top 14）差 31px，
+   截图里看起来像「标签浮在右下角」。
+   改成 flex-start，并给标签加 margin-top 与 h3 首行对齐。 */
+.settings-content .panel.panel-detached > .panel-heading {
+  align-items: flex-start;
+}
+.settings-content .panel.panel-detached > .panel-heading > .system-overview-readiness-tag,
+.settings-content .panel.panel-detached > .panel-heading > span:last-child {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+.settings-content .settings-row-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  /* 与首行文字（18px 高）的视觉中心对齐：
+     标签从 14px 开始、高 18px，中心在 23px；
+     控件 20px 高时顶部应为 23 - 10 = 13px，而行 padding 是 14px，
+     所以 margin-top: -1px 即可。原来写 -7px 是按 32px 控件算的，
+     对 20px 的徽标就提多了（实测中心跑到 17px，反而差 6px）。 */
+  margin-top: -1px;
+}
+/* 按钮内部的图标与文字必须同行（原来 disp: block 让图标单独占一行）。 */
+.settings-content .settings-row-control > button,
+.settings-content .settings-row-control > .button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+/* 横向溢出提示：设置窗内容区只有 632px，而七列表格实际 873px，
+   只能看到 72% 的列，但 4px 细滚动条几乎不可见，
+   看上去像「表格被裁了」。用 background-attachment: local 做滚动阴影：
+   左侧不滚动时隐、右侧总是提示还有内容。
+
+   2026-10-26 修正：不要在这里加 max-height + overflow-y: auto。
+   外层已经有 .route-transition 在滚，再加一层嵌套滚动会变成
+   「表格自己滚一段、页面再滚一段」，且表格卡片被裁在视口边缘。
+   表格高度交给外层滚动即可。 */
+.settings-content .table-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  /* 2026-10-26 去掉滚动阴影：
+     试过 CSS Scroll Shadows（四层渐变 + background-attachment: local/scroll），
+     实测在截图里表现为一条突兀的竖线（在表格右缘、卡片右缘左侧 150px 处），
+     反而成了新的视觉噪音，比「没有提示」更差。
+     改为靠表格自身的列宽控制 + 滚动条，不再叠渐变。 */
+  background: none;
+}
 .panel-heading h3::before, .an-panel-head h2::before, .ldg-drawer-body h3::before, .v6-block-head h2::before { display: none !important; content: none !important; }
 .v6-row-arrow { color: var(--text-muted); opacity: 0.6; }
 .data-table tbody tr:hover .v6-row-arrow { color: var(--accent); opacity: 1; }
@@ -4881,6 +4996,19 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 
 /* 审计筛选行 */
 .audit-filter-rows { padding: 2px 0; }
+/* 2026-10-26 尝试过两列（grid repeat(2, 1fr)），实测不行：
+   每列 293px 后标签从 358 缩到 ~200，长标签（「业务对象类型与关键字」）
+   折成两行，行高从 63px 涨到 108px，总高 321 → 495，反而更占空间。
+   保持单列，改为收紧行高：12px 上下 → 8px，63 → 55。 */
+.settings-content .audit-filter-rows .settings-row {
+  padding-block: var(--space-8);
+}
+.settings-content .audit-filter-rows .settings-row-hint {
+  /* 说明文字限一行，避免长说明把行高撑开。 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .settings-row-control .audit-search-input {
   display: flex;
   align-items: center;
@@ -5183,10 +5311,25 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 
 /* 审计筛选：670px 内容区下改为两列，避免五列挤压 */
 .settings-content .audit-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* 区块间距过大：实测 audit-summary-grid → filter-panel 之间 56px、
+   filter-panel → section 之间 40px。
+   原因是指标条 margin-bottom 16 + panel margin-top 24 + 自身 16 叠加。
+   hana 的卡片节奏是单一 24px（--space-24），不要三重叠加。 */
+.settings-content .audit-summary-grid { margin-bottom: 0; }
+.settings-content .audit-filter-panel { margin-top: 0; margin-bottom: 0; }
+/* 区块间距：panel 的 ::before 是 overflow: visible，
+   section 自带的 margin-top 24 会与之叠成 40px。
+   这里把 section 的上边距收到 8px，总间距回到 24px 量级。 */
+.settings-content .audit-filter-panel + * { margin-top: var(--space-8); }
 .settings-content .audit-search-field { grid-column: span 1; }
 
 /* 审计筛选：标题外置 */
 .panel.panel-detached > .audit-filter-heading { padding: 0 2px 10px; margin: 0; border: 0; align-items: flex-end; }
+/* 设置窗内：卡头已经收进卡内（::before 从 top:0 开始），
+   卡头需要自己的完整内边距，2px 会让标题贴到卡片边框。 */
+.settings-content .panel.panel-detached > .audit-filter-heading {
+  padding: 14px var(--space-16) 0;
+}
 .panel.panel-detached > .audit-filter-heading h3 { font-size: 16px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
 .panel.panel-detached > .audit-filter-heading h3 svg { width: 16px; height: 16px; color: var(--text-muted); }
 .panel.panel-detached > .audit-filter-heading p { margin-top: 3px; color: var(--text-muted); font-size: 10.5px; }
@@ -7614,10 +7757,10 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .system-ops-summary-cell:nth-child(n+3)::after { content: ''; position: absolute; top: 0; right: 16px; left: 16px; height: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); pointer-events: none; }
 .system-ops-summary-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .system-ops-summary-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-.system-ops-summary-label small { color: var(--text-muted); font-size: 9.5px; }
+.system-ops-summary-label small { color: var(--text-muted); font-size: var(--fs-ui, 13.12px); }
 .system-ops-summary-copy strong { display: block; margin: 2px 0; color: var(--text); font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; }
 .system-ops-summary-copy strong.ops-version { font-size: 18px; }
-.system-ops-summary-copy > span { color: var(--text-muted); font-size: 9.5px; line-height: 1.45; }
+.system-ops-summary-copy > span { color: var(--text-muted); font-size: var(--fs-hint, 11.2px); line-height: 1.45; }
 .system-ops-summary .system-overview-icon { width: 28px; height: 28px; flex-basis: 28px; border-radius: calc(var(--radius-compact) * var(--corner-radius-scale, 1)); }
 .system-ops-summary .status-badge { transform: scale(0.92); transform-origin: right center; }
 

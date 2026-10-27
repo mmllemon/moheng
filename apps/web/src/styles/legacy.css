@@ -1744,7 +1744,67 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .audit-table-panel { min-width: 0; padding: 16px 18px 12px; }
 .audit-table-panel > .panel-heading h3 { display: flex; align-items: center; gap: 8px; }
 .audit-table-panel > .panel-heading h3 svg { color: var(--accent-600); }
-.audit-log-table { min-width: 1100px; }
+/* 2026-10-26 列宽重排。
+
+   设置窗内容区 632px，原表格 1150px，溢出 518px，
+   七列只能看到前 3.5 列（时间/人/项目 + 对象半截）。
+
+   内容需求实测（canvas 测宽 + padding）：
+     操作时间 130 / 操作人 178 / 项目 316 / 对象 235 /
+     类型 108 / 摘要 180 / 详情 45  合计 1192
+
+   七列全放不下。取舍：把「操作时间」拆成两行（日期 + 时分），
+   「操作人」只留姓名不重复邮箱，「项目」与「业务对象」允许折行。
+   目标：总宽 640px，刚好装进容器，不出现横向滚动。
+     时间 84 / 人 96 / 项目 168 / 对象 132 / 类型 84 / 摘要 0(隐藏) / 详情 44 = 608
+
+   变更摘要列隐藏：它是 JSON 片段（「effectiveAt：2026-10-24T12:21:1...」），
+   信息量低且占 180px，点击「详情」能看完整内容。 */
+.audit-log-table {
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+.audit-log-table th:nth-child(1), .audit-log-table td:nth-child(1) { width: 84px; }
+.audit-log-table th:nth-child(2), .audit-log-table td:nth-child(2) { width: 108px; }
+.audit-log-table th:nth-child(3), .audit-log-table td:nth-child(3) { width: 168px; }
+.audit-log-table th:nth-child(4), .audit-log-table td:nth-child(4) { width: 112px; }
+.audit-log-table th:nth-child(5), .audit-log-table td:nth-child(5) { width: 84px; }
+.audit-log-table th:nth-child(6), .audit-log-table td:nth-child(6) { display: none; }
+/* 「详情」列：单元格 59px - 20px padding = 39px 内容区，
+   而里面的按钮是 58px（「详情」+ 14px 图标），溢出 9px 被裁。
+   实测 tdW 59 / contentW 39 / 按钮 w 58 / overflow true。
+   加到 76px，并把按钮的内边距收到 0（列内已经是密集场景）。 */
+.audit-log-table th:nth-child(7), .audit-log-table td:nth-child(7) {
+  width: 76px;
+  padding-inline: var(--space-6);
+  white-space: nowrap;
+  text-align: center;
+}
+.audit-log-table td:nth-child(7) .audit-expand-button {
+  min-width: 0;
+  padding-inline: var(--space-4);
+  gap: var(--space-2);
+}
+/* 操作人列：邮箱过长时省略号截断，不折行（否则行高被撞到 3 行）。 */
+.audit-log-table td:nth-child(2) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 项目 / 业务对象 / 操作类型允许折行。 */
+.audit-log-table td:nth-child(3),
+.audit-log-table td:nth-child(4),
+.audit-log-table td:nth-child(5) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+/* 操作时间拆行：日期在上、时分在下（避免 130px 宽只装一个日期）。 */
+.audit-log-table td:nth-child(1) {
+  white-space: normal;
+  line-height: 1.4;
+}
 .audit-log-table th { white-space: nowrap; }
 .audit-log-row { transition: background 150ms var(--ease-spring); }
 .audit-log-row td { vertical-align: middle; }
