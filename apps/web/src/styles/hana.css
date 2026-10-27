@@ -2981,6 +2981,48 @@ html .filter-bar input[type="search"] {
   flex: 0 0 auto;
   margin-top: 3px;
 }
+
+/* 治理能力卡：字号与圆角对齐 hana token
+   ---------------------------------------------------------
+   legacy.css:2432 的 tag 是 --text-2xs（10px）+ radius 2px 硬编码，
+   v6.css:585 也是 10px + 2px。两者都是旧体系。
+   hana 的徽标规格：--fs-hint 11.2px / radius-compact × 1.84 = 7.36px squircle。 */
+.settings-content .system-overview-readiness-tag {
+  padding: var(--space-2) var(--space-8);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: calc(var(--radius-compact) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  line-height: 1.5;
+}
+
+/* 行内文字：10px → --fs-ui（13.12px）。
+   hana 的列表行（_projectRow / _activityRow）都是 --fs-ui，不是 10px。 */
+.settings-content .system-readiness-line > span {
+  font-size: var(--fs-ui);
+  line-height: 1.5;
+}
+
+/* 底部说明：12.5px 比正文（10px）还大，层级倒置。
+   改成 --fs-hint（11.2px），小于正文；
+   顶部补 6px 间距（原来 0，说明区紧贴最后一行）。 */
+.settings-content .system-readiness-note {
+  margin: 0;
+  padding: var(--space-6) 0 var(--space-16);
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  line-height: 1.6;
+}
+
+/* 行宽修正：panel 666px，margin 0 16px 后应为 634px。
+   实测 638px（右溢 4px），因为 legacy 的 padding 10px 18px
+   与 margin 一起算时，box-sizing 取 content-box 造成 4px 溢出。 */
+.settings-content .panel.panel-detached > .system-readiness-line {
+  width: auto;
+  box-sizing: border-box;
+}
+
 .settings-content .settings-row-control {
   display: flex;
   align-items: center;
@@ -4367,7 +4409,17 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-content .system-overview-metric { padding: 14px 16px; gap: 8px; }
 .settings-content .system-overview-icon { width: 26px; height: 26px; flex-basis: 26px; }
 .settings-content .system-overview-metric strong { font-size: 20px; }
-.settings-content .system-overview-two-column { grid-template-columns: 1fr; }
+.settings-content .system-overview-two-column {
+  grid-template-columns: 1fr;
+  /* 设置窗内是单列（上下堆叠）。
+     grid 里 margin 不塌陷，所以 panel-detached 的 margin 24px
+     与 gap 会叠加：24 + gap + 24。实测 gap 12px → 间距 60px。
+     统一由容器 gap 控制，子项 margin 归零。 */
+  gap: var(--space-24);
+}
+.settings-content .system-overview-two-column > .panel.panel-detached {
+  margin-block: 0;
+}
 .settings-content .sys-split { display: flex; flex-direction: column; gap: 14px; }
 .settings-content .sys-split-side, .settings-content .sys-split-main { width: 100%; min-width: 0; }
 /* sticky 在 flex column 里会让侧栏脱离流，

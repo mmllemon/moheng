@@ -57,7 +57,11 @@ html .assistant-check-grid {
   padding: 0;
   margin: var(--space-16) 0 var(--space-16);
   /* 独立成卡：对齐 hana 的卡片体系（--bg-card + radius-card × 1.84 + 1px 边框）。
-     不再是「透明 + 上下细线」——那是把 hana 的 gap 16px 误读成排版分隔。 */
+     不再是「透明 + 上下细线」——那是把 hana 的 gap 16px 误读成排版分隔。
+     注意：容器本身画卡还是子项画卡，两种形态都有，不能一概而论：
+       · 子项是纯文本（标签+数值）→ 容器画卡，内部用竖线分隔
+       · 子项自己就是卡片（如 system-overview-metric）→ 容器不画卡，子项各自成卡
+     判断依据是子项有没有自己的 border/bg，有就不能再套一层。 */
   border: 1px solid var(--card-border);
   border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
   corner-shape: squircle;
@@ -108,7 +112,19 @@ html .audit-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 /* /system/operations 是 4 项，不是 3 项——设 3 列会把第 4 项挤到下一行 */
 html .system-ops-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
-html .system-overview-metrics,
+/* system-overview-metrics 的子项（system-overview-metric）本身就是卡片，
+   容器不能再画一层（否则 666×220 的外框套 324×101 的四张卡，双边框同色同圆角）。
+   这里把容器降为纯网格，卡片外观交给子项，间隙用 16px。 */
+html .system-overview-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
 html .projects-kpi-strip,
 html .system-authorization-scope-grid,
 html .report-studio-entry-grid {
