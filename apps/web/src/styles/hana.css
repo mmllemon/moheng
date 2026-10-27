@@ -7229,18 +7229,20 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   color: var(--text-muted);
   font-size: 10.5px;
   line-height: 1.5;
-  /* 两段信息（单位 / 项目经理）在 236px 宽里几乎必然折行。
-     原来用「 · 」做行内分隔，折行时「·」会孤悬在行末，很难看。
-     改成 flex 行布局 + gap：段与段之间留白，折行时整段换行。 */
+  /* 两段信息分两行：一条是「谁的项目」（建设单位），
+     一条是「谁在管」（项目经理），本来就不是同一层，
+     挤在一行只是为了省空间，读起来是断的。
+     不再用 flex-wrap + 分隔符，改成列布局各占一行。 */
   display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.6em;
+  flex-direction: column;
+  gap: 2px;
   word-break: keep-all;
   overflow-wrap: break-word;
 }
-.project-cockpit-owner,
-.project-cockpit-manager { white-space: nowrap; }
-.project-cockpit-manager { color: var(--text-muted); }
+/* 单位名可能很长（如「重庆两江高赛夫创新科技发展有限公司」），
+   单独一行也装不下。给它允许折行，但不越出容器。 */
+.project-cockpit-owner { overflow-wrap: break-word; }
+.project-cockpit-manager { color: var(--text-muted); white-space: nowrap; }
 .project-cockpit-dates {
   /* 三个时间段（开工 / 计划竣工 / 地址）在 236px 宽里放不下一行。
      原来用 flex-wrap + span+span::before 画分隔点，折行后行首元素
