@@ -1767,9 +1767,12 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 }
 .audit-log-table th:nth-child(1), .audit-log-table td:nth-child(1) { width: 84px; }
 .audit-log-table th:nth-child(2), .audit-log-table td:nth-child(2) { width: 108px; }
-.audit-log-table th:nth-child(3), .audit-log-table td:nth-child(3) { width: 168px; }
-.audit-log-table th:nth-child(4), .audit-log-table td:nth-child(4) { width: 112px; }
-.audit-log-table th:nth-child(5), .audit-log-table td:nth-child(5) { width: 84px; }
+.audit-log-table th:nth-child(3), .audit-log-table td:nth-child(3) { width: 152px; }
+.audit-log-table th:nth-child(4), .audit-log-table td:nth-child(4) { width: 108px; }
+/* 操作类型列：原 84px 装不下「DEPARTMENT_CREATED」这种 18 字符枚举，
+   折成 4 行（实测 w 65 / h 53）。加到 108px，折 2 行。
+   对应的，项目列从 168 → 152px、对象列 112 → 108px 让出空间。 */
+.audit-log-table th:nth-child(5), .audit-log-table td:nth-child(5) { width: 108px; }
 .audit-log-table th:nth-child(6), .audit-log-table td:nth-child(6) { display: none; }
 /* 「详情」列：单元格 59px - 20px padding = 39px 内容区，
    而里面的按钮是 58px（「详情」+ 14px 图标），溢出 9px 被裁。
@@ -2636,6 +2639,57 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .system-authorization-company-roles strong { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: var(--text-primary); font-size: 12px; }
 .system-authorization-company-roles code, .system-authorization-matrix code { color: var(--text-muted); font: 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .system-authorization-matrix td { vertical-align: middle; }
+/* 权限矩阵表列宽（设置窗内 640px 容器）
+   ---------------------------------------------------------
+   实测原列宽：84 / 89 / 89 / 79 / 79 / 221
+   前五列只有 80-89px，「项目负责人 OWNER」必然折行；
+   最后一列 221px 占了 34%，装「项目经理、预算/成本经办、只读成员」。
+   改成：项目角色 132 / 四个权限列各 72 / 可分配角色 220 = 640px。
+   权限列是「有效/正常」徽标，72px 够用。 */
+.settings-content .system-authorization-matrix {
+  table-layout: fixed;
+  min-width: 0;
+  width: 100%;
+}
+.settings-content .system-authorization-matrix th:nth-child(1),
+.settings-content .system-authorization-matrix td:nth-child(1) { width: 132px; }
+.settings-content .system-authorization-matrix th:nth-child(2),
+.settings-content .system-authorization-matrix td:nth-child(2),
+.settings-content .system-authorization-matrix th:nth-child(3),
+.settings-content .system-authorization-matrix td:nth-child(3),
+.settings-content .system-authorization-matrix th:nth-child(4),
+.settings-content .system-authorization-matrix td:nth-child(4),
+.settings-content .system-authorization-matrix th:nth-child(5),
+.settings-content .system-authorization-matrix td:nth-child(5) { width: 72px; }
+.settings-content .system-authorization-matrix th:nth-child(6),
+.settings-content .system-authorization-matrix td:nth-child(6) { width: 220px; }
+/* 项目角色列的长文本（「项目负责人 OWNER」）允许折行。 */
+.settings-content .system-authorization-matrix td:nth-child(1),
+.settings-content .system-authorization-matrix td:nth-child(6) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+/* 「业务模块权限边界」表：3 列，实测 108 / 154 / 378
+   ——「约束说明」占 59%，前两列被压缩，
+   模块/动作的文字被挤成多行。
+   改成 200 / 190 / 250，三列均衡。 */
+.settings-content .system-expansion-table:not(.system-authorization-matrix) {
+  table-layout: fixed;
+  min-width: 0;
+  width: 100%;
+}
+.settings-content .system-expansion-table:not(.system-authorization-matrix) th:nth-child(1),
+.settings-content .system-expansion-table:not(.system-authorization-matrix) td:nth-child(1) { width: 200px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix) th:nth-child(2),
+.settings-content .system-expansion-table:not(.system-authorization-matrix) td:nth-child(2) { width: 190px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix) th:nth-child(3),
+.settings-content .system-expansion-table:not(.system-authorization-matrix) td:nth-child(3) { width: 250px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix) td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
 .system-authorization-matrix .status-badge { justify-content: center; min-width: 42px; }
 .system-authorization-review-history tr.is-selected td { background: color-mix(in srgb, var(--accent-50) 55%, var(--card-bg)); }
 .system-authorization-stats { padding-top: 0; }

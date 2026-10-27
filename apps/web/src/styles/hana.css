@@ -2856,6 +2856,65 @@ html .filter-bar input[type="search"] {
 /* 表格滚动容器：必须能横向滚动。父级不能 overflow: hidden，
    否则窄视口下 min-width 表格的右侧列会被裁掉（不是滚动，是直接消失）。 */
 .table-scroll { overflow-x: auto; overflow-y: visible; }
+/* API Key 行：一行挤了 4 个元素（图标 8 + 输入框 135 + 显示 47 + 检测 31）
+   实测 keyLine 244px、gap 4px，输入框只剩 135px，
+   而「显示」「检测」按钮的字号只有 9.5px、检测按钮宽 31px，
+   两个字挤在一起。
+   修法：
+     ① 按钮字号提到 --fs-hint（11.2px）
+     ② 去掉按钮之间的多余间隙，把空间让给输入框
+     ③ 输入框设最小宽度，避免被按钮挤到底 */
+.settings-content .assistant-key-line {
+  gap: var(--space-6);
+  padding-left: var(--space-10);
+  /* 一行四个元素（图标 7 + 输入框 + 显示 50 + 检测 34）在 244px 里，
+     输入框只剩 122px。给它设最小宽度，挤不下时让容器换行。 */
+  flex-wrap: wrap;
+}
+.settings-content .assistant-key-line input {
+  min-width: 120px;
+  flex: 1 1 auto;
+}
+.settings-content .assistant-inline-button {
+  flex: 0 0 auto;
+  font-size: var(--fs-hint, 11.2px);
+  padding-inline: var(--space-6);
+  white-space: nowrap;
+}
+/* 外观设置的分段控件（主题 / 标题字体 / 纸质纹理 / 字体对比度）：
+   实测分段项字号 10.5px，低于 hana 最小 token。 */
+.settings-content .settings-segment button,
+.settings-content .settings-segment > * {
+  font-size: var(--fs-hint, 11.2px);
+}
+/* ② 底部说明：允许折行，不要截断。 */
+.settings-content .assistant-footer-note {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.5;
+}
+/* ③ 接入检查面板：高度自适应内容（原 h 56 装不下 177px 的 grid）。 */
+.settings-content .assistant-check-panel {
+  height: auto;
+  min-height: 0;
+}
+.settings-content .assistant-check-grid {
+  height: auto;
+}
+/* 操作类型 / 业务对象的长枚举（如 DEPARTMENT_CREATED、
+   PROGRESS_BILL_RECEIVABLE）在 89px 内容区里会折 2-3 行，
+   把行高从 63px 撞到 100px+，同表行高不一致。
+   改成单行省略。 */
+.settings-content .audit-log-table td:nth-child(5) .audit-action-pill,
+.settings-content .audit-log-table td:nth-child(4) .audit-action-pill {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
 /* 设置窗内指标格：上下 padding 为 0，文字贴格子上下边缘。
    实测：pad 0px 16px，格子高 70px，内部标签 10px / 值 16px / 说明 9.5px。
    hana 的 ._metric_53489 是 flex column + gap 8px，上下都有留白。 */
@@ -7052,10 +7111,19 @@ select,
 #root .settings-search input,
 #root .audit-search-input input,
 #root .business-party-input-wrap input,
-#root .assistant-key-line input,
 #root .owner-finance-search input,
 #root .quick-search-wrap input,
 #root .settings-nav .settings-search input { padding: 0 30px 0 31px !important; }
+
+/* .assistant-key-line 也是 flex 容器（<KeyRound> 图标作为 flex 子项），
+   不是绝对定位图标，不需要 31px 左内边距。
+   之前它在那组 !important 规则里，导致 API Key 输入框 137px 宽、
+   左右各留 30px，实际可用只剩 76px。 */
+#root .assistant-key-line input {
+  padding: 0 var(--space-10) !important;
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
 /* .ldg-search / .toolbar-search 都是 flex 容器（<Search> 图标作为 flex 子项），
    不是绝对定位图标，所以输入框不需要留 31px 左内边距。

@@ -691,6 +691,116 @@ html article.panel.report-studio-entry-card {
   background: transparent;
   box-shadow: none;
 }
+/* 设置窗内的字号下限
+   ---------------------------------------------------------
+   扫全部 12 个页签，共 193 处 font-size < 11px：
+     8px    主题色名称（墨夜/宣纸/远山/朱印）
+     8.5px  AI 供应商标签
+     9px    助手侧栏分组
+     9.5px  大量标签、计数、状态
+     10px   按钮、徽标、标签
+     10.5px 说明段落
+
+   不做「所有元素无差别提升」：那会破坏信息层级（标签小、数值大）
+   且密集表格/标签区排版会崩。只修最严重的两类：
+     ① <= 9px：在 1x 屏上已经不可读
+     ② 主题色名称 8px：它们是可点击的选项标签，必须有可读性
+
+   其余 10 / 10.5px 保持现状：它们是业务信息层级的组成部分，
+   hana 自己也在 _sectionTitle 用 --fs-caption（12.48px）、
+   在密集列表里用更小的字号。 */
+
+/* 设置窗内的访问边界三卡
+   ---------------------------------------------------------
+   实测：三列 210px、gap 0px，三张卡完全贴在一起，
+   且第二列的长说明（「只可访问自己所属项目；跨项目报表必须先按成员关系过滤…」）
+   在 177px 内容区里折 4 行。
+   加 gap 让卡片分开；列宽按内容权重分配（第二列最长，给更多空间）。 */
+html .settings-content .system-authorization-scope-grid {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr) minmax(0, 0.9fr);
+  gap: var(--space-12);
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+/* 每张卡自己带 border + bg + radius，不再是「指标条的一项」。 */
+html .settings-content .system-authorization-scope-card {
+  padding: 14px var(--space-16);
+  border: 1px solid var(--card-border);
+  border-left: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
+}
+/* 外层 settings-section-card 也要去卡片：
+   三张 scope-card 已经各自有 border + bg + radius，
+   外层再画一层就是「卡片套卡片」，两层边框相隔 16px 重叠。 */
+html .settings-content .settings-section-card:has(> .system-authorization-scope-grid) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+/* ① 主题色名称（外观设置里的「墨夜/宣纸/远山/朱印」）。
+   实测真实类名：appearance-icon-choice > span，8px。 */
+.settings-content .appearance-icon-choice,
+.settings-content .appearance-icon-choice span {
+  font-size: var(--fs-hint, 11.2px);
+}
+/* ② AI 助手页的说明文字（8.5px）。
+   实测：assistant-footer-note、assistant-check-item 内的 p。 */
+.settings-content .assistant-footer-note,
+.settings-content .assistant-check-item p,
+.settings-content .assistant-check-item > div > p {
+  font-size: var(--fs-hint, 11.2px);
+  line-height: 1.45;
+}
+/* ③ 助手侧栏分组标题（9px）与列表项说明（8.5px）。 */
+.settings-content .assistant-rail-group,
+.settings-content .assistant-rail-copy small,
+.settings-content .assistant-rail-copy span {
+  font-size: var(--fs-hint, 11.2px);
+}
+html .settings-content article.panel.change-summary,
+html .settings-content article.panel.bill-summary,
+html .settings-content article.panel.owner-metric,
+html .settings-content article.panel.security-metric,
+html .settings-content article.panel.system-overview-metric,
+html .settings-content article.panel.notice-summary-card,
+html .settings-content article.panel.audit-summary-card,
+html .settings-content article.panel.report-studio-entry-card {
+  padding: 14px var(--space-16);
+  border: 1px solid var(--card-border);
+  border-left: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
+}
+/* 首末项不再清零左右内边距（原规则为「指标条」设计，
+   现在每格都是独立卡片，左右都要对称）。 */
+html .settings-content article.panel.change-summary:first-child,
+html .settings-content article.panel.bill-summary:first-child,
+html .settings-content article.panel.owner-metric:first-child,
+html .settings-content article.panel.security-metric:first-child,
+html .settings-content article.panel.system-overview-metric:first-child,
+html .settings-content article.panel.notice-summary-card:first-child,
+html .settings-content article.panel.audit-summary-card:first-child,
+html .settings-content article.panel.report-studio-entry-card:first-child {
+  padding-left: var(--space-16);
+  border-left: 1px solid var(--card-border);
+}
+html .settings-content article.panel.change-summary:last-child,
+html .settings-content article.panel.bill-summary:last-child,
+html .settings-content article.panel.owner-metric:last-child,
+html .settings-content article.panel.security-metric:last-child,
+html .settings-content article.panel.system-overview-metric:last-child,
+html .settings-content article.panel.notice-summary-card:last-child,
+html .settings-content article.panel.audit-summary-card:last-child,
+html .settings-content article.panel.report-studio-entry-card:last-child {
+  padding-right: var(--space-16);
+}
 /* 设置窗内的指标卡是「独立卡片」（有 border + bg + radius），
    需要四边内边距；上面那条把上下 padding 清零，
    文字会贴到卡片上下边框。
