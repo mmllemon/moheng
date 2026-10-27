@@ -670,6 +670,39 @@ html article.panel.report-studio-entry-card {
   background: transparent;
   box-shadow: none;
 }
+/* 设置窗内的指标卡是「独立卡片」（有 border + bg + radius），
+   需要四边内边距；上面那条把上下 padding 清零，
+   文字会贴到卡片上下边框（实测 /system 的 2×2 指标卡 padding: 0px 16px）。
+   特异度：这条 html .settings-content ... 是 0,3,2，能压过上面 0,3,3？
+   不能，所以用 :where() 不提升特异度不行——改为直接把选择器写到更高。 */
+html .settings-content article.panel.system-overview-metric,
+html .settings-content .system-overview-metrics > article.system-overview-metric {
+  padding: 14px var(--space-16);
+  border: 1px solid var(--card-border);
+  border-left: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
+  /* 指标项在设置窗里是「独立卡片」，内部应该是横向布局：
+       图标 | 文字块 | 箭头
+     而 stat-metrics.css:207 的通用规则是 flex column（指标条时代的写法），
+     会把图标、文字、箭头纵向堆叠，卡片被撑到 131px（实测图标 top 15、
+     文字 top 49、箭头 top 1，三者完全错开）。 */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: var(--space-10);
+  row-gap: var(--space-2);
+}
+/* 图标占第一列，文字块第二列，箭头第三列 */
+html .settings-content article.panel.system-overview-metric > .system-overview-icon { grid-column: 1; grid-row: 1; }
+html .settings-content article.panel.system-overview-metric > div { grid-column: 2; grid-row: 1; min-width: 0; }
+html .settings-content article.panel.system-overview-metric > a { grid-column: 3; grid-row: 1; align-self: start; }
+/* 说明文字 9px 低于 hana 最小 token（--fs-hint 11.2px），改成 hint。 */
+html .settings-content article.panel.system-overview-metric > div > span {
+  font-size: var(--fs-hint);
+  line-height: 1.45;
+}
 html article.panel.change-summary:first-child,
 html article.panel.bill-summary:first-child,
 html article.panel.owner-metric:first-child,

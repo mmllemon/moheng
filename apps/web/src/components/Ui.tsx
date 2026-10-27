@@ -49,6 +49,19 @@ export function PageHeader({ title: _title, subtitle, context, actions }: { titl
   </div>;
 }
 
+/* 设置窗内专用：把页面级操作按钮渲染到 .settings-titlebar 的操作区。
+   不能直接在 PageHeader 里查 DOM，因为 Layout 的 DOM 与页面组件
+   是同一次提交的，PageHeader 首次渲染时 slot 还不存在。
+   所以用一个 effect 等挂载后再取。 */
+export function SettingsTitlebarActions({ children }: { children: ReactNode }) {
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setSlot(document.getElementById('settings-titlebar-actions'));
+  }, []);
+  if (!slot) return null;
+  return createPortal(<>{children}</>, slot);
+}
+
 export function Button({ children, onClick, variant = 'primary', type = 'button', disabled = false, size = 'md', className = '' }: {
   children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; type?: 'button' | 'submit'; disabled?: boolean; size?: 'sm' | 'md'; className?: string;
 }) {

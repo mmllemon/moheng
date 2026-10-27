@@ -4104,12 +4104,26 @@ html[data-paper-texture] .settings-window::after { display: block; }
   flex: 1;
   min-width: 0;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  /* 真正滚动的是它的子元素 .route-transition（clientH 786 / scrollH 2521）。
+     这里原本也是 overflow-y: auto + overscroll-behavior: contain，
+     但自身内容不溢出（子元素被限制在 786px），于是：
+       · 滚轮在内容区时，浏览器先尝试滚它，它不动
+       · overscroll-behavior: contain 又阻止事件传给外层
+     结果就是「滚轮没反应」。改成 hidden，让滚动完全交给子元素。 */
+  overflow: hidden;
+  /* hana 的 ._content_8c2c2 是 padding: var(--space-16)，
+     我这边是 0，导致卡片、分区标题全部贴到窗口边缘。 */
   padding: 0;
   width: auto;
   max-width: none;
   margin: 0;
+}
+/* 内容区的内边距放在滚动容器上：
+   放 .settings-content 上会被 .route-transition 的滚动条吃掉右侧空间，
+   且滚动时 padding-bottom 不参与滚动。
+   对齐 hana ._content_8c2c2 padding 16px + ._bodyInset_f8a33 的 8px 16px。 */
+.settings-content > .route-transition {
+  padding: var(--space-16) var(--space-16) var(--space-24);
 }
 
 /* 滚动条轨道底部留白（对齐 hana --chat-scrollbar-bottom-inset） */
@@ -4168,14 +4182,43 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-content .page-actions { padding-top: 2px; }
 .settings-content .panel { border-radius: var(--radius-md); }
 .settings-content .v6-block, .settings-content .system-overview-metric { border-radius: var(--radius-md); }
-.settings-content .system-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 18px; }
+.settings-content .system-overview-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* gap 8px → 16px，对齐 hana ._metrics_2473c 的 --space-16。
+     8px 时四张卡的间距比卡片内部 padding（16px）还小，
+     视觉上卡与卡粘在一起。 */
+  gap: var(--space-16);
+  margin-bottom: 18px;
+}
 .settings-content .system-overview-metric { padding: 14px 16px; gap: 8px; }
 .settings-content .system-overview-icon { width: 26px; height: 26px; flex-basis: 26px; }
 .settings-content .system-overview-metric strong { font-size: 20px; }
 .settings-content .system-overview-two-column { grid-template-columns: 1fr; }
 .settings-content .sys-split { display: flex; flex-direction: column; gap: 14px; }
 .settings-content .sys-split-side, .settings-content .sys-split-main { width: 100%; min-width: 0; }
+/* sticky 在 flex column 里会让侧栏脱离流，
+   滚动时压到下面的兄弟元素上。实测 /system/accounts：
+     sys-split-side 的 panel 底边 524
+     sys-split-main 的 panel 卡头顶部 502   ← 重叠 22px
+   设置窗内部已经有 .route-transition 负责滚动，
+   不需要页内再吸顶，这里改回 static。 */
+.settings-content .sys-split-side { position: static; top: auto; }
 .settings-content .sys-split-side .panel { max-width: none; }
+/* 设置窗内的 panel-detached：卡头收进卡内
+   ---------------------------------------------------------
+   卡头在卡外（::before 从 --panel-head-h 处开始）是 hana 的 tile 设计，
+   但那是给「一张卡占满内容区」的形态用的。设置窗里内容区背景是 --bg（纸色），
+   卡片是 --bg-card（更白），卡头区域露出 --bg，
+   在多卡密集排列时表现为一条横贯整行的浅色带（实测 y331-386、y540-580，
+   色值 246,243,236，与卡片白 252,250,245 差 6）。
+   这里让卡片从卡头顶部开始画，卡头落进卡内。 */
+.settings-content .panel.panel-detached::before {
+  top: 0;
+}
+/* 卡头在卡内后，需要自己的内边距（原来卡头在卡外，靠 margin 控制）。 */
+.settings-content .panel.panel-detached > .panel-heading {
+  padding: 14px var(--space-16) 0;
+}
 .settings-content .table-scroll { width: 100%; }
 .settings-content .data-table { min-width: 640px; }
 .settings-content .app-footer { display: none; }
@@ -5025,6 +5068,8 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   box-shadow: none !important;
   overflow: visible !important;
 }
+/* 相邻两个 panel-detached 的间距由容器（flex gap / 块 margin）负责，
+   这里不再单独加大 margin-top。 */
 .panel.panel-detached::before {
   content: "";
   position: absolute;
@@ -5041,10 +5086,23 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   pointer-events: none;
 }
 .panel.panel-detached > * { position: relative; z-index: 1; }
-/* 卡片内容区内缩：除了卡头、分隔线、通栅表格与通栅行，其余子元素统一 16px 左右边距。   之前是逐个子元素写 margin（如 table-scroll 用 18px），
-   新增内容很容易漏，就出现「内容贴着卡片边框」。
-   注意：通栅行（自己带 padding 且 width:100%）不能再加 margin，否则右边溢出。 */
-.panel.panel-detached > :not(.panel-heading):not(.notice-list-heading):not(.audit-filter-heading):not(.table-scroll):not(.table-toolbar):not([class*="-row"]):not([class*="-list"]):not([class*="-item"]) {
+/* 卡片内容区内缩：除了卡头、分隔线、通栅表格与通栅行，其余子元素统一 16px 左右边距。
+   注意：通栅行（自己带 padding 且 width:100%）不能再加 margin，否则右边溢出。
+
+   2026-10-26 修正：原规则把 [class*="-list"] 也排除了，
+   但 -list 是「容器」不是「行」，它本身不带 padding，
+   被排除后 system-overview-event-list / system-dictionary-card-list /
+   account-rows 全部贴到卡片边框（设置窗里 9 个页签中招）。
+   同理 [class*="-row"] 会连带匹配 -rows（复数，是容器），
+   所以 -rows 也单独排除。
+   排除项：-row（单行，自带 padding）与 -item（单项）。 */
+.panel.panel-detached > :not(.panel-heading):not(.notice-list-heading):not(.audit-filter-heading):not(.table-scroll):not(.table-toolbar):not([class*="-row"]):not([class*="-item"]) {
+  margin-left: var(--space-16);
+  margin-right: var(--space-16);
+}
+/* -rows 是容器（装多行），不是行本身，需要和 -list 一样内缩。
+   [class*="-row"] 会误伤 -rows，这里把被误伤的补回来。 */
+.panel.panel-detached > [class*="-rows"] {
   margin-left: var(--space-16);
   margin-right: var(--space-16);
 }
@@ -6626,7 +6684,16 @@ select { corner-shape: squircle !important; }
 /* 设置内容里的 section：外置标题 + 独立卡片 */
 .settings-section { min-width: 0; margin: 0 0 var(--space-24); }
 .settings-section:last-child { margin-bottom: 0; }
-.settings-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 0 2px 9px; }
+.settings-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  /* 原来 margin: 0 2px 9px，标题几乎贴到卡片左缘。
+     对齐卡片自身的左缘（卡片无外 margin），给 0 即可；
+     下边距 9px → 12px，与 hana ._sectionHeader margin-bottom 12px 一致。 */
+  margin: 0 0 var(--space-12);
+}
 .settings-section-head h2 { margin: 0; color: var(--text); font-family: var(--font-ui); font-size: 16px; font-weight: 600; line-height: 1.4; letter-spacing: 0.04em; }
 .settings-section-head p { max-width: 680px; margin: 3px 0 0; color: var(--text-muted); font-size: 10.5px; line-height: 1.55; }
 .settings-section-head .settings-section-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
@@ -6637,6 +6704,14 @@ select { corner-shape: squircle !important; }
   border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
   corner-shape: squircle;
   background: var(--bg-card);
+  /* 卡片自己有 border + bg，但内部无内边距，
+     内容（如 system-authorization-scope-grid）直接贴到边框上。
+     对齐 hana 的 ._profileCard_7d1fe padding: var(--space-16)。 */
+  padding: var(--space-16);
+}
+/* 表格类内容不需要卡片内边距（自己负责通栅与滚动）。 */
+.settings-section-card:has(> .table-scroll) {
+  padding: 0;
 }
 .settings-section-card > .table-scroll { overflow-x: auto; }
 .settings-section-card .data-table { width: calc(100% - 32px); margin: 0 16px; }
