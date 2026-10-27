@@ -32,8 +32,25 @@
    统一给 head 与 item 相同的左右内边距。 */
 .assistant-rail-head { padding-inline: 6px; }
 .assistant-rail-group { padding: 6px 6px 4px; color: var(--text-muted); font-size: var(--fs-hint); }
-.assistant-rail-item { display: flex; align-items: center; gap: 7px; width: 100%; padding: 8px 6px; border: 0; border-radius: 8px; background: transparent; color: var(--text); text-align: left; }
-.assistant-rail-item.is-active { background: var(--bg-card); box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 9%, transparent); }
+/* 侧栏项：对齐 hana ._item_c6fac
+   min-height 32px / padding 6px 8px / radius-input×1.84（11.05px）/ font-size --fs-ui */
+.assistant-rail-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: var(--space-6) var(--space-8);
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-input) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text-muted);
+  text-align: left;
+  transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
+}
+.assistant-rail-item.is-active { background: var(--bg-card); color: var(--text); box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 9%, transparent); }
 .assistant-rail-mark { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; border-radius: 6px; background: color-mix(in srgb, var(--accent) 7%, transparent); color: var(--accent); }
 .assistant-rail-copy { min-width: 0; display: flex; flex-direction: column; gap: 1px; flex: 1 1 auto; }
 /* 供应商项的计数（「0」）贴右边，但 copy 没占满时中间会空一大块。
@@ -42,22 +59,81 @@
 /* 侧栏项：标题必须比说明大（原 10.5 / 8.5，但说明被外面的
    .assistant-rail-copy small 规则提到 11.2px 后变成「说明比标题大」，层级倒置）。
    统一成：标题 --fs-caption（12.48px）、说明 --fs-hint（11.2px）。 */
-.assistant-rail-copy strong { overflow: hidden; font-size: var(--fs-caption, 12.48px); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+/* 侧栏项文字：hana 用 --fs-ui（13.12px）统一，不分主副。
+   原来标题 12.48 / 说明 11.2，两行文字在小侧栏里挤。 */
+.assistant-rail-copy strong { overflow: hidden; font-size: var(--fs-ui); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 .assistant-rail-copy small { overflow: hidden; color: var(--text-muted); font-size: var(--fs-hint); text-overflow: ellipsis; white-space: nowrap; }
 .assistant-rail-count { margin-left: auto; color: var(--text-muted); font-family: var(--font-ui); font-size: var(--fs-hint); font-variant-numeric: tabular-nums; }
 .assistant-rail-note { display: none; }
 
-.assistant-provider-detail { min-width: 0; padding: 16px 20px 18px; }
-.assistant-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+/* AI 助手页：对齐 hana SettingsModalShell-m7fTbt85.css
+   ---------------------------------------------------------
+   hana 真值：
+     ._detail_b01be     display:flex; flex-direction:column;
+                        gap:var(--space-16); padding:var(--space-16)
+     ._detailInner_5399a  max-width:620px
+     ._detailHeader_7ef48 display:flex; align-items:center;
+                          justify-content:space-between;
+                          gap:var(--space-12); margin-bottom:var(--space-16)
+     ._detailTitle_53888  font-size:var(--fs-title); font-weight:600
+     ._detailActions_75247 flex:none; gap:var(--space-12)
+     ._form_550bd        flex column; gap:var(--space-8)
+     ._formActions_8076c flex; justify-content:flex-end; gap:var(--space-8)
+     ._item_c6fac        min-height:32px; padding:var(--space-6) var(--space-8);
+                         border-radius:calc(var(--radius-input) * 1.84);
+                         font-size:var(--fs-ui)
+     ._modelSection_0b994 flex column; gap:var(--space-12); margin-top:var(--space-16)
+
+   moheng 原来是一堆散落的 margin/padding，没有 gap，
+   且字号普遍 10 / 10.5 / 8.5px，低于 token。 */
+.assistant-provider-detail {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+  padding: var(--space-16);
+  /* 详情内容限宽：hana 的 ._detailInner_5399a 是 max-width:620px。
+     直接加在 detail 上，不需要额外包一层（子元素都是纵向排列）。 */
+  max-width: 620px;
+}
+
+.assistant-provider-rail {
+  min-width: 0;
+  padding: var(--space-8);
+  border-right: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  background: color-mix(in srgb, var(--overlay-subtle) 54%, transparent);
+}
+/* 详情头部：间距由父级 gap: 16px 控制，不再叠 margin-bottom。 */
+.assistant-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin: 0;
+}
 /* 详情标题：20px 是页面级标题的尺寸，在 430px 宽的侧栏详情里过大。
    改成 --fs-title（16px），与 hana 的 _sectionTitle 同层。 */
 .assistant-detail-head h2 { margin: 4px 0 2px; color: var(--text); font-size: var(--fs-title, 16px); font-weight: 600; line-height: 1.25; }
 .assistant-detail-head p { margin: 0; overflow: hidden; color: var(--text-muted); font-size: var(--fs-hint); text-overflow: ellipsis; white-space: nowrap; }
 .assistant-detail-state { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 
-.assistant-provider-form { padding: 12px 0 4px; }
-.assistant-field { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; gap: 14px; min-height: 40px; }
-.assistant-field > span { color: var(--text-muted); font-size: 10px; }
+/* 字段：对齐 hana ._form_550bd 的垂直堆叠
+   ---------------------------------------------------------
+   hana 的表单是「标签在上、输入框在下」，每个字段占满整宽：
+     ._form_550bd { display:flex; flex-direction:column; gap:var(--space-8) }
+   我原来做成两列 grid（132px 标签列 + 输入框），
+   在 430px 宽的详情区里输入框只剩 244px，
+   API Key 那行还要塞「显示」「检测」两个按钮，只能挤到 122px。
+   改成垂直堆叠后输入框能拿到完整宽度。 */
+.assistant-provider-form { display: flex; flex-direction: column; gap: var(--space-12); padding: 0; }
+.assistant-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.assistant-field > span { color: var(--text-muted); font-size: var(--fs-ui, 13.12px); line-height: 1.4; }
 .assistant-field > input,
 .assistant-field .select-control { width: 100%; }
 .assistant-key-line { display: flex; align-items: center; gap: 4px; height: 32px; padding-left: 9px; border: 1px solid var(--border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); background: var(--bg-card); color: var(--text-muted); }
@@ -73,13 +149,13 @@
 .assistant-model-line > input { flex: 1; min-width: 0; }
 .assistant-model-line .button-ghost { height: 32px; padding: 0 7px; border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); color: var(--text-muted); font-size: 10px; }
 
-.assistant-model-tabs { display: flex; align-items: center; gap: 14px; margin-top: 8px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
-.assistant-model-tabs button { padding: 8px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--text-muted); font-size: 10px; }
+.assistant-model-tabs { display: flex; align-items: center; gap: var(--space-16); border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }.assistant-model-tabs button { padding: var(--space-8) 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--text-muted); font-size: var(--fs-ui); }
 .assistant-model-tabs button.is-active { border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
 .assistant-model-tabs button:disabled { opacity: 0.45; }
-.assistant-added-label { margin: 8px 0 2px; color: var(--text-muted); font-size: var(--fs-hint); }
+/* 详情区已经用 gap: 16px 控制间距，子元素不要再叠 margin（会双重叠加）。 */
+.assistant-added-label { color: var(--text-muted); font-size: var(--fs-hint); margin: 0; }
 .assistant-added-label b { margin-left: 4px; color: var(--text); font-weight: 500; }
-.assistant-model-add { position: relative; display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
+.assistant-model-add { position: relative; display: flex; align-items: center; gap: var(--space-8); padding-top: var(--space-12); border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
 .assistant-model-add-trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 1; min-width: 0; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); background: var(--bg-card); color: var(--text-muted); font-size: 11px; text-align: left; }
 .assistant-model-add-trigger[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
 .assistant-model-add-trigger svg { flex: 0 0 auto; }
@@ -93,8 +169,8 @@
 .assistant-model-option.is-added { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 .assistant-model-option-check { width: 16px; height: 16px; flex: 0 0 16px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 4px; color: var(--accent); }
 .assistant-model-option.is-added .assistant-model-option-check { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.assistant-model-option strong { min-width: 0; overflow: hidden; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.assistant-model-option small { margin-left: auto; color: var(--text-muted); font-size: 8.5px; white-space: nowrap; }
+.assistant-model-option strong { min-width: 0; overflow: hidden; font-size: var(--fs-ui); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-model-option small { margin-left: auto; color: var(--text-muted); font-size: var(--fs-hint); white-space: nowrap; }
 .assistant-model-picker-empty { padding: 14px 8px; color: var(--text-muted); font-size: 10px; line-height: 1.6; }
 .assistant-model-custom { display: flex; align-items: center; gap: 6px; margin: 0 8px 8px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); }
 .assistant-model-custom input { flex: 1; min-width: 0; height: 30px; padding: 0 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); color: var(--text); font-size: 10px; }
@@ -104,12 +180,20 @@
 .assistant-model-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px; border: 0; border-radius: 7px; background: transparent; color: var(--text-light); text-align: left; }
 .assistant-model-item:hover { background: var(--overlay-subtle); }
 .assistant-model-item.is-selected { background: color-mix(in srgb, var(--accent) 7%, transparent); color: var(--accent); }
-.assistant-model-item span { min-width: 0; overflow: hidden; font-size: 10.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.assistant-model-item small { margin-left: auto; color: var(--text-muted); font-size: 8.5px; white-space: nowrap; }
+.assistant-model-item span { min-width: 0; overflow: hidden; font-size: var(--fs-ui); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.assistant-model-item small { margin-left: auto; color: var(--text-muted); font-size: var(--fs-hint); white-space: nowrap; }
 .assistant-model-item svg { flex: 0 0 auto; }
 .assistant-model-empty { padding: 12px 8px; color: var(--text-muted); font-size: 9.5px; line-height: 1.6; }
 
-.assistant-detail-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.assistant-detail-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin: 0;
+  padding-top: var(--space-12);
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
 /* 底部两个按钮（测试连接 / 保存配置）在未配置时都是 disabled：
    opacity 0.45 + 3% 底 + muted 字，在纸色上几乎看不见。
    关键操作按钮即使禁用也应该能看清「这里有个按钮」。 */
@@ -128,10 +212,10 @@
 .assistant-check-panel { margin-top: 16px; padding: 16px; border: 1px solid var(--card-border); border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1)); background: var(--bg-card); }
 .assistant-check-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
 .assistant-check-summary::-webkit-details-marker { display: none; }
-.assistant-check-summary > span:first-child { color: var(--text); font-size: 12px; font-weight: 600; }
+.assistant-check-summary > span:first-child { color: var(--text); font-size: var(--fs-ui); font-weight: 600; }
 .assistant-check-panel[open] .assistant-check-summary { padding-bottom: 10px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
 .assistant-check-head { margin: 10px 0; }
-.assistant-check-head p { margin: 0; color: var(--text-muted); font-size: 9.5px; line-height: 1.55; }
+.assistant-check-head p { margin: 0; color: var(--text-muted); font-size: var(--fs-caption); line-height: 1.55; }
 .assistant-check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
 /* <details> 折叠时，浏览器默认只显示 summary。
    但上面那条 display: grid 会覆盖浏览器默认的隐藏行为，
@@ -142,8 +226,8 @@
   display: none;
 }
 .assistant-check-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-width: 0; padding: 9px 0; border-top: 1px solid color-mix(in srgb, var(--border) 52%, transparent); }
-.assistant-check-item strong { display: block; color: var(--text); font-size: 10px; font-weight: 500; }
-.assistant-check-item p { margin: 2px 0 0; color: var(--text-muted); font-size: 8.5px; line-height: 1.5; }
+.assistant-check-item strong { display: block; color: var(--text); font-size: var(--fs-ui); font-weight: 500; }
+.assistant-check-item p { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.5; }
 .assistant-check-item .assistant-check-pill { flex: 0 0 auto; height: 22px; }
 .assistant-check-panel > .inline-notice { margin-top: 10px; }
 

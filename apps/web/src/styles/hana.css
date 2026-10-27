@@ -2864,15 +2864,15 @@ html .filter-bar input[type="search"] {
      ① 按钮字号提到 --fs-hint（11.2px）
      ② 去掉按钮之间的多余间隙，把空间让给输入框
      ③ 输入框设最小宽度，避免被按钮挤到底 */
+/* API Key 行：hana 是「输入框 + 显示 + 检测」同一行，输入框占满剩余宽度。
+   上一轮加的 flex-wrap 会让 placeholder 掉到下一行（截图里已发生），
+   现在去掉，靠 flex: 1 让输入框自动占用剩余空间。 */
 .settings-content .assistant-key-line {
   gap: var(--space-6);
   padding-left: var(--space-10);
-  /* 一行四个元素（图标 7 + 输入框 + 显示 50 + 检测 34）在 244px 里，
-     输入框只剩 122px。给它设最小宽度，挤不下时让容器换行。 */
-  flex-wrap: wrap;
 }
 .settings-content .assistant-key-line input {
-  min-width: 120px;
+  min-width: 0;
   flex: 1 1 auto;
 }
 .settings-content .assistant-inline-button {
