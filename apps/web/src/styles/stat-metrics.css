@@ -693,6 +693,38 @@ html article.panel.report-studio-entry-card {
 }
 /* 设置窗内的指标卡是「独立卡片」（有 border + bg + radius），
    需要四边内边距；上面那条把上下 padding 清零，
+   文字会贴到卡片上下边框。
+   实测 /audit-logs 的 audit-summary-grid：三格 221×68，padding 0px 16px，
+   标签 13.12px 从 y=0 开始、说明 11px 贴到底边。 */
+html .settings-content article.panel.audit-summary-card {
+  padding: 14px var(--space-16);
+  border: 1px solid var(--card-border);
+  border-left: 1px solid var(--card-border);
+  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--bg-card);
+}
+/* 三格是并列卡片，各自有边框 + 圆角，不需要内部竖线分隔。 */
+html .settings-content .audit-summary-grid {
+  gap: var(--space-12);
+  /* 外层不再画卡片：三格各自是独立卡片（border + bg + radius）。
+     否则就是「卡片套卡片」，两层边框重叠。 */
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+html .settings-content .audit-summary-grid::before {
+  display: none;
+}
+html .settings-content .audit-summary-grid article.panel.audit-summary-card:first-child,
+html .settings-content .audit-summary-grid article.panel.audit-summary-card:last-child {
+  padding-left: var(--space-16);
+  padding-right: var(--space-16);
+  border-left: 1px solid var(--card-border);
+}
+/* 设置窗内的指标卡是「独立卡片」（有 border + bg + radius），
+   需要四边内边距；上面那条把上下 padding 清零，
    文字会贴到卡片上下边框（实测 /system 的 2×2 指标卡 padding: 0px 16px）。
    特异度：这条 html .settings-content ... 是 0,3,2，能压过上面 0,3,3？
    不能，所以用 :where() 不提升特异度不行——改为直接把选择器写到更高。 */
