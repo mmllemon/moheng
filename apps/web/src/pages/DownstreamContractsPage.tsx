@@ -181,19 +181,19 @@ export default function DownstreamContractsPage() {
                     <td className="align-right numeric">{formatMoney(row.linkedActualCost)}{row.linkedActualCostOverContractValue > 0 && <small className="field-error">成本高于合同额 {formatMoney(row.linkedActualCostOverContractValue)}</small>}</td>
                     <td>
                       <div className="row-actions">
-                        <button className="table-action" onClick={() => setExpanded(expanded === row.id ? null : row.id)}><ClipboardCheck size={13} />{expanded === row.id ? '收起台账' : '查看台账'}</button>
+                        <Button size="xs" variant="ghost" onClick={() => setExpanded(expanded === row.id ? null : row.id)}><ClipboardCheck size={13} />{expanded === row.id ? '收起台账' : '查看台账'}</Button>
                         {row.status === 'DRAFT' && <>
-                          <button className="table-action" onClick={() => setEditing(row)}><FileSignature size={13} />编辑草稿</button>
-                          <button className="table-action" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确认将“${row.contractNo}”激活为执行中合同？激活后原始合同金额将锁定。`, () => changeStatus.mutate({ contract: row, status: 'ACTIVE' }), { title: '激活分供合同', confirmText: '激活' }); }}><BadgeCheck size={13} />激活合同</button>
+                          <Button size="xs" variant="ghost" onClick={() => setEditing(row)}><FileSignature size={13} />编辑草稿</Button>
+                          <Button size="xs" variant="ghost" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确认将“${row.contractNo}”激活为执行中合同？激活后原始合同金额将锁定。`, () => changeStatus.mutate({ contract: row, status: 'ACTIVE' }), { title: '激活分供合同', confirmText: '激活' }); }}><BadgeCheck size={13} />激活合同</Button>
                         </>}
                         {['ACTIVE', 'COMPLETED'].includes(row.status) && <>
-                          <button className="table-action" onClick={() => setAmending(row)}><FilePlus2 size={13} />补充协议</button>
-                          <button className="table-action" onClick={() => setPlanning(row)}><Plus size={13} />付款计划</button>
+                          <Button size="xs" variant="ghost" onClick={() => setAmending(row)}><FilePlus2 size={13} />补充协议</Button>
+                          <Button size="xs" variant="ghost" onClick={() => setPlanning(row)}><Plus size={13} />付款计划</Button>
                         </>}
-                        {['ACTIVE', 'COMPLETED', 'SETTLED'].includes(row.status) && <button className="table-action" onClick={() => setPaying(row)}><Banknote size={13} />登记支付/退款</button>}
-                        {row.status === 'ACTIVE' && <button className="table-action" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确认将“${row.contractNo}”标记为完工待结算？`, () => changeStatus.mutate({ contract: row, status: 'COMPLETED' }), { title: '标记完工待结算', confirmText: '标记完工' }); }}><BadgeCheck size={13} />标记完工</button>}
+                        {['ACTIVE', 'COMPLETED', 'SETTLED'].includes(row.status) && <Button size="xs" variant="ghost" onClick={() => setPaying(row)}><Banknote size={13} />登记支付/退款</Button>}
+                        {row.status === 'ACTIVE' && <Button size="xs" variant="ghost" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确认将“${row.contractNo}”标记为完工待结算？`, () => changeStatus.mutate({ contract: row, status: 'COMPLETED' }), { title: '标记完工待结算', confirmText: '标记完工' }); }}><BadgeCheck size={13} />标记完工</Button>}
                         {row.status === 'COMPLETED' && <Link className="table-action" to="/cost/downstream?view=finance"><BadgeCheck size={13} />办理最终结算</Link>}
-                        {['DRAFT', 'ACTIVE', 'COMPLETED'].includes(row.status) && <button className="table-action table-action-danger" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确定终止“${row.contractNo}”？请先核对未付款、履约及补偿责任。`, () => changeStatus.mutate({ contract: row, status: 'TERMINATED' }), { title: '终止分供合同', tone: 'danger', confirmText: '终止合同' }); }}><X size={13} />终止</button>}
+                        {['DRAFT', 'ACTIVE', 'COMPLETED'].includes(row.status) && <Button size="xs" variant="danger" disabled={changeStatus.isPending} onClick={() => { confirmThen(`确定终止“${row.contractNo}”？请先核对未付款、履约及补偿责任。`, () => changeStatus.mutate({ contract: row, status: 'TERMINATED' }), { title: '终止分供合同', tone: 'danger', confirmText: '终止合同' }); }}><X size={13} />终止</Button>}
                       </div>
                     </td>
                   </tr>

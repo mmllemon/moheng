@@ -84,7 +84,7 @@ export function PageHeader({ title: _title, subtitle, context, actions }: { titl
    6 处 .panel-header-action 需要 data-* 标记，
    不补透传就无法迁移。 */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'quiet';
-export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon' | 'compact';
+export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'compact';
 
 export function Button({
   children, onClick, variant = 'primary', type = 'button', disabled = false,
@@ -99,12 +99,14 @@ export function Button({
   className?: string;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'type' | 'disabled' | 'className' | 'children'>) {
   /* 尺寸类映射：
-       sm      -> button-small（现有 CSS 已有该档）
-       md      -> 默认（不加类）
-       lg      -> button-lg
-       icon    -> button-icon（方形、padding 0、居中图标）
+       xs      -> button-xs（表格行内、24px）
+       sm      -> button-small（26px）
+       md      -> 默认（32px）
+       lg      -> button-lg（32px 高、宽 padding）
+       icon    -> button-icon（方形 28×28）
        compact -> button-compact（32px 高、紧凑 padding） */
-  const sizeCls = size === 'sm' ? 'button-small'
+  const sizeCls = size === 'xs' ? 'button-xs'
+    : size === 'sm' ? 'button-small'
     : size === 'lg' ? 'button-lg'
     : size === 'icon' ? 'button-icon'
     : size === 'compact' ? 'button-compact'

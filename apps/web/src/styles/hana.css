@@ -9595,3 +9595,44 @@ html .button-quiet.button-compact {
   font-weight: 500;
   line-height: 1;
 }
+
+/* xs 档：表格行内操作（对应原 .table-action 的 24px）
+   ---------------------------------------------------------
+   .table-action 的真值：height 24px / padding 0 6px / fs-hint
+                       透明底 / radius-action / color text-muted
+   迁移到 <Button size="xs" variant="ghost"> 后需完全等价。 */
+html .button.button-xs,
+html .button-primary.button-xs,
+html .button-secondary.button-xs,
+html .button-ghost.button-xs,
+html .button-danger.button-xs,
+html .button-quiet.button-xs {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 var(--space-6);
+  gap: var(--space-4);
+  font-size: var(--fs-hint);
+  font-weight: 500;
+  line-height: 1.2;
+}
+html .button.button-xs > svg,
+html .button-ghost.button-xs > svg,
+html .button-danger.button-xs > svg {
+  flex: 0 0 auto;
+  opacity: 0.72;
+}
+
+/* danger 变体的行内形态：透明底 + danger 字，hover 8% 底
+   （对应原 .table-action-danger） */
+html .button-danger.button-xs,
+html .button-danger.button-small {
+  background: transparent;
+  border-color: transparent;
+  color: var(--danger);
+}
+html .button-danger.button-xs:not(:disabled):hover,
+html .button-danger.button-small:not(:disabled):hover {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-color: transparent;
+  color: var(--danger);
+}
