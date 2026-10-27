@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T14:47:16.357Z",
+  "generatedAt": "2026-10-27T15:42:32.920Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -201,7 +201,7 @@
           "route": "/system/authorization",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 42,
+          "rounded": 43,
           "cornerShapeAccepted": true,
           "tabs": 2,
           "visiblePanels": 0,
@@ -221,7 +221,7 @@
           "route": "/system/governance",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 58,
+          "rounded": 59,
           "cornerShapeAccepted": true,
           "tabs": 4,
           "visiblePanels": 2,
@@ -231,7 +231,7 @@
           "route": "/system/dictionaries",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 46,
+          "rounded": 47,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 4,
@@ -241,7 +241,7 @@
           "route": "/system/parameters",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 48,
+          "rounded": 49,
           "cornerShapeAccepted": true,
           "tabs": 3,
           "visiblePanels": 1,

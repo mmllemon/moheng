@@ -9255,3 +9255,252 @@ body.resizing .app-sidebar,
 body.resizing .sidebar-drawer {
   transition: none !important;
 }
+
+/* ===========================================================================
+   按钮统一收口（对齐 hana 的 ._btn_06f79 体系）
+   ===========================================================================
+   问题：全仓 135 个按钮类名，其中大量是「单个组件的私有样式」，
+   每个都自带完整外观（尺寸/边框/圆角/底色/字号），所以看起来乱。
+
+   实测同一个按钮在三个文件里有三套定义，例如 .assistant-icon-action：
+     legacy.css  30×30  border 1px  radius-xs  surface 底
+     hana.css    28×28  radius-action
+   谁生效取决于 !important 和加载顺序。
+
+   hana 的做法是单一基类 + 变体：
+     ._btn_06f79        inline-flex / gap .4em / border 1px transparent
+                        radius: control-radius × scale / squircle
+                        min-height: control-height
+     ._variant-primary  accent 底 + on-accent 字
+     ._variant-secondary overlay-subtle 底 + text 字
+     ._variant-ghost    transparent + text-muted 字
+     ._variant-danger   danger-bg 底 + on-accent 字
+     ._size-sm/md/lg/compact  只改 padding + font-size
+
+   moheng 已有等价的 .button + .button-primary/secondary/ghost/danger/quiet，
+   这套定义是对的（结构、颜色、尺寸档位都与 hana 对齐）。
+   缺的是让专用类名「加入」这套体系，而不是各自定义。
+
+   下面把这些专用类名纳入 .button 的基础几何（尺寸/圆角/对齐/过渡），
+   但保留它们各自需要的颜色语义（下面按变体分组）。
+   =========================================================================== */
+
+/* ① 图标型按钮：方形、无文字、居中图标
+      对应 hana 的 ._button_7e46c（card-top-btn 尺寸）与 ._iconButton */
+html .assistant-icon-action,
+html .assistant-cancel-button,
+html .workspace-icon-btn,
+html .shell-toggle-btn,
+html .sidebar-section-icon-button,
+html .settings-close,
+html .settings-titlebar-close,
+html .icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+
+/* ② 文本型按钮：走 .button 的几何，但允许外部类只声明颜色 */
+html .assistant-primary-button,
+html .assistant-send-button,
+html .ldg-text-action,
+html .table-action,
+html .tree-action,
+html .member-role-action,
+html .panel-header-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  box-shadow: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+
+/* ③ 尺寸统一：图标按钮按 --control-height-compact，文本按钮按 --control-height */
+html .assistant-icon-action,
+html .assistant-cancel-button,
+html .workspace-icon-btn,
+html .shell-toggle-btn,
+html .sidebar-section-icon-button,
+html .settings-close,
+html .settings-titlebar-close,
+html .icon-button {
+  width: var(--control-height-compact);
+  height: var(--control-height-compact);
+  min-width: var(--control-height-compact);
+  min-height: var(--control-height-compact);
+}
+
+html .assistant-primary-button,
+html .assistant-send-button {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 var(--space-12);
+  font-size: var(--btn-font);
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* 表格行内与密集工具条：24px 档（hana 的 ._size-compact 是 space-32，
+   但表格行内按钮要更小，这里保留 24px 并统一 padding） */
+html .table-action,
+html .tree-action,
+html .ldg-text-action,
+html .panel-header-action,
+html .member-role-action {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 var(--space-8);
+  font-size: var(--btn-font-sm);
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* ④ 颜色语义：按 hana 的变体真值分配 */
+
+/* primary：accent 底 + on-accent 字（对应 ._variant-primary） */
+html .assistant-primary-button {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent, #fff);
+}
+html .assistant-primary-button:not(:disabled):hover {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+  border-color: color-mix(in srgb, var(--accent) 88%, #000);
+}
+
+/* 发送按钮用 ink 底（v6 的语义是「主操作」，与 accent 区分） */
+html .assistant-send-button {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg-card);
+}
+html .assistant-send-button:not(:disabled):hover {
+  background: color-mix(in srgb, var(--text) 86%, #000);
+  border-color: color-mix(in srgb, var(--text) 86%, #000);
+}
+html .assistant-send-button:disabled {
+  opacity: var(--state-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* danger：透明底 + danger 描边（对应 ._variant-danger 的轻量形态） */
+html .assistant-cancel-button {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+}
+html .assistant-cancel-button:not(:disabled):hover {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+/* ghost：透明底 + text-light 字（对应 ._variant-ghost） */
+html .ldg-text-action,
+html .panel-header-action,
+html .table-action,
+html .tree-action {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-light);
+}
+html .ldg-text-action:hover,
+html .panel-header-action:hover,
+html .table-action:hover,
+html .tree-action:hover {
+  background: var(--overlay-subtle);
+  color: var(--text);
+}
+
+/* 图标按钮 hover：overlay-light（对应 hana ._button_7e46c:hover） */
+html .assistant-icon-action:hover,
+html .workspace-icon-btn:hover,
+html .shell-toggle-btn:hover,
+html .sidebar-section-icon-button:hover,
+html .settings-close:hover,
+html .settings-titlebar-close:hover,
+html .icon-button:hover {
+  background: var(--overlay-light);
+  color: var(--text);
+}
+
+/* ⑤ 焦点环统一（对应 hana ._btn_06f79:focus-visible） */
+html .assistant-icon-action:focus-visible,
+html .assistant-cancel-button:focus-visible,
+html .assistant-primary-button:focus-visible,
+html .assistant-send-button:focus-visible,
+html .workspace-icon-btn:focus-visible,
+html .shell-toggle-btn:focus-visible,
+html .sidebar-section-icon-button:focus-visible,
+html .settings-close:focus-visible,
+html .settings-titlebar-close:focus-visible,
+html .icon-button:focus-visible,
+html .table-action:focus-visible,
+html .tree-action:focus-visible,
+html .ldg-text-action:focus-visible,
+html .panel-header-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ⑥ 禁用态统一（对应 hana ._btn_06f79:disabled） */
+html .assistant-icon-action:disabled,
+html .assistant-cancel-button:disabled,
+html .assistant-primary-button:disabled,
+html .workspace-icon-btn:disabled,
+html .shell-toggle-btn:disabled,
+html .sidebar-section-icon-button:disabled,
+html .settings-close:disabled,
+html .settings-titlebar-close:disabled,
+html .icon-button:disabled,
+html .table-action:disabled,
+html .tree-action:disabled,
+html .ldg-text-action:disabled,
+html .panel-header-action:disabled {
+  opacity: var(--state-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* ⑦ 残留非标高度收口
+   ---------------------------------------------------------
+   扫描设置窗 24 个按钮类名，仍有 4 个非标高度：
+     button-quiet            30px（应 28px，与 system-ops-run-actions 一致）
+     select-control-trigger  30px（应 32px，被 .titlebar-project 的 !important 压住）
+   其余（ui-switch 20px / sidebar-project 48px / report-option 54px）
+   是元素形态而非按钮，保留。 */
+html .button-quiet {
+  height: var(--control-height-compact);
+  min-height: var(--control-height-compact);
+  padding: 0 var(--space-8);
+  font-size: var(--btn-font);
+  font-weight: 500;
+}
+
+/* select-control-trigger 在 20 多处被各自覆盖，值从 26 到 38px 不等。
+   统一到 --control-height（32px），只保留两个真正需要紧凑的上下文：
+     表格工具条（.toolbar-select / .table-filter-select）用 compact 28px
+     顶栏项目下拉（.titlebar-project）用 compact 28px */
+html .select-control-trigger,
+html .date-picker-trigger {
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+}
+html .toolbar-select .select-control-trigger,
+html .table-filter-select .select-control-trigger,
+html .titlebar-project .select-control-trigger,
+html .ov-sort .select-control-trigger {
+  height: var(--control-height-compact) !important;
+  min-height: var(--control-height-compact) !important;
+}
