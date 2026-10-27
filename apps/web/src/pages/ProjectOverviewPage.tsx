@@ -84,7 +84,7 @@ export default function ProjectOverviewPage() {
         <div className="project-cockpit-copy">
           <div className="project-cockpit-meta"><span>{project.code}</span><StatusBadge status={project.status} /></div>
           <h2>{project.name}</h2>
-          <p>{project.ownerPartyId ? <Link to={`/parties/${project.ownerPartyId}`}>{project.ownerName} ↗</Link> : project.ownerName} · 项目经理：{project.managerName || '未填写'}</p>
+          <p><span className="project-cockpit-owner">{project.ownerPartyId ? <Link to={`/parties/${project.ownerPartyId}`}>{project.ownerName} ↗</Link> : project.ownerName}</span><span className="project-cockpit-manager">项目经理：{project.managerName || '未填写'}</span></p>
           <div className="project-cockpit-dates"><span>开工 {formatDate(project.startDate)}</span><span>计划竣工 {formatDate(project.plannedEndDate)}</span><span>{project.address || '地址未填写'}</span></div>
         </div>
       </div>

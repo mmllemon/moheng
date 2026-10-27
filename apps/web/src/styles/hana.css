@@ -5020,6 +5020,16 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   margin-bottom: 0;
   padding-bottom: var(--space-16);
 }
+/* v6-block 自己就是卡片（border + radius + bg + overflow: hidden），
+   但自身无 padding。它的最后一个子元素若是 table-scroll / v6-log-list，
+   也会贴到卡片下边框。同理补上底部留白。 */
+.v6-block > .table-scroll:last-child,
+.v6-block > .v6-log-list:last-child,
+.v6-block > .v6-table-scroll:last-child {
+  padding-bottom: var(--space-16);
+}
+/* security-panel 是 panel-detached，已被上面的通用规则覆盖；
+   这里只处理它内部 load-more-row 之后的额外空隙。 */
 /* 通栅元素自己已有内边距，不重复叠加（否则双重留白）。 */
 .panel.panel-detached > .table-toolbar:last-child,
 .panel.panel-detached > .panel-heading:last-child {
@@ -7172,19 +7182,93 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
     border-top: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent);
   }
   .project-cockpit-health::before { display: none !important; }
-  .project-cockpit-copy h2 { font-size: 18px !important; }
+  /* 三列 grid 布局下，.is-plain 的 margin-top: auto 会把第三列推到格子底部，
+     导致它的标签比前两列低一截，同时 padding-top + border-top
+     在第三列顶上画出一条多余横线（前两列没有）。
+     @media (max-width: 1120px) 块里已有这条覆盖，但 @container 块漏了，
+     而容器宽度 664px 时生效的是 @container。 */
+  .project-cockpit-health-row.is-plain {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: 0 !important;
+  }
+  /* 项目名字号统一用 --fs-title（16px），不再在窄容器下单独放大。
+     原来这里写 18px !important，18px 下 23 字的项目名需要 3 行，
+     被 line-clamp: 2 截断成省略号。 */
+  .project-cockpit-copy h2 { font-size: var(--fs-title) !important; }
 }
 .project-cockpit-mark { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1)); corner-shape: round; background: var(--overlay-subtle); color: var(--accent); font-family: var(--font-serif); font-size: 20px; }
 .project-cockpit-copy { min-width: 0; }
 .project-cockpit-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--text-muted); font-size: 10px; }
-.project-cockpit-copy h2 { margin: 5px 0 4px; color: var(--text); font-family: var(--font-heading); font-size: 22px; font-weight: 600; line-height: 1.3; letter-spacing: .02em; }
-.project-cockpit-copy p { margin: 0; color: var(--text-muted); font-size: 10.5px; line-height: 1.5; }
-.project-cockpit-dates { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 10px; color: var(--text-muted); font-size: 9.5px; }
-.project-cockpit-dates span + span::before { content: '·'; margin-right: 10px; color: color-mix(in srgb, var(--text-muted) 45%, transparent); }
+.project-cockpit-copy h2 {
+  margin: 5px 0 4px;
+  color: var(--text);
+  font-family: var(--font-heading);
+  /* 字号从 22px 降到 --fs-title（16px）。
+     实测：23 字的项目名在 236px 宽里，18px 需 3 行（被 line-clamp: 2
+     截断出省略号），16px 刚好 2 行。同时 16px 是 hana 的 --fs-title token，
+     与指标数值同层，语义上也更对（它是卡片内的主标题，不是页面标题）。 */
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: .02em;
+  /* 断行策略：实测对比了 6 种组合（见下方记录）。
+     keep-all 会把「礼嘉A09-2-1地块」拆成「礼嘉A09-2-」/「1地块」，
+     编号被截断，不可接受。
+     normal + break-word 得到「礼嘉A09-2-1地块产业大厦建设」/「项目配电工程」，
+     编号完整，且断在「建设/项目」这个语义边界。
+     （line-break: strict 不影响结果，不保留。） */
+  word-break: normal;
+  overflow-wrap: break-word;
+  /* 项目名是 hero 的核心信息，不截断。实测 16px 下 23 字需要 3 行，
+     原来 line-clamp: 2 会截成省略号。 */
+  display: block;
+}
+.project-cockpit-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+  /* 两段信息（单位 / 项目经理）在 236px 宽里几乎必然折行。
+     原来用「 · 」做行内分隔，折行时「·」会孤悬在行末，很难看。
+     改成 flex 行布局 + gap：段与段之间留白，折行时整段换行。 */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.6em;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.project-cockpit-owner,
+.project-cockpit-manager { white-space: nowrap; }
+.project-cockpit-manager { color: var(--text-muted); }
+.project-cockpit-dates {
+  /* 三个时间段（开工 / 计划竣工 / 地址）在 236px 宽里放不下一行。
+     原来用 flex-wrap + span+span::before 画分隔点，折行后行首元素
+     也会带一个前导「·」，屏幕上就是「· 地址未填写」。
+     改用 2 列 grid，并让第三项（地址）跨满整行，
+     避免第二行右侧空出一大块。 */
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 10px;
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+.project-cockpit-dates span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.project-cockpit-dates span:nth-child(3) { grid-column: 1 / -1; }
 .project-cockpit-finance { position: relative; min-width: 0; padding: 20px; }
 .project-cockpit-finance::before,
 .project-cockpit-health::before { content: ''; position: absolute; top: var(--card-inset); bottom: var(--card-inset); left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); pointer-events: none; }
-.project-cockpit-kicker { color: var(--text-muted); font-size: 10px; }
+.project-cockpit-kicker {
+  /* hana 的 overline 排版惯例：小号 + 字间距 + 大写。
+     这个标签之前被 v6.css 的 [class*="kicker"]{display:none} 压成 0×0。 */
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  letter-spacing: 0.06em;
+}
 .project-cockpit-amount { display: block; margin: 4px 0 2px; color: var(--text); font-family: var(--font-num, var(--num)); font-size: 27px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; }
 .project-cockpit-finance > small { color: var(--text-muted); font-size: 9.5px; }
 .project-cockpit-money { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
@@ -7201,6 +7285,13 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .project-cockpit-meter { height: 4px; margin-top: 6px; overflow: hidden; border-radius: 99px; background: var(--overlay-medium); }
 .project-cockpit-meter span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
 .project-cockpit-health-row.is-plain { margin-top: auto; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--card-border) 58%, transparent); }
+/* 「成本余量」是金额结果，不是比率，没有百分比条可画。
+   但前两列在 strong 与 small 之间有一条 4px meter + 6px margin，
+   第三列没有就导致 small 上提 10px，三列说明文字基线不齐。
+   直接给 small 补上等高的上边距（不画可见元素）。 */
+.project-cockpit-health-row.is-plain > small {
+  margin-top: calc(4px + 6px + 4px);
+}
 .project-cockpit-main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(270px, .8fr); gap: var(--space-24); margin-bottom: var(--space-24); align-items: start; }
 .project-cockpit-chart .panel-heading { margin-bottom: 6px; }
 .project-cockpit-chart-empty { min-height: 260px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 5px; color: var(--text-muted); text-align: center; border: 1px dashed color-mix(in srgb, var(--card-border) 88%, transparent); border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1)); background: var(--overlay-subtle); }

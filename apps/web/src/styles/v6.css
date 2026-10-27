@@ -354,8 +354,16 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .system-management-card{padding:12px 0;border-bottom:1px solid var(--line)}
 .system-workspace-tab{font-family:var(--font)}
 
-/* ---------- V6 page-family normalization ---------- */
-[class*="kicker"],[class*="overline"]{display:none}
+/* ---------- V6 page-family normalization ----------
+   2026-10-26 移除：`[class*="kicker"],[class*="overline"]{display:none}`
+   这条规则一刀切隐藏了所有名字含 kicker/overline 的元素，
+   但全仓 5 处 kicker/overline 都是应该显示的语义标签：
+     project-cockpit-kicker   「当前有效合同额」（被压成 0×0，内容完全不可见）
+     owner-contract-kicker    「OWNER MAIN CONTRACT」
+     assistant-section-kicker 「WORKSPACE」/「TRACE & EVIDENCE」
+     assistant-empty-kicker   「MOHENG · COST INTELLIGENCE」
+     login-overline           「施工项目经营管理平台」
+   它们是 hana 的 overline 排版惯例（小号大写字母间距标签），不是废弃元素。 */
 [class*="card"]{background-color:transparent;border-color:var(--line);box-shadow:none}
 [class*="summary"],[class*="hero"],[class*="metric"]{background-image:none}
 
