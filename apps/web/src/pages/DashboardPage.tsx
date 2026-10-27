@@ -92,7 +92,7 @@ export default function DashboardPage() {
           <div className="v6-hero-sub">{constructionCount} 个在施 · {settlementCount} 个待结算 · {pausedCount} 个暂停；合同额按有效台账汇总</div>
           <div className="v6-ruler">
             <div className="v6-ruler-head"><span>成本执行</span><b>{costRatio == null ? '—' : `${(costRatio * 100).toFixed(1)}%`}</b><span className="v6-ruler-note">已发生 {formatMoney(totals.actualCost, 0)} / 目标 {formatMoney(totals.targetCost, 0)}</span></div>
-            <div className="v6-ruler-track"><span className="v6-ruler-fill" style={{ width: `${pct}%` }} /><i className="v6-ruler-pin" style={{ left: `${pct}%` }} />{[0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100].map((tick) => <i key={tick} className={tick % 25 === 0 ? 'is-major' : ''} style={{ left: `${tick}%` }} />)}</div>
+            <div className="v6-ruler-track"><span className="v6-ruler-fill" style={{ width: `${pct}%` }} /><i className="v6-ruler-pin" style={{ '--pin-pct': `${pct}%` } as React.CSSProperties} />{[0, 12.5, 25, 37.5, 50, 62.5, 75, 87.5, 100].map((tick) => <i key={tick} className={tick % 25 === 0 ? 'is-major' : ''} style={{ left: `${tick}%` }} />)}</div>
             <div className="v6-ruler-labels"><span>0</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
           </div>
         </div>

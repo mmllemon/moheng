@@ -2900,13 +2900,53 @@ html .filter-bar input[type="search"] {
 .v6-ruler-head { display: flex; align-items: baseline; gap: 7px; color: var(--text-muted); font-size: 10.5px; }
 .v6-ruler-head b { color: var(--accent); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .v6-ruler-note { margin-left: auto; color: var(--text-muted); font-size: 9.5px; }
-.v6-ruler-track { position: relative; height: 5px; margin: 11px 0 7px; border-radius: 99px; background: var(--overlay-medium); }
+.v6-ruler-track {
+  position: relative;
+  height: 5px;
+  margin: 11px 0 7px;
+  border-radius: 99px;
+  background: var(--overlay-medium);
+  /* pin 是 9×9 圆点，用 left: 100% 定位时中心在右端，
+     半径 4.5px 会溢出容器（实测 right: +5px），压到右侧「100%」刻度上。
+     给轨道左右各留 5px 内边距不可行（会改变轨道视觉宽度），
+     改用 overflow: visible + 让 pin 用 translateX(-50%) 后仍出界的部分
+     由 .v6-ruler 的外层留白吸收。 */
+}
+/* pin 在 0% / 100% 两个端点时会溢出轨道（圆点半径 4.5px）。
+   用 clamp 把位置限制在 [4.5px, 100% - 4.5px] 内，
+   保证圆点整个落在轨道里，不压到右侧「100%」刻度。
+   --pin-pct 由 JSX 写入。 */
+.v6-ruler-track > .v6-ruler-pin {
+  left: clamp(4.5px, var(--pin-pct, 0%), calc(100% - 4.5px));
+}
 .v6-ruler-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--accent); }
-.v6-ruler-pin { position: absolute; top: 50%; width: 9px; height: 9px; margin-left: -4px; border: 2px solid var(--bg-card); border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1px var(--accent); transform: translateY(-50%); }
+.v6-ruler-pin {
+  position: absolute;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  /* 原来用 margin-left: -4px 居中，但圆点宽 9px 需要 -4.5px；
+     且 left: 100% 时 -4px 不足以把圆点拉回容器内（实测 right: -5px）。
+     改用 translateX(-50%) 按自身宽度精确居中，left: 0 / 100% 都不会溢出。 */
+  margin-left: 0;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--bg-card);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
 .v6-ruler-track > i:not(.v6-ruler-pin) { position: absolute; top: -3px; width: 1px; height: 11px; background: color-mix(in srgb, var(--text-muted) 22%, transparent); }
 .v6-ruler-track > i.is-major { background: color-mix(in srgb, var(--text-muted) 40%, transparent); }
 .v6-ruler-labels { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 8.5px; font-variant-numeric: tabular-nums; }
-.v6-stats { display: flex; flex-direction: column; border-left: 1px solid var(--border); background: color-mix(in srgb, var(--sidebar-bg) 32%, transparent); }
+.v6-stats {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  /* 同 .v6-hero .v6-stats：去掉 --sidebar-bg 混色底。
+     它是偏暖的米色，叠在卡片白上会让区块「偏粉」，
+     与卡片主体分成两段。指标区的区分用分隔线就够。 */
+  background: transparent;
+}
 .v6-stats > div { flex: 1; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent); }
 .v6-stats > div:last-child { border-bottom: 0; }
 .v6-stats dt { color: var(--text-muted); font-size: 10.5px; }
@@ -2932,7 +2972,13 @@ html .filter-bar input[type="search"] {
   flex-wrap: wrap;
   border-left: 0;
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--sidebar-bg) 28%, transparent);
+  /* 2026-10-26 移除底色：原为 color-mix(--sidebar-bg 28%, transparent)。
+     --sidebar-bg 是偏暖的米色（244,240,234），叠在卡片白（252,250,245）
+     上得到 250,247,242，把卡片的冷调压掉、红色分量相对凸显，
+     整块看起来「偏粉」，与卡片上半的白底明显分成两段。
+     hana 的 ._metrics_2473c 是 grid + gap，容器无 background；
+     指标区的区分靠分隔线，不靠色块。这里同样只用分隔线。 */
+  background: transparent;
 }
 .v6-hero .v6-stats > div {
   flex: 1 1 25%;

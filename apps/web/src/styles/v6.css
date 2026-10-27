@@ -978,8 +978,17 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .v6-ruler-note{margin-left:auto;letter-spacing:0;font-size:10.5px}
 .v6-ruler-track{position:relative;height:12px;margin-top:8px;border-bottom:1px solid var(--line-2)}
 .v6-ruler-fill{position:absolute;left:0;bottom:0;height:4px;background:var(--accent)}
+/* 2026-10-26 退役：v6 版 v6-ruler-pin（1×12 竖线 + ::after 菱形）。
+   与 hana.css 的 9×9 圆点定义冲突：
+     v6      bottom: 0; height: 12px; ::after 旋转 45deg 菱形（var(--seal) 红色）
+     hana    top: 50%; translateY(-50%); 9×9 圆点 + accent 描边
+   两者叠加后，那个红菱形就是截图里右端突兀的红圈；
+   且 bottom:0 与 top:50% 同时生效，pin 位置错乱、溢出容器右缘 5px。
+*/
+/*
 .v6-ruler-pin{position:absolute;bottom:0;width:1px;height:12px;background:var(--seal)}
 .v6-ruler-pin::after{content:"";position:absolute;top:-2px;left:-2.5px;width:6px;height:6px;background:var(--seal);transform:rotate(45deg)}
+*/
 .v6-ruler-labels{display:flex;justify-content:space-between;margin-top:4px;font:9.5px/1 var(--mono);color:var(--meta)}
 .v6-stats{display:grid;grid-template-columns:1fr 1fr;border-left:1px solid var(--line-2);margin:0}
 .v6-stats>div{padding:13px 18px;border-bottom:1px solid var(--line);min-width:0}
