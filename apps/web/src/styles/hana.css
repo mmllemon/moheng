@@ -9504,3 +9504,94 @@ html .ov-sort .select-control-trigger {
   height: var(--control-height-compact) !important;
   min-height: var(--control-height-compact) !important;
 }
+
+/* ===========================================================================
+   Button 尺寸档扩展（对齐 hana 的 ._size-* 与 ._button_7e46c）
+   ===========================================================================
+   hana 真值：
+     ._size-sm      padding: .3rem .8rem   font-size: --fs-caption
+     ._size-md      padding: .4rem 1rem    font-size: --fs-ui
+     ._size-lg      padding: .55rem 1.4rem font-size: --fs-body
+     ._size-compact height: --space-32     padding: 0 --space-6
+                    gap: --space-4        font-size: --fs-caption
+     ._button_7e46c width/height: 24+2*2 = 28px   padding: 0
+                    border: 3px solid transparent
+                    background-clip: padding-box
+                    color: --text-muted
+
+   moheng 原有 button-small（26/28px 两套覆盖），这里补齐三档：
+     .button-lg       页头主操作、对话框提交
+     .button-icon     方形图标按钮（34 处 .icon-button 的迁移目标）
+     .button-compact  紧凑文本按钮（32px 高，表格工具条）
+   =========================================================================== */
+
+/* lg：对应 hana ._size-lg，但保持 32px 高（与 --control-height 一致），
+   只放大左右 padding 与字号。 */
+html .button.button-lg,
+html .button-primary.button-lg,
+html .button-secondary.button-lg,
+html .button-ghost.button-lg,
+html .button-danger.button-lg,
+html .button-quiet.button-lg {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 var(--space-16);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+/* icon：对应 hana ._button_7e46c。
+   28×28 = card-top-btn-size 24 + pad 2×2。
+   border 3px 透明 + background-clip: padding-box，
+   让 hover 背景只填内部 22×22（不撑到 28×28 的边）。
+   这是 hana 顶栏按钮的关键细节，不能省。 */
+html .button.button-icon,
+html .button-primary.button-icon,
+html .button-secondary.button-icon,
+html .button-ghost.button-icon,
+html .button-danger.button-icon,
+html .button-quiet.button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height-compact);
+  height: var(--control-height-compact);
+  min-width: var(--control-height-compact);
+  min-height: var(--control-height-compact);
+  padding: 0;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background-color: transparent;
+  color: var(--text-muted);
+  gap: 0;
+}
+html .button.button-icon > svg,
+html .button-primary.button-icon > svg,
+html .button-ghost.button-icon > svg {
+  flex: 0 0 auto;
+  display: block;
+}
+html .button-ghost.button-icon:not(:disabled):hover,
+html .button-quiet.button-icon:not(:disabled):hover {
+  background-color: var(--overlay-light);
+  color: var(--text);
+}
+
+/* compact：对应 hana ._size-compact（32px 高、紧凑 padding、小字号）。
+   用于表格工具条、密集操作区。 */
+html .button.button-compact,
+html .button-primary.button-compact,
+html .button-secondary.button-compact,
+html .button-ghost.button-compact,
+html .button-danger.button-compact,
+html .button-quiet.button-compact {
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 var(--space-8);
+  gap: var(--space-4);
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  line-height: 1;
+}

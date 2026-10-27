@@ -74,8 +74,8 @@ export default function UserManagementPage() {
 
   return <div className="page-wrap">
     <PageHeader eyebrow="SYSTEM / ACCOUNT ADMIN" title="系统账号管理" subtitle="维护公司级登录身份。账号创建与项目成员授权分开办理；停用账号会立即撤销其现有登录会话。" />
-    {notice && <div className="success-notice"><ShieldCheck size={16} />{notice}<button className="icon-button" aria-label="关闭提示" onClick={() => setNotice('')}><X size={14} /></button></div>}
-    {error && <div className="form-alert">{error}<button className="icon-button" aria-label="关闭错误提示" onClick={() => setError('')}><X size={14} /></button></div>}
+    {notice && <div className="success-notice"><ShieldCheck size={16} />{notice}<Button variant="ghost" size="icon" aria-label="关闭提示" onClick={() => setNotice('')}><X size={14} /></Button></div>}
+    {error && <div className="form-alert">{error}<Button variant="ghost" size="icon" aria-label="关闭错误提示" onClick={() => setError('')}><X size={14} /></Button></div>}
 
     <div className="sys-split">
       <div className="sys-split-side">

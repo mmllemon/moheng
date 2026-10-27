@@ -59,3 +59,8 @@ docs/gates/*
 moheng-cleanup-stale-branches.ps1
 
 .css-backup-*/
+
+.tsx-backup-*/
+*.unusedbak
+*.delbak
+*.btnbak

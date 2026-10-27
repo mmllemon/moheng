@@ -49,7 +49,7 @@ function CostDialog({ projectId, items, contracts, onClose }: { projectId: strin
     } catch (err) { setError(err instanceof ApiError ? err.message : '保存失败'); }
   });
   const typeName = typeLabels[type];
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><div className="dialog"><div className="dialog-header"><div><span className="eyebrow">ACTUAL COST / ENTRY</span><h2>新增成本记录</h2><p>录入已发生的成本；录入结果用于经营分析汇总。</p></div><button className="icon-button" onClick={onClose}><X size={18} /></button></div>
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><div className="dialog"><div className="dialog-header"><div><span className="eyebrow">ACTUAL COST / ENTRY</span><h2>新增成本记录</h2><p>录入已发生的成本；录入结果用于经营分析汇总。</p></div><Button variant="ghost" size="icon" onClick={onClose}><X size={18} /></Button></div>
     <form onSubmit={submit} noValidate><div className="form-grid two-cols">
       <div className="field"><label>费用类型 <b>*</b></label><SelectField {...register('type')}>{costTypes.filter((item) => item.value !== 'ALL').map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</SelectField></div>
       <div className="field"><label>发生日期 <b>*</b></label><DatePicker {...register('date')} />{errors.date && <small className="field-error">{errors.date.message}</small>}</div>
@@ -89,7 +89,7 @@ function CostContractLinkDialog({ projectId, entry, contracts, onClose, onNotice
     } catch (cause) { setError(cause instanceof ApiError ? cause.message : '合同关联更新失败'); }
     finally { setSaving(false); }
   };
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="dialog"><div className="dialog-header"><div><span className="eyebrow">COST / CONTRACT LINK</span><h2>关联合同</h2><p>{entry.description} · {formatMoney(entry.amount, 0)}</p></div><button className="icon-button" onClick={onClose} aria-label="关闭"><X size={18} /></button></div>
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="dialog"><div className="dialog-header"><div><span className="eyebrow">COST / CONTRACT LINK</span><h2>关联合同</h2><p>{entry.description} · {formatMoney(entry.amount, 0)}</p></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭"><X size={18} /></Button></div>
     <div className="inline-notice"><Link2 size={16} /><span>此操作只维护成本来源与分供合同的关联，不修改成本金额、不生成付款记录，也不改变成本累计值。请依据合同、验收、发票或结算凭据人工核对后关联。</span></div>
     <div className="field"><label>下游合同</label><SelectField value={contractId} onChange={(event) => setContractId(event.target.value)}><option value="">不关联合同</option>{contracts.filter((item) => item.status !== 'DRAFT').map((item) => <option key={item.id} value={item.id}>{item.contractNo} · {item.name}（{item.counterpartyName}）{item.status === 'TERMINATED' ? ' · 已终止（历史关联）' : ''}</option>)}</SelectField></div>
     {error && <div className="form-alert">{error}</div>}<div className="dialog-footer"><Button variant="secondary" onClick={onClose}>取消</Button><Button disabled={saving} onClick={() => void submit()}><Link2 size={15} />{saving ? '保存中…' : '保存关联'}</Button></div>

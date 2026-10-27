@@ -79,7 +79,7 @@ function ProjectDialog({ project, onClose }: { project?: Project; onClose: () =>
 
   return <div className={`modal-backdrop project-modal-backdrop ${closing ? 'is-closing' : ''}`} role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) closeWithMotion(); }}>
     <div className={`dialog project-dialog ${closing ? 'is-closing' : ''}`} role="dialog" aria-modal="true" aria-labelledby="project-dialog-title">
-      <div className="dialog-header"><div><span className="eyebrow">PROJECT PROFILE</span><h2 id="project-dialog-title">{project ? '编辑项目信息' : '新建项目'}</h2><p>{project ? '项目信息变更将记录在审计流水中。' : '先建立项目档案，再录入合同和目标成本。'}</p></div><button className="icon-button" onClick={closeWithMotion} aria-label="关闭"><X size={18} /></button></div>
+      <div className="dialog-header"><div><span className="eyebrow">PROJECT PROFILE</span><h2 id="project-dialog-title">{project ? '编辑项目信息' : '新建项目'}</h2><p>{project ? '项目信息变更将记录在审计流水中。' : '先建立项目档案，再录入合同和目标成本。'}</p></div><Button variant="ghost" size="icon" onClick={closeWithMotion} aria-label="关闭"><X size={18} /></Button></div>
       <form onSubmit={submit} noValidate>
         <div className="form-section-title"><span>01</span>基本信息</div>
         <div className="form-grid two-cols">

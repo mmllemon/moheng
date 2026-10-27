@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { Button } from './Ui';
 
 export type ConfirmOptions = {
   title: string;
@@ -99,7 +100,7 @@ export default function ConfirmHost() {
             <span className={`confirm-dialog-icon ${danger ? 'is-danger' : ''}`}><AlertTriangle size={17} /></span>
             <div><h2 id="confirm-dialog-title">{options.title}</h2>{options.description && <p id="confirm-dialog-description">{options.description}</p>}</div>
           </div>
-          <button type="button" className="icon-button" aria-label="关闭确认对话框" onClick={() => finish(false)}><X size={18} /></button>
+          <Button variant="ghost" size="icon" aria-label="关闭确认对话框" onClick={() => finish(false)}><X size={18} /></Button>
         </header>
         <form onSubmit={submit}>
           {prompt && <div className="confirm-dialog-body">

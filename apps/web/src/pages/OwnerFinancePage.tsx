@@ -24,7 +24,7 @@ const receivableTypeLabels: Record<string, string> = { PROGRESS_BILL: '进度款
 const receiptTypeLabels: Record<string, string> = { RECEIPT: '业主到账', REFUND: '退款/退回', ADVANCE: '业主预付款到账', ADVANCE_REFUND: '退回预付款' };
 
 function Modal({ title, subtitle, onClose, children, wide = false }: { title: string; subtitle: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><div className={`dialog ${wide ? 'dialog-wide' : ''}`} role="dialog" aria-modal="true"><div className="dialog-header"><div><span className="eyebrow">OWNER SETTLEMENT / RECEIVABLES</span><h2>{title}</h2><p>{subtitle}</p></div><button className="icon-button" onClick={onClose} aria-label="关闭"><X size={17} /></button></div>{children}</div></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><div className={`dialog ${wide ? 'dialog-wide' : ''}`} role="dialog" aria-modal="true"><div className="dialog-header"><div><span className="eyebrow">OWNER SETTLEMENT / RECEIVABLES</span><h2>{title}</h2><p>{subtitle}</p></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭"><X size={17} /></Button></div>{children}</div></div>;
 }
 function ErrorMessage({ value }: { value: string }) { return value ? <div className="form-alert">{value}</div> : null; }
 
@@ -141,8 +141,8 @@ export default function OwnerFinancePage() {
       </>}
     />
 
-    {notice && <div className="success-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><button className="icon-button" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></button></div>}
-    {error && <div className="form-alert" role="alert"><AlertCircle size={15} /><span>{error}</span><button className="icon-button" onClick={() => setError('')} aria-label="关闭错误"><X size={14} /></button></div>}
+    {notice && <div className="success-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><Button variant="ghost" size="icon" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></Button></div>}
+    {error && <div className="form-alert" role="alert"><AlertCircle size={15} /><span>{error}</span><Button variant="ghost" size="icon" onClick={() => setError('')} aria-label="关闭错误"><X size={14} /></Button></div>}
 
     <section className="owner-finance-metrics" aria-label="业主侧资金指标">
       <article className="owner-metric owner-metric-primary"><span>累计核定与过账金额</span><strong>{formatMoney(summary?.approvedAndPostedGrossAmount ?? 0)}</strong><small>进度款核定与已过账结算增量</small></article>

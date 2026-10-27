@@ -62,10 +62,60 @@ export function PageHeader({ title: _title, subtitle, context, actions }: { titl
   </div>;
 }
 
-export function Button({ children, onClick, variant = 'primary', type = 'button', disabled = false, size = 'md', className = '' }: {
-  children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'ghost' | 'danger'; type?: 'button' | 'submit'; disabled?: boolean; size?: 'sm' | 'md'; className?: string;
-}) {
-  return <button className={`button button-${variant} ${size === 'sm' ? 'button-small' : ''} ${className}`.trim()} type={type} onClick={onClick} disabled={disabled}>{children}</button>;
+/* Button：对齐 hana 的 ._btn_06f79 体系
+   ---------------------------------------------------------
+   hana 的结构：
+     基类 ._btn_06f79        inline-flex / gap .4em / border 1px transparent
+                             radius: control-radius × scale / squircle
+                             min-height: control-height
+     变体 ._variant-primary  accent 底 + on-accent 字
+          ._variant-secondary overlay-subtle 底 + text 字
+          ._variant-ghost    transparent + text-muted 字
+          ._variant-danger   danger-bg 底 + on-accent 字
+     尺寸 ._size-sm/md/lg/compact  只改 padding + font-size
+     图标 ._button_7e46c     28×28 / padding 0 / border 3px transparent
+                             background-clip padding-box
+
+   moheng 原来只有 variant + size(sm|md)，缺三样：
+     · 图标按钮形态（size="icon"）
+     · lg 档（页头主操作、对话框提交）
+     · 属性透传（aria-label / title / data-* / ref）
+   而实际页面里 34 处 .icon-button 都带 aria-label，
+   6 处 .panel-header-action 需要 data-* 标记，
+   不补透传就无法迁移。 */
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'quiet';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon' | 'compact';
+
+export function Button({
+  children, onClick, variant = 'primary', type = 'button', disabled = false,
+  size = 'md', className = '', ...rest
+}: {
+  children: ReactNode;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  variant?: ButtonVariant;
+  type?: 'button' | 'submit';
+  disabled?: boolean;
+  size?: ButtonSize;
+  className?: string;
+} & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'type' | 'disabled' | 'className' | 'children'>) {
+  /* 尺寸类映射：
+       sm      -> button-small（现有 CSS 已有该档）
+       md      -> 默认（不加类）
+       lg      -> button-lg
+       icon    -> button-icon（方形、padding 0、居中图标）
+       compact -> button-compact（32px 高、紧凑 padding） */
+  const sizeCls = size === 'sm' ? 'button-small'
+    : size === 'lg' ? 'button-lg'
+    : size === 'icon' ? 'button-icon'
+    : size === 'compact' ? 'button-compact'
+    : '';
+  return <button
+    {...rest}
+    className={`button button-${variant} ${sizeCls} ${className}`.trim().replace(/\s+/g, ' ')}
+    type={type}
+    onClick={onClick}
+    disabled={disabled}
+  >{children}</button>;
 }
 
 export function MetricCard({ label, value, detail, trend, icon: Icon, tone = 'blue' }: {

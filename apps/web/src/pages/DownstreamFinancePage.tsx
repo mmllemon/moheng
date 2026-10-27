@@ -39,7 +39,7 @@ function invalidateFinance(queryClient: ReturnType<typeof useQueryClient>, proje
 function amountInputValue(value: string) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 
 function DialogShell({ title, subtitle, children, onClose }: { title: string; subtitle: string; children: ReactNode; onClose: () => void }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="dialog dialog-wide"><div className="dialog-header"><div><span className="eyebrow">SETTLEMENT & PAYABLE</span><h2>{title}</h2><p>{subtitle}</p></div><button className="icon-button" onClick={onClose} aria-label="关闭"><X size={18} /></button></div>{children}</div></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="dialog dialog-wide"><div className="dialog-header"><div><span className="eyebrow">SETTLEMENT & PAYABLE</span><h2>{title}</h2><p>{subtitle}</p></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭"><X size={18} /></Button></div>{children}</div></div>;
 }
 
 function SettlementDialog({ projectId, contract, existing, onClose, onNotice }: { projectId: string; contract: FinanceContract; existing?: Settlement; onClose: () => void; onNotice: (message: string) => void }) {
@@ -169,7 +169,7 @@ export default function DownstreamFinancePage() {
   if (financeQuery.isError) return <ErrorBlock message={financeQuery.error instanceof Error ? financeQuery.error.message : '结算与应付账款数据暂时不可用'} retry={() => void financeQuery.refetch()} />;
   return <div className="page-wrap downstream-finance-page">
     <PageHeader title="结算与应付账款" eyebrow="分供合同财务台账" subtitle="管理双方结算确认、应付过账、付款核销、预付款扣回、质保金和发票核对。清单明细不是必要条件。" actions={<><Button variant="secondary" onClick={() => navigate('/cost/downstream')}>合同台账与付款<ArrowRight size={14} /></Button><ProjectLedgerReportButton reportKey="downstream-payables" label="预览 / 导出应付台账" /></>} />
-    {notice && <div className="inline-notice"><CheckCircle2 size={16} /><span>{notice}</span><button className="icon-button" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></button></div>}
+    {notice && <div className="inline-notice"><CheckCircle2 size={16} /><span>{notice}</span><Button variant="ghost" size="icon" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></Button></div>}
     <div className="change-summary-grid downstream-summary-grid finance-summary-grid">
       <div className="change-summary"><span className="change-summary-label">累计过账结算净增减</span><strong>{formatMoney(summary?.postedSettlementAmount ?? 0, 0)}</strong><small>阶段结算增量与最终结算差额累计</small></div>
       <div className="change-summary change-summary-emphasis"><span className="change-summary-label">未付应付余额</span><strong>{formatMoney(summary?.openPayableAmount ?? 0, 0)}</strong><small>基于应付过账额减去有效付款核销</small></div>

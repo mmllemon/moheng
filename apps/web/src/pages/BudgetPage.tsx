@@ -110,7 +110,7 @@ function BudgetDialog({ projectId, items, editing, parentId, onClose }: { projec
   });
   const total = totalPrice !== '' && totalPrice !== undefined ? Number(totalPrice) : Number(quantity || 0) * Number(unitPrice || 0);
   return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><div className="dialog" role="dialog" aria-modal="true">
-    <div className="dialog-header"><div><span className="eyebrow">TARGET COST / ITEM</span><h2>{editing ? '编辑清单条目' : '新增清单条目'}</h2><p>合价默认由工程量 × 单价计算，亦可手工覆盖。</p></div><button className="icon-button" onClick={onClose}><X size={18} /></button></div>
+    <div className="dialog-header"><div><span className="eyebrow">TARGET COST / ITEM</span><h2>{editing ? '编辑清单条目' : '新增清单条目'}</h2><p>合价默认由工程量 × 单价计算，亦可手工覆盖。</p></div><Button variant="ghost" size="icon" onClick={onClose}><X size={18} /></Button></div>
     <form onSubmit={submit} noValidate><div className="form-grid two-cols">
       <div className="field"><label>清单编号 <b>*</b></label><input {...register('code')} placeholder="010101" />{errors.code && <small className="field-error">{errors.code.message}</small>}</div>
       <div className="field"><label>上级清单</label><SelectField {...register('parentId')} disabled={Boolean(editing)}><option value="">顶级清单</option>{items.filter((item) => item.id !== editing?.id).map((item) => <option key={item.id} value={item.id}>{item.code} · {item.name}</option>)}</SelectField></div>
