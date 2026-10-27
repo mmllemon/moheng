@@ -348,7 +348,7 @@
   left: 50%;
   opacity: 0;
   background: var(--accent);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   corner-shape: round;
   pointer-events: none;
   height: 3px;
@@ -1107,7 +1107,7 @@
   left: 50%;
   width: 3px;
   height: 44px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   background: var(--accent);
   opacity: 0;
   transform: translate(-50%, -50%) scaleY(0.12);
@@ -1506,7 +1506,7 @@
   margin: 0;
   padding: 8px 12px 16px;
   font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11.5px;
+  font-size: var(--fs-hint);
   line-height: 1.6;
   color: var(--text);
   white-space: pre-wrap;

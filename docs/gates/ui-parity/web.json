@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-27T13:52:18.645Z",
+  "generatedAt": "2026-10-27T14:47:16.357Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -51,7 +51,7 @@
           "route": "/notifications",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 34,
+          "rounded": 35,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 1,
@@ -221,7 +221,7 @@
           "route": "/system/governance",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 55,
+          "rounded": 58,
           "cornerShapeAccepted": true,
           "tabs": 4,
           "visiblePanels": 2,
@@ -241,7 +241,7 @@
           "route": "/system/parameters",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 49,
+          "rounded": 48,
           "cornerShapeAccepted": true,
           "tabs": 3,
           "visiblePanels": 1,

@@ -445,7 +445,7 @@ html .ldg-stats > * > strong small,
 html .an-stats > * > strong small {
   margin-left: var(--space-4);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -496,7 +496,7 @@ html .business-party-summary-strip > div > span {
 }
 html .business-party-summary-strip > div > span > small {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: var(--fs-hint);
   font-weight: 400;
   letter-spacing: 0.04em;
   line-height: 1.4;
@@ -522,7 +522,7 @@ html .analysis-page .an-stats > div > strong {
   margin-top: var(--space-6);
 }
 html .analysis-page .an-stats > div > span {
-  font-size: 10px;
+  font-size: var(--fs-hint);
   font-weight: 400;
   letter-spacing: 0.04em;
 }
@@ -918,7 +918,7 @@ html .business-party-summary-strip > p {
   border: 0;
   border-left: 0;
   color: var(--text-muted);
-  font-size: 9.5px;
+  font-size: var(--fs-hint);
   line-height: 1.45;
   text-align: left;
 }
@@ -1037,7 +1037,7 @@ html .cost-type-card .cost-type-label {
   display: block;
   margin: 0;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: var(--fs-hint);
   font-weight: 400;
   letter-spacing: 0.04em;
   line-height: 1.4;
@@ -1057,7 +1057,7 @@ html .cost-type-card small {
   display: block;
   margin: var(--space-4) 0 0;
   color: var(--text-muted);
-  font-size: 9.5px;
+  font-size: var(--fs-hint);
   line-height: 1.45;
 }
 /* 选中态不靠背景，靠数值颜色和左侧强调 */
@@ -1089,7 +1089,7 @@ html .toolbar-view-button {
   border-radius: calc(calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1)) - 2px);
   background: transparent;
   color: var(--text-muted);
-  font-size: 11.5px;
+  font-size: var(--fs-hint);
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;

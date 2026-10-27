@@ -57,3 +57,5 @@ docs/gates/*
 # 脚本清理备份（临时）
 .scripts-backup-*/
 moheng-cleanup-stale-branches.ps1
+
+.css-backup-*/
