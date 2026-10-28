@@ -1217,3 +1217,72 @@ html .ldg-stats > div:first-child,
 html .projects-kpi-strip > div:first-child {
   padding-left: 0;
 }
+
+/* =============================================================
+   Metrics：通用指标区组件（2026-10-27）
+   =============================================================
+   之前 12+ 个页面手写了 104 处「标签 + 数值 + 说明」的三段式，
+   各自挂 bill-summary / change-summary / owner-metric / ldg-stats 等
+   28 个类名，CSS 侧累计约 500 条规则做同一件事。
+
+   视觉对齐 hana 的 ._metrics_2473c / ._metric_53489：
+     容器  grid + gap 16px，无 border / 无 background
+     子项  flex column，无卡片
+
+   业务页比 hana 设置面板宽（1292 vs 620），子项间距大，
+   所以补 1px 竖线（首项不加）。
+   ============================================================= */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-16);
+  margin: 0 0 var(--space-24);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.metrics[data-cols="1"] { grid-template-columns: minmax(0, 1fr); }
+.metrics[data-cols="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.metrics[data-cols="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.metrics[data-cols="5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.metrics[data-cols="6"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-left: 0;
+}
+.metric > span {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  line-height: 1.4;
+}
+.metric > strong {
+  display: block;
+  margin-top: var(--space-4);
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--fs-title);
+  font-weight: 500;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metric > strong.text-danger { color: var(--danger); }
+.metric > small {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+/* 子项之间的竖线（首项无线、无左内缩） */
+.metric + .metric {
+  border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  padding-left: var(--space-16);
+}

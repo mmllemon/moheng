@@ -126,14 +126,38 @@ export function Button({
   >{children}</button>;
 }
 
-export function MetricCard({ label, value, detail, trend, icon: Icon, tone = 'blue' }: {
-  label: string; value: string; detail?: string; trend?: 'up' | 'down' | 'flat'; icon: LucideIcon; tone?: 'blue' | 'green' | 'orange' | 'purple';
+/* Metrics：指标区。把「标签 + 数值 + 说明」的三段式收成一个数据驱动的组件。
+
+   背景：同样的结构在 12+ 个页面里手写了 104 处，各自挂自己的类名
+   （bill-summary / change-summary / owner-metric / ldg-stats / an-stats…），
+   CSS 侧累计 28 个类、约 500 条规则做同一件事。
+
+   视觉对齐 hana 的 ._metrics_2473c / ._metric_53489：
+     容器：grid + gap 16px，无 border / 无 background
+     子项：flex column，无卡片
+   业务页比 hana 的设置面板宽（1292 vs 620），所以子项之间加 1px 竖线。 */
+export type MetricItem = {
+  label: ReactNode;
+  value: ReactNode;
+  detail?: ReactNode;
+  /** danger 会把数值标红（成本余量为负这类） */
+  tone?: 'default' | 'danger';
+};
+
+export function Metrics({ items, columns = 4, className = '' }: {
+  items: MetricItem[];
+  columns?: number;
+  className?: string;
 }) {
-  return <article className="metric-card">
-    <div className="metric-top"><span>{label}</span><span className={`metric-icon tone-${tone}`}><Icon size={18} strokeWidth={1.8} /></span></div>
-    <div className="metric-value">{value}</div>
-    <div className="metric-bottom">{trend === 'up' && <ArrowUpRight size={14} className="trend-up" />}{trend === 'down' && <ArrowDownRight size={14} className="trend-down" />}{detail && <span>{detail}</span>}</div>
-  </article>;
+  return <div className={`metrics ${className}`.trim()} data-cols={columns}>
+    {items.map((m, i) => (
+      <div className="metric" key={i}>
+        <span>{m.label}</span>
+        <strong className={m.tone === 'danger' ? 'text-danger' : undefined}>{m.value}</strong>
+        {m.detail != null && <small>{m.detail}</small>}
+      </div>
+    ))}
+  </div>;
 }
 
 const statusText: Record<string, string> = {

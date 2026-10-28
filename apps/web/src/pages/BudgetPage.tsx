@@ -10,7 +10,7 @@ import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import type { Analysis, BudgetItem, Project } from '../types';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
-import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, PageHeader, percentage, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, percentage, StatusBadge } from '../components/Ui';
 import { confirmAction } from '../components/ConfirmDialog';
 
 type FlatNode = BudgetItem & { children: FlatNode[] };
@@ -359,12 +359,12 @@ export default function BudgetPage() {
     <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} /><input ref={xlsxFileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} />
     {notice && <div className="success-notice"><FileSpreadsheet size={16} />{notice}</div>}{serverError && <div className="form-alert">{serverError}</div>}
 
-    <div className="ldg-stats">
-      <div><span>目标成本总额</span><strong>{formatMoney(rootAndLeafStats.targetCost, 0)}</strong><small>末级清单 {rootAndLeafStats.leafCount} 条 · 共 {rows.length} 条</small></div>
-      <div><span>已录成本</span><strong>{formatMoney(actualTotal, 0)}</strong><small>来自成本录入模块</small></div>
-      <div><span>成本余量</span><strong className={remaining < 0 ? 'text-danger' : ''}>{formatMoney(remaining, 0)}</strong><small>目标成本 − 已录成本</small></div>
-      <div><span>成本执行率</span><strong className={costExecution != null && costExecution > 1 ? 'text-danger' : ''}>{costExecution == null ? '—' : percentage(costExecution)}</strong><small>已录成本 ÷ 目标成本</small></div>
-    </div>
+    <Metrics items={[
+      { label: '目标成本总额', value: formatMoney(rootAndLeafStats.targetCost, 0), detail: `末级清单 ${rootAndLeafStats.leafCount} 条 · 共 ${rows.length} 条` },
+      { label: '已录成本', value: formatMoney(actualTotal, 0), detail: '来自成本录入模块' },
+      { label: '成本余量', value: formatMoney(remaining, 0), detail: '目标成本 − 已录成本', tone: remaining < 0 ? 'danger' : 'default' },
+      { label: '成本执行率', value: costExecution == null ? '—' : percentage(costExecution), detail: '已录成本 ÷ 目标成本', tone: costExecution != null && costExecution > 1 ? 'danger' : 'default' },
+    ]} />
 
     <section className="ldg-section">
       {/* 卡头在卡外：标题与操作行属于页面结构，卡片只装内容。 */}
