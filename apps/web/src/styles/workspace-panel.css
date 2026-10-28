@@ -511,7 +511,7 @@
 }
 
 .workspace-search:focus-within {
-  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
@@ -796,7 +796,7 @@
 }
 
 .tree-item:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 62%, transparent);
+  outline: 2px solid var(--accent);
   outline-offset: -1px;
 }
 
@@ -1181,7 +1181,7 @@
 }
 .workspace-mount-row:hover { background: var(--overlay-subtle); }
 .workspace-mount-row:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -1337,7 +1337,7 @@
 }
 .preview-tab:hover { color: var(--text); background: var(--overlay-subtle); }
 .preview-tab:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
