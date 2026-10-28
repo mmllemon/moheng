@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T07:27:46.938Z",
+  "generatedAt": "2026-10-28T08:14:42.183Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -121,10 +121,10 @@
           "route": "/cost/changes",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 42,
+          "rounded": 38,
           "cornerShapeAccepted": true,
           "tabs": 0,
-          "visiblePanels": 1,
+          "visiblePanels": 0,
           "errors": []
         },
         {

@@ -10126,3 +10126,74 @@ html .page-wrap.business-party-detail-page {
 .ds-section-head > .ds-section-copy {
   padding-left: 0;
 }
+
+/* 段内多条提示条之间的间距
+   ---------------------------------------------------------
+   两条 inline-notice 在同一个段里，margin 被段内规则清成 0，
+   实测紧贴（noticeGap 0）。用 + 选择器补 8px。 */
+.ds-section-segment > .inline-notice + .inline-notice,
+.ds-section-segment > .success-notice + .inline-notice,
+.ds-section-segment > .inline-notice + .success-notice,
+.ds-section-segment > .form-alert + .inline-notice {
+  margin-top: var(--space-8);
+}
+
+/* 编号徽标（budget-code）：行内元素，不该撑高表格行
+   ---------------------------------------------------------
+   实测 h 46，把行高从 34 撑到 46。
+   它是 inline-flex 的徽标，应该按内容高度走。 */
+.ds-section-segment .budget-code {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: var(--space-2) var(--space-8);
+  border-radius: calc(var(--radius-compact) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: var(--overlay-light);
+  color: var(--text-light);
+  font-family: var(--font-mono);
+  font-size: var(--fs-hint);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 变更签证表：9 列在 1290px 容器里溢出 24px（表格 1314）
+   ---------------------------------------------------------
+   table-layout: auto 下给 th/td 设 width 无效（内容会撑开）。
+   改成限制编号内内容的宽度，让它提前截断。 */
+.ds-section-segment--flush .change-table-panel .budget-code {
+  max-width: 158px;
+}
+/* 操作列不换行，避免按钮被压成两行 */
+.ds-section-segment--flush table td:last-child .row-actions {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* 横向溢出的表格：右侧渐隐提示还有内容
+   ---------------------------------------------------------
+   Windows 下滚动条是 overlay（不占空间，静态截图看不到）。
+   9 列表格在 1290px 容器里溢出 24px 时，看起来像「最后一列被裁切」。
+   加一层右侧渐隐，让用户知道可以横向滚动。 */
+.ds-section-segment--flush .table-scroll {
+  background:
+    linear-gradient(to right, var(--bg-card) 30%, transparent) left center / 24px 100% no-repeat local,
+    linear-gradient(to left, var(--bg-card) 30%, transparent) right center / 24px 100% no-repeat local,
+    linear-gradient(to right, transparent, color-mix(in srgb, var(--text) 8%, transparent)) right center / 16px 100% no-repeat scroll,
+    var(--bg-card);
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* 宽表格（9 列）在 1290px 容器里溢出：收窄中间列内边距
+   ---------------------------------------------------------
+   9 列 × (16px 左 + 16px 右) = 288px 全花在内边距上，
+   表格实测 1314px，容器 1290px，溢出 24px，操作列按钮被裁。
+   首末列保持 16px（对齐段内缩基准 17px），中间 7 列收到 8px，
+   省出 7 × 16 = 112px，表格落到 ~1202px。 */
+.ds-section-segment--flush .data-table th:not(:first-child):not(:last-child),
+.ds-section-segment--flush .data-table td:not(:first-child):not(:last-child) {
+  padding-left: var(--space-8);
+  padding-right: var(--space-8);
+}
