@@ -10227,3 +10227,141 @@ html .page-wrap.business-party-detail-page {
   background: transparent;
   padding: var(--space-12) var(--space-16) var(--space-16);
 }
+
+/* owner-finance 页卡内段：剥掉内层块的卡片外观
+   ---------------------------------------------------------
+   .owner-finance-metrics 原本是独立卡片，.owner-finance-tabs
+   原本是独立的分段控件容器。两者移进 ds-section-card 后
+   都带第二层边框/底色，需要剥掉。 */
+.ds-section-segment > .owner-finance-metrics {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+/* 指标项之间的竖线由段内缩承担，不需要额外内边距 */
+.ds-section-segment > .owner-finance-metrics > .owner-metric {
+  padding: 0 var(--space-16);
+}
+.ds-section-segment > .owner-finance-metrics > .owner-metric:first-child {
+  padding-left: 0;
+}
+.ds-section-segment > .owner-finance-metrics > .owner-metric + .owner-metric::before {
+  top: 0;
+  bottom: 0;
+}
+
+/* 标签栏：段内只保留滑块与文字，去掉外层容器感 */
+.ds-section-segment > .owner-finance-tabs {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* owner-finance 内容段：panel 的上下 24px margin 在段内是多余偏移
+   ---------------------------------------------------------
+   .owner-finance-tab-panel 作为页面级 panel 时有 margin: 24px 0，
+   移进段内后这 24px 变成段内空白。段自己已有 16px 上下内边距。 */
+.ds-section-segment > .owner-finance-tab-panel {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+/* 段内卡头不再需要底部 14px（段间距已由 border-top 承担） */
+.ds-section-segment > .owner-finance-tab-panel > .panel-heading {
+  margin-bottom: var(--space-12);
+  padding: 0;
+}
+/* 空态/表格横向内缩回到段内缩基准 */
+.ds-section-segment > .owner-finance-tab-panel > .empty-state,
+.ds-section-segment > .owner-finance-tab-panel > .table-scroll,
+.ds-section-segment > .owner-finance-tab-panel > .owner-special-balances {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* owner-finance 指标：3 列 × 2 行时，每行首项不该有左竖线
+   ---------------------------------------------------------
+   原规则用 .owner-metric + .owner-metric::before 给除首项外所有项加线，
+   在 2 行布局下第 4 项（第 2 行第 1 列）也被加了线。 */
+.ds-section-segment > .owner-finance-metrics > .owner-metric:nth-child(3n + 1) {
+  border-left: 0;
+}
+.ds-section-segment > .owner-finance-metrics > .owner-metric:nth-child(3n + 1)::before {
+  display: none;
+}
+
+/* owner-finance 段内卡头与空态收口
+   ---------------------------------------------------------
+   ① 卡头 align-items: flex-end 时，左侧「标题 + 说明」两行块
+      高 42px，右侧单个徽标高 24px，徽标会掉到说明行底部。
+      改成 flex-start，徽标与标题首行对齐。
+   ② 段内空态 min-height 220px 在卡内偏高，收到 168px。 */
+.ds-section-segment > .owner-finance-tab-panel > .panel-heading {
+  align-items: flex-start;
+}
+.ds-section-segment > .owner-finance-tab-panel > .empty-state {
+  min-height: 168px;
+  padding: var(--space-24) var(--space-16) var(--space-16);
+}
+
+/* owner-finance 指标项：min-height 96px 是旧布局残留
+   ---------------------------------------------------------
+   内容只有 63px（标签 19 + 数值 22 + 说明 16 + 6 间距），
+   96px 会留 33px 空白，两行时视觉上像「大间距」。
+   改成由内容撑开，行间用 padding 控制。 */
+.ds-section-segment > .owner-finance-metrics > .owner-metric {
+  min-height: 0;
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+.ds-section-segment > .owner-finance-metrics {
+  row-gap: var(--space-12);
+}
+
+/* 段内空态：去掉 16px 横向 margin（段内缩已由 padding 承担） */
+.ds-section-segment > .owner-finance-tab-panel > .empty-state {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 段内空态：去掉 16px 横向 margin（段内缩已由 padding 承担）
+   注意：必须用 margin 简写，长写 margin-left/right 会被
+   .panel.panel-detached > .empty-state 的简写覆盖。 */
+.ds-section-segment > .owner-finance-tab-panel > .empty-state {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 段内空态：去掉 16px 横向 margin（段内缩已由 padding 承担）
+   panel 带 panel-detached 类，用 .panel.panel-detached 提高特异度。 */
+.ds-section-segment > .panel.panel-detached > .empty-state {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+/* 段内表格同理：去掉 panel-detached 给的横向 margin */
+.ds-section-segment > .panel.panel-detached > .table-scroll,
+.ds-section-segment > .panel.panel-detached > .owner-special-balances {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* 段内空态/表格：豁免 panel-detached 的通用横向内缩
+   ---------------------------------------------------------
+   .panel.panel-detached > :not(.panel-heading):not(...) 有 4 个 :not，
+   特异度 0,6,0，压过段内所有规则。段自己已有 16px 内边距，
+   内部块不需要再缩 16px。 */
+.ds-section-segment > .panel.panel-detached > .empty-state:not(.panel-heading),
+.ds-section-segment > .panel.panel-detached > .table-scroll:not(.panel-heading),
+.ds-section-segment > .panel.panel-detached > .owner-special-balances:not(.panel-heading) {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
