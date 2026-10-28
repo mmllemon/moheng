@@ -10197,3 +10197,33 @@ html .page-wrap.business-party-detail-page {
   padding-left: var(--space-8);
   padding-right: var(--space-8);
 }
+
+/* ldg-section-card 内嵌块：剥掉第二层卡片
+   ---------------------------------------------------------
+   预算页的 ldg-section-card 不是 Section.Stack 结构，
+   而是自己的卡片容器。里面放 ldg-stats（原本是独立卡片）
+   和 ldg-note（原本是独立提示条），需要剥掉它们的外观。 */
+.ldg-section-card > .ldg-stats {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  padding: var(--space-16);
+  padding-bottom: 0;
+}
+/* 指标行与工具条之间加分隔线 */
+.ldg-section-card > .ldg-stats + .ldg-toolbar {
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  padding-top: var(--space-12);
+}
+
+.ldg-section-card > .ldg-note {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-12) var(--space-16) var(--space-16);
+}

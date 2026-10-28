@@ -359,17 +359,17 @@ export default function BudgetPage() {
     <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} /><input ref={xlsxFileRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void readImport(file); }} />
     {notice && <div className="success-notice"><FileSpreadsheet size={16} />{notice}</div>}{serverError && <div className="form-alert">{serverError}</div>}
 
+    <section className="ldg-section">
+      {/* 卡头在卡外：标题与操作行属于页面结构，卡片只装内容。 */}
+      <div className="ldg-section-head"><div><h2>成本清单</h2><p>按清单层级归集目标成本；展开父级查看子项，点击行查看清单明细。</p></div><span className="ldg-section-count">{rows.length} 条清单</span></div>
+      <div className="ldg-section-card">
+    {/* 段 1：指标行（已嵌在卡内，不再画卡片） */}
     <div className="ldg-stats">
       <div><span>目标成本总额</span><strong>{formatMoney(rootAndLeafStats.targetCost, 0)}</strong><small>末级清单 {rootAndLeafStats.leafCount} 条 · 共 {rows.length} 条</small></div>
       <div><span>已录成本</span><strong>{formatMoney(actualTotal, 0)}</strong><small>来自成本录入模块</small></div>
       <div><span>成本余量</span><strong className={remaining < 0 ? 'text-danger' : ''}>{formatMoney(remaining, 0)}</strong><small>目标成本 − 已录成本</small></div>
       <div><span>成本执行率</span><strong className={costExecution != null && costExecution > 1 ? 'text-danger' : ''}>{costExecution == null ? '—' : percentage(costExecution)}</strong><small>已录成本 ÷ 目标成本</small></div>
     </div>
-
-    <section className="ldg-section">
-      {/* 卡头在卡外：标题与操作行属于页面结构，卡片只装内容。 */}
-      <div className="ldg-section-head"><div><h2>成本清单</h2><p>按清单层级归集目标成本；展开父级查看子项，点击行查看清单明细。</p></div><span className="ldg-section-count">{rows.length} 条清单</span></div>
-      <div className="ldg-section-card">
     <div className="ldg-toolbar">
       <label className="ldg-search"><Search size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索清单编号或名称" aria-label="搜索清单编号或名称" /></label>
       <div className="ldg-segments" role="group" aria-label="按清单分类筛选">
@@ -410,10 +410,10 @@ export default function BudgetPage() {
         <tfoot><tr><td colSpan={6}>合计（{rows.length} 条 · 仅末级汇总）</td><td className="align-right numeric">{formatMoney(rootAndLeafStats.targetCost, 0)}</td><td className="align-right numeric">{formatMoney(actualTotal, 0)}</td><td /></tr></tfoot>
       </table>
     </div>}
+      {/* 段 3：底注 */}
+      <div className="ldg-note"><span className="note-mark">i</span><span>目标成本仅汇总末级清单；已录成本按发生日期计入，不含已归档记录。清单层级用于成本归集，不参与合同金额计算。CSV / XLSX 导入会执行服务端重复编号、父级关系与数值复检。</span></div>
       </div>
     </section>
-
-    <div className="ldg-note"><span className="note-mark">i</span><span>目标成本仅汇总末级清单；已录成本按发生日期计入，不含已归档记录。清单层级用于成本归集，不参与合同金额计算。CSV / XLSX 导入会执行服务端重复编号、父级关系与数值复检。</span></div>
 
     {drawerItem && <div className="ldg-drawer-layer" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDrawerItem(null); }}>
       <aside className="ldg-drawer" role="dialog" aria-modal="true" aria-labelledby="ldg-drawer-title">
