@@ -186,6 +186,19 @@
   --shadow-ring: 0 0 0 2px var(--accent-light);
   --shadow-2xl: 0 26px 70px var(--shadow), 0 8px 24px var(--shadow);
 
+  /* z-index 六级，对齐 hana mobile-kfy_1ie4.css:
+       --z-under    -1      装饰层（纸纹、伪元素）
+       --z-raised   100     布局层（侧栏、顶栏、dock）
+       --z-float    1000    浮层（抽屉、侧栏菜单）
+       --z-overlay  8000    全屏遮罩（modal backdrop、assistant overlay）
+       --z-popover  9000    弹出层（下拉、日期、菜单）
+       --z-toast    9500    轻提示
+       --z-top      10000   命令面板、最高优先级
+
+     小数值（0-100 以内）继续用于「同一层内的局部排序」
+     （列表项、徽标、伪元素），不要一律换成 token。 */
+  --z-under: -1;
+  --z-raised: 100;
   --z-float: 1000;
   --z-overlay: 8000;
   --z-popover: 9000;
@@ -3639,13 +3652,13 @@ html .filter-bar input[type="search"] {
 .account-menu button[role="menuitem"]:hover { background: var(--overlay-light); color: var(--text); }
 .account-menu .account-menu-logout { color: var(--danger); }
 .account-menu .account-menu-logout:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); }
-.account-menu-dismiss, .quick-action-dismiss { position: fixed; inset: 0; z-index: 999; border: 0; background: transparent; }
+.account-menu-dismiss, .quick-action-dismiss { position: fixed; inset: 0; z-index: calc(var(--z-popover) - 1); border: 0; background: transparent; }
 .account-menu-wrap { position: relative; }
-.account-menu { position: absolute; z-index: 1000; top: 36px; right: 0; animation: hana-pop-in var(--duration-paper-spring) var(--ease-paper-spring); }
+.account-menu { position: absolute; z-index: var(--z-popover); top: 36px; right: 0; animation: hana-pop-in var(--duration-paper-spring) var(--ease-paper-spring); }
 .quick-actions-wrap { position: relative; }
 .quick-action-panel {
   position: absolute;
-  z-index: 1000;
+  z-index: var(--z-popover);
   top: 36px;
   right: 0;
   width: min(548px, calc(100vw - 24px));
@@ -3762,7 +3775,7 @@ html .filter-bar input[type="search"] {
   .account-security-page .account-security-submit { align-items: flex-start; }
 }
 
-.command-palette-layer { position: fixed; inset: 0; z-index: var(--z-overlay); display: flex; align-items: flex-start; justify-content: center; padding: min(14vh, 120px) var(--space-16) var(--space-16); }
+.command-palette-layer { position: fixed; inset: 0; z-index: var(--z-top); display: flex; align-items: flex-start; justify-content: center; padding: min(14vh, 120px) var(--space-16) var(--space-16); }
 .command-palette-backdrop { position: absolute; inset: 0; border: 0; background: rgba(28, 25, 21, 0.3); backdrop-filter: blur(3px); }
 .command-palette {
   position: relative;
@@ -7389,7 +7402,7 @@ html .select-control-trigger {
 .assistant-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: var(--z-overlay);
   display: grid;
   place-items: center;
   padding: var(--space-24);
