@@ -5735,7 +5735,45 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .owner-finance-tabs > button.active { color: var(--text); border-color: transparent; background: var(--bg-card); box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 12%, transparent); font-weight: 600; }
 .owner-finance-tabs > button small { min-width: auto; height: auto; padding: 0; border-radius: 0; background: transparent; color: var(--text-muted); font-size: var(--fs-hint); }
 .owner-finance-tabs > button.active small { background: transparent; color: var(--accent); }
-.owner-finance-contract-chip { margin-left: auto; }
+/* owner-finance 页的两个旧徽标：改成 token 体系
+   ---------------------------------------------------------
+   legacy.css 里：
+     .owner-finance-contract-chip  硬编码绿色 #48916f / #f4fbf7
+     .owner-finance-tab-panel .table-count  #fafbfe 底 / var(--line) 边
+   两者都不在 token 体系里，与其他页面的状态徽标不一致。 */
+.owner-finance-tab-panel .table-count {
+  padding: var(--space-2) var(--space-8);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: calc(var(--radius-compact) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--text-muted);
+  background: var(--overlay-subtle);
+  font-size: var(--fs-hint);
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.owner-finance-contract-chip {
+  margin-left: auto;
+  /* legacy.css 里有一套硬编码绿色（border #e4f1e9 / color #48916f / bg #f4fbf7），
+     不属 token 体系。改成 hana 的 status 语义：success 色 + overlay 底。 */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-8);
+  border: 1px solid color-mix(in srgb, var(--success) 26%, transparent);
+  border-radius: calc(var(--radius-compact) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+  font-size: var(--fs-hint);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.owner-finance-contract-chip .status-dot {
+  color: var(--success);
+}
 
 @media (max-width: 1100px) {
   .owner-finance-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -8496,7 +8534,10 @@ html[data-paper-texture] .sidebar-drawer::after {
   height: 20px;
   background: none;
   border: none;
-  border-radius: calc(3px * var(--corner-radius-scale, 1));
+  /* 原来是 calc(3px * scale) = 5.52px，是硬编码旧值。
+     20px 的小图标按钮用 radius-compact（4px × 1.84 = 7.36px），
+     与其余 28px / 32px 按钮的 radius-action（9.2px）保持同族比例。 */
+  border-radius: calc(var(--radius-compact) * var(--corner-radius-scale, 1));
   corner-shape: squircle;
   color: var(--text-muted);
   cursor: default;

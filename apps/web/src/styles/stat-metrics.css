@@ -86,8 +86,25 @@ html .owner-finance-metrics {
   /* 两行时需行分隔线（单行容器的 gap:0 会让两行紧贴）。 */
   row-gap: 0;
 }
+/* 行分隔线用 ::before 画在单元格内部，不用 border-top。
+   border-top 画在 padding 外沿，会让第 2 行看起来被框住；
+   hana 的 _divider_cdbf9 也是用细线而不是边框。 */
 html .owner-finance-metrics > :nth-child(n + 4) {
-  border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  /* 必须 relative：上面 html .owner-finance-metrics > div 规则
+     设了 position: static，特异性更高，会盖掉这里的 relative。
+     没有定位父级时，::before 的 absolute 会落到 grid 容器上。 */
+  position: relative !important;
+  border-top: 0;
+}
+html .owner-finance-metrics > :nth-child(n + 4)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-16);
+  right: var(--space-16);
+  height: 1px;
+  background: color-mix(in srgb, var(--border) 62%, transparent);
+  pointer-events: none;
 }
 
 html .downstream-summary-grid,

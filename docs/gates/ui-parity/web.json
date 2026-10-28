@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T01:55:36.301Z",
+  "generatedAt": "2026-10-28T02:47:27.883Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -131,7 +131,7 @@
           "route": "/cost/owner-finance",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 43,
+          "rounded": 44,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 1,
