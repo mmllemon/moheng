@@ -9931,3 +9931,149 @@ html .page-wrap.business-party-detail-page {
   display: block;
   gap: 0;
 }
+
+/* ===========================================================================
+   Section.Stack / Section.Segment —— 卡片内分段
+   ===========================================================================
+   对齐 hana 的 ._panel_87d27：
+     display: flex; flex-direction: column; gap: var(--space-6);
+     padding: var(--space-6) var(--space-8);
+     border-bottom: 1px solid var(--border-1)
+
+   用途：一张卡装多段（指标行 / 表格 / 底注），段间用 1px 线分隔。
+   这解决了两个矛盾：
+     · 每块独立成卡 → 卡片太多，页面碎
+     · 全塞进一张卡无分隔 → 密度高但层次糊
+   =========================================================================== */
+
+.ds-section-stack {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ds-section-segment {
+  min-width: 0;
+  padding: var(--space-16);
+}
+
+/* 段间分隔线：最后一段不画 */
+.ds-section-segment + .ds-section-segment {
+  border-top: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+}
+
+/* plain：底注这类，无内缩（由内部元素自己控制） */
+.ds-section-segment--plain {
+  padding: 0;
+}
+
+/* flush：表格这类需要横向通铺的段，无左右内缩（滚动条贴边） */
+.ds-section-segment--flush {
+  padding: var(--space-16) 0;
+}
+
+/* 段内的指标区：已经嵌在卡内，不再画卡片 */
+.ds-section-segment > .bill-summary-grid,
+.ds-section-segment > .owner-finance-metrics,
+.ds-section-segment > .change-summary-grid,
+.ds-section-segment > .ldg-stats,
+.ds-section-segment > .an-stats,
+.ds-section-segment > .system-overview-metrics {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* 段内的表格：去掉外层的 margin 和卡片外观 */
+.ds-section-segment > .table-scroll {
+  margin: 0;
+}
+
+/* 段内的底注：去掉外边距，由段自己给内缩 */
+.ds-section-segment > .data-note,
+.ds-section-segment > .inline-notice,
+.ds-section-segment > .success-notice,
+.ds-section-segment > .form-alert {
+  margin: 0;
+}
+
+/* 段内子标题（多段卡片里，第 2 段之后的表头） */
+.ds-section-segment .segment-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-12);
+  padding: 0 var(--space-16) var(--space-12);
+}
+.ds-section-segment .segment-head h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.ds-section-segment .segment-head span {
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+}
+
+/* 段内的底注 / 提示条：已经在卡内，不再画第二层边框和底色。
+   否则看起来像卡片里套了一个盒子（实测底注段与卡片下边缘贴合）。 */
+.ds-section-segment > .data-note,
+.ds-section-segment > .inline-notice,
+.ds-section-segment > .success-notice,
+.ds-section-segment > .form-alert {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 var(--space-16);
+}
+.ds-section-segment > .data-note .note-mark {
+  border-color: color-mix(in srgb, var(--text-muted) 30%, transparent);
+}
+
+/* 段内文字左缘统一到 16px
+   ---------------------------------------------------------
+   实测（相对卡片左缘）：
+     指标文字      33px  （16 段内缩 + 16 项内缩 + 1 边框）
+     表格 th/td    19px  （16 段内缩 + 10 cell pad - 7 补偿）
+     段标题        17px
+     底注 i 标记   17px
+   四个段各自参差不齐。
+
+   统一规则：
+     · 表格段（flush）的 cell 左右 padding 用 16px，与段内缩对齐
+     · 指标项不额外加左右 padding（段已给 16px）
+     · 段标题、底注自然对齐在 16px
+   --------------------------------------------------------- */
+
+/* 表格段：首末 cell 补足到 16px 基准。
+   注意：.panel-detached 的通用内缩规则会给 table 加 margin: 0 18px，
+   导致表格整体右移 18px（实测 tableLeft 19 而非 1）。
+   flush 段里表格应该横向通铺，先清掉 margin。 */
+.ds-section-segment--flush .data-table {
+  margin-left: 0;
+  margin-right: 0;
+}
+.ds-section-segment--flush .data-table th,
+.ds-section-segment--flush .data-table td {
+  padding-left: var(--space-16);
+  padding-right: var(--space-16);
+}
+
+/* 段内指标：左右不再叠加内缩（段已有 16px） */
+.ds-section-segment > .bill-summary-grid > .bill-summary,
+.ds-section-segment > .ldg-stats > div,
+.ds-section-segment > .an-stats > div,
+.ds-section-segment > .change-summary-grid > div,
+.ds-section-segment > .owner-finance-metrics > div {
+  padding-left: 0;
+  padding-right: 0;
+}
+/* 但项之间仍要留白，否则数字贴在一起 */
+.ds-section-segment > .bill-summary-grid > .bill-summary + .bill-summary,
+.ds-section-segment > .ldg-stats > div + div,
+.ds-section-segment > .an-stats > div + div,
+.ds-section-segment > .change-summary-grid > div + div {
+  padding-left: var(--space-16);
+}

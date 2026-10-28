@@ -15,6 +15,22 @@ export function Section({ title, subtitle, actions, icon: Icon, children, classN
   </section>;
 }
 
+/* Section.Stack：卡片内分段容器。
+   对齐 hana 的 ._panel_87d27 —— 段与段之间用 1px border-bottom 分隔，
+   不是空白。这样一张卡可以装多段（指标 / 表格 / 底注），
+   既有卡片完整感，又不损失信息密度。 */
+export function SectionStack({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`ds-section-stack ${className}`.trim()}>{children}</div>;
+}
+
+/* Section.Segment：栈里的一段。
+   tone="plain" 用于底注这类无内缩的段；默认带 16px 内缩。 */
+export function SectionSegment({ children, tone = 'default', className = '' }: {
+  children: ReactNode; tone?: 'default' | 'plain' | 'flush'; className?: string;
+}) {
+  return <div className={`ds-section-segment ds-section-segment--${tone} ${className}`.trim()}>{children}</div>;
+}
+
 export function SettingsSection({ title, description, actions, children, hidden = false, className = '' }: {
   title: ReactNode; description?: ReactNode; actions?: ReactNode; children: ReactNode; hidden?: boolean; className?: string;
 }) {
