@@ -64,3 +64,4 @@ moheng-cleanup-stale-branches.ps1
 *.unusedbak
 *.delbak
 *.btnbak
+msg.tmp
