@@ -99,7 +99,7 @@ export default function UserManagementPage() {
     </section>
 
     {resetTarget && <section className="panel user-reset-panel">
-      <div className="panel-heading"><div><h3>重置账号密码</h3><p>{resetTarget.name} · {resetTarget.email}。重置后该账号必须修改密码，所有现有会话立即失效。</p></div><button className="icon-button" aria-label="取消重置" onClick={() => { setResetTarget(null); setResetPassword(''); }}><X size={15} /></button></div>
+      <div className="panel-heading"><div><h3>重置账号密码</h3><p>{resetTarget.name} · {resetTarget.email}。重置后该账号必须修改密码，所有现有会话立即失效。</p></div><Button variant="ghost" size="icon" aria-label="取消重置" onClick={() => { setResetTarget(null); setResetPassword(''); }}><X size={15} /></Button></div>
       <form className="account-rows" onSubmit={(event) => { event.preventDefault(); resetMutation.mutate(); }}>
         <div className="settings-row">
           <div className="settings-row-copy"><div className="settings-row-label">临时密码</div><div className="settings-row-hint">重置后该账号必须修改密码，所有现有会话立即失效。</div></div>

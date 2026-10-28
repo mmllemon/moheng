@@ -619,9 +619,10 @@ export function WorkspacePanel(props: Props = {}) {
           </Button>
           <div className="workspace-toolbar-actions">
             <div className="workspace-menu-wrap">
-              <button
-                type="button"
-                className={`workspace-toolbar-btn workspace-toolbar-btn-text${typeFilters.size > 0 ? ' is-active' : ''}`}
+              <Button
+                variant="ghost"
+                size="toolbar"
+                className={typeFilters.size > 0 ? 'is-active' : ''}
                 aria-label="筛选"
                 aria-haspopup="menu"
                 aria-expanded={filterMenuOpen}
@@ -629,7 +630,7 @@ export function WorkspacePanel(props: Props = {}) {
               >
                 <Filter size={14} />
                 <span>{typeFilters.size > 0 ? `筛选 ${typeFilters.size}` : '筛选'}</span>
-              </button>
+              </Button>
               {filterMenuOpen && (
                 <div className="workspace-menu" role="menu" aria-label="按类型筛选">
                   {[{ id: 'image', label: '图片' }, { id: 'text', label: '文本' }, { id: 'video', label: '视频' }].map((opt) => (
@@ -655,9 +656,9 @@ export function WorkspacePanel(props: Props = {}) {
               )}
             </div>
             <div className="workspace-menu-wrap">
-              <button
-                type="button"
-                className="workspace-toolbar-btn workspace-toolbar-btn-text"
+              <Button
+                variant="ghost"
+                size="toolbar"
                 aria-label="排序"
                 aria-haspopup="menu"
                 aria-expanded={sortMenuOpen}
@@ -665,7 +666,7 @@ export function WorkspacePanel(props: Props = {}) {
               >
                 <ArrowUpDown size={14} />
                 <span>{DESK_SORT_LABEL[deskSortMode]}</span>
-              </button>
+              </Button>
               {sortMenuOpen && (
                 <div className="workspace-menu" role="menu" aria-label="排序方式">
                   {DESK_SORT_OPTIONS.map((opt) => (

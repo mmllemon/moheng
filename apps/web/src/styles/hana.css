@@ -9732,3 +9732,52 @@ html .button-ghost.button-icon[aria-pressed="true"]:not(:disabled):hover {
   background: var(--overlay-light);
   color: var(--accent);
 }
+
+/* toolbar 档：工具栏「图标 + 文字」扁平按钮（对应 hana ._sortBtn_d43c7）
+   ---------------------------------------------------------
+   hana 真值：
+     min-height 20px  padding 2px 8px  font-size --fs-hint
+     color --text-muted  svg opacity .6
+   用于工作区工具条的筛选/排序、对话文件的排序按钮。
+   比 xs（24px）更矮更松，因为它是「标签式」按钮不是「操作按钮」。 */
+html .button.button-toolbar,
+html .button-primary.button-toolbar,
+html .button-secondary.button-toolbar,
+html .button-ghost.button-toolbar,
+html .button-danger.button-toolbar,
+html .button-quiet.button-toolbar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  width: auto;
+  height: auto;
+  min-height: 20px;
+  padding: var(--space-2) var(--space-8);
+  border: 0;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+html .button.button-toolbar > svg,
+html .button-ghost.button-toolbar > svg,
+html .button-quiet.button-toolbar > svg {
+  flex: 0 0 auto;
+  display: block;
+  opacity: 0.6;
+}
+html .button-ghost.button-toolbar:not(:disabled):hover,
+html .button-quiet.button-toolbar:not(:disabled):hover {
+  background: var(--overlay-subtle);
+  color: var(--text);
+}
+/* 激活态：accent 色（对应原 .workspace-toolbar-btn.is-active） */
+html .button.button-toolbar.is-active,
+html .button-ghost.button-toolbar.is-active {
+  color: var(--accent);
+}

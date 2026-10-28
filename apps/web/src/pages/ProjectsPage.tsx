@@ -192,8 +192,8 @@ export default function ProjectsPage() {
           <div><span className="eyebrow">PROJECT DOSSIER</span><h2>{selected.name}</h2><p>{selected.code} · {selected.ownerName}</p></div>
           <div className="projects-dossier-tools">
             <StatusBadge status={selected.status} />
-            <button type="button" className="icon-button" title="打开工作区文件" aria-label={`打开 ${selected.name} 的工作区`} onClick={() => { setSelectedProjectId(selected.id); setWorkspaceOpen(true); }}><FolderOpen size={15} /></button>
-            <button type="button" className="icon-button" title="编辑项目档案" aria-label={'编辑' + selected.name} onClick={() => setDialog({ open: true, project: selected })}><Edit3 size={15} /></button>
+            <Button variant="ghost" size="icon" title="打开工作区文件" aria-label={`打开 ${selected.name} 的工作区`} onClick={() => { setSelectedProjectId(selected.id); setWorkspaceOpen(true); }}><FolderOpen size={15} /></Button>
+            <Button variant="ghost" size="icon" title="编辑项目档案" aria-label={'编辑' + selected.name} onClick={() => setDialog({ open: true, project: selected })}><Edit3 size={15} /></Button>
           </div>
         </div>
         <div className="projects-dossier-facts">

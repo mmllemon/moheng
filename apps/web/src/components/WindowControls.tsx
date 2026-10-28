@@ -36,6 +36,7 @@ import { useAuthStore, useUiStore } from '../auth-store';
 import type { Project } from '../types';
 import SelectField from './SelectField';
 import UiPreferencesBar from './UiPreferencesBar';
+import { Button } from './Ui';
 
 /** 把本元素注册到 windowControlsRegistry，供 wot 测量 */
 const REGISTRY = new WeakMap<Document, HTMLElement>();
@@ -118,7 +119,15 @@ export function WindowControls(props: Props) {
                 tabs[nextIndex]?.click();
               }}>
                 {quickActionCategories.map((category) => <button key={category.key} type="button" role="tab" tabIndex={quickActionCategory === category.key ? 0 : -1} aria-selected={quickActionCategory === category.key} className={quickActionCategory === category.key ? 'is-active' : ''} onClick={() => setQuickActionCategory(category.key)}>{category.label}</button>)}
-                <button type="button" className="quick-action-close" aria-label="关闭快捷操作" onClick={() => setQuickActionsOpen(false)}><X size={15} /></button>
+                <Button
+              variant="ghost"
+              size="icon"
+              className="quick-action-close"
+              aria-label="关闭快捷操作"
+              onClick={() => setQuickActionsOpen(false)}
+            >
+              <X size={15} />
+            </Button>
               </div>
               <div className="quick-action-heading"><div><strong>常用业务入口</strong><span>按当前项目进入对应工作台</span></div><span className="quick-action-count">{visibleQuickActions.length} 项</span></div>
               <div className="quick-action-grid" role="tabpanel" aria-label={quickActionCategories.find((category) => category.key === quickActionCategory)?.label ?? '全部'}>
