@@ -3458,7 +3458,7 @@ html .filter-bar input[type="search"] {
   overflow: hidden;
   text-overflow: ellipsis;
   cursor: default;
-  transition: color var(--duration-fast, 120ms) var(--ease-out);
+  transition: color var(--duration-fast, .12s) var(--ease-out);
 }
 .cost-workspace-tab svg { display: block; flex: 0 0 auto; width: 13px; height: 13px; stroke-width: 1.8; }
 .cost-workspace-tab:hover,
@@ -9297,8 +9297,8 @@ html .step-slider .step-slider-input {
        background: var(--accent);
        border-radius: var(--radius-xs);
        corner-shape: round;
-       transition: opacity .18s var(--ease-out) var(--duration-instant),
-                   transform .18s var(--chalkboard-motion-ease-ios) var(--duration-instant);
+       transition: opacity .18s var(--ease-out),
+                   transform .18s var(--ease-ios);
      }
      ._fpResizeHandle_cc543:hover:after,
      ._fpResizeHandle_cc543:active:after {
