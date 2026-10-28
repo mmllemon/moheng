@@ -2332,15 +2332,18 @@ html .settings-nav .settings-search input {
   font-size: var(--fs-hint);
 }
 
-/* 搜索输入框高度覆盖（对齐 hana 的 34px）
+/* 搜索输入框高度覆盖
    压它的有三条：
      ① .settings-search input { height: calc(--control-height - 2px) !important }  → 30px
      ② html .settings-search input, html .settings-nav .settings-search input { height: 26px }
      ③ html input:not(...)×5 { height: 32px }
-   所以必须用 html 前缀 + !important 才能赢。 */
+   所以必须用 html 前缀 + !important 才能赢。
+
+   注：34px 是 hana 的「容器」高度，内框应比容器小 2px（扣除上下边框），
+   写成 34px 会让输入框溢出 32px 的容器 2px（实测 parentH 32 / inputH 34）。 */
 html .settings-nav .settings-search input {
-  height: 34px !important;
-  min-height: 34px !important;
+  height: 30px !important;
+  min-height: 30px !important;
 }
 
 /* 其余紧凑场景：台账搜索、字典条目表单、助手密钥行，
@@ -9309,12 +9312,13 @@ html .icon-button {
   transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
 }
 
-/* ② 文本型按钮：走 .button 的几何，但允许外部类只声明颜色 */
+/* ② 文本型按钮：走 .button 的几何，但允许外部类只声明颜色
+   注：.tree-action 不在此列——它是 22×22 图标按钮，
+   几何由 workspace-panel.css 与 Button size="icon-sm" 对齐。 */
 html .assistant-primary-button,
 html .assistant-send-button,
 html .ldg-text-action,
 html .table-action,
-html .tree-action,
 html .member-role-action,
 html .panel-header-action {
   display: inline-flex;
@@ -9358,7 +9362,6 @@ html .assistant-send-button {
 /* 表格行内与密集工具条：24px 档（hana 的 ._size-compact 是 space-32，
    但表格行内按钮要更小，这里保留 24px 并统一 padding） */
 html .table-action,
-html .tree-action,
 html .ldg-text-action,
 html .panel-header-action,
 html .member-role-action {
@@ -9410,17 +9413,28 @@ html .assistant-cancel-button:not(:disabled):hover {
 /* ghost：透明底 + text-light 字（对应 ._variant-ghost） */
 html .ldg-text-action,
 html .panel-header-action,
-html .table-action,
-html .tree-action {
+html .table-action {
   background: transparent;
   border-color: transparent;
   color: var(--text-light);
 }
 html .ldg-text-action:hover,
 html .panel-header-action:hover,
-html .table-action:hover,
-html .tree-action:hover {
+html .table-action:hover {
   background: var(--overlay-subtle);
+  color: var(--text);
+}
+
+/* .tree-action 是图标按钮（22×22），不是文本按钮，
+   色值应与 Button size="icon-sm" 一致（text-muted），
+   之前被归到文本按钮组里变成了 text-light，与同行的 <Button> 不一致。 */
+html .tree-action {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+}
+html .tree-action:hover {
+  background: var(--overlay-light);
   color: var(--text);
 }
 
@@ -9662,4 +9676,59 @@ html .button-ghost.button-header > svg,
 html .button-danger.button-header > svg {
   flex: 0 0 auto;
   opacity: 0.72;
+}
+
+/* icon-sm 档：22×22 密集图标按钮（对应 hana ._fileAction_47cb7 / ._rowAction_cf445）
+   ---------------------------------------------------------
+   hana 真值：
+     ._fileAction_47cb7  22×22  radius-sm×1.84 = 11.05px  squircle
+                         transparent  text-muted
+     ._rowAction_cf445   22×22  padding 0  border 0  text-muted
+   用于树行操作、表格行内图标按钮这类密集场景。
+   比 icon 档（28×28）小，比 xs 文本按钮更窄。 */
+html .button.button-icon-sm,
+html .button-primary.button-icon-sm,
+html .button-secondary.button-icon-sm,
+html .button-ghost.button-icon-sm,
+html .button-danger.button-icon-sm,
+html .button-quiet.button-icon-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  background: transparent;
+  color: var(--text-muted);
+  gap: 0;
+}
+html .button.button-icon-sm > svg,
+html .button-ghost.button-icon-sm > svg,
+html .button-danger.button-icon-sm > svg {
+  flex: 0 0 auto;
+  display: block;
+}
+html .button-ghost.button-icon-sm:not(:disabled):hover,
+html .button-quiet.button-icon-sm:not(:disabled):hover {
+  background: var(--overlay-light);
+  color: var(--text);
+}
+
+/* 图标按钮的按下态：accent 色（对应原 .workspace-toolbar-btn[aria-pressed="true"]）
+   ---------------------------------------------------------
+   hana 的顶栏面板开关也是这样：aria-pressed="true" 时只改文字色，
+   不加背景（见 ._btn_06f79 系列的 [aria-pressed=true] 规则）。 */
+html .button.button-icon[aria-pressed="true"],
+html .button-ghost.button-icon[aria-pressed="true"] {
+  color: var(--accent);
+}
+html .button.button-icon[aria-pressed="true"]:not(:disabled):hover,
+html .button-ghost.button-icon[aria-pressed="true"]:not(:disabled):hover {
+  background: var(--overlay-light);
+  color: var(--accent);
 }

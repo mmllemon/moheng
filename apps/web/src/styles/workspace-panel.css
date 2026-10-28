@@ -489,6 +489,10 @@
 .workspace-search-input {
   width: 100%;
   height: 26px !important;
+  /* 全局 html input:not(...) 规则给了 min-height: 32px，
+     而 min-height 永远赢过 height（即使 height 带 !important），
+     导致输入框实际 32px、溢出 30px 的搜索容器。 */
+  min-height: 0 !important;
   padding: 0 8px !important;
   border: none !important;
   border-radius: calc(var(--radius-sm) * var(--corner-radius-scale)) !important;
@@ -496,7 +500,9 @@
   /* 与侧栏搜索框同一做法：容器色 = sidebar-bg 97% + text 3%，输入层透明 */
   background: transparent !important;
   color: var(--text);
-  font-size: var(--fs-caption);
+  /* 全局 html input 规则把字号改成 --fs-ui（13.6px），
+     搜索框应该更小一号（--fs-caption 12.48px）。 */
+  font-size: var(--fs-caption) !important;
   outline: none;
 }
 
@@ -684,6 +690,15 @@
   width: 0;
   opacity: 0;
   pointer-events: none;
+}
+
+/* 容器收缩到 0 时，内部按钮不应跟着被压扁（否则 flex 会把 28px 挤成 21px）。
+   对齐 hana ._chromeLead 的做法：容器负责裁剪，按钮保持原尺寸。 */
+.workspace-chrome-lead > .workspace-toolbar-btn,
+.workspace-chrome-lead > .button,
+.workspace-chrome-trail > .workspace-toolbar-btn,
+.workspace-chrome-trail > .button {
+  flex: 0 0 auto;
 }
 
 .workspace-search-slot {
@@ -1244,8 +1259,14 @@
   justify-content: center;
   width: 22px;
   height: 22px;
+  /* 对齐 Button size="icon-sm"：链接与按钮在同一行里必须同高同色。
+     之前 <a> 高 24、<button> 高 22，两者混排时基线错位。 */
+  min-height: 22px;
   padding: 0;
   border: none;
+  /* <a> 的高度会被 line-height 撑开（实测 24px），
+     与同行 <Button> 的 22px 差 2px。line-height: 1 压平基线。 */
+  line-height: 1;
   border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
   background: transparent;
   color: var(--text-muted);

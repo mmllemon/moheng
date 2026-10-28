@@ -20,6 +20,7 @@ import {
 
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
+import { Button } from './Ui';
 import { FileKindIcon, FolderKindIcon, kindFromExt } from './FileKindIcon';
 import { usePreviewPanelResize } from '../lib/use-preview-panel-resize';
 import { visibleCards } from '../lib/workspace-cards';
@@ -606,16 +607,16 @@ export function WorkspacePanel(props: Props = {}) {
             对齐 hana：外层不渲染，内层（已进入目录）才渲染。 */}
         {workspaceTab === 'studio' && innerDir !== null && (
         <div className="workspace-toolbar" data-studio-desk-toolbar>
-          <button
-            type="button"
-            className="workspace-toolbar-btn"
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label={showPreviewToggle ? '隐藏预览' : '显示预览'}
             aria-pressed={showPreviewToggle}
             data-tooltip={showPreviewToggle ? '隐藏预览' : '显示预览'}
             onClick={() => setShowPreviewToggle((v) => !v)}
           >
             <Eye size={15} />
-          </button>
+          </Button>
           <div className="workspace-toolbar-actions">
             <div className="workspace-menu-wrap">
               <button
@@ -755,15 +756,15 @@ export function WorkspacePanel(props: Props = {}) {
                     </span>
                   </span>
                   <span className="tree-actions">
-                    <button
-                      type="button"
-                      className="tree-action"
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       data-tooltip="预览"
                       aria-label={`预览 ${item.name}`}
                       onClick={(event) => { event.stopPropagation(); openArtifactTab(item); }}
                     >
                       <Eye size={13} />
-                    </button>
+                    </Button>
                     <a
                       className="tree-action"
                       href={`/api/projects/${projectId}/artifacts/${encodeURIComponent(item.id)}/content?download=1${accessToken ? `&token=${encodeURIComponent(accessToken)}` : ''}`}
@@ -1075,15 +1076,15 @@ function TreeNode({ projectId, entry, depth, expanded, setExpanded, selected, on
         <span className="tree-actions">
           {!entry.isDir && (
             <>
-              <button
-                type="button"
-                className="tree-action"
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 data-tooltip="预览"
                 aria-label={`预览 ${entry.name}`}
                 onClick={(event) => { event.stopPropagation(); onSelect(entry); }}
               >
                 <Eye size={13} />
-              </button>
+              </Button>
               <a
                 className="tree-action"
                 href={rawUrl}
@@ -1096,15 +1097,15 @@ function TreeNode({ projectId, entry, depth, expanded, setExpanded, selected, on
               </a>
             </>
           )}
-          <button
-            type="button"
-            className="tree-action"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             data-tooltip="删除"
             aria-label={`删除 ${entry.name}`}
             onClick={(event) => { event.stopPropagation(); onDelete(entry); }}
           >
             <Trash2 size={13} />
-          </button>
+          </Button>
         </span>
       </div>
 

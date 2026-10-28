@@ -84,7 +84,7 @@ export function PageHeader({ title: _title, subtitle, context, actions }: { titl
    6 处 .panel-header-action 需要 data-* 标记，
    不补透传就无法迁移。 */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'quiet';
-export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'compact' | 'header';
+export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'icon-sm' | 'compact' | 'header';
 
 export function Button({
   children, onClick, variant = 'primary', type = 'button', disabled = false,
@@ -105,12 +105,14 @@ export function Button({
        md      -> 默认（32px）
        lg      -> button-lg（32px 高、宽 padding）
        icon    -> button-icon（方形 28×28）
+       icon-sm -> button-icon-sm（密集图标 22×22，树行/表行内）
        compact -> button-compact（32px 高、紧凑 padding） */
   const sizeCls = size === 'xs' ? 'button-xs'
     : size === 'header' ? 'button-header'
     : size === 'sm' ? 'button-small'
     : size === 'lg' ? 'button-lg'
     : size === 'icon' ? 'button-icon'
+    : size === 'icon-sm' ? 'button-icon-sm'
     : size === 'compact' ? 'button-compact'
     : '';
   return <button
