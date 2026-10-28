@@ -90,9 +90,9 @@
   --workspace-drawer-overlap: 10px;
   --workspace-drawer-shadow: 0 2px 4px -2px color-mix(in srgb, var(--shadow) 62%, transparent);
   /* 卡片是唯一的「纸」—— 对齐 hana 的 ._previewPanelBody_11fea：
-     border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1)) = 22.09px
+     border-radius: var(--panel-card-radius) = 22.09px
      不是 --radius-md（14.73px）。 */
-  border-radius: calc(var(--panel-card-radius) * var(--corner-radius-scale, 1));
+  border-radius: var(--panel-card-radius);
   corner-shape: squircle;
   overflow: hidden;
   background: var(--bg-card);
@@ -140,7 +140,7 @@
   padding: 0 var(--space-8, 8px);
   border: none;
   background: none;
-  border-radius: calc(var(--radius-compact, 4px) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-compact);
   corner-shape: squircle;
   color: var(--text-muted);
   font-size: var(--fs-hint, 11.2px);
@@ -292,8 +292,8 @@
 .workspace-card-main:has(.workspace-drawer-stack) .workspace-card-surface-main {
   z-index: calc(var(--workspace-drawer-count, 1) + 1);
   background: var(--panel-card-bg, var(--bg-card));
-  border-radius: 0 0 calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1))
-    calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1));
+  border-radius: 0 0 var(--workspace-drawer-outer-radius)
+    var(--workspace-drawer-outer-radius);
   corner-shape: squircle;
   border: 1px solid var(--card-border-color, var(--overlay-light));
   border-top: 0;
@@ -452,7 +452,7 @@
   padding: 0;
   border: 3px solid transparent;
   background-clip: padding-box;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   background-color: transparent;
   color: var(--text-muted);
@@ -480,7 +480,7 @@
   align-items: center;
   /* 凹槽感：比卡片底色（--bg-card）深 3%，与侧栏搜索框同一做法 */
   background: color-mix(in srgb, var(--bg-card) 92%, var(--text) 8%);
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   /* 加一条内描边，避免在纸色上完全看不出边界 */
   box-shadow: inset 0 0 0 1px var(--overlay-light);
@@ -495,7 +495,7 @@
   min-height: 0 !important;
   padding: 0 8px !important;
   border: none !important;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale)) !important;
+  border-radius: var(--radius-sm) !important;
   corner-shape: squircle;
   /* 与侧栏搜索框同一做法：容器色 = sidebar-bg 97% + text 3%，输入层透明 */
   background: transparent !important;
@@ -547,7 +547,7 @@
   background: transparent;
   border: var(--card-top-btn-hover-inset, 3px) solid transparent;
   background-clip: padding-box;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   color: var(--text-muted);
   cursor: default;
@@ -579,7 +579,7 @@
   min-height: 20px;
   padding: var(--space-2, 2px) var(--space-8, 8px);
   border: 0;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   background: none;
   color: var(--text-muted);
@@ -621,7 +621,7 @@
   padding: var(--space-4, 4px);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-md);
   corner-shape: squircle;
   box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12));
 }
@@ -634,7 +634,7 @@
   min-height: 28px;
   padding: 0 var(--space-8, 8px);
   border: 0;
-  border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-action);
   corner-shape: squircle;
   background: transparent;
   color: var(--text);
@@ -711,7 +711,7 @@
 .workspace-notice {
   margin: 0 8px 6px;
   padding: var(--space-6) var(--space-8);
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   color: var(--danger);
   font-size: var(--fs-hint);
@@ -772,7 +772,7 @@
   height: 28px;
   padding: 0 var(--space-8) 0 var(--space-2);
   margin: 0 var(--space-2);
-  border-radius: calc(4px * var(--corner-radius-scale));
+  border-radius: var(--radius-compact);
   corner-shape: squircle;
   color: var(--text);
   font-size: var(--fs-caption);
@@ -936,15 +936,15 @@
    ._card_eb32e { border-radius: calc(var(--radius-lg) * scale); corner-shape: squircle }
    非最后一层只保下沿（叠纸时下卡只露尾巴）。 */
 .workspace-drawer-stack > .workspace-drawer-layer:last-child {
-  border-radius: calc(var(--radius-lg) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-lg);
   corner-shape: squircle;
   border: 1px solid var(--card-border-color, var(--overlay-light));
   box-shadow: var(--workspace-drawer-shadow);
 }
 
 .workspace-drawer-stack > .workspace-drawer-layer:not(:last-child) {
-  border-radius: 0 0 calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1))
-    calc(var(--workspace-drawer-outer-radius) * var(--corner-radius-scale, 1));
+  border-radius: 0 0 var(--workspace-drawer-outer-radius)
+    var(--workspace-drawer-outer-radius);
   corner-shape: squircle;
   border: 1px solid var(--card-border-color, var(--overlay-light));
   border-top: 0;
@@ -1052,7 +1052,7 @@
   padding: 5px var(--space-8, 8px);
   border: 0;
   background: transparent;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   color: var(--text);
   font-size: var(--fs-caption, 12.48px);
@@ -1088,7 +1088,7 @@
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   background: transparent;
   color: var(--text-muted);
@@ -1169,7 +1169,7 @@
   min-height: 44px;
   padding: var(--space-8, 8px);
   border: 0;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   background: transparent;
   color: var(--text);
@@ -1267,7 +1267,7 @@
   /* <a> 的高度会被 line-height 撑开（实测 24px），
      与同行 <Button> 的 22px 差 2px。line-height: 1 压平基线。 */
   line-height: 1;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale));
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
   cursor: default;
@@ -1326,7 +1326,7 @@
   color: var(--text-muted);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-md);
   corner-shape: squircle;
   cursor: default;
   white-space: nowrap;
@@ -1378,7 +1378,7 @@
   cursor: default;
   opacity: 0.35;
   flex-shrink: 0;
-  border-radius: calc(calc(var(--radius-md) - 2px) * var(--corner-radius-scale, 1));
+  border-radius: calc(var(--radius-md) - 2px);
   corner-shape: squircle;
   transition: opacity var(--duration-instant, 80ms), background var(--duration-instant, 80ms),
     color var(--duration-instant, 80ms);
@@ -1400,7 +1400,7 @@
   flex-shrink: 0;
   border: none;
   background: none;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   display: flex;
   align-items: center;
@@ -1453,7 +1453,7 @@
   color: var(--text);
   background: var(--overlay-subtle);
   border: 1px solid transparent;
-  border-radius: calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-action);
   corner-shape: squircle;
   cursor: default;
   transition: background var(--duration-fast, 120ms) var(--ease-out);
@@ -1569,7 +1569,7 @@
   padding: var(--space-4);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-md);
   corner-shape: squircle;
   box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12));
   animation: panel-menu-fade-up var(--duration-fast) var(--ease-out);
@@ -1588,7 +1588,7 @@
   min-height: 28px;
   padding: 0 var(--space-8);
   border: none;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   background: transparent;
   font-size: var(--fs-ui);
@@ -1619,7 +1619,7 @@
   flex: 0 0 16px;
   width: 16px;
   height: 16px;
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   color: var(--text-muted);
   transition: color var(--duration-instant) var(--ease-out);
@@ -1729,7 +1729,7 @@
   gap: var(--space-2, 2px);
   margin: 0 var(--space-8, 8px);
   padding: var(--space-2, 2px);
-  border-radius: calc(var(--radius-sm) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-sm);
   corner-shape: squircle;
   background: var(--overlay-subtle);
   border: 1px solid var(--overlay-light);
@@ -1746,7 +1746,7 @@
   left: var(--space-2, 2px);
   z-index: 0;
   width: calc((100% - 6px) / 2);
-  border-radius: calc(max(2px, calc(var(--radius-sm) - 2px)) * var(--corner-radius-scale, 1));
+  border-radius: max(2px, calc(var(--radius-sm) - 2px));
   corner-shape: squircle;
   background: var(--bg-card);
   box-shadow: 0 1px 3px var(--shadow);
@@ -1762,7 +1762,7 @@
   min-width: 0;
   height: 20px;
   border: none;
-  border-radius: calc(max(2px, calc(var(--radius-sm) - 2px)) * var(--corner-radius-scale, 1));
+  border-radius: max(2px, calc(var(--radius-sm) - 2px));
   corner-shape: squircle;
   background: transparent;
   color: var(--text-muted);

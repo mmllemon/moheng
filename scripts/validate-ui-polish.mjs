@@ -275,7 +275,11 @@ check('divider geometry uses Hana border and spacing tokens', hana.includes('--c
 
    2026-10-23 更新：radius token 语义已对齐 Hana（token 存裸值，缩放在使用处），
    原来的 calc(var(--radius-input) * var(--corner-radius-scale)) 内联写法
-   改为在每个 border-radius 声明里。断言改为验证新语义。 */
+   改为在每个 border-radius 声明里。断言改为验证新语义。
+
+  2026-10-27 再更新：scale 已折算进 token 本体（token 在 @supports 内
+  直接给最终值），使用处只写 var(--radius-x)。断言改为验证：
+  token 默认是裸值、@supports 内乘了 scale、使用处不内联 calc。 */
 check('interactive controls use Hana 32px height and scaled radius token',
   hana.includes('height: var(--control-height) !important') &&
   hana.includes('--radius-input: 6px') &&
@@ -283,7 +287,8 @@ check('interactive controls use Hana 32px height and scaled radius token',
   // token 存裸值
   hana.includes('--radius-control: var(--radius-input)') &&
   // 使用处带缩放
-  /border-radius:\s*calc\(var\(--radius-control\) \* var\(--corner-radius-scale/.test(hana));
+  /--radius-input:\s*calc\(6px \* 1\.8408964152537137\)/.test(hana) &&
+  /border-radius:\s*var\(--radius-control\)/.test(hana));
 check('settings page headers stick while scrolling', hana.includes('.settings-content .page-header') && hana.includes('position: sticky;') && hana.includes('top: -20px;'));
 check('project ledger is name/status with a wider dossier', !(await read('apps/web/src/pages/ProjectsPage.tsx')).includes('<th>业主</th>') && hana.includes('minmax(560px, 1.3fr)'));
 check('row selection has no inset left bar', hana.includes('.projects-table tbody tr.is-selected td:first-child { box-shadow: none; }') && hana.includes('.data-table tbody tr:hover td:first-child { box-shadow: none; }'));
@@ -315,7 +320,8 @@ check('accounts table becomes labeled cards at narrow widths',
 check('interaction radii use the control / action / compact scale',
   hana.includes('--radius-action: 5px') &&
   hana.includes('--radius-compact: 4px') &&
-  /border-radius:\s*calc\(var\(--radius-action\) \* var\(--corner-radius-scale/.test(hana) &&
+  /--radius-action:\s*calc\(5px \* 1\.8408964152537137\)/.test(hana) &&
+  /--radius-compact:\s*calc\(4px \* 1\.8408964152537137\)/.test(hana) &&
   hana.includes('.button-primary,') &&
   hana.includes('.settings-nav .settings-search input'));
 check('historical V6 design/component documents are present under archive', designExists && componentExists);

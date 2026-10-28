@@ -788,7 +788,7 @@ html .settings-content .system-authorization-scope-card {
   padding: 14px var(--space-16);
   border: 1px solid var(--card-border);
   border-left: 1px solid var(--card-border);
-  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-card);
   corner-shape: squircle;
   background: var(--bg-card);
 }
@@ -833,7 +833,7 @@ html .settings-content article.panel.report-studio-entry-card {
   padding: 14px var(--space-16);
   border: 1px solid var(--card-border);
   border-left: 1px solid var(--card-border);
-  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-card);
   corner-shape: squircle;
   background: var(--bg-card);
 }
@@ -869,7 +869,7 @@ html .settings-content article.panel.audit-summary-card {
   padding: 14px var(--space-16);
   border: 1px solid var(--card-border);
   border-left: 1px solid var(--card-border);
-  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-card);
   corner-shape: squircle;
   background: var(--bg-card);
 }
@@ -902,7 +902,7 @@ html .settings-content .system-overview-metrics > article.system-overview-metric
   padding: 14px var(--space-16);
   border: 1px solid var(--card-border);
   border-left: 1px solid var(--card-border);
-  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-card);
   corner-shape: squircle;
   background: var(--bg-card);
   /* 指标项在设置窗里是「独立卡片」，内部应该是横向布局：
@@ -1015,7 +1015,7 @@ html .ds-section-card:has(> .security-metrics),
 html .ds-section-card:has(> .system-overview-metrics) {
   padding: 0;
   border: 1px solid var(--card-border);
-  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-card);
   corner-shape: squircle;
   background: var(--bg-card);
   box-shadow: none;
@@ -1041,7 +1041,7 @@ html .cost-type-cards {
   padding: 0;
   margin: var(--space-16) 0;
   border: 1px solid var(--card-border);
-  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-card);
   corner-shape: squircle;
   background: var(--bg-card);
   box-shadow: none;
@@ -1116,7 +1116,7 @@ html .toolbar-view-toggle {
   gap: var(--space-2, 2px);
   padding: var(--space-2);
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  border-radius: calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1));
+  border-radius: var(--radius-action);
   background: transparent;
   /* 可收缩：按钮多时横向滚动，不把工具栏撑到换行。 */
   min-width: 0;
@@ -1129,7 +1129,7 @@ html .toolbar-view-button {
   height: 26px;
   padding: 0 var(--space-10, 10px);
   border: 0;
-  border-radius: calc(calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1)) - 2px);
+  border-radius: calc(var(--radius-action) - 2px);
   background: transparent;
   color: var(--text-muted);
   font-size: var(--fs-hint);

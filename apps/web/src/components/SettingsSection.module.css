@@ -95,10 +95,11 @@
   /*
     Hana 原式：calc(var(--settings-surface-radius, var(--radius-card, 8px)) * var(--corner-radius-scale, 1))
 
-    moheng 现已与 Hana 语义对齐：--radius-card 存裸值（8px），
-    缩放移到使用处。因此这里可以原样沿用 Hana 的写法。
+    2026-10-27：moheng 已把 scale 折算进 token 本体，--radius-card 在支持
+  squircle 时就是 14.73px。再乘一次 scale 会双重相乘到 27.11px（实测确认），
+  所以这里去掉外层乘法。
   */
-  border-radius: calc(var(--settings-surface-radius, var(--radius-card)) * var(--corner-radius-scale, 1));
+  border-radius: var(--settings-surface-radius, var(--radius-card));
   corner-shape: squircle;
   background: var(--bg-card);
 }
