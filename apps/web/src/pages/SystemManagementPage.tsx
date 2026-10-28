@@ -4,7 +4,7 @@ import { Activity, ArrowRight, BookOpen, Database, Fingerprint, KeyRound, Refres
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 
 type ManagedUser = { id: string; name: string; email: string; role: 'ADMIN' | 'USER'; isActive: boolean; mfaEnabled: boolean; passwordResetRequired: boolean; createdAt: string };
 type AuthSession = { id: string; isValid: boolean; createdAt: string; lastSeenAt: string; user: { name: string; email: string }; ipAddress: string | null };
@@ -46,7 +46,7 @@ export default function SystemManagementPage() {
   return <div className="page-wrap system-management-page">
     {/* 页面级操作按钮：PageHeader 在设置窗内会自动 portal 到标题栏，
         不再占用内容区顶部一行。 */}
-    <PageHeader eyebrow="SYSTEM MANAGEMENT / OVERVIEW" title="系统管理概览" subtitle="这里展示系统状态、需要关注的安全事项和治理建设进度。字典、参数、组织与运维分别进入专门工作台，避免在概览页重复摆放复杂表单。" actions={<button type="button" className="panel-header-action" onClick={() => { void usersQuery.refetch(); void sessionsQuery.refetch(); void eventsQuery.refetch(); }}><RefreshCw size={14} />刷新状态</button>} />
+    <PageHeader eyebrow="SYSTEM MANAGEMENT / OVERVIEW" title="系统管理概览" subtitle="这里展示系统状态、需要关注的安全事项和治理建设进度。字典、参数、组织与运维分别进入专门工作台，避免在概览页重复摆放复杂表单。" actions={<Button size="header" variant="ghost" onClick={() => { void usersQuery.refetch(); void sessionsQuery.refetch(); void eventsQuery.refetch(); }}><RefreshCw size={14} />刷新状态</Button>} />
 
     <section className="system-overview-metrics" aria-label="系统管理指标">
       <article className="panel system-overview-metric"><span className="system-overview-icon"><Users size={18} /></span><div><small>启用账号</small><strong>{users.filter((managedUser) => managedUser.isActive).length}<em> / {users.length}</em></strong><span>停用账号不能继续建立会话</span></div><Link to="/system/accounts" aria-label="查看系统账号"><ArrowRight size={15} /></Link></article>

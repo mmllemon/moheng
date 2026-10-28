@@ -4,7 +4,7 @@ import { BookOpen, CheckCircle2, ChevronRight, CircleOff, Plus, RefreshCw, Save 
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
 import { suggestCodeFromName } from '../utils/code-suggestion';
 
 type DictionaryItem = { id: string; dictionaryId: string; code: string; name: string; description: string | null; sortOrder: number; isSystem: boolean; isActive: boolean; updatedAt: string };
@@ -112,7 +112,7 @@ export default function SystemDictionariesPage() {
   if (dictionariesQuery.error) return <div className="page-wrap"><ErrorBlock message={(dictionariesQuery.error as Error).message} retry={() => { void dictionariesQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page system-config-page">
-    <PageHeader eyebrow="SYSTEM MANAGEMENT / DICTIONARIES" title="统一基础字典" subtitle="集中维护跨业务模块可复用的分类与选项。编码创建后保持稳定；停用只影响后续选择，不删除历史记录。合同金额、结算状态等核心财务枚举不会被动态字典直接覆盖。" actions={<button type="button" className="panel-header-action" onClick={() => { void dictionariesQuery.refetch(); }}><RefreshCw size={14} />刷新</button>} />
+    <PageHeader eyebrow="SYSTEM MANAGEMENT / DICTIONARIES" title="统一基础字典" subtitle="集中维护跨业务模块可复用的分类与选项。编码创建后保持稳定；停用只影响后续选择，不删除历史记录。合同金额、结算状态等核心财务枚举不会被动态字典直接覆盖。" actions={<Button size="header" variant="ghost" onClick={() => { void dictionariesQuery.refetch(); }}><RefreshCw size={14} />刷新</Button>} />
     {notice && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="关闭提示">×</button></div>}
 
     <div className="system-dictionary-layout">

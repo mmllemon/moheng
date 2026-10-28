@@ -3,7 +3,7 @@ import { Activity, Archive, CheckCircle2, Database, Download, HardDrive, Refresh
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
 type BackupRun = { id: string; type: 'BACKUP' | 'RESTORE_DRILL'; status: 'RUNNING' | 'SUCCEEDED' | 'FAILED'; sourceBackupId: string | null; fileName: string | null; fileSize: string | null; sha256: string | null; globalsFileName: string | null; globalsFileSize: string | null; globalsSha256: string | null; startedAt: string; finishedAt: string | null; durationMs: number | null; verified: boolean; message: string | null; triggeredBy: { name: string; email: string } };
@@ -49,7 +49,7 @@ export default function SystemOperationsPage() {
 
   const totalJobs = Object.values(overview.backgroundJobs.counts).reduce((sum, value) => sum + value, 0);
   return <div className="page-wrap system-expansion-page system-ops-page">
-    <PageHeader eyebrow="SYSTEM MANAGEMENT / OPERATIONS" title="运行维护与备份恢复" subtitle="服务状态、后台任务、存储容量及 PostgreSQL 备份/隔离恢复演练。执行备份不等于恢复已验证；只有通过恢复演练的记录才标记为已验证。" actions={<button type="button" className="panel-header-action" onClick={() => { void reload(); }}><RefreshCw size={14} />刷新状态</button>} />
+    <PageHeader eyebrow="SYSTEM MANAGEMENT / OPERATIONS" title="运行维护与备份恢复" subtitle="服务状态、后台任务、存储容量及 PostgreSQL 备份/隔离恢复演练。执行备份不等于恢复已验证；只有通过恢复演练的记录才标记为已验证。" actions={<Button size="header" variant="ghost" onClick={() => { void reload(); }}><RefreshCw size={14} />刷新状态</Button>} />
     {(backupMutation.error || restoreMutation.error || downloadMutation.error || downloadGlobalsMutation.error || backupsQuery.error) && <div className="system-expansion-notice is-error" role="alert"><ShieldAlert size={16} /><span>{((backupMutation.error ?? restoreMutation.error ?? downloadMutation.error ?? downloadGlobalsMutation.error ?? backupsQuery.error) as Error).message}</span></div>}
     {(backupMutation.data || restoreMutation.data) && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{restoreMutation.data ? '恢复演练成功；数据库核心表校验已通过。' : '备份文件生成成功；恢复可用性仍待隔离恢复演练。'}</span></div>}
 

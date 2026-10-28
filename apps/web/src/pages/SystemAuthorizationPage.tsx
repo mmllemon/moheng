@@ -4,7 +4,7 @@ import { CheckCircle2, ClipboardCheck, RefreshCw, ShieldCheck, ShieldAlert, User
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { ErrorBlock, LoadingBlock, PageHeader, SettingsSection, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, SettingsSection, StatusBadge } from '../components/Ui';
 import SystemTabs from '../components/SystemTabs';
 
 type ProjectRole = 'OWNER' | 'MANAGER' | 'ESTIMATOR' | 'VIEWER';
@@ -59,7 +59,7 @@ export default function SystemAuthorizationPage() {
   if (failedQuery?.error) return <div className="page-wrap"><ErrorBlock message={(failedQuery.error as Error).message} retry={() => { void refresh(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page system-authorization-page">
-    <PageHeader eyebrow="SYSTEM MANAGEMENT / AUTHORIZATION" title="权限治理与授权复核" subtitle="展示现行服务端角色规则，按项目成员关系复核跨项目访问。该页面不直接授予权限；角色分配仍通过项目管理流程完成。" actions={<button type="button" className="panel-header-action" onClick={() => { void refresh(); }}><RefreshCw size={14} />刷新</button>} />
+    <PageHeader eyebrow="SYSTEM MANAGEMENT / AUTHORIZATION" title="权限治理与授权复核" subtitle="展示现行服务端角色规则，按项目成员关系复核跨项目访问。该页面不直接授予权限；角色分配仍通过项目管理流程完成。" actions={<Button size="header" variant="ghost" onClick={() => { void refresh(); }}><RefreshCw size={14} />刷新</Button>} />
     <SystemTabs ariaLabel="授权复核分区" value={tab} onChange={(id) => setTab(id as 'matrix' | 'reviews')} items={[{ id: 'matrix', label: '权限矩阵', count: matrix?.projectRoles.length ?? 0 }, { id: 'reviews', label: '授权复核', count: reviews.length }]} />
 
     {(createReview.error || completeReview.error || detailQuery.error) && <div className="system-expansion-notice is-error" role="alert"><ShieldAlert size={16} /><span>{((createReview.error ?? completeReview.error ?? detailQuery.error) as Error).message}</span></div>}

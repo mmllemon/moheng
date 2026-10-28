@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
 import type { Project } from '../types';
-import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import SystemTabs from '../components/SystemTabs';
 import { suggestCodeFromName } from '../utils/code-suggestion';
 import SelectField from '../components/SelectField';
@@ -61,7 +61,7 @@ export default function SystemParametersPage() {
   if (failedQuery?.error) return <div className="page-wrap"><ErrorBlock message={(failedQuery.error as Error).message} retry={() => { void projectsQuery.refetch(); void revisionsQuery.refetch(); void effectiveQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page system-config-page">
-    <PageHeader eyebrow="SYSTEM MANAGEMENT / PARAMETERS" title="统一参数配置" subtitle="配置采用版本化草稿与显式发布；支持全局默认值、项目级覆盖和历史版本回滚。敏感密钥必须存入环境变量或集成凭据保险库，不作为普通参数保存。" actions={<button type="button" className="panel-header-action" onClick={() => { void refresh(); }}><RefreshCw size={14} />刷新</button>} />
+    <PageHeader eyebrow="SYSTEM MANAGEMENT / PARAMETERS" title="统一参数配置" subtitle="配置采用版本化草稿与显式发布；支持全局默认值、项目级覆盖和历史版本回滚。敏感密钥必须存入环境变量或集成凭据保险库，不作为普通参数保存。" actions={<Button size="header" variant="ghost" onClick={() => { void refresh(); }}><RefreshCw size={14} />刷新</Button>} />
     {notice && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="关闭提示">×</button></div>}
 
     <SystemTabs ariaLabel="参数配置分区" value={tab} onChange={(id) => setTab(id as 'create' | 'effective' | 'history')} items={[{ id: 'create', label: '新建版本' }, { id: 'effective', label: '当前有效' }, { id: 'history', label: '版本历史' }]} />

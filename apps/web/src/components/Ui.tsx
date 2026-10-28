@@ -84,7 +84,7 @@ export function PageHeader({ title: _title, subtitle, context, actions }: { titl
    6 处 .panel-header-action 需要 data-* 标记，
    不补透传就无法迁移。 */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'quiet';
-export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'compact';
+export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'icon' | 'compact' | 'header';
 
 export function Button({
   children, onClick, variant = 'primary', type = 'button', disabled = false,
@@ -99,13 +99,15 @@ export function Button({
   className?: string;
 } & Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'type' | 'disabled' | 'className' | 'children'>) {
   /* 尺寸类映射：
-       xs      -> button-xs（表格行内、24px）
+       xs      -> button-xs（表格行内、24px / pad 0 6）
+       header  -> button-header（面板卡头操作、24px / pad 0 8）
        sm      -> button-small（26px）
        md      -> 默认（32px）
        lg      -> button-lg（32px 高、宽 padding）
        icon    -> button-icon（方形 28×28）
        compact -> button-compact（32px 高、紧凑 padding） */
   const sizeCls = size === 'xs' ? 'button-xs'
+    : size === 'header' ? 'button-header'
     : size === 'sm' ? 'button-small'
     : size === 'lg' ? 'button-lg'
     : size === 'icon' ? 'button-icon'

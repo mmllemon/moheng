@@ -4,7 +4,7 @@ import { Building2, CheckCircle2, ClipboardCheck, KeyRound, Plus, RefreshCw, Shi
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import SelectField from '../components/SelectField';
 import SystemTabs from '../components/SystemTabs';
 
@@ -70,7 +70,7 @@ export default function SystemGovernancePage() {
   if (loadError?.error) return <div className="page-wrap"><ErrorBlock message={(loadError.error as Error).message} retry={() => { void refreshAll(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page">
-    <PageHeader eyebrow="SYSTEM MANAGEMENT / GOVERNANCE" title="组织、规则与集成治理" subtitle="管理部门归属、内部审批规则版本、外部凭据与数据质量。公司账号角色和项目角色仍分离；发布规则只控制公司内部变更审批，不改变外部确认金额生效规则。" actions={<button type="button" className="panel-header-action" onClick={() => { void refreshAll(); }}><RefreshCw size={14} />刷新</button>} />
+    <PageHeader eyebrow="SYSTEM MANAGEMENT / GOVERNANCE" title="组织、规则与集成治理" subtitle="管理部门归属、内部审批规则版本、外部凭据与数据质量。公司账号角色和项目角色仍分离；发布规则只控制公司内部变更审批，不改变外部确认金额生效规则。" actions={<Button size="header" variant="ghost" onClick={() => { void refreshAll(); }}><RefreshCw size={14} />刷新</Button>} />
     {notice && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="关闭提示">×</button></div>}
 
     <SystemTabs ariaLabel="组织治理分区" value={tab} onChange={(id) => setTab(id as 'org' | 'rules' | 'integrations' | 'quality')} items={[{ id: 'org', label: '组织与岗位' }, { id: 'rules', label: '审批规则' }, { id: 'integrations', label: '集成凭据' }, { id: 'quality', label: '数据质量' }]} />

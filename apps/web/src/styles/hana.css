@@ -9636,3 +9636,30 @@ html .button-danger.button-small:not(:disabled):hover {
   border-color: transparent;
   color: var(--danger);
 }
+
+/* header 档：面板卡头操作（对应原 .panel-header-action）
+   ---------------------------------------------------------
+   原 .panel-header-action 实测：h 24 / pad 0 8 / gap 6 / fs --fs-hint
+   与 xs 档（pad 0 6 / gap 4）差 2px，不能直接复用。
+   卡头操作在视觉上需要略松，与 xs（表格行内密集）区分。 */
+html .button.button-header,
+html .button-primary.button-header,
+html .button-secondary.button-header,
+html .button-ghost.button-header,
+html .button-danger.button-header,
+html .button-quiet.button-header {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 var(--space-8);
+  gap: var(--space-6);
+  font-size: var(--fs-hint);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+html .button.button-header > svg,
+html .button-ghost.button-header > svg,
+html .button-danger.button-header > svg {
+  flex: 0 0 auto;
+  opacity: 0.72;
+}
