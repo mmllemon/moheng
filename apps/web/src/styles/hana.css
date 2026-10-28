@@ -5735,6 +5735,21 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .owner-finance-tabs > button.active { color: var(--text); border-color: transparent; background: var(--bg-card); box-shadow: 0 1px 3px color-mix(in srgb, var(--text) 12%, transparent); font-weight: 600; }
 .owner-finance-tabs > button small { min-width: auto; height: auto; padding: 0; border-radius: 0; background: transparent; color: var(--text-muted); font-size: var(--fs-hint); }
 .owner-finance-tabs > button.active small { background: transparent; color: var(--accent); }
+/* .table-count 基础类：legacy.css:422 用 #f3f6fa（蓝灰色，旧体系），
+   与暖米色主题不一致。统一到 overlay-subtle + text-muted。 */
+html .table-count {
+  padding: var(--space-2) var(--space-8);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: calc(var(--radius-compact) * var(--corner-radius-scale, 1));
+  corner-shape: squircle;
+  color: var(--text-muted);
+  background: var(--overlay-subtle);
+  font-size: var(--fs-hint);
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 /* owner-finance 页的两个旧徽标：改成 token 体系
    ---------------------------------------------------------
    legacy.css 里：
