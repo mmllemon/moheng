@@ -6805,7 +6805,7 @@ select { corner-shape: squircle !important; }
   height: 28px;
   padding: 0 var(--space-8);
   margin-right: calc(-1 * var(--space-8));
-  border-radius: var(--radius-md);
+  border-radius: calc(var(--radius-md) * var(--corner-radius-scale, 1));
   corner-shape: squircle;
   color: var(--text-muted);
   font-size: var(--fs-hint);
@@ -10038,5 +10038,10 @@ textarea {
 /* 筛选按钮组内的按钮、审计卡头徽标：9.2px 圆角，之前漏了曲率 */
 .notice-filter-group > button,
 .audit-filter-heading > span {
+  corner-shape: squircle;
+}
+
+/* 预算页分类筛选按钮：9.2px 圆角，之前只给容器 .ldg-segments 设了曲率 */
+.ldg-segments > button {
   corner-shape: squircle;
 }
