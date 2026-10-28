@@ -1,22 +1,22 @@
 /* V7 project ledger: compact portfolio table + selected project dossier. */
-.projects-ledger-page .projects-kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line-2);border-bottom:1px solid var(--line);margin:16px 0 18px}
-.projects-ledger-page .projects-kpi-strip>div{padding:12px 16px;border-left:1px solid var(--border);min-width:0}
+.projects-ledger-page .projects-kpi-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line-2);border-bottom:1px solid var(--line);margin:var(--space-16) 0 18px}
+.projects-ledger-page .projects-kpi-strip>div{padding:var(--space-12) var(--space-16);border-left:1px solid var(--border);min-width:0}
 .projects-ledger-page .projects-kpi-strip>div:first-child{border-left:0;padding-left:0}
 .projects-ledger-page .projects-kpi-strip span{display:block;font-size:var(--fs-hint);color:var(--meta);letter-spacing:.04em}
-.projects-ledger-page .projects-kpi-strip strong{display:block;font-family:var(--num);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.projects-ledger-page .projects-kpi-strip strong{display:block;font-family:var(--num);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:var(--space-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .projects-ledger-page .projects-kpi-strip small{display:block;font-size:var(--fs-hint);color:var(--text-muted)}
-.projects-ledger-page .projects-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.projects-ledger-page .projects-toolbar{display:flex;align-items:center;gap:var(--space-8);margin-bottom:var(--space-10)}
 .projects-ledger-page .projects-toolbar .toolbar-search{flex:1;min-width:0}
 .projects-ledger-page .projects-toolbar .results-count{margin-left:auto;white-space:nowrap}
 .projects-ledger-layout{display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:30px;align-items:start}
-.projects-ledger{min-width:0;border-top:1px solid var(--line-2);padding-top:12px}
-.projects-ledger-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px}
+.projects-ledger{min-width:0;border-top:1px solid var(--line-2);padding-top:var(--space-12)}
+.projects-ledger-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-14);margin-bottom:var(--space-8)}
 .projects-ledger-head h2{margin:0;font-size:15px;font-weight:600}
-.projects-ledger-head p{margin:2px 0 0;font-size:var(--fs-hint);color:var(--meta)}
+.projects-ledger-head p{margin:var(--space-2) 0 0;font-size:var(--fs-hint);color:var(--meta)}
 .projects-ledger-head>span{font-family:var(--num);font-size:var(--fs-hint);color:var(--meta);white-space:nowrap}
 .projects-table{min-width:720px}
 .projects-table th{font-size:var(--fs-micro);letter-spacing:.05em}
-.projects-table td{font-size:var(--fs-hint);padding-top:9px;padding-bottom:9px}
+.projects-table td{font-size:var(--fs-hint);padding-top:var(--space-10);padding-bottom:var(--space-10)}
 .projects-table tbody tr{cursor:pointer}
 .projects-table tbody tr:hover td{background:var(--state-hover-bg)}
 .projects-table tbody tr.is-selected td{background:var(--state-selected-bg)}
@@ -25,39 +25,39 @@
 .projects-owner-cell{display:inline-block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
 .projects-owner-cell a{color:var(--accent)}
 .projects-dossier{min-width:0;border-left:1px solid var(--line);padding-left:22px;position:sticky;top:84px}
-.projects-dossier-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line-2);padding-bottom:10px}
-.projects-dossier-head h2{font-size:20px;line-height:1.35;margin:4px 0 3px;font-weight:600;letter-spacing:.02em}
+.projects-dossier-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-12);border-bottom:1px solid var(--line-2);padding-bottom:var(--space-10)}
+.projects-dossier-head h2{font-size:20px;line-height:1.35;margin:var(--space-4) 0 var(--space-4);font-weight:600;letter-spacing:.02em}
 .projects-dossier-head p{margin:0;font-size:var(--fs-hint);color:var(--meta)}
-.projects-dossier-tools{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.projects-dossier-tools{display:flex;align-items:center;gap:var(--space-6);flex:0 0 auto}
 .projects-dossier-facts{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;border-bottom:1px solid var(--line)}
-.projects-dossier-facts>div{padding:7px 0;border-bottom:1px solid var(--line);min-width:0}
+.projects-dossier-facts>div{padding:var(--space-8) 0;border-bottom:1px solid var(--line);min-width:0}
 .projects-dossier-facts>div:nth-child(5),.projects-dossier-facts>div:nth-child(6){border-bottom:0}
 .projects-dossier-facts span{display:block;font-size:var(--fs-micro);color:var(--meta)}
 .projects-dossier-facts strong{display:block;font-size:var(--fs-hint);font-weight:500;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.projects-dossier-finance{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;padding:8px 0 2px}
-.projects-dossier-finance>div{padding:7px 0;border-bottom:1px solid var(--line);min-width:0}
+.projects-dossier-finance{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;padding:var(--space-8) 0 var(--space-2)}
+.projects-dossier-finance>div{padding:var(--space-8) 0;border-bottom:1px solid var(--line);min-width:0}
 .projects-dossier-finance span{display:block;font-size:var(--fs-micro);color:var(--meta)}
 .projects-dossier-finance strong{display:block;font-family:var(--num);font-size:var(--fs-ui);font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .projects-dossier-finance small{display:block;font-size:var(--fs-micro);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.projects-dossier-ratio{padding:10px 0 8px;border-bottom:1px solid var(--line)}
+.projects-dossier-ratio{padding:var(--space-10) 0 var(--space-8);border-bottom:1px solid var(--line)}
 .projects-dossier-ratio>div:first-child{display:flex;align-items:baseline;justify-content:space-between;font-size:var(--fs-micro);color:var(--meta)}
 .projects-dossier-ratio>div:first-child strong{font-family:var(--num);font-size:var(--fs-hint);color:var(--ink-2);font-weight:500}
-.projects-ratio-track{height:4px;background:var(--line);margin:7px 0 4px;overflow:hidden}
+.projects-ratio-track{height:4px;background:var(--line);margin:var(--space-8) 0 var(--space-4);overflow:hidden}
 .projects-ratio-track i{display:block;height:100%;background:var(--accent);max-width:100%}
 .projects-dossier-ratio-foot{display:flex;justify-content:space-between;font-size:var(--fs-micro);color:var(--text-muted)}
-.projects-dossier-note{display:flex;align-items:flex-start;gap:6px;padding:9px 0;border-bottom:1px solid var(--line);color:var(--text-muted);font-size:var(--fs-hint);line-height:1.65}
+.projects-dossier-note{display:flex;align-items:flex-start;gap:var(--space-6);padding:var(--space-10) 0;border-bottom:1px solid var(--line);color:var(--text-muted);font-size:var(--fs-hint);line-height:1.65}
 .projects-dossier-note svg{flex:0 0 auto;margin-top:1px}
-.projects-dossier-actions{display:flex;gap:8px;margin-top:12px}
+.projects-dossier-actions{display:flex;gap:var(--space-8);margin-top:var(--space-12)}
 @media (max-width:1100px){
   .projects-ledger-page .projects-kpi-strip{grid-template-columns:1fr 1fr}
   .projects-ledger-page .projects-kpi-strip>div:nth-child(3){border-left:0;padding-left:0}
   .projects-ledger-layout{grid-template-columns:1fr}
-  .projects-dossier{position:static;border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+  .projects-dossier{position:static;border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:var(--space-16)}
   .projects-dossier-facts{grid-template-columns:1fr 1fr}
 }
 @media (max-width:640px){
   .projects-ledger-page .projects-kpi-strip{grid-template-columns:1fr 1fr}
-  .projects-ledger-page .projects-kpi-strip>div{padding:8px 9px}
+  .projects-ledger-page .projects-kpi-strip>div{padding:var(--space-8) var(--space-10)}
   .projects-ledger-page .projects-kpi-strip strong{font-size:15px}
   .projects-ledger-page .projects-toolbar{flex-wrap:wrap}
   .projects-ledger-page .projects-toolbar .toolbar-search{flex:1 1 100%}

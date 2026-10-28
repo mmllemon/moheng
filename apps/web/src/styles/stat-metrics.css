@@ -1088,7 +1088,7 @@ html .toolbar-view-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2, 2px);
-  padding: 2px;
+  padding: var(--space-2);
   border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
   border-radius: calc(var(--radius-action, 5px) * var(--corner-radius-scale, 1));
   background: transparent;
