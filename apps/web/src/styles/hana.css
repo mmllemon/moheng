@@ -10077,3 +10077,52 @@ html .page-wrap.business-party-detail-page {
 .ds-section-segment > .change-summary-grid > div + div {
   padding-left: var(--space-16);
 }
+
+/* 段内已嵌在卡片里的容器：不再画第二层卡片
+   ---------------------------------------------------------
+   这些容器原本是独立卡片（border + radius + bg），
+   收进 Section.Stack 后变成卡内的一段，必须剥掉卡片外观，
+   否则看起来像「卡片里套卡片」。 */
+.ds-section-segment > .cost-type-cards,
+.ds-section-segment > .ldg-stats,
+.ds-section-segment > .bill-summary-grid,
+.ds-section-segment > .owner-finance-metrics,
+.ds-section-segment > .change-summary-grid,
+.ds-section-segment > .an-stats,
+.ds-section-segment > .projects-kpi-strip,
+.ds-section-segment > .business-party-summary-strip,
+.ds-section-segment > .system-overview-metrics,
+.ds-section-segment > .owner-contract-amount-grid {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* 段内的搜索工具条：去掉下边框（段间已有分隔线） */
+.ds-section-segment > .table-toolbar {
+  padding: 0;
+  border-bottom: 0;
+}
+.ds-section-segment > .table-toolbar::after {
+  display: none;
+}
+
+/* 段内底注：给底部留白，不要紧贴卡片底边。
+   plain 段本身 padding: 0，所以留白要加在段上（加在 .data-note 上无效，
+   它只是段内唯一子元素，段高仍等于它的高度）。 */
+.ds-section-segment--plain:last-child {
+  padding-bottom: var(--space-16);
+}
+
+/* 卡头（ds-section-head）右侧内边距：
+   实测按钮 rightGap 0，贴着卡片右边缘。 */
+.ds-section-head {
+  padding: 0 var(--space-16) 0 0;
+}
+/* 但 ds-section-head 本身已在 section 内，左缘要与卡片对齐 */
+.ds-section-head > .ds-section-copy {
+  padding-left: 0;
+}
