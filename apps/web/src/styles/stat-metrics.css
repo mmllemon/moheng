@@ -30,10 +30,16 @@
    改为按项数确定列数（见 grid-template-columns 逐条）。
    ------------------------------------------------------------- */
 /* 2026-10-23：.settings-content .security-metrics 已从此规则排除。
-   理由：hana 的 ._metrics_2473c 是「gap: 16px 的独立卡片网格」，
-   容器无 border / 无 background；而这条规则是「KPI 条」——
-   gap: 0 + 上下细线 + 透明底，把卡片压成一条分隔带。
-   两者空间语言不同，登录安全页按 hana 走独立卡片。 */
+   理由：hana 的 ._metrics_2473c 是「gap: 16px 的网格」，
+   容器无 border / 无 background；而这条规则原本是「KPI 条」。 */
+/* 2026-10-27 修正：之前把这条规则改成「容器画卡」，
+   前提是错的。重核 hana 真值：
+     ._metrics_2473c { display:grid; gap:var(--space-16); margin:0 }   容器无卡
+     ._metric_53489  { flex column; gap:var(--space-8) }               子项无卡
+     dt { color:--text-muted; font-size:--fs-ui }
+     dd { color:--text; font-size:--fs-title; font-weight:500 }
+   容器和子项都不画卡，纯网格 + 纯文本。
+   指标区一旦画卡，就变成「一张卡装 N 项」，与 hana 的空间语言相反。 */
 html .projects-ledger-page .projects-kpi-strip,
 html .analysis-page .an-stats,
 html .change-summary-grid,
@@ -53,21 +59,15 @@ html .system-ops-summary,
 html .assistant-check-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
+  gap: var(--space-16);
   padding: 0;
-  margin: var(--space-16) 0 var(--space-16);
-  /* 独立成卡：对齐 hana 的卡片体系（--bg-card + radius-card × 1.84 + 1px 边框）。
-     不再是「透明 + 上下细线」——那是把 hana 的 gap 16px 误读成排版分隔。
-     注意：容器本身画卡还是子项画卡，两种形态都有，不能一概而论：
-       · 子项是纯文本（标签+数值）→ 容器画卡，内部用竖线分隔
-       · 子项自己就是卡片（如 system-overview-metric）→ 容器不画卡，子项各自成卡
-     判断依据是子项有没有自己的 border/bg，有就不能再套一层。 */
-  border: 1px solid var(--card-border);
-  border-radius: calc(var(--radius-card) * var(--corner-radius-scale, 1));
-  corner-shape: squircle;
-  background: var(--bg-card);
+  margin: 0 0 var(--space-24);
+  /* 不画卡：对齐 hana 的 ._metrics_2473c。 */
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* 逐个按实际项数固定列数。
@@ -156,7 +156,10 @@ html .business-party-summary-strip {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-/* 带页面前缀的容器：同时按页面前缀+html 前缀重写一遍 */
+/* 指标项：不画卡，内边距为 0（对齐 hana 的 ._metric_53489）。
+   hana 的子项只有 flex column + gap，没有 padding/border/bg。
+   注意：legacy 和 v6 各自设了 padding（space-10 / space-12），
+   必须用 html 前缀压过它们。 */
 html .ds-section-card .downstream-summary-grid,
 html .projects-ledger-page .projects-kpi-strip > div,
 html .analysis-page .an-stats > div,
@@ -167,9 +170,32 @@ html .owner-finance-metrics > div,
 html .business-party-summary-strip > div,
 html .settings-content .security-metrics > * {
   position: static;
-  /* 卡内指标项内边距：上 16 / 下 16 / 左右 16，与 hana 卡片 padding 一致。 */
-  padding: var(--space-16);
-  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  padding: 0;
+  border-left: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* 指标项之间的竖线（业务页信息量大，需要分隔；首项无线无内缩） */
+html .change-summary-grid > div + div,
+html .bill-summary-grid > div + div,
+html .owner-finance-metrics > div + div,
+html .downstream-summary-grid > div + div {
+  border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  padding-left: var(--space-16);
+}
+/* 首项：无左内缩（容器已无内边距，首项应贴左缘） */
+html .change-summary-grid > div:first-child,
+html .bill-summary-grid > div:first-child,
+html .owner-finance-metrics > div:first-child,
+html .downstream-summary-grid > div:first-child,
+html .ldg-stats > div:first-child,
+html .projects-kpi-strip > div:first-child,
+html .an-stats > div:first-child,
+html .business-party-summary-strip > div:first-child {
+  padding-left: 0;
 }
 /* ds-section-card 里的统计区：它本身嵌在已有的卡内（卡中卡会乱），
    所以保持透明无边框，但内边距要正常（不是 0）。

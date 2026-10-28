@@ -5809,10 +5809,11 @@ html .table-count {
   .bill-summary-grid,
   .change-summary-grid,
   .owner-contract-amount-grid { gap: var(--space-8); border: 0; background: transparent; overflow: visible; }
+  /* 子项也不画卡：对齐 hana 的 ._metric_53489（纯文本，无 border/bg）。 */
   .owner-metric,
   .bill-summary,
   .change-summary,
-  .owner-contract-amount-card { border: 1px solid var(--card-border); border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1)); background: var(--bg-card); }
+  .owner-contract-amount-card { border: 0; border-radius: 0; background: transparent; }
 }
 @media (max-width: 720px) {
   .owner-finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -7337,16 +7338,18 @@ html .select-control-trigger {
 .login-screen .login-submit { border-radius: calc(var(--radius-action) * var(--corner-radius-scale, 1)) !important; }
 
 
-/* 首格不再贴卡片边缘：v6 的 first-child padding-left:0 只适用于无卡片容器的旧布局 */
-.bill-summary-grid .bill-summary:first-child,
-.change-summary-grid .change-summary:first-child,
-.owner-finance-metrics .owner-metric:first-child,
-.notice-summary-grid .notice-summary-card:first-child,
-.system-overview-metrics .system-overview-metric:first-child,
-.analysis-page .an-stats > div:first-child,
-.metric-grid .metric-card:first-child {
-  padding-left: var(--card-inset);
-}
+/* 2026-10-27 删除：这条规则是容器画卡时代的补丁——
+   当时容器有 1px 边框 + 卡片内边距，首格需要补 var(--card-inset) 才不贴边。
+   现按 hana 的 ._metrics_2473c 改为透明网格（容器无 border/bg/内边距），
+   首格应贴左缘，这条 padding-left 反而把首项右推了 16px。
+   旧选择器：
+   .bill-summary-grid .bill-summary:first-child,
+   .change-summary-grid .change-summary:first-child,
+   .owner-finance-metrics .owner-metric:first-child,
+   .notice-summary-grid .notice-summary-card:first-child,
+   .system-overview-metrics .system-overview-metric:first-child,
+   .analysis-page .an-stats > div:first-child,
+   .metric-grid .metric-card:first-child { padding-left: var(--card-inset); } */
 
 
 
