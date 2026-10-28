@@ -6,7 +6,7 @@ import { AlertCircle, Banknote, CheckCircle2, ClipboardCheck, FileCheck2, Plus, 
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton, ProjectSummaryReportButton } from '../components/ReportLaunchButton';
-import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, Section, SectionSegment, SectionStack, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
 import { currentDateInputValue, dateInputToIso } from '../components/Ui';
 import { confirmAction, promptAction } from '../components/ConfirmDialog';
 
@@ -144,10 +144,6 @@ export default function OwnerFinancePage() {
     {notice && <div className="success-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><Button variant="ghost" size="icon" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></Button></div>}
     {error && <div className="form-alert" role="alert"><AlertCircle size={15} /><span>{error}</span><Button variant="ghost" size="icon" onClick={() => setError('')} aria-label="关闭错误"><X size={14} /></Button></div>}
 
-    <Section title="竣工结算与应收">
-      <SectionStack>
-        {/* 段 1：资金指标 */}
-        <SectionSegment>
     <section className="owner-finance-metrics" aria-label="业主侧资金指标">
       <article className="owner-metric owner-metric-primary"><span>累计核定与过账金额</span><strong>{formatMoney(summary?.approvedAndPostedGrossAmount ?? 0)}</strong><small>进度款核定与已过账结算增量</small></article>
       <article className="owner-metric"><span>应收未收余额</span><strong>{formatMoney(summary?.openReceivableAmount ?? 0)}</strong><small>正向应收单的未收合计</small></article>
@@ -156,10 +152,7 @@ export default function OwnerFinancePage() {
       <article className="owner-metric"><span>累计净到账</span><strong>{formatMoney(summary?.cashReceiptNetAmount ?? 0)}</strong><small>实际到账减已登记退款</small></article>
       <article className="owner-metric owner-metric-dual"><span>专项资金余额</span><div><small>预付款</small><strong>{formatMoney(summary?.advanceBalanceAmount ?? 0)}</strong></div><div><small>质保金</small><strong>{formatMoney(summary?.retentionBalanceAmount ?? 0)}</strong></div></article>
     </section>
-        </SectionSegment>
 
-        {/* 段 2：分区标签栏（默认内缩，分段控件不贴卡边） */}
-        <SectionSegment>
     <nav className="owner-finance-tabs" role="tablist" aria-label="业主财务分区">
       {tabs.map((tab) => {
         const Icon = tab.icon;
@@ -170,10 +163,6 @@ export default function OwnerFinancePage() {
       <span className="owner-finance-tab-spacer" />
       <span className="owner-finance-contract-chip"><span className="status-dot" />主合同台账已关联</span>
     </nav>
-        </SectionSegment>
-
-        {/* 段 3：当前分区内容 */}
-        <SectionSegment tone="flush">
 
     {activeTab === 'settlements' && <section className="panel owner-finance-section owner-finance-tab-panel">
       <div className="panel-heading"><div><h3><ClipboardCheck size={17} />竣工结算与价款调整</h3><p>最终结算填写双方确认的累计总额；过账只记录与历史累计之间的差额。清单明细可选。</p></div><span className="table-count">{data.settlements.length} 份单据</span></div>
@@ -209,9 +198,6 @@ export default function OwnerFinancePage() {
       <div className="owner-special-balances"><article><span>当前预付款余额</span><strong>{formatMoney(summary?.advanceBalanceAmount ?? 0)}</strong><small>到账 − 结算扣回 − 退回</small></article><article><span>当前质保金余额</span><strong>{formatMoney(summary?.retentionBalanceAmount ?? 0)}</strong><small>留置 − 释放 − 核销</small></article><article><span>主合同待返还 / 抵销</span><strong className={(summary?.customerCreditAmount ?? 0) > 0 ? 'amount-negative' : ''}>{formatMoney(summary?.customerCreditAmount ?? 0)}</strong><small>负向调整独立保留，不直接抹除历史应收</small></article></div>
       <div className="table-scroll owner-finance-table-wrap"><table className="data-table owner-finance-table owner-special-table"><thead><tr><th>资金类别</th><th>业务动作</th><th>日期</th><th className="align-right">金额</th><th>凭证 / 关联说明</th></tr></thead><tbody>{[...data.retentionMovements.map((movement) => ({ id: `r-${movement.id}`, category: '质保金', kind: movement.type === 'WITHHOLD' ? '结算留置' : movement.type === 'RELEASE' ? '释放形成应收' : '核销', date: movement.effectiveAt, amount: movement.type === 'WITHHOLD' ? movement.amount : -movement.amount, reference: movement.reference, notes: movement.notes })), ...data.advanceMovements.map((movement) => ({ id: `a-${movement.id}`, category: '预付款', kind: movement.type === 'RECEIPT' ? '实际到账' : movement.type === 'DEDUCTION' ? '结算扣回' : '预付款退回', date: movement.occurredAt, amount: movement.type === 'RECEIPT' ? movement.amount : -movement.amount, reference: movement.reference, notes: movement.notes }))].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((row) => <tr key={row.id}><td>{row.category}</td><td>{row.kind}</td><td>{formatDate(row.date)}</td><td className={`align-right numeric ${row.amount < 0 ? 'amount-negative' : ''}`}>{row.amount < 0 ? '−' : ''}{formatMoney(Math.abs(row.amount))}</td><td>{row.reference || '—'}{row.notes && <small className="table-subtext">{row.notes}</small>}</td></tr>)}</tbody></table></div>
     </section>}
-        </SectionSegment>
-      </SectionStack>
-    </Section>
 
     {creating && <SettlementCreateDialog projectId={projectId} onClose={() => setCreating(false)} onSaved={setNotice} />}
     {confirming && <ConfirmationDialog projectId={projectId} settlement={confirming} onClose={() => setConfirming(null)} onSaved={setNotice} />}
