@@ -458,7 +458,23 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 .portfolio-filter-bar .toolbar-select { min-width: 150px; }
 
 /* Compact owner main-contract overview: editing is deliberately modal, not the default page. */
-.owner-contract-page { display: flex; flex-direction: column; gap: var(--space-16); }
+/* 2026-10-27 删除 8 个页面级的 flex + gap：
+   这些规则把页面改成 flex column + gap 16px（或 14px），
+   但子元素还带着 .page-wrap > * 的 margin-bottom: 24px。
+   flex 里 margin 不塌陷，gap + margin 双重叠加，实测间距变成：
+     报表中心  44 / 38 / 38
+     通知      40 / 64 / 40
+     项目概览  40 / 40 / 64 / 65
+     项目成员  16 / 40 / 40
+     操作追溯  16 / 24
+   其余 20+ 页面用块流 + margin 塌陷，间距是正常的 24px。
+   这里删除 flex，让这 8 个页面也回到块流，全站统一 24px。
+   原规则：
+     .owner-contract-page / .project-overview-page /
+     .downstream-finance-page / .audit-log-page /
+     .report-center-page / .notifications-page /
+     .project-members-page / .report-designer-page
+       { display: flex; flex-direction: column; gap: var(--space-16 | 14); } */
 .owner-contract-page .page-header { margin-bottom: 0; }
 .owner-contract-empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 54px var(--space-24); }
 .owner-contract-empty-mark { display: grid; place-items: center; width: 54px; height: 54px; border: 1px solid var(--line); border-radius: 2px; color: var(--accent); background: transparent; }
@@ -487,7 +503,7 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 .owner-contract-dialog form { padding-top: var(--space-16); }
 
 /* A selected project's cockpit is separate from the cross-project portfolio and from cost analysis. */
-.project-overview-page { display: flex; flex-direction: column; gap: var(--space-16); }
+
 .project-overview-page .page-header { margin-bottom: 0; }
 .project-cost-trend-panel, .project-attention-panel { min-width: 0; overflow: hidden; }
 .project-chart-bottom { display: flex; align-items: center; gap: var(--space-12); padding: var(--space-12) var(--space-16); border-top: 1px solid #eef1f5; }
@@ -526,7 +542,7 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 }
 
 /* v1.3 settlement and payable ledgers */
-.downstream-finance-page { display: flex; flex-direction: column; gap: var(--space-16); }
+
 .downstream-finance-page .page-header { margin-bottom: var(--space-2); }
 .finance-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 0; }
 .finance-summary-grid .change-summary { min-width: 0; }
@@ -1229,7 +1245,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .panel-header-action { display: inline-flex; align-items: center; gap: var(--space-6); min-height: 30px; padding: var(--space-6) var(--space-10); border: 1px solid var(--card-border); border-radius: 2px; color: var(--accent-600); background: transparent; font: inherit; font-size: var(--fs-caption); font-weight: 600; cursor: pointer; transition: color 180ms var(--ease-spring), background 180ms var(--ease-spring), border-color 180ms var(--ease-spring), transform 180ms var(--ease-spring); }
 .panel-header-action:hover { color: var(--accent-700); border-color: color-mix(in srgb, var(--accent-500) 28%, var(--card-border)); background: var(--accent-50); }
 .panel-header-action:active { transform: scale(.97); }
-.audit-log-page { display: flex; flex-direction: column; gap: var(--space-16); }
+
 .audit-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-12); }
 .audit-summary-card { display: flex; align-items: center; gap: var(--space-12); min-width: 0; padding: var(--space-16) 18px; }
 .audit-summary-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 auto; border-radius: var(--radius-xs); color: var(--accent-600); background: var(--accent-50); }
@@ -1354,7 +1370,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 :root[data-density="compact"] .audit-filter-panel, :root[data-density="compact"] .audit-table-panel { padding: var(--space-14); }
 :root[data-motion="reduced"] .audit-detail-card, :root[data-motion="reduced"] .audit-refreshing { animation: none ; }
 .topbar-notice-link:hover, .topbar-notice-link.is-active { color: var(--accent-700); border-color: var(--card-border); background: var(--accent-50); }
-.report-center-page, .notifications-page, .project-members-page { display: flex; flex-direction: column; gap: var(--space-16); }
+
 .report-workspace-heading { display:flex; align-items:end; justify-content:space-between; gap:var(--space-12); }
 .report-workspace-heading h2 { margin:0 0 4px; color:var(--text-primary); font-size:15px; }
 .report-workspace-heading p { margin:0; color:var(--text-secondary); font-size:var(--fs-hint); }
@@ -1450,7 +1466,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .import-mapping-warning { display: block; margin-top: var(--space-10); color: var(--warning-700, #996515); font-size: var(--fs-hint); }
 @media (max-width: 800px) { .import-mapping-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .import-mapping-heading { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 480px) { .import-mapping-grid { grid-template-columns: 1fr; } }
-.report-designer-page { display: flex; flex-direction: column; gap: var(--space-14); }
+
 .report-designer-topbar { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(190px, 1.2fr) minmax(180px, 1fr) auto; gap: var(--space-12); padding: var(--space-14); align-items: end; }
 .report-designer-compact-field { display: flex; flex-direction: column; min-width: 0; gap: var(--space-6); color: var(--text-secondary); font-size: var(--fs-hint); font-weight: 600; }
 .report-designer-compact-field input, .report-designer-compact-field select, .report-designer-prop input, .report-designer-prop select, .report-designer-prop textarea, .report-column-editor input, .report-column-editor select, .report-add-column-actions select, .report-scope-editor select, .report-layout-selected-row input {

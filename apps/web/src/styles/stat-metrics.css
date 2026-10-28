@@ -1186,3 +1186,34 @@ html .toolbar-view-button:focus-visible {
     min-width: 128px;
   }
 }
+
+/* =============================================================
+   指标区竖线统一（2026-10-27）
+   =============================================================
+   之前只有 4 个指标容器加了竖线（进度款/变更/业主财务/下游），
+   其余（通知/操作追溯/往来单位/成本分析/预算/项目管理）没有，
+   同样的"指标区"在不同页面长相不同。
+
+   统一：纯文本指标网格一律加竖线，首项不加。
+   例外（不加竖线）：
+     system-overview-metrics  子项是带图标+箭头的可点磁贴（是卡）
+     security-metrics         设置窗内子项各自成卡
+   ============================================================= */
+html .notice-summary-grid > div + div,
+html .audit-summary-grid > div + div,
+html .business-party-summary-strip > div + div,
+html .an-stats > div + div,
+html .ldg-stats > div + div,
+html .projects-kpi-strip > div + div {
+  border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  padding-left: var(--space-16);
+}
+
+html .notice-summary-grid > div:first-child,
+html .audit-summary-grid > div:first-child,
+html .business-party-summary-strip > div:first-child,
+html .an-stats > div:first-child,
+html .ldg-stats > div:first-child,
+html .projects-kpi-strip > div:first-child {
+  padding-left: 0;
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T13:25:50.371Z",
+  "generatedAt": "2026-10-28T14:22:38.382Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -271,7 +271,7 @@
           "route": "/reports",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 27,
+          "rounded": 29,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 1,

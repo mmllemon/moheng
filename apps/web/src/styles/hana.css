@@ -5462,8 +5462,11 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
    filter-panel → section 之间 40px。
    原因是指标条 margin-bottom 16 + panel margin-top 24 + 自身 16 叠加。
    hana 的卡片节奏是单一 24px（--space-24），不要三重叠加。 */
-.settings-content .audit-summary-grid { margin-bottom: 0; }
-.settings-content .audit-filter-panel { margin-top: 0; margin-bottom: 0; }
+/* 2026-10-27：这两条原本把 margin 清 0，因为旧代码靠 .audit-log-page
+   的 flex + gap 16px 提供间距。flex 已删除（见 legacy.css 顶部注释），
+   间距改回由 margin 提供，这里必须恢复为 24px（与全站一致）。 */
+.settings-content .audit-summary-grid { margin-bottom: var(--space-24); }
+.settings-content .audit-filter-panel { margin-top: 0; margin-bottom: var(--space-24); }
 /* 区块间距：panel 的 ::before 是 overflow: visible，
    section 自带的 margin-top 24 会与之叠成 40px。
    这里把 section 的上边距收到 8px，总间距回到 24px 量级。 */
@@ -9874,22 +9877,12 @@ html .button-ghost.button-toolbar.is-active {
      · 提示条 / 底注这类紧邻内容的，用 --space-16
    =========================================================================== */
 
-.page-wrap > .page-header,
-.page-wrap > .ds-section,
-.page-wrap > .ldg-section,
-.page-wrap > .ldg-stats,
-.page-wrap > .projects-kpi-strip,
-.page-wrap > .projects-toolbar,
-.page-wrap > .projects-ledger-layout,
-.page-wrap > .v6-hero,
-.page-wrap > .v6-split,
-.page-wrap > .bill-summary-grid,
-.page-wrap > .owner-finance-metrics,
-.page-wrap > .change-summary-grid,
-.page-wrap > .an-stats,
-.page-wrap > .business-party-summary-strip,
-.page-wrap > .report-studio-entry-grid,
-.page-wrap > .system-overview-metrics {
+/* 2026-10-27 改为兜底规则：原来用白名单列举容器，
+   漏掉 audit-summary-grid / notice-summary-grid / cost-type-cards /
+   report-workspace-section / project-cockpit-main / section-block 等，
+   导致这些块的间距是 0（自身没 margin，也不在白名单里）。
+   改成 > * 兜底，不依赖逐个列举。 */
+.page-wrap > * {
   margin-top: 0;
   margin-bottom: var(--space-24);
 }
@@ -9933,4 +9926,32 @@ html .page-wrap.business-parties-page,
 html .page-wrap.business-party-detail-page {
   display: block;
   gap: 0;
+}
+
+/* =============================================================
+   页面内容区节奏统一（2026-10-27）
+   =============================================================
+   全站统一为 24px（--space-24）一处来源。之前有 4 套机制在叠加：
+
+     ① .page-wrap > *            margin-bottom: 24px      （主机制）
+     ② 8 个页面 .xxx-page        display:flex + gap 16/14 （已删，见 legacy.css）
+     ③ panel-detached            margin: 24px 0
+     ④ 各页面自己改 page-header  margin-bottom 17/18/19/20/22
+
+   ②③ 与 ① 叠加，实际间距变成 40~65px；④ 让首项间距变成 18px。
+   ============================================================= */
+
+/* v6 时代的页面级 page-header 覆盖：18px
+   特异度 0,2,0 压过 .page-header 的 24px。全部归到 24px。 */
+.owner-contract-page .page-header,
+.analysis-page .page-header,
+.overview-page .page-header,
+.budget-page .page-header {
+  margin-bottom: var(--space-24);
+}
+
+/* projects-ledger.css 给工具栏设了 margin-bottom: 10px（0,2,0），
+   压过 .page-wrap > * 的 24px。 */
+.page-wrap > .projects-toolbar {
+  margin-bottom: var(--space-24);
 }
