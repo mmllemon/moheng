@@ -1721,6 +1721,12 @@ html[data-page-width="unlimited"] { --page-column-measure: 100%; }
   padding: 0;
   border: 0;
 }
+/* 非设置窗内，PageHeader 只渲染 page-actions（title 走顶栏）。
+   此时 space-between 无意义，按钮会落在左侧。
+   改成靠右，与 hana 的页面级操作位置一致（顶栏右岛 / 内容区右上）。 */
+.page-header > .page-actions:only-child {
+  margin-left: auto;
+}
 .page-header h1 {
   font-family: var(--font-heading);
   font-size: 27px;
@@ -6904,11 +6910,16 @@ select { corner-shape: squircle !important; }
   gap: var(--space-8);
   margin: var(--space-12) 0;
   padding: var(--space-10) var(--space-12);
-  border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
-  border-left: 1px solid color-mix(in srgb, var(--accent) 15%, transparent);
+  /* 对齐 hana 的做法：提示条不用彩色底。
+     hana 的 ._notice_23f1d 只有 color: --text-muted，无 bg 无 border。
+     moheng 原来用 accent 6% 底 + accent 15% 边框，
+     在暖米色主题下显得像蓝调，与卡片底色冲突。
+     改成 overlay-subtle 底 + 左侧 accent 细线，保持区分度但不带色调。 */
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--accent) 42%, transparent);
   border-radius: calc(var(--radius-control) * var(--corner-radius-scale, 1));
   corner-shape: squircle;
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  background: var(--overlay-subtle);
   color: var(--text-light);
   font-size: var(--fs-hint);
   line-height: 1.65;
@@ -9836,4 +9847,87 @@ html .button-quiet.button-toolbar:not(:disabled):hover {
 html .button.button-toolbar.is-active,
 html .button-ghost.button-toolbar.is-active {
   color: var(--accent);
+}
+
+/* ===========================================================================
+   页面级间距统一（page-wrap 直接子元素）
+   ===========================================================================
+   问题：各容器自带 margin-bottom，值各不相同：
+     .ldg-section    margin: 0 0 24px
+     .ds-section     margin: 0 0 30px
+     .v6-split       margin: 0 0 28px
+     .ldg-note       margin: 14px 0 0
+   而有些元素同时有上下 margin，相邻时叠加成 30 / 33 / 57 这类怪值。
+
+   实测 10 个页面，间距种类从 1 到 3 不等：
+     /cost/budget     [16,18,24]
+     /cost/downstream [12,24,30]
+     /projects        [10,16,24]
+     /users           [18,24,28]
+     /parties         [33,57]
+
+   hana 的页面节奏是 --space-24（24px）。统一到它：
+     · 只保留下 margin，上 margin 归零（避免叠加）
+     · 提示条 / 底注这类紧邻内容的，用 --space-16
+   =========================================================================== */
+
+.page-wrap > .page-header,
+.page-wrap > .ds-section,
+.page-wrap > .ldg-section,
+.page-wrap > .ldg-stats,
+.page-wrap > .projects-kpi-strip,
+.page-wrap > .projects-toolbar,
+.page-wrap > .projects-ledger-layout,
+.page-wrap > .v6-hero,
+.page-wrap > .v6-split,
+.page-wrap > .bill-summary-grid,
+.page-wrap > .owner-finance-metrics,
+.page-wrap > .change-summary-grid,
+.page-wrap > .an-stats,
+.page-wrap > .business-party-summary-strip,
+.page-wrap > .report-studio-entry-grid,
+.page-wrap > .system-overview-metrics {
+  margin-top: 0;
+  margin-bottom: var(--space-24);
+}
+
+/* 提示条 / 底注：紧邻内容，用 16px，且不再叠加 */
+.page-wrap > .inline-notice,
+.page-wrap > .success-notice,
+.page-wrap > .form-alert,
+.page-wrap > .data-note,
+.page-wrap > .ldg-note,
+.page-wrap > .settlement-closed-notice {
+  margin-top: 0;
+  margin-bottom: var(--space-16);
+}
+
+/* 最后一个子元素不留底间距 */
+.page-wrap > :last-child {
+  margin-bottom: 0;
+}
+
+/* 卡片（panel-detached）已有自己的 24px margin，这里不动 */
+
+/* SettingsSection（CSS Modules）在业务页里的间距
+   ---------------------------------------------------------
+   .module.css 的 .section 是 margin-bottom: --space-40（40px），
+   那是 hana「设置窗内」的分区节奏。
+   但 SettingsSection 也被业务页使用（/parties），
+   40px 与页面级 24px 节奏冲突，实测相邻间距 41px。
+
+   业务页（.page-wrap 内）统一到 --space-24；设置窗内保持 40px。 */
+.page-wrap > [class*="_section_"] {
+  margin-bottom: var(--space-24);
+}
+
+/* business-parties 页被 legacy 改成了 grid
+   ---------------------------------------------------------
+   legacy.css:609  .business-parties-page { display: grid; gap: 17px }
+   这会让子元素的 margin-bottom 24px 与 gap 17px 叠加成 41px。
+   页面骨架应该是块流，间距由子元素 margin 统一控制。 */
+html .page-wrap.business-parties-page,
+html .page-wrap.business-party-detail-page {
+  display: block;
+  gap: 0;
 }
