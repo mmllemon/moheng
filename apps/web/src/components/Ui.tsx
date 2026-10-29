@@ -231,6 +231,58 @@ export function ErrorBlock({ message, retry }: { message: string; retry?: () => 
   return <div className="error-block"><strong>数据暂时不可用</strong><p>{message}</p>{retry && <Button variant="secondary" onClick={retry}>重试</Button>}</div>;
 }
 
+/* DataPanel：卡头 + 状态分支 + 内容。
+
+   11 个页面、30 处都在手写同一个模式：
+     <section className="panel">
+       <div className="panel-heading">…</div>
+       {loading ? <LoadingBlock/> : error ? <ErrorBlock/> : !rows.length ? <EmptyState/> : <内容/>}
+     </section>
+
+   四个分支的顺序、空态文案位置、以及“有数据才包 table-scroll”的写法，
+   每个页面都略有差别，所以 loading/empty/error 的观感不统一。
+
+   这里只收敛“卡头 + 四个状态”这一层，children 原样透传，
+   不碰表格/列表的内部实现，也不碰 panel 变体类（走 className）。 */
+export function DataPanel({
+  title, description, icon, iconSize, actions,
+  loading = false, error = null, empty = false,
+  emptyTitle = '暂无数据', emptyDescription = '', emptyAction,
+  onRetry,
+  children, className = '',
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  icon?: LucideIcon;
+  iconSize?: number;
+  /** 卡头右侧：计数徽标 / 操作按钮 */
+  actions?: ReactNode;
+  /** 加载中（优先于 error 和 empty） */
+  loading?: boolean;
+  /** 错误文案（优先于 empty） */
+  error?: string | null;
+  /** 无数据 */
+  empty?: boolean;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  emptyAction?: () => void;
+  onRetry?: () => void;
+  /** 有数据时渲染 */
+  children: ReactNode;
+  className?: string;
+}) {
+  let body: ReactNode;
+  if (loading) body = <LoadingBlock />;
+  else if (error) body = <ErrorBlock message={error} retry={onRetry} />;
+  else if (empty) body = <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />;
+  else body = children;
+
+  return <section className={`panel ${className}`.trim()}>
+    <CardHead title={title} icon={icon} iconSize={iconSize} description={description} aside={actions} />
+    {body}
+  </section>;
+}
+
 export function formatMoney(value: number | null | undefined, digits = 2) {
   const amount = Number(value ?? 0);
   if (!Number.isFinite(amount)) return '—';
