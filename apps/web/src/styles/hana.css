@@ -6489,7 +6489,9 @@ select { corner-shape: squircle !important; }
 }
 .overview-page .v6-block-head {
   align-items: flex-end;
-  min-height: 0;
+  /* 卡头必须有统一高度：带日期控件的那一列是 32px，只有标题的那一列原本只有 23px，
+     flex-end 对齐后两个标题基线差 9px。min-height 取控件高度即可对齐。 */
+  min-height: var(--control-height, 32px);
   margin: 0 var(--space-2) var(--space-10);
   padding: 0;
 }
@@ -9707,4 +9709,61 @@ textarea {
 /* 预算页分类筛选按钮：9.2px 圆角，之前只给容器 .ldg-segments 设了曲率 */
 .ldg-segments > button {
   corner-shape: squircle;
+}
+
+/* ── 业主财务：特殊余额条（预付款 / 质保金 / 主合同待返还抵销）────────────
+   2026-10-27 修复：8a6dd6a 清理 legacy/v6 死规则时误删了 .owner-special-balances。
+
+   误删原因：DOM 扫描时该页面没有业务数据，这三个 <article> 未渲染，
+   被判定为死类。但布局规则（容器的 display: grid、article 的 flex column）
+   只写在 legacy.css 里，删掉后三个元素退回 inline 排列、挤成一行。
+
+   恢复时合并两层：legacy 的布局 + v6 的视觉（透明底 + 左侧竖线 + 上下细线）。
+   刻意不恢复 legacy 的旧配色（#fbfcfe 容器底、#fff 卡片底）和 --num 字体
+   （那是自造变量，数值走 --font-ui + tabular-nums）。 */
+.owner-special-balances {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.owner-special-balances article {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-14) 18px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.owner-special-balances article:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.owner-special-balances article > span {
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+}
+
+.owner-special-balances article > strong {
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-title);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.owner-special-balances article > small {
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  line-height: 1.5;
 }
