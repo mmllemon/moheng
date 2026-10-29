@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T02:51:23.435Z",
+  "generatedAt": "2026-10-29T04:46:32.688Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -111,7 +111,7 @@
           "route": "/cost/progress-bills",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 37,
+          "rounded": 42,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 2,
@@ -191,7 +191,7 @@
           "route": "/system/security",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 44,
+          "rounded": 45,
           "cornerShapeAccepted": true,
           "tabs": 2,
           "visiblePanels": 1,

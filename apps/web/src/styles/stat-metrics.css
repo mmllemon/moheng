@@ -1284,7 +1284,9 @@ html .projects-kpi-strip > div:first-child {
 
 /* 子项之间的竖线（首项无线、无左内缩） */
 .metric + .metric {
-  border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  /* 直接读 --border（18% 暖棕），比 66% 混合（约 12%）更可见。
+     4 列各 311px 时间距很大，竖线太淡会显得散。 */
+  border-left: 1px solid var(--border);
   padding-left: var(--space-16);
 }
 
@@ -1306,4 +1308,14 @@ html .projects-kpi-strip > div:first-child {
 .metrics[data-cols="6"] > .metric:nth-child(6n + 1) {
   border-left: 0;
   padding-left: 0;
+}
+
+/* 数值内的单位后缀（「0 期」这种）。
+   原来靠 .bill-summary strong em 命中，迁移到 .metric 后要补一条。 */
+.metric > strong em {
+  margin-left: 2px;
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  font-style: normal;
+  font-weight: 400;
 }

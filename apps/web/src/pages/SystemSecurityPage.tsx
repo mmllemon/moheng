@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Clock3, Globe, Monitor, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone, UserRoundX } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, StatusBadge, TitlebarActions } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, Metrics, PageHeader, StatusBadge, TitlebarActions } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 import SystemTabs from '../components/SystemTabs';
 
@@ -65,11 +65,14 @@ export default function SystemSecurityPage() {
       <Button variant="secondary" onClick={() => { void sessionsQuery.refetch(); void eventsQuery.refetch(); }}><RefreshCcw size={15} />刷新</Button>
     </TitlebarActions>
 
-    <section className="security-metrics">
-      <article className="security-metric"><span className="security-metric-icon"><Monitor size={18} /></span><div><small>有效会话</small><strong>{activeSessions}</strong><span>最多显示最近 200 条记录</span></div></article>
-      <article className="security-metric"><span className="security-metric-icon"><ShieldAlert size={18} /></span><div><small>近期拒绝/阻断事件</small><strong>{deniedEvents}</strong><span>统计当前展示的最近 200 条事件</span></div></article>
-      <article className="security-metric"><span className="security-metric-icon"><ShieldCheck size={18} /></span><div><small>公网模式管理员保护</small><strong>HTTPS + MFA</strong><span>需配置 PUBLIC_BASE_URL 与 MFA 密钥</span></div></article>
-    </section>
+    <Metrics
+      columns={3}
+      items={[
+        { label: '有效会话', value: activeSessions, detail: '最多显示最近 200 条记录' },
+        { label: '近期拒绝/阻断事件', value: deniedEvents, detail: '统计当前展示的最近 200 条事件' },
+        { label: '公网模式管理员保护', value: 'HTTPS + MFA', detail: '需配置 PUBLIC_BASE_URL 与 MFA 密钥' },
+      ]}
+    />
 
     <SystemTabs ariaLabel="登录安全分区" value={tab} onChange={(id) => setTab(id as 'sessions' | 'events')} items={[{ id: 'sessions', label: '登录会话', count: activeSessions }, { id: 'events', label: '安全事件', count: events.length }]} />
 
