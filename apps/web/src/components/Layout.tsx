@@ -347,7 +347,9 @@ export default function Layout() {
       if (document.querySelector('.date-picker-popover, .select-popover, .quick-action-panel, .account-menu')) return;
       const backdrop = document.querySelector<HTMLElement>('.modal-backdrop');
       if (!backdrop) return;
-      const closeButton = backdrop.querySelector<HTMLButtonElement>('.dialog-header .icon-button, .dialog-header button[aria-label*="关闭"], .dialog-close');
+      // 关闭按钮的定位：原来优先找 .icon-button，但 34 处已迁成 <Button variant="ghost" size="icon">，
+    // 不再输出这个类名。靠 aria-label 和 .dialog-close 两个选择器就够了。
+    const closeButton = backdrop.querySelector<HTMLButtonElement>('.dialog-header button[aria-label*="关闭"], .dialog-close');
       if (closeButton) { closeButton.click(); event.preventDefault(); }
     };
     document.addEventListener('keydown', closeTopDialog);

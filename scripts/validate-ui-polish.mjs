@@ -159,7 +159,14 @@ const appIconExists = await access(join(root, 'apps/web/src/components/AppIcon.t
 const paperMorphExists = await access(join(root, 'apps/web/src/lib/paper-morph.ts')).then(() => true).catch(() => false);
 const paperDialogMorphExists = await access(join(root, 'apps/web/src/components/PaperDialogMorph.tsx')).then(() => true).catch(() => false);
 const accountSecurity = await read('apps/web/src/pages/AccountSecurityPage.tsx');
-check('Hana interface settings page is wired', appSource.includes('settings/appearance') && appearanceSettingsExists && hana.includes('width: 208px') && hana.includes('display: flex;'));
+// 2026-10-27 更新：原断言用 .settings-step-slider 的 width: 208px 当证据，
+// 但那个类已确认是死类并删除。改为验证 .settings-nav 的宽度变量 + flex 布局。
+  check('Hana interface settings page is wired',
+    appSource.includes('settings/appearance') &&
+    appearanceSettingsExists &&
+    hana.includes('.settings-nav {') &&
+    /width:\s*var\(--settings-nav-width,\s*208px\)/.test(hana) &&
+    hana.includes('display: flex;'));
 check('Hana app icon and font cards are wired', appIconExists && appearanceSettingsExists && hana.includes('settings-icon-card') && hana.includes('settings-font-card') && appSource.includes('settings/appearance'));
 check('Hana mobile settings drawer is wired', layout.includes('settingsNavOpen') && hana.includes('settings-nav.is-mobile-open') && hana.includes('settings-mobile-nav-trigger'));
 check('Hana capability-style quick panel is wired', (layout + windowControls).includes('quick-action-tabs') && (layout + windowControls).includes('quick-action-grid') && hana.includes('.quick-action-panel') && hana.includes('grid-template-columns: repeat(2, minmax(0, 1fr))'));

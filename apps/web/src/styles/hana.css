@@ -937,38 +937,6 @@ html .sidebar-drawer .sidebar-footer-icon {
   font-weight: 500;
   letter-spacing: 0.12em;
 }
-.sidebar-nav-link {
-  /* 因父容器 scroll 已去掉左右 padding，导航项需自己提供 8px 水平内缩 */
-  margin-left: var(--space-8);
-  margin-right: var(--space-8);
-  position: relative;
-  letter-spacing: 0.002em;
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  width: 100%;
-  height: 34px;
-  padding: 0 var(--space-8);
-  margin: var(--space-2) 0;
-  border-radius: var(--radius-action);
-  corner-shape: squircle;
-  color: var(--text-light);
-  font-size: var(--fs-ui);
-  line-height: 1;
-  text-decoration: none;
-  transition: background var(--duration-fast), color var(--duration-fast);
-}
-.sidebar-nav-link svg { width: 16px; height: 16px; flex: 0 0 16px; color: var(--text-muted); stroke-width: 1.6; }
-.sidebar-nav-link span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.sidebar-nav-link:hover { background: var(--overlay-light); color: var(--text); }
-.sidebar-nav-link:hover svg { color: var(--text); }
-.sidebar-nav-link.active {
-  background: var(--accent-light);
-  color: var(--accent);
-  font-weight: 600;
-}
-.sidebar-nav-link.active svg { color: var(--accent); }
-
 .sidebar-projects {
   /* 对齐 hana：项目区**没有上边框**、没有左右 margin。
      内缩全部由子元素自己提供：
@@ -2404,22 +2372,6 @@ html .field input[type="search"],
 html .filter-bar input[type="search"] {
   padding-left: var(--space-10);
 }
-.icon-button {
-  width: var(--icon-btn-size-lg);
-  height: var(--icon-btn-size-lg);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--radius-control);
-  corner-shape: squircle;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-.icon-button:hover { background: var(--overlay-light); color: var(--text); }
-
 .field { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
 .field > label, .field-label {
   color: var(--text-light);
@@ -2727,10 +2679,7 @@ html .filter-bar input[type="search"] {
   border-radius: var(--radius-card);
   background: var(--bg-card);
   corner-shape: squircle;
-}
-.project-overview-page .metric-card { padding: var(--space-16) 18px; border-left: 1px solid color-mix(in srgb, var(--card-border) 72%, transparent); }
-.project-overview-page .metric-card:first-child { padding-left: 18px; border-left: 0; }
-.project-overview-page .project-attention-panel .panel-heading { border-bottom: 0; }
+}.project-overview-page .project-attention-panel .panel-heading { border-bottom: 0; }
 .project-identity-facts > div { border-left: 0; position: relative; }
 .project-identity-facts > div + div::before { content: ''; position: absolute; top: var(--card-divider-inset); bottom: var(--card-divider-inset); left: -8px; width: var(--card-divider-width); background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
 .project-overview-page .project-attention-row { position: relative; border-top: 0; padding: var(--space-14) var(--space-16); }
@@ -3439,30 +3388,9 @@ html .filter-bar input[type="search"] {
 .appearance-head p { margin-top: var(--space-2); color: var(--text-muted); font-size: var(--fs-hint); }
 .appearance-body { padding: var(--space-2) var(--space-14) var(--space-12); }
 .appearance-label { display: flex; align-items: center; justify-content: space-between; margin: var(--space-10) 0 var(--space-6); color: var(--text-muted); font-size: var(--fs-hint); letter-spacing: 0.06em; }
-.appearance-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }
-.appearance-theme {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-input);
-  corner-shape: squircle;
-  background: transparent;
-  color: var(--text-light);
-  text-align: left;
-  cursor: pointer;
-}
-.appearance-theme:hover { border-color: var(--border-strong); }
-.appearance-theme.is-active { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: var(--accent-light); color: var(--accent); }
-.appearance-theme-swatch { position: relative; display: block; height: 34px; overflow: hidden; border: 1px solid var(--overlay-medium); border-radius: var(--radius-compact); background: var(--theme-bg, var(--bg)); }
+.appearance-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-6); }.appearance-theme-swatch { position: relative; display: block; height: 34px; overflow: hidden; border: 1px solid var(--overlay-medium); border-radius: var(--radius-compact); background: var(--theme-bg, var(--bg)); }
 .appearance-theme-swatch::before { content: ""; position: absolute; inset: 5px 30% 5px 5px; border-radius: var(--radius-xs); background: var(--theme-sidebar, var(--sidebar-bg)); border: 1px solid var(--overlay-light); }
-.appearance-theme-swatch::after { content: ""; position: absolute; right: 5px; top: 5px; width: 26%; bottom: 5px; border-radius: var(--radius-xs); background: var(--theme-card, var(--bg-card)); border: 1px solid var(--overlay-light); }
-.appearance-theme strong { font-size: var(--fs-hint); font-weight: 500; }
-.appearance-theme small { display: flex; align-items: center; gap: var(--space-4); color: var(--text-muted); font-size: var(--fs-micro); }
-.appearance-footnote { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-8); padding-top: var(--space-8); border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.45; }
-.appearance-theme.is-active small { color: color-mix(in srgb, var(--accent) 75%, var(--text-muted)); }
-.appearance-texture-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-2); }
+.appearance-theme-swatch::after { content: ""; position: absolute; right: 5px; top: 5px; width: 26%; bottom: 5px; border-radius: var(--radius-xs); background: var(--theme-card, var(--bg-card)); border: 1px solid var(--overlay-light); }.appearance-footnote { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-8); padding-top: var(--space-8); border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent); color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.45; }.appearance-texture-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-2); }
 .appearance-texture-choice:hover { background: var(--overlay-light); color: var(--text); }
 .appearance-texture-choice.is-active { background: var(--accent-light); border-color: color-mix(in srgb, var(--accent) 28%, transparent); color: var(--accent); font-weight: 600; }
 .appearance-texture-mark { width: 14px; height: 14px; flex: 0 0 14px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-xs); background-color: var(--bg-card); background-size: 28px 28px; opacity: 0.85; }
@@ -3829,9 +3757,7 @@ html[data-paper-texture] .dialog::after {
   letter-spacing: 0;
   color: var(--text) !important;
 }
-.dialog-header p { margin: 0; font-size: var(--fs-caption, 12.48px) !important; line-height: 1.55; color: var(--text-muted); }
-.dialog-header .icon-button { width: 32px; height: 32px; margin: -5px -5px 0 0; border-radius: var(--radius-control); }
-.dialog-body { font-size: var(--fs-ui); line-height: 1.65; color: var(--text-light); }
+.dialog-header p { margin: 0; font-size: var(--fs-caption, 12.48px) !important; line-height: 1.55; color: var(--text-muted); }.dialog-body { font-size: var(--fs-ui); line-height: 1.65; color: var(--text-light); }
 .dialog form { padding: var(--space-10) 22px 0 !important; }
 /* 按钮区：对齐 hana 的 ._cronConfirmActions { display: flex; gap: 4px }
    与 ._confirmDialog_da969 { padding: 16px } 的紧凑间距。 */
@@ -4530,17 +4456,10 @@ html[data-paper-texture] .settings-window::after { display: block; }
   font-weight: 600;
   line-height: 1.4;
 }
-.settings-theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }
-.settings-theme-card:hover { border-color: var(--border-strong); }
-.settings-theme-card.is-active { border-color: var(--accent); box-shadow: none; }
-.settings-theme-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.settings-theme-card[data-theme="midnight"] { color: #f0f6fa; }
-.settings-theme-swatch { position: absolute; inset: 0; z-index: 0; background: var(--theme-bg); }
+.settings-theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }.settings-theme-swatch { position: absolute; inset: 0; z-index: 0; background: var(--theme-bg); }
 .settings-theme-copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); min-width: 0; }
 .settings-theme-copy strong { font-size: var(--fs-ui); font-weight: 500; line-height: 1.35; }
-.settings-theme-copy small { color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.3; }
-.settings-theme-card[data-theme="midnight"] .settings-theme-copy small { color: #b7c8d3; }
-.settings-theme-check { position: absolute; z-index: 1; top: 7px; right: 7px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-accent, #fff); }
+.settings-theme-copy small { color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.3; }.settings-theme-check { position: absolute; z-index: 1; top: 7px; right: 7px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-accent, #fff); }
 .settings-theme-check:empty { display: none; }
 
 .settings-icon-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
@@ -4648,80 +4567,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
 }
 .settings-segment button:hover { color: var(--text); }
 .settings-segment button.is-active { background: var(--bg-card); color: var(--text); box-shadow: var(--shadow-xs); }
-
-.settings-step-slider { position: relative; width: 208px; flex: 0 0 208px; padding-top: var(--space-10); }
-/* 滑块：对齐 hana ._input_143b0 / ._barTrack_85f7c
-   --step-slider-thumb: 14px
-   --step-slider-track: calc(14px / 3.5) = 4px
-   --step-slider-rail-height: 14px + 8px = 22px
-   thumb: 14px 圆 / border 2px var(--bg-card) / background var(--accent) / shadow-xs
-   hover: scale(1.08) + 4px accent 16% 光环
-   轨道: 6px 高 / radius 3px / corner-shape round
-
-   注：moheng 原来是「分段轨道」（4 个 span 拼接，被 .is-on 上色成阶梯），
-   hana 是「连续轨道 + 圆滑块」，进度由 thumb 位置表达。 */
-.settings-step-slider > input {
-  --step-slider-thumb: 14px;
-  --step-slider-track: calc(var(--step-slider-thumb) / 3.5);
-  --step-slider-rail-height: calc(var(--step-slider-thumb) + var(--space-8));
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 2;
-  width: 100%;
-  height: var(--step-slider-rail-height);
-  margin: 0;
-  padding: 0;
-  appearance: none;
-  -webkit-appearance: none;
-  background: transparent;
-  cursor: default;
-}
-
-.settings-step-slider > input::-webkit-slider-runnable-track {
-  height: var(--step-slider-track);
-  background: transparent;
-}
-
-.settings-step-slider > input::-webkit-slider-thumb {
-  appearance: none;
-  -webkit-appearance: none;
-  width: var(--step-slider-thumb);
-  height: var(--step-slider-thumb);
-  margin-top: calc((var(--step-slider-track) - var(--step-slider-thumb)) / 2);
-  border: 2px solid var(--bg-card);
-  border-radius: 999px;
-  corner-shape: round;
-  background: var(--accent);
-  box-shadow: var(--shadow-xs);
-  transition: transform var(--duration-fast) var(--ease-out),
-              box-shadow var(--duration-fast) var(--ease-out);
-}
-
-.settings-step-slider > input:hover::-webkit-slider-thumb,
-.settings-step-slider > input:focus-visible::-webkit-slider-thumb {
-  transform: scale(1.08);
-  box-shadow: var(--shadow-xs), 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
-.settings-step-slider > input::-moz-range-track {
-  height: var(--step-slider-track);
-  border: 0;
-  background: transparent;
-}
-
-.settings-step-slider > input::-moz-range-thumb {
-  width: var(--step-slider-thumb);
-  height: var(--step-slider-thumb);
-  border: 2px solid var(--bg-card);
-  border-radius: 999px;
-  corner-shape: round;
-  background: var(--accent);
-  box-shadow: var(--shadow-xs);
-}
-
-.settings-step-slider:focus-within { outline: none; }
-.settings-step-slider > input:focus-visible { outline: none; }
-
 /* 轨道：对齐 hana ._barTrack_85f7c（6px 高 / radius 3px） */
 .settings-step-rail {
   position: relative;
@@ -4759,9 +4604,7 @@ html[data-paper-texture] .settings-window::after { display: block; }
   font-size: 15px;
   line-height: 1.7;
   transition: color var(--duration-fast) var(--ease-out);
-}.settings-step-slider.is-disabled { opacity: 0.35; }
-.settings-step-slider.is-disabled > input { cursor: not-allowed; }
-
+}
 .settings-toggle {
   position: relative;
   width: 36px;
@@ -4817,14 +4660,10 @@ html[data-paper-texture] .settings-window::after { display: block; }
 
 @media (max-width: 700px) {
   .appearance-settings-page { max-width: 100%; }
-  .settings-theme-grid { grid-template-columns: 1fr; }
-  .settings-theme-card { height: 64px; justify-content: flex-start; padding-left: var(--space-16); text-align: left; }
-  .settings-theme-copy { align-items: flex-start; }
+  .settings-theme-grid { grid-template-columns: 1fr; }  .settings-theme-copy { align-items: flex-start; }
   .settings-row { align-items: flex-start; flex-direction: column; gap: var(--space-10); }
   .settings-segment { align-self: stretch; }
-  .settings-segment button { flex: 1; }
-  .settings-step-slider { width: 100%; flex-basis: auto; }
-  .settings-page-foot { align-items: flex-start; flex-direction: column; }
+  .settings-segment button { flex: 1; }  .settings-page-foot { align-items: flex-start; flex-direction: column; }
 }
 
 @media (max-width: 1010px) {
@@ -4842,10 +4681,7 @@ html[data-paper-texture] .settings-window::after { display: block; }
 @media (max-width: 1100px) {
   .overview-page .v6-hero { grid-template-columns: 1fr; }
   .overview-page .v6-stats { border-top: 1px solid var(--card-border); border-left: 0; }
-  .overview-page .v6-stats > div { padding: var(--space-10) var(--space-16); }  .project-overview-page .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .project-overview-page .metric-card:nth-child(3) { border-left: 0; }
-  .project-overview-page .metric-card:nth-child(-n + 2) { border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
-  .app-main { margin-left: calc(var(--sidebar-width) + var(--panel-edge-gap)); }
+  .overview-page .v6-stats > div { padding: var(--space-10) var(--space-16); }  .project-overview-page .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }  .app-main { margin-left: calc(var(--sidebar-width) + var(--panel-edge-gap)); }
   .page-wrap { padding: 18px 20px 36px; }
   .system-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .system-overview-two-column { grid-template-columns: 1fr; }
@@ -4905,15 +4741,11 @@ html[data-paper-texture] .settings-window::after { display: block; }
   .command-palette { max-height: 86vh; }
   .titlebar-icon { width: 28px; height: 28px; flex-basis: 28px; }
   .app-titlebar { padding-right: var(--space-8); }
-  .appearance-themes { grid-template-columns: 1fr; }
-  .appearance-theme { flex-direction: row; align-items: center; }
-  .appearance-theme-swatch { width: 52px; height: 30px; flex: 0 0 52px; }
+  .appearance-themes { grid-template-columns: 1fr; }  .appearance-theme-swatch { width: 52px; height: 30px; flex: 0 0 52px; }
 }
 
 html[data-density="compact"] .data-table thead th { height: 30px; }
-html[data-density="compact"] .data-table tbody td { height: 30px; padding-top: var(--space-4); padding-bottom: var(--space-4); }
-html[data-density="compact"] .sidebar-nav-link { height: 29px; }
-html[data-density="compact"] .v6-log-row { padding-top: var(--space-8); padding-bottom: var(--space-8); }
+html[data-density="compact"] .data-table tbody td { height: 30px; padding-top: var(--space-4); padding-bottom: var(--space-4); }html[data-density="compact"] .v6-log-row { padding-top: var(--space-8); padding-bottom: var(--space-8); }
 html[data-content-width="wide"] .page-wrap { max-width: 1600px; }
 
 html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-motion="reduced"] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
@@ -5634,9 +5466,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .owner-contract-amount-card strong { color: var(--text); font-family: var(--font-num, var(--num)); font-weight: 600; }.change-summary strong { margin: var(--space-6) 0 var(--space-4); font-size: 20px; }
 .owner-metric { min-height: 96px; }
 .owner-metric::before { display: none; }
-.owner-metric > strong { font-size: 20px; }
-.owner-contract-amount-card strong { font-size: 18px; }
-.change-summary-emphasis { background: transparent; }
+.owner-metric > strong { font-size: 20px; }.change-summary-emphasis { background: transparent; }
 .change-summary-emphasis strong { font-size: 20px; }
 .change-summary small,
 .owner-metric > small,
@@ -6849,9 +6679,7 @@ select { corner-shape: squircle !important; }
   border-color: color-mix(in srgb, var(--green) 20%, transparent);
   background: color-mix(in srgb, var(--green) 7%, transparent);
   color: var(--green);
-}
-.success-notice .icon-button { margin-left: auto; color: inherit; }
-.form-alert {
+}.form-alert {
   margin: var(--space-12) 0;
   padding: var(--space-10) var(--space-12);
   border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent);
@@ -8896,30 +8724,8 @@ html .settings-nav .settings-search input:focus {
 html .settings-nav .settings-nav-link {
   border-radius: var(--radius-input) !important;
   corner-shape: squircle !important;
-}
-
-/* ============================================================
-   滑块 input 尺寸修正
-   ============================================================
-   压它的有三条：
-     ① html .settings-step-slider input { height: 32px; min-height: 32px; padding: 0 10px }
-     ② input:not([type=checkbox]):not([type=radio]) { min-height: 34px; padding: 6px 9px;
+}     ② input:not([type=checkbox]):not([type=radio]) { min-height: 34px; padding: 6px 9px;
         border: 1px solid var(--line-2); border-radius: var(--radius-xs); background: #fffdf7 }
-     ③ .settings-step-slider > input { height: var(--step-slider-rail-height) }
-   hana 的 ._input_143b0 是：
-     height: var(--step-slider-rail-height) = 14 + 8 = 22px
-     margin/padding: 0；appearance: none；background: transparent；无边框
-   必须用 html 前缀 + !important 才能赢过 ① ②。 */
-html .settings-step-slider > input {
-  height: var(--step-slider-rail-height) !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  border: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
 
 /* 安全页工具行：页面级操作（刷新）不占标题栏
    hana 的 ._titlebar_7cee1 只有标题 + 关闭按钮，
@@ -9047,9 +8853,7 @@ html .settings-step-slider > input {
 /* 高度覆盖：压它的有三条全局 input 规范
      ① html input:not(...)×5 { height: 32px; min-height: 32px }
      ② input:not([type=checkbox]):not([type=radio]) { min-height: 34px; padding: 6px 9px;
-        border: 1px solid; border-radius: var(--radius-xs); background: #fffdf7 }
-     ③ .settings-step-slider input { height: 32px }
-   hana 的 ._input_143b0 是 height: 22px / padding: 0 / 无边框 / 透明底。 */
+        border: 1px solid; border-radius: var(--radius-xs); background: #fffdf7 }   hana 的 ._input_143b0 是 height: 22px / padding: 0 / 无边框 / 透明底。 */
 html .step-slider .step-slider-input {
   height: var(--step-slider-rail-height) !important;
   min-height: 0 !important;

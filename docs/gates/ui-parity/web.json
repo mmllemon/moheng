@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T06:45:34.844Z",
+  "generatedAt": "2026-10-29T08:11:38.906Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -261,7 +261,7 @@
           "route": "/audit-logs",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 54,
+          "rounded": 55,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 0,
