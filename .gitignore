@@ -65,3 +65,4 @@ moheng-cleanup-stale-branches.ps1
 *.delbak
 *.btnbak
 msg.tmp
+scripts/_mig_*.mjs
