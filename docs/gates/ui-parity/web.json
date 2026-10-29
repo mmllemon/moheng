@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T08:11:38.906Z",
+  "generatedAt": "2026-10-29T09:15:28.752Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -161,7 +161,7 @@
           "route": "/system",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 43,
+          "rounded": 42,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 2,

@@ -2602,7 +2602,8 @@ html .filter-bar input[type="search"] {
 .v6-label { color: var(--text-muted); font-size: var(--fs-hint); font-weight: 500; letter-spacing: 0.1em; }
 .v6-count { color: var(--text-muted); font-size: var(--fs-hint); font-variant-numeric: tabular-nums; }
 .v6-empty { display: flex; align-items: center; justify-content: center; gap: var(--space-8); padding: 28px var(--space-12); color: var(--text-muted); font-size: var(--fs-hint); }
-.v6-split { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr); gap: var(--space-14); }
+/* 合并自 3 处重复定义：grid 骨架 + 最终 gap（原中间值的 14px 和 20px 均被 24px 覆盖）。 */
+.v6-split { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr); gap: var(--space-24); }
 .v6-split-table { margin-top: var(--space-14); }
 .v6-log-split { margin-top: var(--space-14); }
 
@@ -2625,7 +2626,6 @@ html .filter-bar input[type="search"] {
 .overview-page .v6-log-row { border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
 .overview-page .v6-log-row:last-child { border-bottom: 0; }
 .overview-page .v6-empty { border-bottom: 0; }
-.v6-split { gap: 20px; }
 .v6-split-table { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 18px; }
 .v6-log-split { margin-top: 18px; }.projects-ledger-page .projects-ledger-layout { gap: var(--space-24); }
 .projects-ledger-page .projects-ledger {
@@ -4435,7 +4435,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .roadmap-stage { display: inline-flex; min-height: 16px; align-items: center; padding: 0 5px; border-radius: var(--radius-xs); background: var(--overlay-light); color: var(--text-muted); font-size: var(--fs-micro); }
 .roadmap-stage.is-next { background: var(--accent-light); color: var(--accent); }
 
-
 /* 旧系统二级导航已被全屏设置工作区取代 */
 .system-workspace-nav, .project-context-bar, .breadcrumb, .topbar { display: none !important; }
 
@@ -5480,7 +5479,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   .owner-contract-effective { padding-left: 0; }
   .owner-contract-effective::before { display: none; }
 }
-.owner-contract-detail-grid { padding: 0 18px 16px; border-top: 0; }
 .owner-contract-detail-grid > div { background: transparent; }
 .owner-contract-detail-grid > div:nth-child(4),
 .owner-contract-detail-grid > div:nth-child(5) { border-top: 0; position: relative; }
@@ -5621,7 +5619,6 @@ html .table-count {
 .panel.data-table-panel.panel-detached > .table-scroll .data-table,
 .ldg-table,
 .projects-table { width: calc(100% - (var(--card-divider-inset) + var(--card-divider-inset))); margin-left: var(--card-divider-inset); margin-right: var(--card-divider-inset); }
-.owner-contract-detail-grid { padding: 0 0 16px; }
 .owner-contract-detail-grid > div:nth-child(4)::before,
 .owner-contract-detail-grid > div:nth-child(5)::before { left: 0; right: 0; }
 
@@ -5700,7 +5697,6 @@ html .table-count {
 .v6-block .table-scroll,
 .v6-block .v6-log-list,
 .v6-block .v6-todo { border-top: 0; border-bottom: 0; }
-.owner-contract-detail-grid { border-bottom: 0; }
 .security-panel .load-more-row { border-top: 0; }
 .system-authorization-company-roles { border-bottom: 0 !important; }
 .settings-section-card .settings-subhead { border-top: 0; }
@@ -5749,7 +5745,6 @@ html .table-count {
 
 /* 经营总览区块间距统一到 Hana 24px */
 .overview-page .v6-hero { margin-bottom: var(--space-24); }
-.v6-split { gap: var(--space-24); }
 .v6-split-table,
 .v6-log-split { margin-top: var(--space-24); }
 
@@ -5794,7 +5789,6 @@ html .table-count {
 .ds-section-card .data-table,
 .panel.panel-detached > .table-scroll .data-table,
 .panel.data-table-panel.panel-detached > .table-scroll .data-table { width: calc(100% - 32px); margin-left: var(--space-16); margin-right: var(--space-16); }
-.owner-contract-detail-grid { padding-left: var(--space-16); padding-right: var(--space-16); }
 
 /* Hana：radius token × 1.84 + squircle；不支持时回退标准圆角 */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
@@ -6819,7 +6813,6 @@ select { corner-shape: squircle !important; }
   .overview-page .v6-block > .v6-todo { border-radius: var(--radius-lg); }
 }
 
-
 /* =============================================================
    交互组件几何收口：Hana 的三级半径，不再由各页面各自覆盖
    control = 6 × 1.8409 ≈ 11.05（输入框 / 下拉 / 搜索壳）
@@ -7063,7 +7056,6 @@ html .select-control-trigger {
 }
 .login-screen .login-submit { border-radius: var(--radius-action) !important; }
 
-
 /* 2026-10-27 删除：这条规则是容器画卡时代的补丁——
    当时容器有 1px 边框 + 卡片内边距，首格需要补 var(--card-inset) 才不贴边。
    现按 hana 的 ._metrics_2473c 改为透明网格（容器无 border/bg/内边距），
@@ -7076,8 +7068,6 @@ html .select-control-trigger {
    .system-overview-metrics .system-overview-metric:first-child,
    .analysis-page .an-stats > div:first-child,
    .metric-grid .metric-card:first-child { padding-left: var(--card-inset); } */
-
-
 
 /* 全局成本助手：Hana 式会话弹窗，不占工作台路由 */
 .assistant-overlay {
@@ -7277,8 +7267,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .assistant-workspace .assistant-thread-meta > span:first-child { display: none; }
 }
 
-
-
 /* 全局命令中心：紧凑搜索、范围段、分组结果 */
 .command-palette {
   width: min(760px, calc(100vw - 32px));
@@ -7324,8 +7312,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .command-scope-tabs button { flex: 1; justify-content: center; }
 }
 
-
-
 /* 账号表在窄窗口改为卡片行，避免 713px 下的横向滚动 */
 @media (max-width: 900px) {
   .user-table-panel .table-scroll { overflow: visible; }
@@ -7356,8 +7342,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .user-account-table tbody td:nth-child(6)::before { margin-bottom: 1px; }
 }
 
-
-
 /* 主合同：一份概览卡承载身份、有效金额和金额口径 */
 .owner-contract-hero {
   display: grid;
@@ -7378,7 +7362,9 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .owner-contract-figures strong { display: block; margin-top: var(--space-4); color: var(--text); font-family: var(--font-num, var(--num)); font-size: 18px; font-weight: 600; }
 .owner-contract-figures small { display: block; margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.45; }
 .owner-contract-effective { padding: var(--space-2) 0 var(--space-2) 22px; }
-.owner-contract-detail-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0 var(--card-inset) var(--card-inset); }
+/* 合并自 5 处重复定义：border 归零 + 3 列网格 + 卡内缩。
+   padding 取最后一次生效值（原 5483/5624/5797 三处的 padding 均被覆盖）。 */
+.owner-contract-detail-grid { border-top: 0; border-bottom: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0 var(--card-inset) var(--card-inset); }
 .owner-contract-detail-grid > div { padding: var(--space-14) var(--space-14); }
 .owner-contract-detail-grid > div + div { padding-left: var(--space-14); border-left: 1px solid color-mix(in srgb, var(--card-border) 58%, transparent); }
 .owner-contract-detail-grid > div:nth-child(4),
@@ -7401,8 +7387,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .owner-contract-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .owner-contract-detail-grid .span-detail-wide { grid-column: span 2; }
 }
-
-
 
 /* 项目驾驶舱：单项目概览主卡 + 带数据的业务入口 */
 .project-cockpit-hero {
@@ -7596,8 +7580,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .project-cockpit-downstream-facts > div + div::before { top: 0; right: var(--card-inset); bottom: auto; left: var(--card-inset); width: auto; height: 1px; }
 }
 
-
-
 /* 统一卡片内缩与轻量状态：先修提示条、列表行、空态 */
 .inline-notice,
 .data-note,
@@ -7647,8 +7629,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .notice-open-link { border-radius: var(--radius-compact); }
 .notice-open-link:hover { background: var(--state-hover-bg); color: var(--text); }
 .report-report-option:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-
-
 
 /* 字典目录：目录行只负责选择，资料与字典项各自成卡 */
 .system-dictionary-heading-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-8); }
@@ -7703,7 +7683,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .system-dictionary-editor .settings-row-actions { margin-top: 0; }
 .system-dictionary-create { margin-top: var(--space-24); }
 
-
 /* 字典项：用行卡替代六列表格，窄窗口不再横向滚动 */
 .system-dictionary-item-list { display: flex; flex-direction: column; gap: var(--space-8); padding: var(--space-12) var(--space-16) var(--space-4); }
 .system-dictionary-item { padding: var(--space-10) var(--space-12); border: 1px solid color-mix(in srgb, var(--card-border) 78%, transparent); border-radius: var(--radius-action); corner-shape: squircle; background: color-mix(in srgb, var(--bg-card) 76%, var(--overlay-subtle)); }
@@ -7725,8 +7704,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .system-dictionary-item-fields { grid-template-columns: minmax(0, 1fr); }
   .system-dictionary-item-sort { grid-column: auto; max-width: none; }
 }
-
-
 
 /* 运维页：状态合并为一张卡，记录改为可换行的列表，不再使用宽表 */
 .system-ops-page { --ops-gap: var(--space-24); }
@@ -7844,7 +7821,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 @font-face{font-family:"MH Serif SC";src:url("/fonts/notoserifsc.woff2") format("woff2");font-weight:200 900;font-style:normal;font-display:swap}
 @font-face{font-family:"MH Serif";src:url("/fonts/spectral-semibold.woff2") format("woff2");font-weight:600;font-style:normal;font-display:swap}
 @font-face{font-family:"MH Brush";src:url("/fonts/mashanzheng-subset.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
-
 
 /* ============================================================
    侧栏悬停抽屉：对齐 hana ._fpOverlay
@@ -7975,7 +7951,6 @@ html[data-paper-texture] .sidebar-drawer::after {
   overflow-y: auto;
   overflow-x: hidden;
 }
-
 
 /* ============================================================
    项目列表：对齐 hana 会话列表（CardShell-B3PSoerL.css）
@@ -8418,7 +8393,6 @@ html[data-paper-texture] .sidebar-drawer::after {
   opacity: 0.6;
 }
 
-
 /* ============================================================
    项目列表补充：状态文字、圆点、时间分组、首字方块
    ============================================================ */
@@ -8496,7 +8470,6 @@ html[data-paper-texture] .sidebar-drawer::after {
   flex-direction: column;
 }
 
-
 /* ============================================================
    系统分隔线：对齐 hana ._fpSystemDivider_8f4fe
    ============================================================
@@ -8516,7 +8489,6 @@ html[data-paper-texture] .sidebar-drawer::after {
   margin: var(--space-4) auto;
   background: color-mix(in srgb, var(--text-muted) 18%, transparent);
 }
-
 
 /* ============================================================
    侧栏导航区：对齐 hana ._panelNav + .sidebar-activity-bar
@@ -8655,7 +8627,6 @@ html[data-paper-texture] .sidebar-drawer::after {
   outline: none;
 }
 
-
 /* 标题栏关闭按钮：对齐 hana ._close_cd3c9 */
 .settings-titlebar-close {
   display: inline-flex;
@@ -8678,7 +8649,6 @@ html[data-paper-texture] .sidebar-drawer::after {
   color: var(--accent);
   background: var(--accent-light);
 }
-
 
 /* 设置导航搜索框：对齐 hana
      hana 的结构是：
@@ -8709,7 +8679,6 @@ html .settings-nav .settings-search input:focus {
   border-color: color-mix(in srgb, var(--accent) 32%, transparent);
 }
 
-
 /* ============================================================
    设置导航项圆角修正
    ============================================================
@@ -8737,7 +8706,6 @@ html .settings-nav .settings-nav-link {
   gap: var(--space-8);
   margin-bottom: var(--space-16);
 }
-
 
 /* ============================================================
    分档滑块：对齐 hana 的 Nt 组件族（SettingsModalShell）
