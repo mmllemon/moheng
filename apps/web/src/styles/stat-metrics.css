@@ -1272,6 +1272,7 @@ html .projects-kpi-strip > div:first-child {
   white-space: nowrap;
 }
 .metric > strong.text-danger { color: var(--danger); }
+.metric > strong.text-success { color: var(--success); }
 .metric > small {
   display: block;
   margin-top: var(--space-2);
@@ -1285,4 +1286,24 @@ html .projects-kpi-strip > div:first-child {
 .metric + .metric {
   border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
   padding-left: var(--space-16);
+}
+
+/* 卡片内的指标区不需要下间距（卡片自身已有 padding） */
+.projects-dossier .metrics,
+.panel .metrics,
+.ds-section-card .metrics,
+.ldg-section-card .metrics {
+  margin-bottom: 0;
+}
+
+/* 竖线：每行首项不加（按列数判断）。
+   只用 .metric + .metric 会给所有非首项加线，
+   2 列 2 行时第 3 项（第二行第一列）也会被加，导致该行首列右移 16px。 */
+.metrics[data-cols="2"] > .metric:nth-child(2n + 1),
+.metrics[data-cols="3"] > .metric:nth-child(3n + 1),
+.metrics[data-cols="4"] > .metric:nth-child(4n + 1),
+.metrics[data-cols="5"] > .metric:nth-child(5n + 1),
+.metrics[data-cols="6"] > .metric:nth-child(6n + 1) {
+  border-left: 0;
+  padding-left: 0;
 }

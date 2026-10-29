@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T23:49:39.464Z",
+  "generatedAt": "2026-10-29T02:51:23.435Z",
   "target": "web",
   "summarize": {
     "web": {
@@ -41,7 +41,7 @@
           "route": "/projects",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 29,
+          "rounded": 39,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 0,
@@ -151,7 +151,7 @@
           "route": "/cost/analysis",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 32,
+          "rounded": 37,
           "cornerShapeAccepted": true,
           "tabs": 0,
           "visiblePanels": 0,

@@ -140,20 +140,22 @@ export type MetricItem = {
   label: ReactNode;
   value: ReactNode;
   detail?: ReactNode;
-  /** danger 会把数值标红（成本余量为负这类） */
-  tone?: 'default' | 'danger';
+  /** danger / success 会把数值标色（成本余量为负、调整净额为负这类） */
+  tone?: 'default' | 'danger' | 'success';
 };
 
-export function Metrics({ items, columns = 4, className = '' }: {
+export function Metrics({ items, columns = 4, ariaLabel, className = '' }: {
   items: MetricItem[];
   columns?: number;
+  /** 无障碍名称（原来写在容器的 aria-label 上） */
+  ariaLabel?: string;
   className?: string;
 }) {
-  return <div className={`metrics ${className}`.trim()} data-cols={columns}>
+  return <div className={`metrics ${className}`.trim()} data-cols={columns} role="group" aria-label={ariaLabel}>
     {items.map((m, i) => (
       <div className="metric" key={i}>
         <span>{m.label}</span>
-        <strong className={m.tone === 'danger' ? 'text-danger' : undefined}>{m.value}</strong>
+        <strong className={m.tone === 'danger' ? 'text-danger' : m.tone === 'success' ? 'text-success' : undefined}>{m.value}</strong>
         {m.detail != null && <small>{m.detail}</small>}
       </div>
     ))}

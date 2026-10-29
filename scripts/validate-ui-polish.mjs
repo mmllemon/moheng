@@ -139,7 +139,9 @@ check('select shows the brush underline when open',
 check('dashboard is restructured as a V6 ledger page',
   dashboard.includes('v6-hero') && dashboard.includes('v6-split') && dashboard.includes('v6-log'));
 check('project archive uses the ledger + dossier workbench',
-  projects.includes('projects-kpi-strip') && projects.includes('projects-ledger-layout') && projects.includes('projects-dossier'));
+  // 2026-10-27：指标区改用通用 Metrics 组件（原来是手写 projects-kpi-strip），
+  // 断言改为验证组件用法 + 双栏结构。
+  projects.includes('<Metrics') && projects.includes('projects-ledger-layout') && projects.includes('projects-dossier'));
 check('cost assistant is a global modal workspace',
   layout.includes('AssistantModal') && layout.includes('assistantOpen') && appSource.includes('path="assistant"')
   && assistant.includes('assistant-workbench') && !appSource.includes("import('./pages/CostAssistantPage')"));

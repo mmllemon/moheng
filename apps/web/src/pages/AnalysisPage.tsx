@@ -3,7 +3,7 @@ import { Download } from 'lucide-react';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
 import type { Analysis, Project } from '../types';
-import { Button, ErrorBlock, formatMoney, LoadingBlock, PageHeader, percentage, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, percentage, StatusBadge } from '../components/Ui';
 
 const typeLabels: Record<string, string> = { LABOR: '人工费', MATERIAL: '材料费', MACHINE: '机械费', SUBCONTRACT: '分包费', INDIRECT: '其他间接费' };
 const typeColors: Record<string, string> = { MATERIAL: '#2c5a51', LABOR: '#8b6a3e', MACHINE: '#6f7f6a', SUBCONTRACT: '#b08a52', INDIRECT: '#9aa39a' };
@@ -73,12 +73,12 @@ export default function AnalysisPage() {
       actions={<Button variant="secondary" onClick={exportAnalysis}><Download size={15} />导出分析</Button>}
     />
 
-    <div className="an-stats">
-      <div><span>合同额</span><strong>{formatMoney(data.contractAmount, 0)}</strong><small>有效合同 · 含已生效变更</small></div>
-      <div><span>目标成本</span><strong>{formatMoney(data.targetCost, 0)}</strong><small>末级清单 {data.byBudget.length} 条</small></div>
-      <div><span>已发生成本</span><strong>{formatMoney(data.actualCost, 0)}</strong><small>占目标 {costRatio == null ? '—' : percentage(costRatio)}</small></div>
-      <div><span>成本余量</span><strong className={remaining < 0 ? 'text-danger' : ''}>{formatMoney(remaining, 0)}</strong><small>目标 − 已发生</small></div>
-    </div>
+    <Metrics items={[
+      { label: '合同额', value: formatMoney(data.contractAmount, 0), detail: '有效合同 · 含已生效变更' },
+      { label: '目标成本', value: formatMoney(data.targetCost, 0), detail: `末级清单 ${data.byBudget.length} 条` },
+      { label: '已发生成本', value: formatMoney(data.actualCost, 0), detail: `占目标 ${costRatio == null ? '—' : percentage(costRatio)}` },
+      { label: '成本余量', value: formatMoney(remaining, 0), detail: '目标 − 已发生', tone: remaining < 0 ? 'danger' : 'default' },
+    ]} />
 
     <div className="an-grid">
       <section className="an-panel" aria-label="清单偏差">

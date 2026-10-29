@@ -13,7 +13,7 @@ import { api, ApiError } from '../api';
 import { toast } from '../lib/toast';
 import { useUiStore } from '../auth-store';
 import type { Project } from '../types';
-import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, PageHeader, StatusBadge } from '../components/Ui';
 import '../styles/projects-ledger.css';
 
 const schema = z.object({
@@ -146,12 +146,12 @@ export default function ProjectsPage() {
   return <div className="page-wrap projects-page projects-ledger-page">
     <PageHeader eyebrow="WORKSPACE / PROJECTS" title="项目管理" subtitle="先判断项目经营状态，再进入具体合同、目标成本、成本与结算工作。" actions={<Button onClick={() => setDialog({ open: true })}><Plus size={16} />新建项目</Button>} />
 
-    <section className="projects-kpi-strip" aria-label="项目组合摘要">
-      <div><span>可访问项目</span><strong>{projects.length}</strong><small>当前账号可管理范围</small></div>
-      <div><span>施工中</span><strong>{constructionCount}</strong><small>正在实施的项目</small></div>
-      <div><span>待结算</span><strong>{settlementCount}</strong><small>需关注结算与收款</small></div>
-      <div><span>当前有效合同额合计</span><strong>{formatMoney(totalContractAmount, 0)}</strong><small>含符合规则已生效的合同调整</small></div>
-    </section>
+    <Metrics ariaLabel="项目组合摘要" items={[
+      { label: '可访问项目', value: projects.length, detail: '当前账号可管理范围' },
+      { label: '施工中', value: constructionCount, detail: '正在实施的项目' },
+      { label: '待结算', value: settlementCount, detail: '需关注结算与收款' },
+      { label: '当前有效合同额合计', value: formatMoney(totalContractAmount, 0), detail: '含符合规则已生效的合同调整' },
+    ]} />
 
     <div className="projects-toolbar">
       <div className="toolbar-search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜索项目名称、编号或业主单位" aria-label="搜索项目" /></div>
@@ -204,12 +204,33 @@ export default function ProjectsPage() {
           <div><span>项目地址</span><strong>{selected.address || '未填写'}</strong></div>
           <div><span>项目成员</span><strong>按项目单独授权</strong></div>
         </div>
-        <div className="projects-dossier-finance">
-          <div><span>当前有效合同额</span><strong>{formatMoney(selected.contractAmount, 0)}</strong><small>{selected.originalContractAmount != null && Math.abs(selected.contractAmount - selected.originalContractAmount) > 0.009 ? '原始 ' + formatMoney(selected.originalContractAmount, 0) + ' · 已含调整' : '按当前有效合同台账口径'}</small></div>
-          <div><span>目标成本</span><strong>{selectedSnapshot ? (selectedSnapshot.targetCost > 0 ? formatMoney(selectedSnapshot.targetCost, 0) : '未建立基线') : '—'}</strong><small>{selected.budgetItemCount != null ? '清单 ' + selected.budgetItemCount + ' 项' : '目标成本清单'}</small></div>
-          <div><span>实际成本</span><strong>{selectedSnapshot ? formatMoney(selectedSnapshot.actualCost ?? 0, 0) : '—'}</strong><small>{selected.costEntryCount != null ? '成本记录 ' + selected.costEntryCount + ' 条' : '已归集记录'}</small></div>
-          <div><span>成本余量</span><strong>{selectedSnapshot && selectedSnapshot.targetCost > 0 ? formatMoney(selectedSnapshot.targetCost - (selectedSnapshot.actualCost ?? 0), 0) : '—'}</strong><small>目标减已发生，不是利润</small></div>
-        </div>
+        <Metrics
+          columns={2}
+          items={[
+            {
+              label: '当前有效合同额',
+              value: formatMoney(selected.contractAmount, 0),
+              detail: selected.originalContractAmount != null && Math.abs(selected.contractAmount - selected.originalContractAmount) > 0.009
+                ? '原始 ' + formatMoney(selected.originalContractAmount, 0) + ' · 已含调整'
+                : '按当前有效合同台账口径',
+            },
+            {
+              label: '目标成本',
+              value: selectedSnapshot ? (selectedSnapshot.targetCost > 0 ? formatMoney(selectedSnapshot.targetCost, 0) : '未建立基线') : '—',
+              detail: selected.budgetItemCount != null ? '清单 ' + selected.budgetItemCount + ' 项' : '目标成本清单',
+            },
+            {
+              label: '实际成本',
+              value: selectedSnapshot ? formatMoney(selectedSnapshot.actualCost ?? 0, 0) : '—',
+              detail: selected.costEntryCount != null ? '成本记录 ' + selected.costEntryCount + ' 条' : '已归集记录',
+            },
+            {
+              label: '成本余量',
+              value: selectedSnapshot && selectedSnapshot.targetCost > 0 ? formatMoney(selectedSnapshot.targetCost - (selectedSnapshot.actualCost ?? 0), 0) : '—',
+              detail: '目标减已发生，不是利润',
+            },
+          ]}
+        />
         <div className="projects-dossier-ratio">
           <div><span>成本使用率</span><strong>{selectedSnapshot && selectedSnapshot.targetCost > 0 ? ((selectedSnapshot.actualCost ?? 0) / selectedSnapshot.targetCost * 100).toFixed(1) + '%' : '—'}</strong></div>
           <div className="projects-ratio-track"><i style={{ width: selectedSnapshot && selectedSnapshot.targetCost > 0 ? Math.min(100, Math.max(0, (selectedSnapshot.actualCost ?? 0) / selectedSnapshot.targetCost * 100)) + '%' : '0%' }} /></div>
