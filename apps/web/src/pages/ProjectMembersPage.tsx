@@ -5,7 +5,7 @@ import { api, ApiError } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
 import type { Project } from '../types';
 import SelectField from '../components/SelectField';
-import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 
 type ProjectRole = 'OWNER' | 'MANAGER' | 'ESTIMATOR' | 'VIEWER';
 type Member = { id: string; userId: string; name: string; email: string; role: ProjectRole; createdAt: string };
@@ -68,6 +68,6 @@ export default function ProjectMembersPage() {
     <section className="panel members-table-panel"><div className="panel-heading"><div><h3>当前项目成员</h3><p>共 {members.length} 人 · 角色修改和添加操作均写入审计记录。</p></div><span className="table-count">{members.length} 个成员</span></div>
       {!members.length ? <EmptyState title="当前项目没有可列出的成员" description="请以系统管理员检查项目初始化成员记录。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>成员</th><th>登录邮箱</th><th>当前角色</th><th>加入时间</th><th>角色调整</th></tr></thead><tbody>{members.map((member) => { const selected = roleDrafts[member.userId] ?? member.role; const ownerCount = members.filter((candidate) => candidate.role === 'OWNER').length; const editable = canManage && selected !== member.role && assignableRoles.some((role) => role.value === selected) && (currentUser?.role === 'ADMIN' || member.role !== 'OWNER' || ownerCount > 1); return <tr key={member.id}><td><strong className="table-primary-text">{member.name}</strong>{member.userId === currentUser?.id && <small className="table-subtext">当前账号</small>}</td><td>{member.email}</td><td><StatusBadge status={member.role} /><small className="table-subtext">{roleName(member.role)}</small></td><td>{member.createdAt ? new Date(member.createdAt).toLocaleDateString('zh-CN') : '—'}</td><td>{canManage ? <div className="member-role-action"><SelectField aria-label={`${member.name} 的角色`} value={selected} onChange={(event) => setRoleDrafts((state) => ({ ...state, [member.userId]: event.target.value as ProjectRole }))}>{roleChoices.filter((role) => currentUser?.role === 'ADMIN' || role.value !== 'OWNER' || role.value === member.role).map((role) => <option key={role.value} value={role.value} disabled={role.value === 'OWNER' && currentUser?.role !== 'ADMIN'}>{role.label}</option>)}</SelectField><Button variant="secondary" disabled={assign.isPending || selected === member.role || !editable} onClick={() => assign.mutate({ userId: member.userId, role: selected })}>保存</Button></div> : <span className="text-muted">仅查看</span>}</td></tr>; })}</tbody></table></div>}
     </section>
-    <div className="data-note"><span className="note-mark">i</span><span>为了避免项目失去负责人，当前版本不提供直接删除成员的操作；最后一名项目负责人不能被降为其他角色。需要移交负责人时，先添加另一名负责人，再调整原负责人角色。</span></div>
+    <PageNote>为了避免项目失去负责人，当前版本不提供直接删除成员的操作；最后一名项目负责人不能被降为其他角色。需要移交负责人时，先添加另一名负责人，再调整原负责人角色。</PageNote>
   </div>;
 }

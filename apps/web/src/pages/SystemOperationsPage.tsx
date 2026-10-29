@@ -3,7 +3,7 @@ import { Activity, Archive, CheckCircle2, Database, Download, HardDrive, Refresh
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
 type BackupRun = { id: string; type: 'BACKUP' | 'RESTORE_DRILL'; status: 'RUNNING' | 'SUCCEEDED' | 'FAILED'; sourceBackupId: string | null; fileName: string | null; fileSize: string | null; sha256: string | null; globalsFileName: string | null; globalsFileSize: string | null; globalsSha256: string | null; startedAt: string; finishedAt: string | null; durationMs: number | null; verified: boolean; message: string | null; triggeredBy: { name: string; email: string } };
@@ -108,7 +108,7 @@ export default function SystemOperationsPage() {
           </div>}
         </article>)}</div> : <div className="system-ops-empty"><span className="system-ops-empty-icon"><Archive size={18} /></span><div><strong>暂无备份或恢复演练记录</strong><span>配置完成后执行首次备份，记录会按时间显示在这里。</span></div></div>}
       </div>
-      <div className="data-note"><span className="note-mark">i</span><span>目标数据库需提前创建并允许应用数据库账号写入。程序会拒绝与生产数据库解析到相同地址的目标；执行前仍需由运维人员确认测试目标可被覆盖。此工作台不自动清理审计记录，不把应用运行环境变量完整展示给管理员。</span></div>
+      <PageNote>目标数据库需提前创建并允许应用数据库账号写入。程序会拒绝与生产数据库解析到相同地址的目标；执行前仍需由运维人员确认测试目标可被覆盖。此工作台不自动清理审计记录，不把应用运行环境变量完整展示给管理员。</PageNote>
     </section>
 
     <section className="system-ops-lower-grid">

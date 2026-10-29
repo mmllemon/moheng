@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, ArrowUpRight, BellRing, CalendarClock, Chec
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
-import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader, PageNote } from '../components/Ui';
 
 type Notice = { id: string; kind: string; severity: 'danger' | 'warning' | 'info'; title: string; description: string; projectId: string; projectName: string; projectCode: string; occurredAt: string; href: string; amount?: number };
 type NoticeResponse = { generatedAt: string; total: number; bySeverity: { danger: number; warning: number; info: number }; items: Notice[] };
@@ -24,7 +24,7 @@ export default function NotificationsPage() {
       <section className="panel notice-list-panel"><div className="notice-list-heading"><div><h2><BellRing size={18} />工作事项</h2><p>共 {query.data?.total ?? 0} 项 · 更新时间 {query.data?.generatedAt ? new Date(query.data.generatedAt).toLocaleTimeString('zh-CN', { hour12: false }) : '—'}</p></div><div className="notice-filter-group" role="group" aria-label="筛选待办类型"><Filter size={14} />{filters.map((item) => <button key={item.key} type="button" className={filter === item.key ? 'active' : ''} aria-pressed={filter === item.key} onClick={() => setFilter(item.key)}>{item.label}<small>{filterCounts[item.key]}</small></button>)}</div></div>
         {!items.length ? <EmptyState title={query.data?.total ? '此类别暂无事项' : '当前没有待处理事项'} description={query.data?.total ? '切换其他类别查看，或刷新工作清单。' : '当前可访问项目中未发现已配置规则覆盖的待办或预警。'} action={() => setFilter('ALL')} /> : <div className="notice-list">{items.map((item) => { const Icon = item.severity === 'danger' ? AlertCircle : item.severity === 'warning' ? AlertTriangle : Clock3; return <article className={`notice-item severity-${item.severity}`} key={item.id}><span className="notice-item-icon"><Icon size={17} /></span><div className="notice-item-main"><div className="notice-item-title-row"><strong>{item.title}</strong><span className={`notice-severity-pill ${item.severity}`}>{severityLabel[item.severity]}</span></div><p>{item.description}</p><div className="notice-item-meta"><span>{item.projectName}</span><code>{item.projectCode}</code><span>{new Date(item.occurredAt).toLocaleDateString('zh-CN')}</span>{item.amount != null && <strong>¥ {item.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>}</div></div><Link className="notice-open-link" to={item.href} onClick={() => setSelectedProjectId(item.projectId)} aria-label={`前往处理：${item.title}`}><span>前往处理</span><ArrowUpRight size={16} /></Link></article>; })}</div>}
       </section>
-      <div className="data-note"><span className="note-mark"><ShieldCheck size={14} /></span><span>待办在服务端按当前账号的项目访问范围计算。此版本不提供“标记已读”或永久关闭操作，以免用户关闭提醒却未完成实际业务处理。</span></div>
+      <PageNote icon={ShieldCheck}>待办在服务端按当前账号的项目访问范围计算。此版本不提供“标记已读”或永久关闭操作，以免用户关闭提醒却未完成实际业务处理。</PageNote>
     </>}
   </div>;
 }

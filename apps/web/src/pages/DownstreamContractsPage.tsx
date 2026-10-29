@@ -11,7 +11,7 @@ import BusinessPartyPicker from '../components/BusinessPartyPicker';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
-import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, Section } from '../components/Ui';
+import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, PageNote, Section } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
 type DownstreamContractType = 'LABOR_SUBCONTRACT' | 'PROFESSIONAL_SUBCONTRACT' | 'MATERIAL_PURCHASE' | 'EQUIPMENT_LEASE' | 'SERVICE' | 'OTHER';
@@ -225,7 +225,7 @@ export default function DownstreamContractsPage() {
       )}
       <div className="detail-notes">
         <div className="inline-notice"><ShieldAlert size={16} /><span>“结算已确认”不等于“款项已付清”。已过账结算会在“结算与应付”形成独立应付来源；普通付款须核销应付余额，预付款单独管理，质保金释放后再形成应付。没有最终结算过账，不能直接修改合同状态为结算已确认。</span></div>
-        <div className="data-note"><span className="note-mark">i</span><span>已付款不自动生成实际成本，避免双重累计。请在“实际成本录入”选择对应分供合同后录入已发生金额；历史未关联成本需要在核对发票、验收或结算依据后手动补关联，不能仅按金额自动匹配。</span></div>
+        <PageNote>已付款不自动生成实际成本，避免双重累计。请在“实际成本录入”选择对应分供合同后录入已发生金额；历史未关联成本需要在核对发票、验收或结算依据后手动补关联，不能仅按金额自动匹配。</PageNote>
       </div>
     </Section>
     {creating && <CreateContractDialog projectId={projectId} onClose={() => setCreating(false)} onNotice={setNotice} />}

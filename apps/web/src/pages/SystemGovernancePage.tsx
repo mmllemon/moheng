@@ -4,7 +4,7 @@ import { Building2, CheckCircle2, ClipboardCheck, KeyRound, Plus, RefreshCw, Shi
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import SelectField from '../components/SelectField';
 import SystemTabs from '../components/SystemTabs';
 
@@ -119,7 +119,7 @@ export default function SystemGovernancePage() {
         <div className="system-secret-controls"><input aria-label={`${item.name} 新凭据`} type="password" autoComplete="new-password" value={rotateSecrets[item.id] ?? ''} onChange={(event) => setRotateSecrets((prev) => ({ ...prev, [item.id]: event.target.value }))} placeholder="输入新凭据以轮换" /><button type="button" className="button-secondary" disabled={!rotateSecrets[item.id] || rotateIntegration.isPending} onClick={() => rotateIntegration.mutate({ id: item.id, secret: rotateSecrets[item.id] })}>轮换凭据</button><button type="button" className="button-quiet" disabled={!item.endpointUrl || !item.hasSecret || testIntegration.isPending} onClick={() => testIntegration.mutate(item.id)}>测试连接</button>{item.status === 'ACTIVE' && ['REST_API','WEBHOOK'].includes(item.adapterType) && <button type="button" className="button-secondary" disabled={!item.endpointUrl || !item.hasSecret || dispatchIntegration.isPending} onClick={() => { let parsedPayload: unknown; try { parsedPayload = JSON.parse(integrationPayload); } catch { setNotice('投递载荷不是有效 JSON'); return; } if (!parsedPayload || typeof parsedPayload !== 'object' || Array.isArray(parsedPayload)) { setNotice('投递载荷必须是 JSON 对象'); return; } dispatchIntegration.mutate({ id: item.id, payload: parsedPayload as Record<string, unknown> }); }}>投递事件</button>}<button type="button" className="button-quiet" onClick={() => loadDeliveries.mutate(item.id)} disabled={loadDeliveries.isPending}>投递记录</button><button type="button" className="button-quiet" onClick={() => patchIntegration.mutate({ id: item.id, status: item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' })}>{item.status === 'ACTIVE' ? '停用' : '启用'}</button></div>
         {deliveriesById[item.id] && <div className="system-integration-deliveries"><strong>最近投递记录（最多 100 条）</strong>{deliveriesById[item.id].length ? deliveriesById[item.id].map((delivery) => <div key={delivery.id}><span>{delivery.status}</span><small>{new Date(delivery.createdAt).toLocaleString('zh-CN')} · 尝试 {delivery.attempts}/{delivery.maxAttempts}{delivery.lastError ? ' · 存在失败记录' : ''}</small></div>) : <small>尚无投递记录</small>}</div>}
       </article>)}</div>
-      <div className="data-note"><span className="note-mark">i</span><span>当前通用 REST_API/Webhook JSON 投递已接入后台队列，支持幂等入队与网络/429/5xx 重试。外部端点实际可用性取决于部署白名单、密钥和目标服务；ERP/对象存储业务协议与映射不包含在通用投递中。</span></div>
+      <PageNote>当前通用 REST_API/Webhook JSON 投递已接入后台队列，支持幂等入队与网络/429/5xx 重试。外部端点实际可用性取决于部署白名单、密钥和目标服务；ERP/对象存储业务协议与映射不包含在通用投递中。</PageNote>
     </section>
 
     <section className="panel system-expansion-section" hidden={tab !== 'quality'}>

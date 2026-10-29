@@ -11,7 +11,7 @@ import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { ChangeRecord, ChangeStatus, EvidenceClass, ExternalConfirmationStatus } from '../types';
-import { Button, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 import DateTimeField from '../components/DateTimeField';
 
@@ -285,7 +285,7 @@ export default function ChangesPage() {
         <td><div className="row-actions">{getActions(record).map(({ label, run, danger, icon: Icon }) => <Button key={label} size="xs" variant={danger ? 'danger' : 'ghost'} disabled={updateStatus.isPending} onClick={run}><Icon size={13} />{label}</Button>)}</div></td>
       </tr>)}</tbody></table></div>}
     </section>
-    <div className="data-note"><span className="note-mark">i</span><span>原始凭证文件以独立存储文件保存并记录 SHA-256；审计日志记录登记、核验及生效动作。补充协议状态仍需单独跟踪，不替代外部确认生效状态。</span></div>
+    <PageNote>原始凭证文件以独立存储文件保存并记录 SHA-256；审计日志记录登记、核验及生效动作。补充协议状态仍需单独跟踪，不替代外部确认生效状态。</PageNote>
     {creating && <ChangeCreateDialog projectId={projectId} onClose={() => setCreating(false)} />}
     {decision && <ChangeDecisionDialog record={decision} projectId={projectId} onClose={() => setDecision(null)} onNotice={setNotice} />}
     {externalRecord && <ExternalConfirmationDialog record={externalRecord} projectId={projectId} onClose={() => setExternalRecord(null)} onNotice={setNotice} />}

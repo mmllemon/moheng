@@ -7,7 +7,7 @@ import { useUiStore } from '../auth-store';
 import type { Project } from '../types';
 import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
-import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, PageNote } from '../components/Ui';
 
 type Report = { key: string; label: string; description: string; dateField: string; rowLimit: number };
 type ReportCategory = 'ALL' | 'COST' | 'OWNER' | 'DOWNSTREAM';
@@ -143,7 +143,7 @@ export default function ReportCenterPage() {
           </section>
         </div>
       </section>
-      <div className="data-note"><span className="note-mark">i</span><span>所有报表由服务端按项目权限读取只读数据；模板不能访问白名单以外的字段，也不会回写业务台账。</span></div>
+      <PageNote>所有报表由服务端按项目权限读取只读数据；模板不能访问白名单以外的字段，也不会回写业务台账。</PageNote>
     </>}
   </div>;
 }

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Clock3, Globe, Monitor, RefreshCcw, ShieldAlert, ShieldCheck, Smartphone, UserRoundX } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, Metrics, PageHeader, StatusBadge, TitlebarActions } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, Metrics, PageHeader, PageNote, StatusBadge, TitlebarActions } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 import SystemTabs from '../components/SystemTabs';
 
@@ -100,6 +100,6 @@ export default function SystemSecurityPage() {
         <td><details className="security-event-details"><summary><Clock3 size={13} />查看</summary><pre>{JSON.stringify(event.details ?? {}, null, 2)}</pre>{event.sessionId && <small>会话：{event.sessionId}</small>}{event.userAgent && <small>{event.userAgent}</small>}</details></td>
       </tr>)}</tbody></table></div>}{events.length > visibleEvents && <div className="load-more-row"><span>已显示 {Math.min(visibleEvents, events.length)} / {events.length} 条</span><button type="button" className="button button-secondary button-small" onClick={() => setVisibleEvents((count) => count + 20)}>显示更多事件</button></div>}
     </section>
-    <div className="data-note"><span className="note-mark"><AlertTriangle size={14} /></span><span>安全事件最多保留 180 天，登录尝试计数按策略清理。此页面不是地理定位工具；IP 地址可能因代理、运营商网络或移动网络而变化，不能单独作为认定真实位置或身份的证据。</span></div>
+    <PageNote icon={AlertTriangle}>安全事件最多保留 180 天，登录尝试计数按策略清理。此页面不是地理定位工具；IP 地址可能因代理、运营商网络或移动网络而变化，不能单独作为认定真实位置或身份的证据。</PageNote>
   </div>;
 }

@@ -4,7 +4,7 @@ import { Activity, ArrowRight, BookOpen, Database, Fingerprint, KeyRound, Refres
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 
 type ManagedUser = { id: string; name: string; email: string; role: 'ADMIN' | 'USER'; isActive: boolean; mfaEnabled: boolean; passwordResetRequired: boolean; createdAt: string };
 type AuthSession = { id: string; isValid: boolean; createdAt: string; lastSeenAt: string; user: { name: string; email: string }; ipAddress: string | null };
@@ -78,6 +78,6 @@ export default function SystemManagementPage() {
       </section>
     </section>
 
-    <div className="data-note"><span className="note-mark">i</span><span>当前首页为管理概览，不替代“系统账号管理”“登录安全中心”“操作追溯”等专门页面。MFA、TLS 与项目授权等状态在开发环境或未完成部署时仍需结合实际环境复核。</span></div>
+    <PageNote>当前首页为管理概览，不替代“系统账号管理”“登录安全中心”“操作追溯”等专门页面。MFA、TLS 与项目授权等状态在开发环境或未完成部署时仍需结合实际环境复核。</PageNote>
   </div>;
 }

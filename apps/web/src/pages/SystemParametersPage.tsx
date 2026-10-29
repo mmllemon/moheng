@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
 import type { Project } from '../types';
-import { Button, ErrorBlock, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import SystemTabs from '../components/SystemTabs';
 import { suggestCodeFromName } from '../utils/code-suggestion';
 import SelectField from '../components/SelectField';
@@ -126,6 +126,6 @@ export default function SystemParametersPage() {
       <div className="table-scroll"><table className="data-table system-expansion-table system-parameter-history-table"><thead><tr><th>参数</th><th>范围</th><th>业务读取</th><th>版本 / 状态</th><th>值快照</th><th>变更说明 / 操作者</th><th>操作</th></tr></thead><tbody>{histories.map((item) => <tr key={item.id}><td><strong>{item.key}</strong><small>{item.name}</small></td><td>{item.scope === 'PROJECT' ? `项目 · ${item.project?.name ?? item.projectId}` : '全局'}</td><td>{item.visibility === 'BUSINESS_READABLE' ? '业务可读' : '仅管理员'}</td><td><strong>v{item.version}</strong><small><StatusBadge status={item.status} /></small></td><td><code className="system-parameter-value">{formatValue(item.value)}</code><small>{valueTypeNames[item.valueType]}</small></td><td><span>{item.changeNote || '无说明'}</span><small>创建：{item.createdBy.name}{item.publishedBy ? ` · 发布：${item.publishedBy.name}` : ''}</small></td><td><div className="system-config-row-actions">{item.status === 'DRAFT' && <button type="button" className="button-primary" onClick={() => publishDraft.mutate(item.id)} disabled={publishDraft.isPending}><Send size={13} />发布</button>}{item.status === 'RETIRED' && <button type="button" className="button-secondary" onClick={() => rollback.mutate(item.id)} disabled={rollback.isPending}><RotateCcw size={13} />创建回滚草稿</button>}</div></td></tr>)}</tbody></table></div>
       {!histories.length && <div className="system-config-empty">尚无参数版本记录。</div>}
     </section>
-    <div className="data-note"><span className="note-mark">i</span><span>版本化参数为统一配置基础设施。本阶段不会隐式替换现有合同金额生效规则、结算算法或业务状态机；业务模块必须显式读取对应参数，并增加规则级测试后才可以声明其已受参数控制。密钥、密码和 Token 不允许通过本页面保存。</span></div>
+    <PageNote>版本化参数为统一配置基础设施。本阶段不会隐式替换现有合同金额生效规则、结算算法或业务状态机；业务模块必须显式读取对应参数，并增加规则级测试后才可以声明其已受参数控制。密钥、密码和 Token 不允许通过本页面保存。</PageNote>
   </div>;
 }

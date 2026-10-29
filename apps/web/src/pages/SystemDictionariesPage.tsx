@@ -4,7 +4,7 @@ import { BookOpen, CheckCircle2, ChevronRight, CircleOff, Plus, RefreshCw, Save 
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, PageHeader, PageNote } from '../components/Ui';
 import { suggestCodeFromName } from '../utils/code-suggestion';
 
 type DictionaryItem = { id: string; dictionaryId: string; code: string; name: string; description: string | null; sortOrder: number; isSystem: boolean; isActive: boolean; updatedAt: string };
@@ -163,6 +163,6 @@ export default function SystemDictionariesPage() {
         <div className="settings-row-actions"><span className="settings-row-actions-note">分类停用只影响后续选择，不删除历史记录。</span><div className="settings-row-actions-buttons"><button type="submit" className="button-primary" disabled={createDictionary.isPending}><Plus size={14} />创建分类</button></div></div>
       </form>
     </section>
-    <div className="data-note"><span className="note-mark">i</span><span>系统通过软停用保留历史编码。字典项的创建、名称/排序调整和启停均写入操作审计。现有财务状态机及类型化字段不会因维护字典而自动变更，业务字段接入字典将按模块单独迁移与验收。</span></div>
+    <PageNote>系统通过软停用保留历史编码。字典项的创建、名称/排序调整和启停均写入操作审计。现有财务状态机及类型化字段不会因维护字典而自动变更，业务字段接入字典将按模块单独迁移与验收。</PageNote>
   </div>;
 }

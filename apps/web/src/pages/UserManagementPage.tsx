@@ -4,7 +4,7 @@ import { KeyRound, ShieldCheck, UserCheck, UserPlus, UserRoundX, X } from 'lucid
 import { api, ApiError } from '../api';
 import SelectField from '../components/SelectField';
 import { useAuthStore } from '../auth-store';
-import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
 type ManagedUser = {
@@ -129,6 +129,6 @@ export default function UserManagementPage() {
       </div>
     </div>
 
-    <div className="data-note"><span className="note-mark">i</span><span>公网部署时系统管理员首次登录必须启用验证器多因素认证。关闭账号、重置密码或从安全中心撤销会话都会立即阻断该会话的后续 API 请求。登录安全事件与 IP/设备信息只能用于受控运维目的。</span></div>
+    <PageNote>公网部署时系统管理员首次登录必须启用验证器多因素认证。关闭账号、重置密码或从安全中心撤销会话都会立即阻断该会话的后续 API 请求。登录安全事件与 IP/设备信息只能用于受控运维目的。</PageNote>
   </div>;
 }

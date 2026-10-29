@@ -15,6 +15,23 @@ export function Section({ title, subtitle, actions, icon: Icon, children, classN
   </section>;
 }
 
+/* PageNote：页面底注。
+
+   原来 27 处底注分 13 套类名（data-note / ldg-note / *-note），
+   结构几乎一样：图标或「i」标记 + 一段说明。
+   统一到 .data-note（CSS 已存在），组件只做结构收敛。 */
+export function PageNote({ icon: Icon, children, className = '' }: {
+  /** 传图标则用图标，否则显示「i」标记 */
+  icon?: LucideIcon;
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={`data-note ${className}`.trim()}>
+    <span className="note-mark">{Icon ? <Icon size={14} /> : 'i'}</span>
+    <span>{children}</span>
+  </div>;
+}
+
 export function SettingsSection({ title, description, actions, children, hidden = false, className = '' }: {
   title: ReactNode; description?: ReactNode; actions?: ReactNode; children: ReactNode; hidden?: boolean; className?: string;
 }) {
