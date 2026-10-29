@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectSummaryReportButton } from '../components/ReportLaunchButton';
-import { Button, dateInputToIso, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, CardHead, dateInputToIso, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
 import { Link } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 
@@ -77,7 +77,7 @@ export default function ContractsPage() {
         </div>
       </section>
 
-      <section className="panel owner-contract-detail-panel"><div className="panel-heading"><div><h3>合同关键条款</h3><p>只读展示合同基准、质保与付款约定；修改统一从顶部“编辑合同资料”进入。</p></div></div><div className="owner-contract-detail-grid">
+      <section className="panel owner-contract-detail-panel"><CardHead title="合同关键条款" description="只读展示合同基准、质保与付款约定；修改统一从顶部“编辑合同资料”进入。" /><div className="owner-contract-detail-grid">
         <div><span>质保金比例</span><strong>{(contract.retentionRate * 100).toFixed(2)}%</strong></div>
         <div><span>预付款回扣比例</span><strong>{(contract.advanceDeductionRate * 100).toFixed(2)}%</strong></div>
         <div><span>质保金到期日</span><strong>{formatDate(contract.guaranteeEndAt)}</strong></div>

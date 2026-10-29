@@ -11,7 +11,7 @@ import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { ChangeRecord, ChangeStatus, EvidenceClass, ExternalConfirmationStatus } from '../types';
-import { Button, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
+import { Button, CardHead, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 import DateTimeField from '../components/DateTimeField';
 
@@ -272,7 +272,7 @@ export default function ChangesPage() {
       <div className="change-summary change-summary-emphasis"><span className="change-summary-label">有效变更净额</span><strong>{formatMoney(effectiveNet, 0)}</strong><small>按外部确认金额和增减方向汇总</small></div>
     </div>
     {projectQuery.data && <div className="inline-notice"><FileCheck2 size={17} /><span>当前有效合同额：<strong>{formatMoney(projectQuery.data.contractAmount)}</strong>；原始合同金额：{formatMoney(projectQuery.data.originalContractAmount)}。内部审批通过本身不会改变当前有效合同额。</span></div>}
-    <section className="panel change-table-panel"><div className="panel-heading"><div><h3>变更签证台账</h3><p>提交人不能审批本人业务；C 类凭证核验人必须与业务提交人不同。</p></div><span className="panel-icon"><FileCheck2 size={19} /></span></div>
+    <section className="panel change-table-panel"><CardHead title="变更签证台账" description="提交人不能审批本人业务；C 类凭证核验人必须与业务提交人不同。" aside={<span className="panel-icon"><FileCheck2 size={19} /></span>} />
       {!changes.length ? <EmptyState title="还没有变更或签证" description="新增记录后，可分别跟踪内部审批和外部确认凭证。" action={() => setCreating(true)} /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>编号</th><th>名称 / 方向</th><th>发生日期</th><th className="align-right">内部送审</th><th className="align-right">内部核定</th><th>内部流程</th><th>外部凭证 / 状态</th><th>金额差异复核</th><th>操作</th></tr></thead><tbody>{changes.map((record) => <tr key={record.id}>
         <td><span className="budget-code">{record.code}</span></td>
         <td><strong className="table-primary-text">{record.name}</strong><small className="table-subtext">{record.direction === 'DECREASE' ? '减少合同额' : '增加合同额'} · {record.type === 'SITE_VISA' ? '现场签证' : record.type === 'OWNER_INSTRUCTION' ? '业主指令' : record.type === 'UNFORESEEN' ? '不可预见事项' : '工程变更'}</small><small className="table-subtext">主合同：{record.mainContract?.contractNo ?? '历史记录未关联主合同'}</small></td>

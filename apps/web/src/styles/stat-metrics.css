@@ -11,30 +11,7 @@
                        gap: var(--space-16); }
      ._metric_53489  { display:flex; flex-direction:column; gap: 8px; }
      dt { color: --text-muted; font-size: --fs-ui }
-     dd { color: --text; font-size: --fs-title; font-weight: 500 }
-   —— 是 grid + gap 16px，容器无 border / 无 background。
-
-   现在按 C 方案：指标区独立成一张卡（--bg-card + radius-card × 1.84
-   + 1px --card-border），卡内指标项之间保留 1px 竖线分隔。
-   与下方内容卡并列，不合并——因为它们数据不同源。
-   ============================================================= */
-
-/* -------------------------------------------------------------
-   一、容器层 —— 全站只有一种
-   注意：旧规则带页面级前缀（.projects-ledger-page .projects-kpi-strip
-   特异度 20），单类 html 前缀（11）压不住，所以这里补齐同样的
-   页面前缀再叠加 html 前缀，特异度 21。
-
-   列数刻意不用 auto-fit：minmax(0,1fr) 允许列宽降到 0，
-   auto-fit 会判定"还能再塞"而压少列数，导致 4 项变两行。
-   改为按项数确定列数（见 grid-template-columns 逐条）。
-   ------------------------------------------------------------- */
-/* 2026-10-23：.settings-content .security-metrics 已从此规则排除。
-   理由：hana 的 ._metrics_2473c 是「gap: 16px 的网格」，
-   容器无 border / 无 background；而这条规则原本是「KPI 条」。 */
-/* 2026-10-27 修正：之前把这条规则改成「容器画卡」，
-   前提是错的。重核 hana 真值：
-     ._metrics_2473c { display:grid; gap:var(--space-16); margin:0 }   容器无卡
+     dd { color: --text; font-size: --fs-title; font-weight: 500 }   容器无卡
      ._metric_53489  { flex column; gap:var(--space-8) }               子项无卡
      dt { color:--text-muted; font-size:--fs-ui }
      dd { color:--text; font-size:--fs-title; font-weight:500 }
@@ -226,19 +203,7 @@ html .downstream-summary-grid .change-summary strong {
   font-weight: 500;
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
-}
-html .projects-ledger-page .projects-kpi-strip > div:first-child,
-html .analysis-page .an-stats > div:first-child,
-html .settings-content .security-metrics > *:first-child {
-  /* 首项不再清零左内边距：容器现在是有边框的卡片，清零会贴到边框上。 */
-  border-left: 0;
-}
-html .projects-ledger-page .projects-kpi-strip > div:last-child,
-html .analysis-page .an-stats > div:last-child,
-html .settings-content .security-metrics > *:last-child {
-  /* 末项不再清零右内边距，同理。 */
-}
-/* 干掉旧的分隔线伪元素——它们只画到 12px 高度，与新规范不一致 */
+}/* 干掉旧的分隔线伪元素——它们只画到 12px 高度，与新规范不一致 */
 html .projects-ledger-page .projects-kpi-strip > div + div::before,
 html .ldg-stats > div + div::before,
 html .downstream-summary-grid .change-summary + .change-summary::before {
@@ -492,35 +457,6 @@ html .an-stats > * > strong small {
   font-weight: 500;
   letter-spacing: 0;
 }
-
-/* /projects 的 KPI 条：按 hana ._metric_53489 统一 ——
-   dt（标签）= --fs-ui 13.12px；dd（数值）= --fs-title 16px / 500；说明 = --fs-hint 11.2px。
-   之前是数值 26px/600、标签 10px、说明 9.5px，层级差距过大且与全站不一致。 */
-html .projects-ledger-page .projects-kpi-strip > div > strong,
-html .projects-kpi-strip > div > strong {
-  font-size: var(--fs-title, 16px);
-  font-weight: 500;
-  line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-  margin-top: var(--space-6);
-  /* 数值不折行。 */
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
-}
-html .projects-ledger-page .projects-kpi-strip > div > span,
-html .projects-kpi-strip > div > span {
-  font-size: var(--fs-ui, 13.12px);
-  font-weight: 400;
-  letter-spacing: 0;
-  line-height: 1.4;
-}
-html .projects-ledger-page .projects-kpi-strip > div > small,
-html .projects-kpi-strip > div > small {
-  font-size: var(--fs-hint, 11.2px);
-  margin-top: var(--space-4);
-}
-
 /* /parties 的数值：按 hana ._metric_53489 dd 统一为 --fs-title 16px / 500 */
 html .business-party-summary-strip strong {
   font-family: var(--font-num, var(--num));
@@ -554,22 +490,6 @@ html .system-overview-metric > div > strong {
   line-height: 1.4;
   font-variant-numeric: tabular-nums;
 }
-
-/* /cost/analysis 的 an-grid 是图表区（非指标区），保持原样；
-   但 an-stats 里的数值要拉回 26px。 */
-html .analysis-page .an-stats > div > strong {
-  font-size: var(--fs-title, 16px);
-  font-weight: 500;
-  line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-  margin-top: var(--space-6);
-}
-html .analysis-page .an-stats > div > span {
-  font-size: var(--fs-hint);
-  font-weight: 400;
-  letter-spacing: 0.04em;
-}
-
 /* 说明文字：9.5px / muted */
 html .change-summary > small,
 html .bill-summary > small,

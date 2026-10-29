@@ -32,6 +32,34 @@ export function PageNote({ icon: Icon, children, className = '' }: {
   </div>;
 }
 
+/* CardHead：卡片标题区（在卡片外，卡片只装内容）。
+
+   原来 45 处手写了同一个模板：
+     <div className="panel-heading">
+       <div><h3>[图标]标题</h3><p>说明</p></div>
+       [右侧：徽标 / 图标 / 按钮]
+     </div>
+   右侧内容差异大（none 60 / icon 35 / button 1），所以做成 aside 槽位。
+
+   图标尺寸按现有用法默认 16（少数用 17 的可显式传 iconSize）。 */
+export function CardHead({ title, icon: Icon, iconSize = 16, description, aside, className = '' }: {
+  title: ReactNode;
+  icon?: LucideIcon;
+  iconSize?: number;
+  description?: ReactNode;
+  /** 右侧内容：计数徽标 / 装饰图标 / 操作按钮 */
+  aside?: ReactNode;
+  className?: string;
+}) {
+  return <div className={`panel-heading ${className}`.trim()}>
+    <div>
+      <h3>{Icon && <Icon size={iconSize} />}{title}</h3>
+      {description != null && <p>{description}</p>}
+    </div>
+    {aside}
+  </div>;
+}
+
 export function SettingsSection({ title, description, actions, children, hidden = false, className = '' }: {
   title: ReactNode; description?: ReactNode; actions?: ReactNode; children: ReactNode; hidden?: boolean; className?: string;
 }) {

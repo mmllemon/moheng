@@ -1164,21 +1164,6 @@ html .sidebar-drawer .sidebar-footer-icon {
 .app-shell:has(.workspace-panel) .projects-ledger-page .projects-table {
   min-width: 560px;
 }
-
-/* 主内容收窄后，KPI 四列太挤（实测 298px → 152px）——
-   改成两列，数字和标签都有呼吸空间。 */
-.app-shell:has(.workspace-panel) .projects-ledger-page .projects-kpi-strip {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.app-shell:has(.workspace-panel) .projects-ledger-page .projects-kpi-strip > div:nth-child(3)::before {
-  display: none;
-}
-
-.app-shell:has(.workspace-panel) .projects-ledger-page .projects-kpi-strip > div:nth-child(3) {
-  border-left: 0;
-}
-
 /* 工具条也要能换行，否则搜索框和筛选器挤在一起 */
 .app-shell:has(.workspace-panel) .projects-ledger-page .projects-toolbar {
   flex-wrap: wrap;
@@ -2690,21 +2675,7 @@ html .filter-bar input[type="search"] {
 .overview-page .v6-empty { border-bottom: 0; }
 .v6-split { gap: 20px; }
 .v6-split-table { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 18px; }
-.v6-log-split { margin-top: 18px; }
-
-/* Hana 卡片节奏：项目档案 */
-.projects-ledger-page .projects-kpi-strip {
-  margin: 0 0 var(--space-16);
-  padding: var(--space-2) 0;
-  overflow: hidden;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  background: var(--bg-card);
-  corner-shape: squircle;
-}
-.projects-ledger-page .projects-kpi-strip > div { padding: var(--space-14) var(--space-16); }
-.projects-ledger-page .projects-kpi-strip > div:first-child { padding-left: var(--space-16); border-left: 0; }
-.projects-ledger-page .projects-ledger-layout { gap: var(--space-24); }
+.v6-log-split { margin-top: 18px; }.projects-ledger-page .projects-ledger-layout { gap: var(--space-24); }
 .projects-ledger-page .projects-ledger {
   padding: 0;
   border: 0;
@@ -2771,23 +2742,7 @@ html .filter-bar input[type="search"] {
 .project-overview-page .project-shortcut-card { padding: var(--space-14); border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
 .project-overview-page .project-shortcut-card:first-child { padding-left: var(--space-14); }
 .settings-content .panel, .settings-content .v6-block, .settings-content .system-overview-metric { border-radius: var(--radius-control); }
-.settings-content .system-overview-icon { border-radius: var(--radius-md); }
-
-/* Hana 卡片节奏：成本分析 */
-.analysis-page .an-stats {
-  margin-bottom: var(--space-24);
-  padding: var(--space-2) 0;
-  overflow: hidden;
-  border: 1px solid var(--card-border);
-  border-top: 1px solid var(--card-border);
-  border-bottom: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  background: var(--bg-card);
-  corner-shape: squircle;
-}
-.analysis-page .an-stats > div { padding: var(--space-16) 18px; border-left: 1px solid color-mix(in srgb, var(--card-border) 72%, transparent); }
-.analysis-page .an-stats > div:first-child { padding-left: 18px; border-left: 0; }
-.analysis-page .an-grid { gap: 20px; }
+.settings-content .system-overview-icon { border-radius: var(--radius-md); }.analysis-page .an-grid { gap: 20px; }
 .analysis-page .an-panel {
   padding: var(--space-16);
   border: 1px solid var(--card-border);
@@ -2797,10 +2752,7 @@ html .filter-bar input[type="search"] {
 }
 .analysis-page .an-panel-head h2::before { display: none; content: none; }
 
-@media (max-width: 700px) {
-  .analysis-page .an-stats > div:nth-child(odd) { border-left: 0; padding-left: var(--space-16); }
-  .analysis-page .an-stats > div:nth-child(-n + 2) { border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
-}
+@media (max-width: 700px) {}
 .projects-ledger-page .projects-dossier-facts { border-bottom-color: color-mix(in srgb, var(--card-border) 72%, transparent); }
 .projects-ledger-page .projects-dossier-facts > div,
 .projects-ledger-page .projects-dossier-finance > div,
@@ -4890,11 +4842,7 @@ html[data-paper-texture] .settings-window::after { display: block; }
 @media (max-width: 1100px) {
   .overview-page .v6-hero { grid-template-columns: 1fr; }
   .overview-page .v6-stats { border-top: 1px solid var(--card-border); border-left: 0; }
-  .overview-page .v6-stats > div { padding: var(--space-10) var(--space-16); }
-  .projects-ledger-page .projects-kpi-strip { grid-template-columns: 1fr 1fr; }
-  .projects-ledger-page .projects-kpi-strip > div:nth-child(3) { border-left: 0; }
-  .projects-ledger-page .projects-kpi-strip > div:nth-child(-n + 2) { border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
-  .project-overview-page .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overview-page .v6-stats > div { padding: var(--space-10) var(--space-16); }  .project-overview-page .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .project-overview-page .metric-card:nth-child(3) { border-left: 0; }
   .project-overview-page .metric-card:nth-child(-n + 2) { border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
   .app-main { margin-left: calc(var(--sidebar-width) + var(--panel-edge-gap)); }
@@ -5282,51 +5230,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   border-radius: 0;
   background: transparent;
   corner-shape: superellipse(1);
-}
-/* 单卡：对齐 hana 的独立卡片语言
-     hana 的 ._metric_53489 是「flex column + gap 8」的独立块，
-     外层 ._metrics_2473c 用 gap: 16px 分隔，卡片各自有表面。
-
-     moheng 原来把它做成「KPI 条里的分栏」：
-     border: 0 + border-left 分隔线 + 背景透明 + 圆角 0，
-     卡片之间靠竖线区分，看起来是一条带状区域。 */
-.settings-content .security-metric {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-10);
-  min-width: 0;
-  padding: var(--space-16);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  corner-shape: squircle;
-  background: var(--bg-card);
-}
-.settings-content .security-metric:first-child { padding-left: 0; border-left: 0; }
-.settings-content .security-metric:last-child { padding-right: 0; }
-.security-metric-icon { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: var(--radius-md); background: var(--overlay-subtle); color: var(--text-muted); }
-.security-metric small { display: block; color: var(--text-muted); font-size: var(--fs-hint); }
-.security-metric strong {
-  /* 对齐 hana ._metric_53489 dd
-       font-size: var(--fs-title);   ← 16px
-       font-weight: 500;
-       line-height: 1.4;
-       font-variant-numeric: tabular-nums;
-     moheng 原来是 21px / 600 / 1.15，比 hana 大 5px、重 100。
-
-     注：数值型（200 / 51）和文字型（HTTPS + MFA）共用这一条，
-     21px 会让文字型溢出卡片，16px 更稳妥。 */
-  display: block;
-  margin: var(--space-4) 0 0;
-  color: var(--text);
-  font-family: var(--font-num, var(--num));
-  font-size: var(--fs-title);
-  font-weight: 500;
-  line-height: 1.4;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-.security-metric div > span { display: block; color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.45; }
-.security-panel .table-scroll .button-danger {
+}.security-panel .table-scroll .button-danger {
   height: 24px;
   min-height: 24px;
   padding: 0 var(--space-6);
@@ -5720,27 +5624,14 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .bill-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .change-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .owner-finance-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
-.owner-contract-amount-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-/* 图标尺寸只应作用于图标元素。
-   旧写法把 .change-summary / .bill-summary / .owner-metric（整个统计卡片）
-   一并设成 30×30px，导致卡片被压成小方块、文字竖排重叠。 */
-.bill-summary-icon {
-  width: 30px;
-  height: 30px;
-  flex-basis: 30px;
-  border-radius: var(--radius-action);
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
-}
-.bill-summary small,
+.owner-contract-amount-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }.bill-summary small,
 .change-summary-label,
 .owner-metric > span,
 .owner-contract-amount-card span { color: var(--text-muted); font-size: var(--fs-hint); }
 .bill-summary strong,
 .change-summary strong,
 .owner-metric > strong,
-.owner-contract-amount-card strong { color: var(--text); font-family: var(--font-num, var(--num)); font-weight: 600; }
-.bill-summary strong { margin-top: var(--space-4); font-size: 20px; }
-.change-summary strong { margin: var(--space-6) 0 var(--space-4); font-size: 20px; }
+.owner-contract-amount-card strong { color: var(--text); font-family: var(--font-num, var(--num)); font-weight: 600; }.change-summary strong { margin: var(--space-6) 0 var(--space-4); font-size: 20px; }
 .owner-metric { min-height: 96px; }
 .owner-metric::before { display: none; }
 .owner-metric > strong { font-size: 20px; }
@@ -6198,13 +6089,7 @@ select { corner-shape: squircle !important; }
 .data-table tbody tr:hover td:first-child { box-shadow: none; }
 .projects-table tbody tr.is-selected td { background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .projects-table tbody tr.is-selected td:first-child { box-shadow: none; }
-.system-dictionary-card.is-selected { box-shadow: none; background: color-mix(in srgb, var(--accent) 6%, transparent); }
-
-/* 项目台账：卡片化摘要与台账 */
-.projects-ledger-page .projects-kpi-strip { padding: 0; overflow: hidden; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); }
-.projects-ledger-page .projects-kpi-strip > div { position: relative; padding: var(--space-14) var(--space-16); border-left: 0; }
-.projects-ledger-page .projects-kpi-strip > div + div::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); }
-.projects-ledger .table-scroll {
+.system-dictionary-card.is-selected { box-shadow: none; background: color-mix(in srgb, var(--accent) 6%, transparent); }.projects-ledger .table-scroll {
   overflow-x: auto;
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
@@ -6217,9 +6102,7 @@ select { corner-shape: squircle !important; }
 .projects-table { width: calc(100% - 36px); margin: 0 18px; }
 .projects-table thead th { border-top: 0; }
 .projects-table tbody tr:last-child td { border-bottom: 0; }
-@media (max-width: 900px) {
-  .projects-ledger-page .projects-kpi-strip > div:nth-child(3)::before { display: none; }
-}
+@media (max-width: 900px) {}
 
 /* 项目台账：两列台账 + 更宽的项目详情卡 */
 .projects-ledger-layout { grid-template-columns: minmax(0, 1fr) minmax(560px, 1.3fr); gap: var(--space-24); }
@@ -6232,9 +6115,7 @@ select { corner-shape: squircle !important; }
 .projects-dossier-finance { gap: 0 20px; }
 @media (max-width: 1100px) {
   .projects-ledger-layout { grid-template-columns: 1fr; }
-  .projects-dossier { position: static; }
-  .projects-ledger-page .projects-kpi-strip > div:nth-child(3)::before { display: none; }
-}
+  .projects-dossier { position: static; }}
 
 /* 卡片内分隔线统一内缩 */
 .data-table thead th { border-top: 0; }
@@ -6265,30 +6146,8 @@ select { corner-shape: squircle !important; }
 .system-policy-form::before { content: ''; position: absolute; top: 0; left: 18px; right: 18px; height: 1px; background: color-mix(in srgb, var(--border) 66%, transparent); pointer-events: none; }
 
 .report-report-option { border-bottom: 0; position: relative; }
-.report-report-option + .report-report-option::before { content: ''; position: absolute; top: 0; left: var(--card-inset); right: var(--card-inset); height: var(--card-divider-width); background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
-
-.ldg-stats > div { border-left: 0; position: relative; }
-.ldg-stats > div + div::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: -0.5px; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); pointer-events: none; }
-.cost-type-card { border-left: 0; position: relative; }
+.report-report-option + .report-report-option::before { content: ''; position: absolute; top: 0; left: var(--card-inset); right: var(--card-inset); height: var(--card-divider-width); background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }.cost-type-card { border-left: 0; position: relative; }
 .cost-type-card + .cost-type-card::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 66%, transparent); pointer-events: none; }
-
-/* 预算与目标成本 / 实际成本：Hana 卡片与表格 */
-.ldg-stats {
-  margin: 0 0 var(--space-32);
-  overflow: hidden;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  background: var(--bg-card);
-  border-top: 1px solid var(--card-border);
-  border-bottom: 1px solid var(--card-border);
-  corner-shape: squircle;
-}
-.ldg-stats > div { padding: var(--space-14) 18px; }
-.ldg-stats > div:first-child { padding-left: 18px; border-left: 0; }
-.ldg-stats span { color: var(--text-muted); font-size: var(--fs-hint); letter-spacing: 0.02em; }
-.ldg-stats strong { margin-top: var(--space-4); color: var(--text); font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; line-height: 1.2; }
-.ldg-stats small { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); }
-
 .ldg-section { margin: 0 0 24px; }
 .ldg-section-head {
   display: flex;
@@ -6391,15 +6250,9 @@ select { corner-shape: squircle !important; }
 @media (max-width: 900px) {
   .cost-type-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cost-type-card:nth-child(3)::before,
-  .cost-type-card:nth-child(5)::before { display: none; }
-  .ldg-stats > div:nth-child(3)::before { display: none; }
-  .cost-type-card { border-top: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); }
+  .cost-type-card:nth-child(5)::before { display: none; }  .cost-type-card { border-top: 1px solid color-mix(in srgb, var(--card-border) 66%, transparent); }
   .cost-type-card:nth-child(-n + 2) { border-top: 0; }
-  .cost-type-card:nth-child(odd) { border-left: 0; padding-left: var(--space-16); }
-  .ldg-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ldg-stats > div:nth-child(3) { border-left: 0; padding-left: 18px; }
-  .ldg-stats > div:nth-child(n + 3) { border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
-}
+  .cost-type-card:nth-child(odd) { border-left: 0; padding-left: var(--space-16); }}
 
 /* 并排卡片清零相邻 panel 的 14px 上边距，避免同排卡片错位 */
 .report-studio-entry-grid > .panel,
