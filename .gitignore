@@ -66,3 +66,6 @@ moheng-cleanup-stale-branches.ps1
 *.btnbak
 msg.tmp
 scripts/_mig_*.mjs
+*.bak2
+*.bak3
+scripts/_*.json
