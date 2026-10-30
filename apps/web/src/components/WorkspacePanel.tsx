@@ -14,9 +14,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowUpDown, ChevronLeft, ChevronRight, Download, Eye, Filter, Plus, RefreshCw,
-  Trash2, Upload, X,
+  ArrowUpDown, ChevronLeft, ChevronRight, Download, Eye, File as FileIcon, FileImage,
+  FileSpreadsheet, FileText, Filter, Folder, Plus, RefreshCw, Trash2, Upload, X,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
@@ -30,47 +31,15 @@ import { PreviewNewTabChooser } from './PreviewNewTabChooser';
 import { PreviewTabBar } from './PreviewTabBar';
 import PaperTextureLayer from './PaperTextureLayer';
 
-export type WorkspaceEntry = {
-  name: string;
-  path: string;
-  /** 对齐 Hana 的 isDir */
-  isDir: boolean;
-  /** 目录为 null */
-  size: number | null;
-  mtime: string;
-  ext?: string;
-  hasChildren?: boolean;
-};
+import type { WorkspaceEntry, ProjectArtifact } from '../lib/workspace-types';
+export type { WorkspaceEntry, ProjectArtifact } from '../lib/workspace-types';
+import {
+  ARTIFACT_SORT_LABEL, DESK_SORT_OPTIONS, DESK_SORT_LABEL, iconFor, formatSize, formatDate,
+  readAsBase64,
+} from '../lib/workspace-format';
+import { TreeNode } from './WorkspacePanelTree';
+import { WorkspacePreview, ArtifactPreview } from './WorkspacePanelPreview';
 
-/** 项目产物（对话文件标签的数据源） */
-export type ProjectArtifact = {
-  id: string;
-  name: string;
-  size: number;
-  mimeType: string;
-  ext: string;
-  uploadedAt: string;
-  sourceKind: 'change-evidence';
-  sourceCode: string;
-  sourceName: string;
-  sourceId: string;
-  evidenceClass?: string | null;
-};
-
-/** 对话文件页的排序标签：对齐 hana 的 MQ(Z) ——
-    hana 的四档是 time-desc / name-asc / name-desc / type-asc，
-    moheng 只有三个可用维度（时间 / 名称 / 大小）。 */
-const ARTIFACT_SORT_LABEL = { time: '时间', name: '名称', size: '大小' } as const;
-
-/** 工作区排序选项：对齐 hana 的 OJe()（localStorage key `hana-desk-sort`） */
-const DESK_SORT_OPTIONS = [
-  { id: 'name', label: '名称' },
-  { id: 'mtime', label: '修改时间' },
-  { id: 'size', label: '大小' },
-] as const;
-const DESK_SORT_LABEL = Object.fromEntries(
-  DESK_SORT_OPTIONS.map((o) => [o.id, o.label]),
-) as Record<(typeof DESK_SORT_OPTIONS)[number]['id'], string>;
 
 /**
  * 预览标签项。对齐 hana 的 previewItem：
@@ -98,40 +67,6 @@ type Props = {
   onClose?: () => void;
 };
 
-/** 扩展名 → 图标 */
-function iconFor(entry: WorkspaceEntry) {
-  if (entry.isDir) return Folder;
-  const ext = entry.ext ?? '';
-  if (/^\.(png|jpg|jpeg|webp|gif|bmp|svg)$/.test(ext)) return FileImage;
-  if (/^\.(xlsx|xls|csv)$/.test(ext)) return FileSpreadsheet;
-  if (/^\.(txt|md|json|log|xml|html)$/.test(ext)) return FileText;
-  return File;
-}
-
-/** 人类可读大小 */
-function formatSize(bytes: number | null): string {
-  if (bytes === null) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-/** 人类可读时间（对齐 hana 的 _fileMeta 时间格式：月/日 时:分） */
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** 判断能否内嵌预览 */
-function previewKind(ext?: string): 'pdf' | 'image' | 'text' | 'none' {
-  const e = ext ?? '';
-  if (e === '.pdf') return 'pdf';
-  if (/^\.(png|jpg|jpeg|webp|gif|bmp)$/.test(e)) return 'image';
-  if (/^\.(txt|md|json|log|xml|csv)$/.test(e)) return 'text';
-  return 'none';
-}
 
 export function WorkspacePanel(props: Props = {}) {
   const queryClient = useQueryClient();
@@ -214,7 +149,7 @@ export function WorkspacePanel(props: Props = {}) {
   const previewClearance = useTitlebarClearance(previewCardRef, workspaceOpen);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState('');
-  const [lastDir, setLastDir] = useState('');
+  const [lastDir, setLastDir] = useState<string | null>('');
   /** 工作区标签页：对话文件 / 工作室。对齐 hana 的 session-files / workspace */
   /** 工具条状态：预览开关、筛选菜单、排序菜单 */
   const [showPreviewToggle, setShowPreviewToggle] = useState(true);
@@ -296,7 +231,7 @@ export function WorkspacePanel(props: Props = {}) {
             isDir: false,
             size: file.size,
             ext: file.name.slice(file.name.lastIndexOf('.')).replace(/^\./, ''),
-            modifiedAt: new Date().toISOString(),
+            mtime: new Date().toISOString(),
           } as WorkspaceEntry,
         });
       } catch (error) {
@@ -986,260 +921,6 @@ type TreeNodeProps = {
   search: string;
 };
 
-function TreeNode({ projectId, entry, depth, expanded, setExpanded, selected, onSelect, onDelete, onDirFocus, onOpenTab, activeTabId, search }: TreeNodeProps) {
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const isOpen = expanded.has(entry.path);
-  const isSelected = selected?.path === entry.path;
 
-  // 目录：展开时才请求子层
-  const childQuery = useQuery({
-    queryKey: ['workspace-tree', projectId, entry.path],
-    queryFn: () => api.get<{ path: string; entries: WorkspaceEntry[] }>(
-      `/projects/${projectId}/workspace/tree?path=${encodeURIComponent(entry.path)}`,
-    ),
-    enabled: entry.isDir && isOpen,
-  });
 
-  const children = childQuery.data?.entries ?? [];
 
-  // 搜索：名称不匹配时整支跳过（仅对已加载的层生效）
-  const hit = !search || entry.name.toLowerCase().includes(search.toLowerCase());
-  const childHit = children.some((child) => child.name.toLowerCase().includes(search.toLowerCase()));
-  if (search && !hit && !childHit) return null;
-
-  function toggle() {
-    if (entry.isDir) {
-      // 文件夹只切换展开，不改变选中 ——
-      // 否则展开文件夹会清掉正在预览的文件，用户看不到刚打开的内容。
-      setExpanded((prev) => {
-        const next = new Set(prev);
-        if (next.has(entry.path)) {
-          next.delete(entry.path);
-        } else {
-          next.add(entry.path);
-          onDirFocus?.(entry.path);
-        }
-        return next;
-      });
-      return;
-    }
-    onSelect(entry);
-  }
-
-  // 文件操作：对齐 hana 的 NQ 组件五个按钮
-  //   预览 / 打开（系统程序）/ 定位（资源管理器）/ 下载 / 删除
-  const rawUrl = `/api/projects/${projectId}/workspace/raw?path=${encodeURIComponent(entry.path)}${accessToken ? `&token=${encodeURIComponent(accessToken)}` : ''}`;
-
-  return (
-    <>
-      <div
-        className={`tree-item${isSelected ? ' is-selected' : ''}`}
-        style={{ ['--tree-depth' as string]: depth }}
-        role="treeitem"
-        aria-expanded={entry.isDir ? isOpen : undefined}
-        aria-selected={isSelected}
-        tabIndex={0}
-        data-file-id={entry.path}
-        onClick={(event) => {
-          // 多选：metaKey / ctrlKey
-          if (!entry.isDir && (event.metaKey || event.ctrlKey)) {
-            event.stopPropagation();
-            onSelect(entry, { multi: true });
-            return;
-          }
-          toggle();
-        }}
-        onDoubleClick={() => { if (!entry.isDir) onOpenTab?.(entry); }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); }
-        }}
-      >
-        <span className="tree-indent" aria-hidden="true" />
-        <span className="tree-icon">
-          {entry.isDir
-            ? <ChevronRight size={12} className={`tree-chevron${isOpen ? ' is-open' : ''}`} />
-            : <span className="tree-chevron-placeholder" />}
-          {entry.isDir
-            ? <FolderKindIcon open={isOpen} size={14} />
-            : <FileKindIcon kind={kindFromExt(entry.ext)} size={14} />}
-        </span>
-        <span className="tree-main">
-          <span className="tree-name">{entry.name}</span>
-          {/* 对齐 hana 的 _fileMeta：大小 · 时间（目录不显示大小） */}
-          {!entry.isDir && (entry.size !== null || entry.mtime) && (
-            <span className="tree-meta">
-              {entry.size !== null ? formatSize(entry.size) : ''}
-              {entry.size !== null && entry.mtime ? ' · ' : ''}
-              {entry.mtime ? formatDate(entry.mtime) : ''}
-            </span>
-          )}
-        </span>
-        <span className="tree-actions">
-          {!entry.isDir && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                data-tooltip="预览"
-                aria-label={`预览 ${entry.name}`}
-                onClick={(event) => { event.stopPropagation(); onSelect(entry); }}
-              >
-                <Eye size={13} />
-              </Button>
-              <a
-                className="tree-action"
-                href={rawUrl}
-                download={entry.name}
-                data-tooltip="下载"
-                aria-label={`下载 ${entry.name}`}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <Download size={13} />
-              </a>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            data-tooltip="删除"
-            aria-label={`删除 ${entry.name}`}
-            onClick={(event) => { event.stopPropagation(); onDelete(entry); }}
-          >
-            <Trash2 size={13} />
-          </Button>
-        </span>
-      </div>
-
-      {entry.isDir && isOpen && children.map((child) => (
-        <TreeNode
-          key={child.path}
-          projectId={projectId}
-          entry={child}
-          depth={depth + 1}
-          expanded={expanded}
-          setExpanded={setExpanded}
-          selected={selected}
-          onSelect={onSelect}
-          onDelete={onDelete}
-          onDirFocus={onDirFocus}
-          search={search}
-        />
-      ))}
-    </>
-  );
-}
-
-function WorkspacePreview({ projectId, entry }: { projectId: string; entry: WorkspaceEntry }) {
-  const kind = previewKind(entry.ext);
-  // <iframe>/<img>/<a download> 无法自定义 Authorization 头，
-  // 所以 raw 端点额外接受 ?token=（后端已支持）。
-  const accessToken = useAuthStore((state) => state.accessToken);
-  // Chrome 的 PDF viewer 会自带深色工具栏和滚动条。
-  //   toolbar=0  隐藏菜单/页码/缩放条
-  //   navpanes=0 隐藏左侧缩略图栏
-  //   view=FitH  宽度自适应
-  //
-  // 实测对比：
-  //   view=FitH       白像素 99%，右侧仅 6px 暗边（插件固有）
-  //   view=Fit        白 57%，暗 266（整页缩得太小）
-  //   zoom=page-width 白 86%，暗 91（露出更多查看器背景）
-  // 所以取 FitH。那 6px 是 Chrome PDF 插件的右内边距，
-  // 要完全消除需要换成 PDF.js 自绘（未做）。
-  const pdfSuffix = kind === 'pdf' ? '#toolbar=0&navpanes=0&view=FitH' : '';
-  const rawUrl = `/api/projects/${projectId}/workspace/raw?path=${encodeURIComponent(entry.path)}${accessToken ? `&token=${encodeURIComponent(accessToken)}` : ''}${pdfSuffix}`;
-
-  const textQuery = useQuery({
-    queryKey: ['workspace-file', projectId, entry.path],
-    // 文本内容走 Authorization 头（比把 token 放 URL 里更安全），
-    // 只有 <iframe>/<img> 这类无法加头的场景才用 ?token=。
-    queryFn: async () => {
-      const token = useAuthStore.getState().accessToken;
-      const res = await fetch(`/api/projects/${projectId}/workspace/raw?path=${encodeURIComponent(entry.path)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error(`读取失败（${res.status}）`);
-      return res.text();
-    },
-    enabled: kind === 'text',
-    staleTime: 30_000,
-  });
-
-  return (
-    <section className="workspace-preview" aria-label="文件预览">
-      <div className="workspace-preview-body">
-        {kind === 'pdf' && <iframe className="workspace-preview-frame" src={rawUrl} title={entry.name} />}
-        {kind === 'image' && <img className="workspace-preview-image" src={rawUrl} alt={entry.name} />}
-        {kind === 'text' && (
-          textQuery.isLoading
-            ? <div className="workspace-empty">正在读取…</div>
-            : textQuery.error
-              ? <div className="workspace-empty">{(textQuery.error as Error).message}</div>
-              : <pre className="workspace-preview-text">{textQuery.data}</pre>
-        )}
-        {kind === 'none' && (
-          <div className="workspace-empty">
-            该类型不支持预览
-            <a className="workspace-download" href={rawUrl} download={entry.name}>下载查看</a>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-/** 产物预览：变更单外部凭证附件（PDF / 图片 / 文本） */
-function ArtifactPreview({ projectId, artifact }: { projectId: string; artifact: ProjectArtifact }) {
-  const kind = previewKind(artifact.ext);
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const pdfSuffix = kind === 'pdf' ? '#toolbar=0&navpanes=0&view=FitH' : '';
-  const base = `/api/projects/${projectId}/artifacts/${encodeURIComponent(artifact.id)}/content`;
-  const url = `${base}?${accessToken ? `token=${encodeURIComponent(accessToken)}` : ''}${pdfSuffix}`;
-
-  const textQuery = useQuery({
-    queryKey: ['artifact-content', projectId, artifact.id],
-    queryFn: async () => {
-      const token = useAuthStore.getState().accessToken;
-      const res = await fetch(base, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      if (!res.ok) throw new Error(`读取失败（${res.status}）`);
-      return res.text();
-    },
-    enabled: kind === 'text',
-    staleTime: 30_000,
-  });
-
-  return (
-    <section className="workspace-preview" aria-label="产物预览">
-      <div className="workspace-preview-body">
-        {kind === 'pdf' && <iframe className="workspace-preview-frame" src={url} title={artifact.name} />}
-        {kind === 'image' && <img className="workspace-preview-image" src={url} alt={artifact.name} />}
-        {kind === 'text' && (
-          textQuery.isLoading
-            ? <div className="workspace-empty">正在读取…</div>
-            : textQuery.error
-              ? <div className="workspace-empty">{(textQuery.error as Error).message}</div>
-              : <pre className="workspace-preview-text">{textQuery.data}</pre>
-        )}
-        {kind === 'none' && (
-          <div className="workspace-empty">
-            该类型不支持预览
-            <a className="workspace-download" href={`${base}?download=1${accessToken ? `&token=${encodeURIComponent(accessToken)}` : ''}`} download={artifact.name}>
-              下载查看
-            </a>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function readAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = String(reader.result ?? '');
-      resolve(result.slice(result.indexOf(',') + 1));
-    };
-    reader.onerror = () => reject(new Error(`读取 ${file.name} 失败`));
-    reader.readAsDataURL(file);
-  });
-}

@@ -30,7 +30,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronRight, LogOut, Minus, Search, ShieldCheck, SlidersHorizontal, Square, Sparkles, UserRound, X, Zap, ArrowUpRight, BellRing } from 'lucide-react';
+import { ChevronRight, LogOut, Minus, Search, ShieldCheck, SlidersHorizontal, Square, Sparkles, UserRound, X, Zap, ArrowUpRight, BellRing, type LucideIcon } from 'lucide-react';
 
 import { useAuthStore, useUiStore } from '../auth-store';
 import type { Project } from '../types';
@@ -44,6 +44,8 @@ export function getWindowControlsIsland(doc: Document = document): HTMLElement |
   return REGISTRY.get(doc) ?? null;
 }
 
+type QuickActionCategory = 'all' | 'cost' | 'funds' | 'contract';
+
 type Props = {
   projects: Project[];
   selectedProjectId: string | null;
@@ -55,10 +57,10 @@ type Props = {
   quickActionsOpen: boolean;
   setQuickActionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   quickActionsPresence: { mounted: boolean; visible: boolean };
-  quickActionCategory: string;
-  setQuickActionCategory: (key: string) => void;
-  quickActionCategories: Array<{ key: string; label: string }>;
-  visibleQuickActions: Array<{ title: string; description: string; to: string; icon: React.ComponentType<{ size?: number }> }>;
+  quickActionCategory: QuickActionCategory;
+  setQuickActionCategory: React.Dispatch<React.SetStateAction<QuickActionCategory>>;
+  quickActionCategories: Array<{ key: QuickActionCategory; label: string }>;
+  visibleQuickActions: Array<{ title: string; description: string; to: string; icon: LucideIcon }>;
   accountMenuOpen: boolean;
   setAccountMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   assistantEnabled: boolean;

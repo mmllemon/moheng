@@ -148,10 +148,13 @@ type UiState = UiPreferences & {
   sidebarCollapsed: boolean;
   /** 右侧工作区浮层是否展开。对齐 hana 的 previewOpen（全局，不分页面）。 */
   workspaceOpen: boolean;
+  /** 右侧工作区内当前标签：对话文件 / 工作室。 */
+  workspaceTab: 'files' | 'studio';
   setSelectedProjectId: (id: string | null) => void;
   toggleSidebar: () => void;
   setWorkspaceOpen: (open: boolean) => void;
   toggleWorkspace: () => void;
+  setWorkspaceTab: (tab: 'files' | 'studio') => void;
   setTheme: (theme: UiTheme) => void;
   setDensity: (density: UiDensity) => void;
   setAccent: (accent: UiAccent) => void;
@@ -193,6 +196,7 @@ export const useUiStore = create<UiState>((set) => ({
   selectedProjectId: (() => { try { return localStorage.getItem('cms:selected-project'); } catch { return null; } })(),
   sidebarCollapsed: false,
   workspaceOpen: false,
+  workspaceTab: 'studio',
   ...readUiPreferences(),
   setSelectedProjectId: (id) => {
     try { if (id) localStorage.setItem('cms:selected-project', id); else localStorage.removeItem('cms:selected-project'); } catch { /* Selected project is also kept in memory. */ }
@@ -200,7 +204,7 @@ export const useUiStore = create<UiState>((set) => ({
   },
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setWorkspaceOpen: (workspaceOpen) => set({ workspaceOpen }),
-  setWorkspaceTab: (workspaceTab) => set({ workspaceTab }),
+  setWorkspaceTab: (tab) => set({ workspaceTab: tab }),
   toggleWorkspace: () => set((state) => ({ workspaceOpen: !state.workspaceOpen })),
   setTheme: (theme) => set((state) => updateUiPreferences(set, state, { theme })),
   setDensity: (density) => set((state) => updateUiPreferences(set, state, { density })),

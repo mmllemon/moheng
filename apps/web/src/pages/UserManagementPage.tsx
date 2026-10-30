@@ -4,7 +4,7 @@ import { KeyRound, ShieldCheck, UserCheck, UserPlus, UserRoundX, X } from 'lucid
 import { api, ApiError } from '../api';
 import SelectField from '../components/SelectField';
 import { useAuthStore } from '../auth-store';
-import { Button, DataPanel, ErrorBlock, formatDate, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
+import { Button, DataPanel, EmptyState, ErrorBlock, formatDate, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
 type ManagedUser = {

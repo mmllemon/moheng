@@ -16,7 +16,7 @@
  * 尺寸：hana 在文件行里用 14px、stroke-width 1.5。
  */
 
-type FileKind = 'doc' | 'markdown' | 'image' | 'video' | 'audio' | 'code' | 'pdf' | 'file';
+export type FileKind = 'doc' | 'markdown' | 'image' | 'video' | 'audio' | 'code' | 'pdf' | 'file';
 
 const PATHS: Record<FileKind, { name: string; node: Array<[string, Record<string, string>]> }> = {
   doc: {

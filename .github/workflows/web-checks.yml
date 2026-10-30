@@ -1,0 +1,25 @@
+name: Web lint and unit tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Require committed root package lock
+        run: test -f package-lock.json
+      - name: Install dependencies reproducibly
+        run: npm ci --no-audit --no-fund
+      - name: Type-check (@cms/web)
+        run: npm run lint -w @cms/web
+      - name: Unit tests (@cms/web)
+        run: npm run test -w @cms/web
