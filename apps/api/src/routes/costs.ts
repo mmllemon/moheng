@@ -9,7 +9,7 @@ import { nonNegativeMoney, positiveMoney } from '../lib/validation.js';
 
 const costInput = z.object({
   type: z.nativeEnum(CostType),
-  date: z.string().datetime(),
+  date: z.iso.datetime(),
   amount: positiveMoney,
   taxAmount: nonNegativeMoney.optional().nullable(),
   budgetItemId: z.string().optional().nullable(),

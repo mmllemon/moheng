@@ -19,9 +19,9 @@ const contractInput = z.object({
   counterpartyName: z.string().trim().min(1).max(160),
   counterpartyPartyId: z.string().trim().min(1).nullable().optional(),
   scope: z.string().max(4000).optional().nullable(),
-  signedAt: z.string().datetime().optional().nullable(),
-  startDate: z.string().datetime().optional().nullable(),
-  plannedEndDate: z.string().datetime().optional().nullable(),
+  signedAt: z.iso.datetime().optional().nullable(),
+  startDate: z.iso.datetime().optional().nullable(),
+  plannedEndDate: z.iso.datetime().optional().nullable(),
   originalAmount: positiveMoney,
   taxIncluded: z.boolean().default(true),
   paymentTerms: z.string().max(2000).optional().nullable(),
@@ -33,13 +33,13 @@ const adjustmentInput = z.object({
   name: z.string().trim().min(1).max(160),
   direction: z.enum(['INCREASE', 'DECREASE']),
   amount: positiveMoney,
-  effectiveAt: z.string().datetime(),
+  effectiveAt: z.iso.datetime(),
   documentReference: z.string().trim().min(1).max(240),
   notes: z.string().max(2000).optional().nullable(),
 });
 const planInput = z.object({
   stageName: z.string().trim().min(1).max(120),
-  dueAt: z.string().datetime(),
+  dueAt: z.iso.datetime(),
   plannedAmount: positiveMoney,
   notes: z.string().max(1000).optional().nullable(),
 });
@@ -50,7 +50,7 @@ const paymentInput = z.object({
   refundOfPaymentId: z.string().optional().nullable(),
   type: z.nativeEnum(DownstreamPaymentType).default('PROGRESS'),
   amount: positiveMoney,
-  paidAt: z.string().datetime(),
+  paidAt: z.iso.datetime(),
   referenceNo: z.string().trim().max(100).optional().nullable().transform((value) => value || null),
   notes: z.string().max(1000).optional().nullable(),
 }).superRefine((value, ctx) => {
@@ -160,7 +160,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
     try {
       const row = await prisma.$transaction(async (tx) => {
         const party = await resolveBusinessParty(tx, { partyId: parsed.data.counterpartyPartyId, name: parsed.data.counterpartyName, role: downstreamPartyRole(parsed.data.type), actorUserId: user.sub, auditProjectId: projectId });
-        const contractNo = parsed.data.contractNo?.trim() || await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'FGHT', date: parsed.data.signedAt ? new Date(parsed.data.signedAt) : new Date() });
+        const contractNo = parsed.data.contractNo?.trim() || (await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'FGHT', date: parsed.data.signedAt ? new Date(parsed.data.signedAt) : new Date() }));
         const created = await tx.downstreamContract.create({ data: {
           projectId, contractNo, name: parsed.data.name, type: parsed.data.type,
           counterpartyName: party.name, counterpartyPartyId: party.id, scope: parsed.data.scope ?? null,
@@ -197,9 +197,9 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
         const old = await tx.downstreamContract.findFirst({ where: { id: contractId, projectId, deletedAt: null } });
         if (!old) throw new Error('DOWNSTREAM_CONTRACT_NOT_FOUND');
         if (old.status !== 'DRAFT') throw new Error('DOWNSTREAM_CONTRACT_BASE_IMMUTABLE');
-        const hasActivity = await tx.downstreamContractAdjustment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } })
-          || await tx.downstreamContractPayment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } })
-          || await tx.costEntry.findFirst({ where: { downstreamContractId: contractId, deletedAt: null }, select: { id: true } });
+        const hasActivity = (await tx.downstreamContractAdjustment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } }))
+          || (await tx.downstreamContractPayment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } }))
+          || (await tx.costEntry.findFirst({ where: { downstreamContractId: contractId, deletedAt: null }, select: { id: true } }));
         if (hasActivity) throw new Error('DOWNSTREAM_CONTRACT_BASE_IMMUTABLE');
         const party = await resolveBusinessParty(tx, {
           partyId: parsed.data.counterpartyPartyId === undefined ? old.counterpartyPartyId : parsed.data.counterpartyPartyId,

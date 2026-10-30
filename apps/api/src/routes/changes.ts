@@ -19,7 +19,7 @@ const changeInput = z.object({
   name: z.string().trim().min(1).max(180),
   type: z.string().trim().min(1).max(60).default('ENGINEERING_CHANGE'),
   direction: z.enum(['INCREASE', 'DECREASE']).default('INCREASE'),
-  occurredAt: z.string().datetime(),
+  occurredAt: z.iso.datetime(),
   description: z.string().max(4000).optional().nullable(),
   submittedAmount: nonNegativeMoney,
 });
@@ -37,7 +37,7 @@ const externalConfirmationInput = z.object({
   evidenceAssessment: z.enum(['READY', 'SUPPLEMENT_NEEDED', 'DISPUTED']).default('READY'),
   externalConfirmerName: z.string().trim().min(1).max(160),
   externalConfirmerAuthority: z.string().trim().min(1).max(500),
-  externalConfirmedAt: z.string().datetime(),
+  externalConfirmedAt: z.iso.datetime(),
   externalConfirmedAmount: nonNegativeMoney,
   externalConfirmationScope: z.string().trim().min(1).max(4000),
   evidenceReference: z.string().trim().min(1).max(1000),
@@ -164,7 +164,7 @@ export async function changeRoutes(app: FastifyInstance) {
     try {
       const row = await prisma.$transaction(async (tx) => {
         const project = await tx.project.findUniqueOrThrow({ where: { id: projectId }, select: { code: true } });
-        const code = parsed.data.code?.trim() || await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'BG', date: new Date(parsed.data.occurredAt) });
+        const code = parsed.data.code?.trim() || (await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'BG', date: new Date(parsed.data.occurredAt) }));
         const { code: _submittedCode, ...formValues } = parsed.data;
         const created = await tx.change.create({ data: {
           projectId,

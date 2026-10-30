@@ -20,20 +20,20 @@ const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, repl
 };
 
 const conversationIdSchema = z.string().trim().min(1).max(100);
-const createConversationSchema = z.object({
+const createConversationSchema = z.strictObject({
   projectId: z.string().trim().min(1).max(100),
   title: z.string().trim().min(1).max(200).optional(),
-}).strict();
-const submitMessageSchema = z.object({
+});
+const submitMessageSchema = z.strictObject({
   requestId: z.string().trim().min(8).max(100).regex(/^[A-Za-z0-9._:-]+$/),
   content: z.string().trim().min(1).max(8000),
-}).strict();
-const routeParamsSchema = z.object({ conversationId: conversationIdSchema, runId: conversationIdSchema }).strict();
-const singleConversationParamsSchema = z.object({ conversationId: conversationIdSchema }).strict();
-const conversationListQuerySchema = z.object({
+});
+const routeParamsSchema = z.strictObject({ conversationId: conversationIdSchema, runId: conversationIdSchema });
+const singleConversationParamsSchema = z.strictObject({ conversationId: conversationIdSchema });
+const conversationListQuerySchema = z.strictObject({
   includeArchived: z.enum(['true', 'false']).optional(),
   projectId: z.string().trim().min(1).max(100).optional(),
-}).strict();
+});
 const terminalStatuses = new Set(['COMPLETED', 'FAILED', 'CANCELLED']);
 
 function isUniqueViolation(error: unknown): boolean {
@@ -71,7 +71,7 @@ export async function assistantConversationRoutes(app: FastifyInstance) {
     preHandler: [featureGate, authRequired],
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
   }, async (request, reply) => {
-    const query = z.object({ projectId: z.string().trim().min(1).max(100) }).strict().safeParse(request.query);
+    const query = z.strictObject({ projectId: z.string().trim().min(1).max(100) }).safeParse(request.query);
     if (!query.success) return failure(reply, 400, 'ASSISTANT_USAGE_SUMMARY_QUERY_INVALID', '项目用量查询条件无效');
     const actor = authUser(request);
     const { projectId } = query.data;

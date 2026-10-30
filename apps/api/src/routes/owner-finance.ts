@@ -22,7 +22,7 @@ const createSettlementInput = z.object({
   type: z.nativeEnum(OwnerSettlementType),
   settlementNo: z.string().trim().max(80).optional().nullable(),
   submittedAmount: signedMoney,
-  dueAt: z.string().datetime().optional().nullable(),
+  dueAt: z.iso.datetime().optional().nullable(),
   notes: z.string().max(4000).optional().nullable(),
   lines: z.array(lineInput).max(300).optional().default([]),
 }).superRefine((value, ctx) => {
@@ -37,14 +37,14 @@ const settlementActionInput = z.discriminatedUnion('action', [
   z.object({ action: z.literal('SUBMIT') }),
   z.object({ action: z.literal('APPROVE') }),
   z.object({ action: z.literal('REJECT'), reason: z.string().trim().min(3).max(1000) }),
-  z.object({ action: z.literal('CONFIRM'), confirmedAmount: signedMoney, confirmationReference: z.string().trim().min(1).max(240), confirmedAt: z.string().datetime(), dueAt: z.string().datetime().optional().nullable(), advanceDeductionAmount: z.number().finite().nonnegative().default(0), retentionAmount: z.number().finite().nonnegative().default(0), otherDeductionAmount: z.number().finite().nonnegative().default(0), notes: z.string().max(2000).optional().nullable() }),
+  z.object({ action: z.literal('CONFIRM'), confirmedAmount: signedMoney, confirmationReference: z.string().trim().min(1).max(240), confirmedAt: z.iso.datetime(), dueAt: z.iso.datetime().optional().nullable(), advanceDeductionAmount: z.number().finite().nonnegative().default(0), retentionAmount: z.number().finite().nonnegative().default(0), otherDeductionAmount: z.number().finite().nonnegative().default(0), notes: z.string().max(2000).optional().nullable() }),
   z.object({ action: z.literal('POST') }),
 ]);
-const receiptInput = z.object({ amount: positiveMoney, receivedAt: z.string().datetime(), referenceNo: z.string().max(100).optional().nullable(), scheduleId: z.string().optional().nullable(), notes: z.string().max(2000).optional().nullable() });
-const refundInput = z.object({ amount: positiveMoney, receivedAt: z.string().datetime(), referenceNo: z.string().max(100).optional().nullable(), notes: z.string().max(2000).optional().nullable() });
-const advanceInput = z.object({ amount: positiveMoney, receivedAt: z.string().datetime(), referenceNo: z.string().max(100).optional().nullable(), notes: z.string().max(2000).optional().nullable() });
-const retentionInput = z.object({ amount: positiveMoney, effectiveAt: z.string().datetime(), dueAt: z.string().datetime().optional().nullable(), reference: z.string().trim().min(1).max(240), notes: z.string().max(2000).optional().nullable() });
-const scheduleInput = z.object({ schedules: z.array(z.object({ scheduleNo: z.string().trim().min(1).max(30), dueAt: z.string().datetime(), amount: positiveMoney, notes: z.string().max(1000).optional().nullable() })).min(1).max(50) });
+const receiptInput = z.object({ amount: positiveMoney, receivedAt: z.iso.datetime(), referenceNo: z.string().max(100).optional().nullable(), scheduleId: z.string().optional().nullable(), notes: z.string().max(2000).optional().nullable() });
+const refundInput = z.object({ amount: positiveMoney, receivedAt: z.iso.datetime(), referenceNo: z.string().max(100).optional().nullable(), notes: z.string().max(2000).optional().nullable() });
+const advanceInput = z.object({ amount: positiveMoney, receivedAt: z.iso.datetime(), referenceNo: z.string().max(100).optional().nullable(), notes: z.string().max(2000).optional().nullable() });
+const retentionInput = z.object({ amount: positiveMoney, effectiveAt: z.iso.datetime(), dueAt: z.iso.datetime().optional().nullable(), reference: z.string().trim().min(1).max(240), notes: z.string().max(2000).optional().nullable() });
+const scheduleInput = z.object({ schedules: z.array(z.object({ scheduleNo: z.string().trim().min(1).max(30), dueAt: z.iso.datetime(), amount: positiveMoney, notes: z.string().max(1000).optional().nullable() })).min(1).max(50) });
 
 class OwnerFinanceError extends Error {
   constructor(public readonly statusCode: number, public readonly code: string, message: string) { super(message); this.name = 'OwnerFinanceError'; }
@@ -156,7 +156,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
       const row = await prisma.$transaction(async (tx) => {
         const main = await tx.mainContract.findUnique({ where: { projectId }, include: { project: { select: { code: true } } } });
         if (!main) throw new OwnerFinanceError(409, 'MAIN_CONTRACT_REQUIRED', '请先登记业主主合同');
-        const no = parsed.data.settlementNo?.trim() || await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'YJJS', date: new Date() });
+        const no = parsed.data.settlementNo?.trim() || (await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'YJJS', date: new Date() }));
         const created = await tx.ownerContractSettlement.create({ data: { projectId, mainContractId: main.id, settlementNo: no, type: parsed.data.type, submittedAmount: String(parsed.data.submittedAmount), dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null, notes: parsed.data.notes ?? null, createdById: user.sub, lines: { create: parsed.data.lines.map((line, index) => ({ ...line, quantity: line.quantity == null ? null : String(line.quantity), unitPrice: line.unitPrice == null ? null : String(line.unitPrice), amount: String(line.amount), sortOrder: index })) } }, include: { lines: true } });
         await audit(tx, projectId, user.sub, 'OwnerContractSettlement', created.id, 'OWNER_SETTLEMENT_DRAFT_CREATED', { settlementNo: no, type: parsed.data.type, submittedAmount: String(parsed.data.submittedAmount), optionalLines: true, lineCount: parsed.data.lines.length });
         return created;

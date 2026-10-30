@@ -8,16 +8,16 @@ export const STUDIO_REPORT_KEYS = {
 } as const;
 export type StudioReportKey = typeof STUDIO_REPORT_KEYS[keyof typeof STUDIO_REPORT_KEYS];
 
-const bindingSchema = z.object({
+const bindingSchema = z.strictObject({
   id: z.string().min(1).max(100),
   sheetId: z.string().min(1).max(100),
   cell: z.string().regex(/^[A-Z]{1,3}[1-9]\d{0,3}$/),
   sourceId: z.string().min(1).max(100),
   fieldId: z.string().min(1).max(100),
   format: z.enum(['AUTO', 'TEXT', 'NUMBER', 'MONEY', 'DATE']).default('AUTO'),
-}).strict();
+});
 
-const regionSchema = z.object({
+const regionSchema = z.strictObject({
   id: z.string().min(1).max(100),
   sheetId: z.string().min(1).max(100),
   sourceId: z.string().min(1).max(100),
@@ -25,17 +25,17 @@ const regionSchema = z.object({
   startColumn: z.number().int().min(0).max(39),
   endColumn: z.number().int().min(0).max(39),
   maxRows: z.number().int().min(1).max(10000).default(10000),
-}).strict();
+});
 
-const pageSchema = z.object({
+const pageSchema = z.strictObject({
   paper: z.enum(['A4', 'A3', 'Letter']).default('A4'),
   orientation: z.enum(['portrait', 'landscape']).default('landscape'),
   fitToWidth: z.boolean().default(true),
   includeMetadata: z.boolean().default(true),
   footerText: z.string().max(180).default('墨衡工程经营管理系统'),
-}).strict();
+});
 
-const definitionSchema = z.object({
+const definitionSchema = z.strictObject({
   schemaVersion: z.literal(2),
   domain: z.enum(['PROJECT', 'COMPANY', 'PARTY']),
   title: z.string().trim().min(1).max(160),
@@ -44,7 +44,7 @@ const definitionSchema = z.object({
   bindings: z.array(bindingSchema).max(500),
   regions: z.array(regionSchema).max(30),
   page: pageSchema,
-}).strict();
+});
 
 export type ReportStudioBinding = z.infer<typeof bindingSchema>;
 export type ReportStudioRegion = z.infer<typeof regionSchema>;

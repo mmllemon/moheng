@@ -25,7 +25,7 @@ export const settlementInput = z.object({
   advanceRecoveryAmount: nonNegativeMoneyInput.default(0),
   retentionAmount: nonNegativeMoneyInput.default(0),
   otherDeductionAmount: nonNegativeMoneyInput.default(0),
-  dueAt: z.string().datetime().optional().nullable(),
+  dueAt: z.iso.datetime().optional().nullable(),
   notes: z.string().max(3000).optional().nullable(),
   lines: z.array(settlementLineInput).max(300).optional().default([]),
 });
@@ -33,12 +33,12 @@ export const rejectInput = z.object({ reason: z.string().trim().min(3).max(2000)
 export const confirmInput = z.object({
   confirmedAmount: signedMoneyInput,
   confirmationReference: z.string().trim().min(1).max(240),
-  confirmationDate: z.string().datetime(),
+  confirmationDate: z.iso.datetime(),
   notes: z.string().max(3000).optional().nullable(),
 });
 export const invoiceInput = z.object({
   invoiceNo: z.string().trim().min(1).max(120),
-  invoiceDate: z.string().datetime(),
+  invoiceDate: z.iso.datetime(),
   amount: positiveMoney,
   taxAmount: nonNegativeMoneyInput.default(0),
   taxIncluded: z.boolean().default(true),
@@ -48,6 +48,6 @@ export const invoiceInput = z.object({
 });
 export const invoiceVerifyInput = z.object({ status: z.enum(['VERIFIED', 'REJECTED']), verificationNote: z.string().trim().max(2000).optional().nullable() });
 export const allocationInput = z.object({ payableId: z.string().min(1), amount: positiveMoney, notes: z.string().max(1000).optional().nullable() });
-export const retentionInput = z.object({ amount: positiveMoney, effectiveAt: z.string().datetime(), reference: z.string().trim().min(1).max(160), notes: z.string().max(2000).optional().nullable() });
-export const payableScheduleInput = z.object({ schedules: z.array(z.object({ scheduleNo: z.string().trim().min(1).max(30), dueAt: z.string().datetime(), amount: positiveMoney, notes: z.string().max(1000).optional().nullable() })).min(1).max(50) }).superRefine((value, ctx) => { if (new Set(value.schedules.map((item) => item.scheduleNo)).size !== value.schedules.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['schedules'], message: '应付分期编号不能重复' }); });
+export const retentionInput = z.object({ amount: positiveMoney, effectiveAt: z.iso.datetime(), reference: z.string().trim().min(1).max(160), notes: z.string().max(2000).optional().nullable() });
+export const payableScheduleInput = z.object({ schedules: z.array(z.object({ scheduleNo: z.string().trim().min(1).max(30), dueAt: z.iso.datetime(), amount: positiveMoney, notes: z.string().max(1000).optional().nullable() })).min(1).max(50) }).superRefine((value, ctx) => { if (new Set(value.schedules.map((item) => item.scheduleNo)).size !== value.schedules.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['schedules'], message: '应付分期编号不能重复' }); });
 

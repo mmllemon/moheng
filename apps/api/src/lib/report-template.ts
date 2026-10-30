@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { REPORT_FIELD_LABELS, makeReportFields, reportCatalog, type ReportKey, type ReportField } from './report-data.js';
 
 const cellSchema = z.string().max(240);
-const columnSchema = z.object({
+const columnSchema = z.strictObject({
   id: z.string().min(1).max(100),
   fieldKey: z.string().max(160).nullable(),
   label: z.string().trim().min(1).max(80),
@@ -11,19 +11,19 @@ const columnSchema = z.object({
   align: z.enum(['left', 'center', 'right']),
   format: z.enum(['auto', 'text', 'number', 'money', 'date']),
   staticValue: z.string().max(160).default(''),
-}).strict();
-const rowSchema = z.object({ id: z.string().min(1).max(100), height: z.number().int().min(16).max(120), cells: z.array(cellSchema).max(40) }).strict();
-const mergeSchema = z.object({ row: z.number().int().min(0).max(11), col: z.number().int().min(0).max(39), rowSpan: z.number().int().min(1).max(12), colSpan: z.number().int().min(1).max(40) }).strict();
-const definitionSchema = z.object({
+});
+const rowSchema = z.strictObject({ id: z.string().min(1).max(100), height: z.number().int().min(16).max(120), cells: z.array(cellSchema).max(40) });
+const mergeSchema = z.strictObject({ row: z.number().int().min(0).max(11), col: z.number().int().min(0).max(39), rowSpan: z.number().int().min(1).max(12), colSpan: z.number().int().min(1).max(40) });
+const definitionSchema = z.strictObject({
   schemaVersion: z.literal(1),
   title: z.string().trim().min(1).max(120),
   subtitle: z.string().max(240),
   columns: z.array(columnSchema).min(1).max(40),
   customRows: z.array(rowSchema).max(12),
   merges: z.array(mergeSchema).max(80),
-  rowHeights: z.object({ title: z.number().int().min(20).max(100), subtitle: z.number().int().min(16).max(80), header: z.number().int().min(18).max(80), body: z.number().int().min(15).max(60) }).strict(),
-  page: z.object({ paper: z.enum(['A4', 'A3', 'Letter']), orientation: z.enum(['portrait', 'landscape']), fitToWidth: z.boolean(), repeatHeader: z.boolean(), includeDescription: z.boolean(), footerText: z.string().max(120), showPageNumber: z.boolean() }).strict(),
-}).strict();
+  rowHeights: z.strictObject({ title: z.number().int().min(20).max(100), subtitle: z.number().int().min(16).max(80), header: z.number().int().min(18).max(80), body: z.number().int().min(15).max(60) }),
+  page: z.strictObject({ paper: z.enum(['A4', 'A3', 'Letter']), orientation: z.enum(['portrait', 'landscape']), fitToWidth: z.boolean(), repeatHeader: z.boolean(), includeDescription: z.boolean(), footerText: z.string().max(120), showPageNumber: z.boolean() }),
+});
 
 export type ReportTemplateColumn = z.infer<typeof columnSchema>;
 export type ReportTemplateDefinition = z.infer<typeof definitionSchema>;

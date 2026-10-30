@@ -12,13 +12,13 @@ import { calculateContractNetOpenCents, calculateReceivableOpenCents, capReceipt
 
 const billInput = z.object({
   periodNo: z.number().int().positive(),
-  applyDate: z.string().datetime(),
-  measureDate: z.string().datetime().optional().nullable(),
+  applyDate: z.iso.datetime(),
+  measureDate: z.iso.datetime().optional().nullable(),
   amount: positiveMoney,
   notes: z.string().max(2000).optional().nullable(),
 });
 const statusInput = z.object({ status: z.nativeEnum(ProgressBillStatus), approvedAmount: nonNegativeMoney.optional(), notes: z.string().max(2000).optional() });
-const paymentInput = z.object({ amount: positiveMoney, paidAt: z.string().datetime(), referenceNo: z.string().max(100).optional(), notes: z.string().max(1000).optional() });
+const paymentInput = z.object({ amount: positiveMoney, paidAt: z.iso.datetime(), referenceNo: z.string().max(100).optional(), notes: z.string().max(1000).optional() });
 
 function sumAllocations(values: unknown[]): bigint { return values.reduce<bigint>((sum, value) => sum + moneyToCents(value), 0n); }
 

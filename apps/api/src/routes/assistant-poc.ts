@@ -13,10 +13,10 @@ const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, repl
   }
 };
 
-const runSchema = z.object({
+const runSchema = z.strictObject({
   toolId: z.enum(ASSISTANT_READ_ONLY_TOOL_IDS),
   projectId: z.string().trim().min(1).max(100),
-}).strict();
+});
 
 function asToolFailure(reply: FastifyReply, error: unknown) {
   if (error instanceof AssistantReadOnlyToolError) return failure(reply, error.statusCode, error.code, error.message);

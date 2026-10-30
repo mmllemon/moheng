@@ -17,13 +17,13 @@ const contractInput = z.object({
   counterpartyName: z.string().trim().min(2).max(200).optional(),
   contractNo: z.string().trim().max(80).optional().or(z.literal('')),
   name: z.string().trim().min(1).max(160),
-  signedAt: z.string().datetime().optional().nullable(),
+  signedAt: z.iso.datetime().optional().nullable(),
   amount: nonNegativeMoney,
   taxIncluded: z.boolean().default(true),
   retentionRate: z.number().min(0).max(1).default(0.03),
   advanceDeductionRate: z.number().min(0).max(1).default(0),
   paymentTerms: z.string().max(2000).optional().nullable(),
-  guaranteeEndAt: z.string().datetime().optional().nullable(),
+  guaranteeEndAt: z.iso.datetime().optional().nullable(),
   notes: z.string().max(4000).optional().nullable(),
 });
 
@@ -92,7 +92,7 @@ export async function contractRoutes(app: FastifyInstance) {
         hasExternalConfirmation: Boolean(priorExternalConfirmation),
       });
       if (decision === 'IMMUTABLE') throw new Error('ORIGINAL_CONTRACT_AMOUNT_IMMUTABLE');
-      const contractNo = parsed.data.contractNo?.trim() || before?.contractNo || await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'HT', date: parsed.data.signedAt ? new Date(parsed.data.signedAt) : new Date() });
+      const contractNo = parsed.data.contractNo?.trim() || before?.contractNo || (await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'HT', date: parsed.data.signedAt ? new Date(parsed.data.signedAt) : new Date() }));
       const saved = await tx.mainContract.upsert({ where: { projectId }, create: { projectId, ...values, contractNo }, update: { ...values, contractNo } });
       await tx.project.update({ where: { id: projectId }, data: { ownerPartyId: party.id, ownerName: party.name } });
       // Older records may predate mainContractId. Once the project's main contract

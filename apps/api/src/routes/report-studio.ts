@@ -12,7 +12,7 @@ import { MAX_RENDERED_ROWS_PER_SHEET, previewReportStudio, renderReportStudio } 
 import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 
 const domainSchema = z.enum(['PROJECT', 'COMPANY', 'PARTY']);
-const createSchema = z.object({
+const createSchema = z.strictObject({
   domain: domainSchema,
   name: z.string().trim().min(1).max(100),
   description: z.string().trim().max(300).default(''),
@@ -20,13 +20,13 @@ const createSchema = z.object({
   projectId: z.string().trim().min(1).nullable().optional(),
   businessPartyId: z.string().trim().min(1).nullable().optional(),
   definition: z.unknown(),
-}).strict();
-const updateSchema = z.object({
+});
+const updateSchema = z.strictObject({
   name: z.string().trim().min(1).max(100),
   description: z.string().trim().max(300).default(''),
   expectedVersion: z.number().int().positive(),
   definition: z.unknown(),
-}).strict();
+});
 
 async function hasProject(user: AuthUser, projectId: string): Promise<boolean> {
   return canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ');
@@ -252,7 +252,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
 
   app.post('/preview', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
-    const parsed = z.object({ templateId: z.string().trim().min(1), projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional(), printAll: z.boolean().optional() }).strict().safeParse(request.body);
+    const parsed = z.strictObject({ templateId: z.string().trim().min(1), projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional(), printAll: z.boolean().optional() }).safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '预览参数无效', parsed.error.flatten());
     const template = await prisma.reportTemplate.findUnique({ where: { id: parsed.data.templateId } });
     if (!template || !domainFromStudioReportKey(template.reportKey) || template.status === 'ARCHIVED') return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在或已归档');
@@ -286,7 +286,7 @@ export async function reportStudioRoutes(app: FastifyInstance) {
   app.post('/templates/:id/xlsx/jobs', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const id = (request.params as { id: string }).id;
-    const parsed = z.object({ projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional() }).strict().safeParse(request.body ?? {});
+    const parsed = z.strictObject({ projectId: z.string().trim().optional(), businessPartyId: z.string().trim().optional() }).safeParse(request.body ?? {});
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '导出范围无效', parsed.error.flatten());
     const template = await prisma.reportTemplate.findUnique({ where: { id } });
     if (!template || !domainFromStudioReportKey(template.reportKey)) return failure(reply, 404, 'REPORT_STUDIO_TEMPLATE_NOT_FOUND', '综合报表模板不存在');
