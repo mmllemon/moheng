@@ -24,7 +24,7 @@
     "react-hook-form": "7.62.0",
     "react-router-dom": "7.18.4",
     "remark-gfm": "4.0.1",
-    "zod": "3.25.76",
+    "zod": "^4.6.7",
     "zustand": "5.0.8"
   },
   "devDependencies": {

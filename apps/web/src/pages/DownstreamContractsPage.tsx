@@ -63,7 +63,7 @@ function invalidateDownstream(queryClient: ReturnType<typeof useQueryClient>, pr
 function CreateContractDialog({ projectId, existing, onClose, onNotice }: { projectId: string; existing?: DownstreamContract; onClose: () => void; onNotice: (s: string) => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState('');
   const editDate = (value?: string | null) => value ? new Date(value).toISOString().slice(0, 10) : '';
-  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<ContractForm>({ resolver: zodResolver(contractSchema), defaultValues: existing ? {
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<ContractForm>({ resolver: zodResolver(contractSchema) as never, defaultValues: existing ? {
     contractNo: existing.contractNo, name: existing.name, type: existing.type, counterpartyName: existing.counterpartyName, counterpartyPartyId: existing.counterpartyPartyId ?? null,
     scope: existing.scope ?? '', signedAt: editDate(existing.signedAt), startDate: editDate(existing.startDate), plannedEndDate: editDate(existing.plannedEndDate),
     originalAmount: existing.originalAmount, taxIncluded: existing.taxIncluded, paymentTerms: existing.paymentTerms ?? '', notes: existing.notes ?? '',
@@ -94,7 +94,7 @@ function CreateContractDialog({ projectId, existing, onClose, onNotice }: { proj
 
 function AmendmentDialog({ projectId, contract, onClose, onNotice }: { projectId: string; contract: DownstreamContract; onClose: () => void; onNotice: (s: string) => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<AmendmentForm>({ resolver: zodResolver(amendmentSchema), defaultValues: { code: '', name: '', direction: 'INCREASE', amount: 0, effectiveAt: currentDateInputValue(), documentReference: '', notes: '' } });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<AmendmentForm>({ resolver: zodResolver(amendmentSchema) as never, defaultValues: { code: '', name: '', direction: 'INCREASE', amount: 0, effectiveAt: currentDateInputValue(), documentReference: '', notes: '' } });
   const submit = handleSubmit(async (values) => {
     setError('');
     try { await api.post(`/projects/${projectId}/downstream-contracts/${contract.id}/adjustments`, { ...values, effectiveAt: dateTimePayload(values.effectiveAt), notes: values.notes || null }); invalidateDownstream(queryClient, projectId); onNotice('已登记已生效补充协议，合同当前金额已重算；原始金额未被覆盖。'); onClose(); }
@@ -113,14 +113,14 @@ function AmendmentDialog({ projectId, contract, onClose, onNotice }: { projectId
 
 function PlanDialog({ projectId, contract, onClose, onNotice }: { projectId: string; contract: DownstreamContract; onClose: () => void; onNotice: (s: string) => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<PlanForm>({ resolver: zodResolver(planSchema), defaultValues: { stageName: '', dueAt: currentDateInputValue(), plannedAmount: 0, notes: '' } });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<PlanForm>({ resolver: zodResolver(planSchema) as never, defaultValues: { stageName: '', dueAt: currentDateInputValue(), plannedAmount: 0, notes: '' } });
   const submit = handleSubmit(async (values) => { setError(''); try { await api.post(`/projects/${projectId}/downstream-contracts/${contract.id}/payment-plans`, { ...values, dueAt: dateTimePayload(values.dueAt), notes: values.notes || null }); invalidateDownstream(queryClient, projectId); onNotice('付款计划已登记；计划金额只表示预计付款，不代表已支付或实际成本。'); onClose(); } catch (cause) { setError(cause instanceof ApiError ? cause.message : '付款计划保存失败'); } });
   return <div className="modal-backdrop"><div className="dialog"><div className="dialog-header"><div><span className="eyebrow">PAYMENT PLAN</span><h2>新增付款计划</h2><p>{contract.contractNo} · {contract.name}</p></div><Button variant="ghost" size="icon" onClick={onClose}><X size={18} /></Button></div><form onSubmit={submit} noValidate><div className="form-grid"><div className="field"><label>付款阶段 <b>*</b></label><input {...register('stageName')} placeholder="预付款/第 1 期进度款/结算款" />{errors.stageName && <small className="field-error">{errors.stageName.message}</small>}</div><div className="field"><label>计划日期 <b>*</b></label><DatePicker {...register('dueAt')} />{errors.dueAt && <small className="field-error">{errors.dueAt.message}</small>}</div><div className="field"><label>计划金额（元） <b>*</b></label><input type="number" min="0.01" step="0.01" {...register('plannedAmount')} />{errors.plannedAmount && <small className="field-error">{errors.plannedAmount.message}</small>}</div><div className="field"><label>备注</label><textarea rows={2} {...register('notes')} /></div></div>{error && <div className="form-alert">{error}</div>}<div className="dialog-footer"><Button variant="secondary" onClick={onClose}>取消</Button><Button type="submit" disabled={isSubmitting}><FilePlus2 size={15} />{isSubmitting ? '保存中…' : '保存计划'}</Button></div></form></div></div>;
 }
 
 function PaymentDialog({ projectId, contract, onClose, onNotice }: { projectId: string; contract: DownstreamContract; onClose: () => void; onNotice: (s: string) => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState('');
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<PaymentForm>({ resolver: zodResolver(paymentSchema), defaultValues: { paymentPlanId: '', payableId: contract.payables?.find((item) => item.openAmount > 0)?.id ?? '', refundOfPaymentId: '', type: 'PROGRESS', amount: 0, paidAt: currentDateInputValue(), referenceNo: '', notes: '' } });
+  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<PaymentForm>({ resolver: zodResolver(paymentSchema) as never, defaultValues: { paymentPlanId: '', payableId: contract.payables?.find((item) => item.openAmount > 0)?.id ?? '', refundOfPaymentId: '', type: 'PROGRESS', amount: 0, paidAt: currentDateInputValue(), referenceNo: '', notes: '' } });
   const watchType = watch('type');
   const availablePayables = (contract.payables ?? []).filter((item) => item.openAmount > 0 && (watchType === 'RETENTION' ? item.type === 'RETENTION_RELEASE' : item.type !== 'RETENTION_RELEASE'));
   const refundableBalance = (payment: Payment) => payment.amount - contract.payments.filter((entry) => entry.type === 'REFUND' && entry.refundOfPaymentId === payment.id).reduce((sum, entry) => sum + entry.amount, 0);

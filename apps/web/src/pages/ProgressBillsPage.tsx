@@ -20,7 +20,7 @@ type PaymentForm = z.infer<typeof paymentSchema>;
 
 function BillCreateDialog({ projectId, nextPeriod, onClose }: { projectId: string; nextPeriod: number; onClose: () => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CreateForm>({ resolver: zodResolver(createSchema), defaultValues: { periodNo: nextPeriod, applyDate: currentDateInputValue(), measureDate: currentDateInputValue(), amount: 0, notes: '' } });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<CreateForm>({ resolver: zodResolver(createSchema) as never, defaultValues: { periodNo: nextPeriod, applyDate: currentDateInputValue(), measureDate: currentDateInputValue(), amount: 0, notes: '' } });
   const submit = handleSubmit(async (values) => {
     setError('');
     try {
@@ -39,7 +39,7 @@ function BillCreateDialog({ projectId, nextPeriod, onClose }: { projectId: strin
 
 function PaymentDialog({ bill, projectId, onClose }: { bill: ProgressBill; projectId: string; onClose: () => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState(''); const remaining = Math.max(0, Number(bill.approvedAmount ?? bill.amount) - bill.paidAmount);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<PaymentForm>({ resolver: zodResolver(paymentSchema), defaultValues: { amount: Number(remaining.toFixed(2)), paidAt: currentDateInputValue(), referenceNo: '', notes: '' } });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<PaymentForm>({ resolver: zodResolver(paymentSchema) as never, defaultValues: { amount: Number(remaining.toFixed(2)), paidAt: currentDateInputValue(), referenceNo: '', notes: '' } });
   const submit = handleSubmit(async (values) => {
     setError('');
     try {

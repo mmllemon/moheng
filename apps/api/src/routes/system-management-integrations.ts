@@ -215,7 +215,7 @@ export async function registerIntegrationsRoutes(app: FastifyInstance) {
   app.post('/integrations/:id/dispatch', { config: { rateLimit: { max: 20, timeWindow: '15 minutes' } } }, async (request, reply) => {
     const actor = authUser(request);
     const params = z.object({ id: z.string().min(1).max(100) }).safeParse(request.params);
-    const parsed = z.object({ idempotencyKey: z.string().trim().min(8).max(200), payload: z.record(z.unknown()) }).safeParse(request.body);
+    const parsed = z.object({ idempotencyKey: z.string().trim().min(8).max(200), payload: z.record(z.string(), z.unknown()) }).safeParse(request.body);
     if (!params.success || !parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '投递参数有误；需要至少 8 位幂等键与 JSON 对象载荷');
     let payloadText = '';
     try { payloadText = JSON.stringify(parsed.data.payload); } catch { return failure(reply, 400, 'INTEGRATION_PAYLOAD_INVALID', '投递载荷不是有效 JSON'); }

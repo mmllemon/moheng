@@ -33,7 +33,7 @@ export default function ContractsPage() {
   const [error, setError] = useState('');
   const contractQuery = useQuery({ queryKey: ['contract', projectId], queryFn: () => api.get<Contract | null>(`/projects/${projectId}/contracts/main`), enabled: Boolean(projectId) });
   const projectQuery = useQuery({ queryKey: ['project-brief', projectId], queryFn: () => api.get<ProjectBrief>(`/projects/${projectId}`), enabled: Boolean(projectId) });
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting, isDirty } } = useForm<ContractValues>({ resolver: zodResolver(contractSchema), defaultValues: blankValues });
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting, isDirty } } = useForm<ContractValues>({ resolver: zodResolver(contractSchema) as never, defaultValues: blankValues });
 
   useEffect(() => {
     if (contractQuery.data) reset({ counterpartyPartyId: contractQuery.data.counterpartyPartyId ?? projectQuery.data?.ownerPartyId ?? null, counterpartyName: contractQuery.data.counterpartyParty?.name ?? projectQuery.data?.ownerName ?? '', contractNo: contractQuery.data.contractNo, name: contractQuery.data.name, signedAt: asDate(contractQuery.data.signedAt), amount: contractQuery.data.amount, taxIncluded: contractQuery.data.taxIncluded, retentionRate: contractQuery.data.retentionRate * 100, advanceDeductionRate: contractQuery.data.advanceDeductionRate * 100, paymentTerms: contractQuery.data.paymentTerms ?? '', guaranteeEndAt: asDate(contractQuery.data.guaranteeEndAt), notes: contractQuery.data.notes ?? '' });

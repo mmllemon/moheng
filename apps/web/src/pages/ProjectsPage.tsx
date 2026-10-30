@@ -46,7 +46,7 @@ function ProjectDialog({ project, onClose }: { project?: Project; onClose: () =>
   };
   useEffect(() => () => { if (closeTimer.current !== null) window.clearTimeout(closeTimer.current); }, []);
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as never,
     defaultValues: project ? {
       name: project.name, code: project.code, type: project.type, ownerName: project.ownerName, ownerPartyId: project.ownerPartyId ?? '',
       contractAmount: project.originalContractAmount ?? project.contractAmount, startDate: dateValue(project.startDate), plannedEndDate: dateValue(project.plannedEndDate),

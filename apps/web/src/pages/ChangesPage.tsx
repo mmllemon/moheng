@@ -69,7 +69,7 @@ function ChangeCreateDialog({ projectId, onClose }: { projectId: string; onClose
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ChangeForm>({
-    resolver: zodResolver(changeSchema),
+    resolver: zodResolver(changeSchema) as never,
     defaultValues: { code: `BG-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`, name: '', type: 'ENGINEERING_CHANGE', direction: 'INCREASE', occurredAt: currentDateInputValue(), submittedAmount: 0, description: '' },
   });
   const submit = handleSubmit(async (values) => {
@@ -93,7 +93,7 @@ function ChangeCreateDialog({ projectId, onClose }: { projectId: string; onClose
 
 function ChangeDecisionDialog({ record, projectId, onClose, onNotice }: { record: ChangeRecord; projectId: string; onClose: () => void; onNotice: (message: string) => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState('');
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DecisionForm>({ resolver: zodResolver(decisionSchema), defaultValues: { approvedAmount: record.submittedAmount, decisionNote: '' } });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DecisionForm>({ resolver: zodResolver(decisionSchema) as never, defaultValues: { approvedAmount: record.submittedAmount, decisionNote: '' } });
   const submit = handleSubmit(async (values) => {
     setError('');
     try {
@@ -109,7 +109,7 @@ function ChangeDecisionDialog({ record, projectId, onClose, onNotice }: { record
 function ExternalConfirmationDialog({ record, projectId, onClose, onNotice }: { record: ChangeRecord; projectId: string; onClose: () => void; onNotice: (message: string) => void }) {
   const queryClient = useQueryClient(); const [error, setError] = useState(''); const [files, setFiles] = useState<File[]>([]);
   const { register, control, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<EvidenceForm>({
-    resolver: zodResolver(evidenceSchema),
+    resolver: zodResolver(evidenceSchema) as never,
     defaultValues: { evidenceClass: 'A', evidenceAssessment: 'READY', externalConfirmerName: '', externalConfirmerAuthority: '', externalConfirmedAt: currentDateTimeLocalInputValue(), externalConfirmedAmount: record.submittedAmount, externalConfirmationScope: record.name, evidenceReference: '', evidenceContext: '' },
   });
   const evidenceClass = watch('evidenceClass');

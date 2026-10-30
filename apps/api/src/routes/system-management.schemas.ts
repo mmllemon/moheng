@@ -40,7 +40,7 @@ export const assistantProviderLookup = z.object({
 });
 export const accessPolicyDraft = z.object({
   changeNote: z.string().trim().min(1).max(1000),
-  permissions: z.record(z.array(z.enum(['OWNER', 'MANAGER', 'ESTIMATOR', 'VIEWER']))),
+  permissions: z.record(z.string(), z.array(z.enum(['OWNER', 'MANAGER', 'ESTIMATOR', 'VIEWER']))),
 });
 export const workflowCodeSchema = z.enum(['CHANGE_INTERNAL_APPROVAL']);
 export const workflowDraftSchema = z.object({
