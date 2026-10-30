@@ -1,13 +1,15 @@
 import type { AuthUser } from './auth.js';
 import { hasCrossProjectReadScope } from './project-data-scope.js';
-import { ReportStudioDomain, ReportStudioDataset, dateText, moneyValue, numberValue, sumMoney, plusMoney, subtractMoney, MAX_ROWS_PER_SOURCE } from './report-studio-sources.js';
+import { dateText, moneyValue, numberValue, sumMoney, plusMoney, subtractMoney, MAX_ROWS_PER_SOURCE } from './report-studio-sources.js';
+import type { ReportStudioDomain, ReportStudioDataset } from './report-studio-sources.js';
 import { prisma } from './prisma.js';
 import { loadBusinessPartyReportDataset } from './report-studio-party-dataset.js';
 import { calculateDownstreamCurrentAmount } from './downstream-contract-math.js';
 import { calculateEffectiveContractAmount } from './contract-amount-math.js';
 import { summarizeDownstreamPaymentTotals } from './report-studio-payment-summary.js';
 
-export { reportStudioSources, ReportStudioDomain, ReportStudioFieldType, ReportStudioField, ReportStudioSource, ReportStudioDataset } from './report-studio-sources.js';
+export { reportStudioSources } from './report-studio-sources.js';
+export type { ReportStudioDomain, ReportStudioFieldType, ReportStudioField, ReportStudioSource, ReportStudioDataset } from './report-studio-sources.js';
 
 export async function loadReportStudioDataset(user: AuthUser, domain: ReportStudioDomain, projectId?: string, businessPartyId?: string): Promise<ReportStudioDataset> {
   if (domain === 'PARTY') return loadBusinessPartyReportDataset(user, businessPartyId);
