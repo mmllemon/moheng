@@ -46,15 +46,16 @@
 
 ## 自动化门禁与历史运行证据
 
-`docs/gates/` 保存可复现的迁移/恢复脚本说明和历史证据。某个 Gate 文档可能记录旧提交、旧版本或自建合成数据；阅读时必须先看该文档中的执行时间、代码 SHA 和数据来源，不得当作当前提交的自动通过证明。
+`docs/gates/` 现在只保留 UI 巡检基线（`docs/gates/ui-parity/`）。此前该目录下的迁移/恢复演练
+与对账证据文档已随 `cf92654 chore: 移除 docs/gates 过程产物（82MB）` 从仓库移除。那些文档记录的
+是旧提交、旧版本或自建合成数据；按门禁纪律本来就不能当作当前提交的自动通过证明。
 
-与此相关的文档包括：
+当前阶段的自动化证据，以及应推到部署条件成熟再做的验证，统一记在：
 
-- [Prisma 7 备份恢复演练](gates/prisma7-backup-restore-rehearsal-v1.0.md)
-- [Prisma 7 旧版数据升级演练](gates/prisma7-legacy-data-upgrade-rehearsal-v1.0.md)
-- [核心经营链路审计 2026-10-20](gates/core-operating-chain-audit-2026-10-20.md)
-- [STG 形迁移对账复核](gates/staging-data-migration-reconciliation-review.md)
-- [STG 形迁移对账](gates/staging-data-migration-reconciliation.md)
+- [开发、部署与维护指南](开发与部署指南.md) 与[开发阶段验证与后续投产门禁](发布与迁移验收.md)。
+  后者含 PR #17 / #18 按精确头提交的 CI 证据，以及备份恢复与真实历史数据对账的待办边界。
+- 演练与校验的可复现入口是脚本本身：`scripts/validate-prisma7-migration.mjs`、
+  `scripts/validate-build-prisma-flow.mjs`、`node scripts/run-gates.mjs`。
 
 ## 文档纪律
 

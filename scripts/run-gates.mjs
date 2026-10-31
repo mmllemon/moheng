@@ -29,7 +29,6 @@ const ADVISORY = 'advisory';
 const GATES = [
   // ---- advisory：基线即红的既有债 ----
   { name: 'source-bundle', cmd: 'node scripts/validate-source-bundle-completeness.mjs', tier: ADVISORY, reason: '封版记录里的 lock SHA 与当前 lock 不一致（基线 575F… 亦不等于期望 A6F8…）' },
-  { name: 'document-links', cmd: 'node scripts/validate-document-links.mjs', tier: ADVISORY, reason: '6 个 Markdown 相对链接解析不到（基线同样 6 个）' },
   { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: ADVISORY, reason: '17 条断言基线即红（analysis/UI、workspace、dashboard 等真实产品债）' },
   { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
   { name: 'report-studio', cmd: 'node scripts/validate-report-studio.mjs', tier: ADVISORY, reason: '2 条基线旧红（打印/响应式）' },
@@ -64,7 +63,8 @@ const GATES = [
   { name: 'typescript-fixes', cmd: 'node scripts/validate-typescript-fixes.mjs', tier: BLOCKING, reason: '23/23 全绿；断言已改指 icon?: LucideIcon 与 size?: ButtonSize（仍是库类型 + sm→button-small）' },
   { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: BLOCKING, reason: '76 项全绿；滞线滚动条改为行尾无关匹配，Windows 与 Linux 结论一致' },
   { name: 'navigation-regressions', cmd: 'node scripts/validate-navigation-regressions.mjs', tier: BLOCKING, reason: '12/12 全绿；样式断言已改读真正承载规则的 legacy.css / hana.css，导航断言已跟上 2026-10-23 的 IA 调整' },
-  { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: BLOCKING, reason: '全绿。两条旧红经实测定性：一条是顶标两岛改版后的新写法（全局作用域已由 isGlobalContext + “全公司/项目” 状态段实现，项目选择器在全局上下文隐藏）；另一条确实是代码缺陷，已修 —— ≤900px 抽屉只用 transform 侧标隐身后仍占 246px 宽度，且抽屉按钮被窗口控制岛遮住而不可点击' },
+  { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: BLOCKING, reason: '全绿。两条旧红经实测定性：一条是顶标两岛改版后的新写法（全局作用域已由 isGlobalContext + “全公司/项目” 状态段实现，项目选择器在全局上下文隐藏）；另一条确实是代码缺陷，已修 —— ≤900px 抽屉仅用 transform 侧标隐身后仍占 246px 宽度，且抽屉按钮被窗口控制岛遮住而不可点击' },
+  { name: 'document-links', cmd: 'node scripts/validate-document-links.mjs', tier: BLOCKING, reason: '142 个本地链接目标全部可解析。原先 6 个断链源于 docs/gates 过程产物已被 cf92654 删除，INDEX 与架构文档的引用已改指活文档并保留出处提交号' },
 ];
 
 function parseArgs(argv) {
