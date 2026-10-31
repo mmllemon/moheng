@@ -4692,14 +4692,32 @@ html[data-paper-texture] .settings-window::after { display: block; }
 
 @media (max-width: 900px) {
   body { overflow: hidden; }
-  .app-sidebar { transform: translateX(calc(-100% - 12px)); z-index: 80; }
+  /* 抽屉必须真正脱离 flex 流。原写法只给 transform：侧栏看不见却仍占着
+     --sidebar-width，≤900px 时主区右边被挤出一条死白。实测 380px 下
+     .app-content 只剩 128px 宽（L246→R374），顶栏左岛因此越界并被裁切
+     （左岛 258→448 与右岛 306→366 重叠）。同块里的 .app-main { margin-left: 0 }
+     说明当初就想让主区吃满，只是 margin 不是占位来源。*/
+  .app-sidebar {
+    position: fixed;
+    top: var(--panel-edge-gap);
+    bottom: var(--panel-edge-gap);
+    left: 0;
+    height: auto;
+    margin: 0;
+    transform: translateX(calc(-100% - 12px));
+    z-index: 80;
+  }
   .app-sidebar.mobile-nav-open { transform: translateX(0); opacity: 1; pointer-events: auto; }
   .app-shell.sidebar-collapsed .app-sidebar { transform: translateX(calc(-100% - 12px)); opacity: 1; pointer-events: none; }
   .app-shell.sidebar-collapsed .app-sidebar.mobile-nav-open { transform: translateX(0); pointer-events: auto; }
   .app-main { margin-left: 0; }
   .app-shell.sidebar-collapsed .app-main { margin-left: 0; }
   .mobile-nav-backdrop { display: block; position: fixed; inset: 0; z-index: 70; border: 0; background: rgba(28, 25, 21, 0.22); backdrop-filter: blur(2px); }
-  .app-titlebar { padding-left: var(--space-12); }
+  /* 让开左缘固定的 .shell-traffic-strip（实测占 0→42px）。
+     原 padding-left 只有 var(--space-12)=12px，标题岛里的抽屉按钮会被这条固定条
+     压住并抢走 pointer 事件（Playwright 实测：点击被 .shell-traffic-strip 拦截）。
+     旧版未暴露此问题，是因为侧栏隐藏后仍占着 246px，把整岛推到了右侧。*/
+  .app-titlebar { padding-left: calc(42px + var(--space-8)); }
   .titlebar-mobile-menu { display: inline-grid !important; }
   .titlebar-context { padding-left: var(--space-2); }
   .titlebar-context .titlebar-wordmark, .titlebar-context .titlebar-separator { display: none; }
