@@ -77,7 +77,9 @@ assert.match(assistantRecoveryIntegration, /S3-CANCEL-provider-abort[\s\S]*?abor
 assert.match(JSON.parse(apiPackageText).scripts.test, /src\/lib\/assistant-context-budget\.test\.ts/);
 assert.match(decision, /查询参数或片段/, 'assistant configuration docs must define unsafe URL components');
 
-assert.match(routes, /z\.object\([\s\S]*?\)\.strict\(\)/, 'public PoC input schema must reject extra fields');
+// zod v4 把 z.object({...}).strict() 顶层化为 z.strictObject({...})，两种写法语义等价
+// （均拒绝多余字段）。这里接受任一写法，保持“输入 schema 必须是 strict”这一守卫不变。
+assert.match(routes, /z\.strictObject\(|z\.object\([\s\S]*?\)\.strict\(\)/, 'public PoC input schema must reject extra fields');
 assert.match(routes, /preHandler: \[featureGate, authRequired\]/, 'each route must be feature-gated and authenticated');
 assert.match(routes, /timeWindow: '1 minute'/, 'rate limit must be configured');
 assert.deepEqual([...routes.matchAll(/app\.(get|post|put|patch|delete)\(['\"]([^'\"]+)/g)].map((m) => `${m[1].toUpperCase()} ${m[2]}`), ['GET /status', 'GET /tools', 'POST /run'], 'POC must expose only the authenticated availability probe and two gated read-only tool routes');

@@ -33,7 +33,9 @@ check(pocRoutes.includes('await assistantConversationRoutes') && !pocRoutes.incl
 check(routes.includes("preHandler: [featureGate, authRequired]"), 'session routes must require auth and the feature gate');
 check(routes.includes("where: { id: conversationId, ownerUserId, project: { deletedAt: null } }"), 'conversation lookup must be owner-scoped');
 check(routes.includes("canAccessProject(ownerUserId, role, conversation.projectId, undefined, 'PROJECT_READ')"), 'conversation scope must be rechecked against current project permission');
-check(routes.includes("z.object({") && routes.includes(".strict()"), 'request schemas must reject unknown fields');
+// zod v4 把 z.object({...}).strict() 顶层化为 z.strictObject({...})，两者都拒绝多余字段。
+// 守卫不变（请求 schema 必须严格），仅接受两种等价写法。
+check(routes.includes('z.strictObject(') || (routes.includes("z.object({") && routes.includes(".strict()")), 'request schemas must reject unknown fields');
 check(routes.includes('requestId') && routes.includes('requestHash') && routes.includes('IDEMPOTENCY_KEY_REUSED'), 'request idempotency and payload mismatch must be explicit');
 check(routes.includes('FOR UPDATE') && routes.includes("status: { in: ['QUEUED', 'RUNNING'] }"), 'one run per conversation must be protected inside a transaction');
 check(routes.includes("type: 'assistant.agent.run'") && routes.includes('enqueueBackgroundJob(tx'), 'agent run must be atomically queued with the user message');
@@ -60,7 +62,8 @@ check(jobHandler.includes('canAccessProject(user.id, user.role, run.projectId, u
 check(jobHandler.includes("maxAttempts: 1") || routes.includes('maxAttempts: 1'), 'provider work must not be blindly retried and charged twice');
 check(!jobHandler.includes('@langchain/') && !jobHandler.includes("from 'langchain'"), 'provider/runtime SDK imports must stay outside the generic job layer');
 check(runtime.includes("createSaver: (checkpointUrl, options) => PostgresSaver.fromConnString(checkpointUrl, options)") && runtime.includes("runtime.createSaver(input.checkpointUrl, { schema: checkpointSchema })"), 'LangGraph checkpoint must use its isolated schema');
-check(runtime.includes("schema: z.object({}).strict()") && runtime.includes('runAssistantReadOnlyTool'), 'model tools must be argument-free and reuse read-only services');
+// 同上：空严格对象 = 模型工具不得带参数，接受 v3/v4 两种等价写法。
+check((runtime.includes("schema: z.strictObject({})") || runtime.includes("schema: z.object({}).strict()")) && runtime.includes('runAssistantReadOnlyTool'), 'model tools must be argument-free and reuse read-only services');
 check(runtime.includes("'project_operating_overview', 'cost_variance', 'change_evidence_completeness'"), 'only the three reviewed read-only tools are allowed');
 check(!runtime.includes('await saver.setup()'), 'request-time runtime must never run checkpoint DDL');
 check(setup.includes('await saver.setup()') && setup.includes("schema: 'moheng_assistant'"), 'checkpoint DDL must be explicit in the setup command');
