@@ -31,7 +31,7 @@ export async function projectRoutes(app: FastifyInstance) {
     const user = authUser(request);
     const query = z.object({ q: z.string().optional(), status: z.nativeEnum(ProjectStatus).optional() }).safeParse(request.query);
     if (!query.success) return failure(reply, 400, 'VALIDATION_ERROR', '筛选参数不正确', query.error.flatten());
-    const canReadAllProjects = user.role === 'ADMIN' || (await hasCrossProjectReadScope(user.sub, user.role, 'PROJECT_READ'));
+    const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'PROJECT_READ');
     const projects = await prisma.project.findMany({
       where: {
         deletedAt: null,
@@ -60,7 +60,7 @@ export async function projectRoutes(app: FastifyInstance) {
     try {
       const project = await prisma.$transaction(async (tx) => {
         const ownerParty = await resolveBusinessParty(tx, { partyId: parsed.data.ownerPartyId, name: parsed.data.ownerName, role: 'OWNER', actorUserId: user.sub });
-        const code = parsed.data.code?.trim() || (await nextDocumentNumber(tx, { type: 'PROJECT', globalPrefix: 'XM', date: new Date(parsed.data.startDate) }));
+        const code = parsed.data.code?.trim() || await nextDocumentNumber(tx, { type: 'PROJECT', globalPrefix: 'XM', date: new Date(parsed.data.startDate) });
         const created = await tx.project.create({ data: {
           ...parsed.data, code, ownerName: ownerParty.name, ownerPartyId: ownerParty.id,
           contractAmount: String(parsed.data.contractAmount),

@@ -164,7 +164,7 @@ export async function changeRoutes(app: FastifyInstance) {
     try {
       const row = await prisma.$transaction(async (tx) => {
         const project = await tx.project.findUniqueOrThrow({ where: { id: projectId }, select: { code: true } });
-        const code = parsed.data.code?.trim() || (await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'BG', date: new Date(parsed.data.occurredAt) }));
+        const code = parsed.data.code?.trim() || await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'BG', date: new Date(parsed.data.occurredAt) });
         const { code: _submittedCode, ...formValues } = parsed.data;
         const created = await tx.change.create({ data: {
           projectId,

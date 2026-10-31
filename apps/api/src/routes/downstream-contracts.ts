@@ -160,7 +160,7 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
     try {
       const row = await prisma.$transaction(async (tx) => {
         const party = await resolveBusinessParty(tx, { partyId: parsed.data.counterpartyPartyId, name: parsed.data.counterpartyName, role: downstreamPartyRole(parsed.data.type), actorUserId: user.sub, auditProjectId: projectId });
-        const contractNo = parsed.data.contractNo?.trim() || (await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'FGHT', date: parsed.data.signedAt ? new Date(parsed.data.signedAt) : new Date() }));
+        const contractNo = parsed.data.contractNo?.trim() || await nextDocumentNumber(tx, { projectId, projectCode: project.code, type: 'FGHT', date: parsed.data.signedAt ? new Date(parsed.data.signedAt) : new Date() });
         const created = await tx.downstreamContract.create({ data: {
           projectId, contractNo, name: parsed.data.name, type: parsed.data.type,
           counterpartyName: party.name, counterpartyPartyId: party.id, scope: parsed.data.scope ?? null,
@@ -197,9 +197,9 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
         const old = await tx.downstreamContract.findFirst({ where: { id: contractId, projectId, deletedAt: null } });
         if (!old) throw new Error('DOWNSTREAM_CONTRACT_NOT_FOUND');
         if (old.status !== 'DRAFT') throw new Error('DOWNSTREAM_CONTRACT_BASE_IMMUTABLE');
-        const hasActivity = (await tx.downstreamContractAdjustment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } }))
-          || (await tx.downstreamContractPayment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } }))
-          || (await tx.costEntry.findFirst({ where: { downstreamContractId: contractId, deletedAt: null }, select: { id: true } }));
+        const hasActivity = await tx.downstreamContractAdjustment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } })
+          || await tx.downstreamContractPayment.findFirst({ where: { downstreamContractId: contractId }, select: { id: true } })
+          || await tx.costEntry.findFirst({ where: { downstreamContractId: contractId, deletedAt: null }, select: { id: true } });
         if (hasActivity) throw new Error('DOWNSTREAM_CONTRACT_BASE_IMMUTABLE');
         const party = await resolveBusinessParty(tx, {
           partyId: parsed.data.counterpartyPartyId === undefined ? old.counterpartyPartyId : parsed.data.counterpartyPartyId,

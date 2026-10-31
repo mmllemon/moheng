@@ -156,7 +156,7 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
       const row = await prisma.$transaction(async (tx) => {
         const main = await tx.mainContract.findUnique({ where: { projectId }, include: { project: { select: { code: true } } } });
         if (!main) throw new OwnerFinanceError(409, 'MAIN_CONTRACT_REQUIRED', '请先登记业主主合同');
-        const no = parsed.data.settlementNo?.trim() || (await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'YJJS', date: new Date() }));
+        const no = parsed.data.settlementNo?.trim() || await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'YJJS', date: new Date() });
         const created = await tx.ownerContractSettlement.create({ data: { projectId, mainContractId: main.id, settlementNo: no, type: parsed.data.type, submittedAmount: String(parsed.data.submittedAmount), dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : null, notes: parsed.data.notes ?? null, createdById: user.sub, lines: { create: parsed.data.lines.map((line, index) => ({ ...line, quantity: line.quantity == null ? null : String(line.quantity), unitPrice: line.unitPrice == null ? null : String(line.unitPrice), amount: String(line.amount), sortOrder: index })) } }, include: { lines: true } });
         await audit(tx, projectId, user.sub, 'OwnerContractSettlement', created.id, 'OWNER_SETTLEMENT_DRAFT_CREATED', { settlementNo: no, type: parsed.data.type, submittedAmount: String(parsed.data.submittedAmount), optionalLines: true, lineCount: parsed.data.lines.length });
         return created;
