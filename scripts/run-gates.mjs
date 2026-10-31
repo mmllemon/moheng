@@ -1,99 +1,163 @@
 // 门禁运行器 —— 把 package.json 里 validate:release-candidate 那根 35 段 `&&` 长串，
-// 拆成可命名、可单跑、逐项报告、失败不中断的门禁清单。
+// 拆成可命名、可单跑、逐项报告、失败不中断的门禁清单，并支持 blocking / advisory 分级。
 //
 // 用法：
-//   node scripts/run-gates.mjs                     # 跑全部（串行）
-//   node scripts/run-gates.mjs --list              # 列出所有 gate
-//   node scripts/run-gates.mjs --only architecture,ui-polish,gate-integrity   # 只跑指定
-//   node scripts/run-gates.mjs --skip "assistant-" # 跳过 name 含该子串的 gate
+//   node scripts/run-gates.mjs                      # 跑全部（串行）
+//   node scripts/run-gates.mjs --list               # 列出 gate 与所属分级
+//   node scripts/run-gates.mjs --tier blocking      # 只跑必须通过的门禁（CI blocking job）
+//   node scripts/run-gates.mjs --tier advisory --capture   # 只跑债务门禁，摘要报告（CI advisory job）
+//   node scripts/run-gates.mjs --only architecture,ui-polish
+//   node scripts/run-gates.mjs --skip "assistant-"
 //
-// 每项按退出码判定：0=PASS，非 0=FAIL。子进程输出直接透传（脚本自身会打印明细）。
+// 分级规则（重要）：
+//   tier = 该门禁在基线 3feb702 + 本轮修复后的实测状态。
+//   blocking 的 16 条当前全绿，失败即应拦住 PR；
+//   advisory 的 19 条在基线就已红（既有债，逐项原因见 docs/门禁债务清单.md），
+//   先以 non-blocking 方式在 CI 里持续可见，修绿一条就升一级，避免一次性全红阻塞所有 PR。
+//   升 tier 时请在 reason 里说明该门禁为何现在必须保持绿。
 import { spawn } from 'node:child_process';
+import { appendFileSync } from 'node:fs';
+
+const BLOCKING = 'blocking';
+const ADVISORY = 'advisory';
 
 const GATES = [
-  { name: 'source-bundle',        cmd: 'node scripts/validate-source-bundle-completeness.mjs' },
-  { name: 'document-links',       cmd: 'node scripts/validate-document-links.mjs' },
-  { name: 'dependency-security',  cmd: 'node scripts/validate-dependency-security.mjs' },
-  { name: 'release-candidate',    cmd: 'node scripts/validate-release-candidate.mjs' },
-  { name: 'r7-security',          cmd: 'node scripts/validate-r7-security-remediation.mjs' },
-  { name: 'build-prisma-flow',    cmd: 'node scripts/validate-build-prisma-flow.mjs' },
-  { name: 'prisma7-migration',    cmd: 'node scripts/validate-prisma7-migration.mjs' },
-  { name: 'assistant-poc',        cmd: 'node scripts/validate-assistant-poc.mjs' },
-  { name: 'assistant-runtime-decision', cmd: 'node scripts/validate-assistant-runtime-decision.mjs' },
-  { name: 'assistant-conversations',    cmd: 'node scripts/validate-assistant-conversations.mjs' },
-  { name: 'assistant-ui',         cmd: 'node scripts/validate-assistant-ui.mjs' },
-  { name: 'assistant-orphan-runs',cmd: 'node scripts/validate-assistant-orphan-runs.mjs' },
-  { name: 'assistant-sse-parser', cmd: 'node --test apps/web/src/assistant-sse-parser.test.mjs' },
-  { name: 'system-config-v2',     cmd: 'node scripts/validate-system-config-v2.mjs' },
-  { name: 'report-studio',        cmd: 'node scripts/validate-report-studio.mjs' },
-  { name: 'report-studio-v2',     cmd: 'node scripts/validate-report-studio-v2.mjs' },
-  { name: 'report-studio-defaults', cmd: 'node --import=./apps/api/scripts/load-test-database-url.mjs --import=tsx --test scripts/tests/report-studio-defaults.test.ts' },
-  { name: 'v2-work-packages',     cmd: 'node scripts/validate-v2-work-packages.mjs' },
-  { name: 'audit-coverage',       cmd: 'node scripts/check-audit-coverage.mjs' },
-  { name: 'architecture',         cmd: 'node scripts/validate-architecture.mjs' },
-  { name: 'background-jobs',      cmd: 'node scripts/validate-background-jobs.mjs' },
-  { name: 'typescript-fixes',     cmd: 'node scripts/validate-typescript-fixes.mjs' },
-  { name: 'ui-polish',            cmd: 'node scripts/validate-ui-polish.mjs' },
-  { name: 'gate-ui-parity',       cmd: 'node scripts/gate-ui-parity.mjs' },
-  { name: 'gate-integrity',       cmd: 'node scripts/validate-gate-integrity.mjs' },
-  { name: 'web-report-tests',     cmd: 'npx tsx --test apps/web/src/components/date-picker-utils.test.ts apps/web/src/report-export-job.test.ts apps/web/src/report-preview-format.test.ts apps/web/src/report-print.test.ts apps/web/src/report-preview-layout.test.ts apps/web/src/report-preview-data.test.ts' },
-  { name: 'navigation-regressions', cmd: 'node scripts/validate-navigation-regressions.mjs' },
-  { name: 'public-access-security', cmd: 'node scripts/validate-public-access-security.mjs' },
-  { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs' },
-  { name: 'system-expansion-v2',  cmd: 'node scripts/validate-system-expansion-v2.mjs' },
-  { name: 'defect-audit-v2',      cmd: 'node scripts/validate-defect-audit-v2.mjs' },
-  { name: 'system-completion-v2', cmd: 'node scripts/validate-system-completion-v2.mjs' },
-  { name: 'system-workbench-v2',  cmd: 'node scripts/validate-system-workbench-v2.mjs' },
-  { name: 'assistant-safety-contract', cmd: 'node scripts/validate-assistant-safety-contract.mjs' },
-  { name: 'assistant-runtime-contracts', cmd: 'npm run test:assistant-runtime-contracts' },
+  // ---- advisory：基线即红的既有债 ----
+  { name: 'source-bundle', cmd: 'node scripts/validate-source-bundle-completeness.mjs', tier: ADVISORY, reason: '封版记录里的 lock SHA 与当前 lock 不一致（基线 575F… 亦不等于期望 A6F8…）' },
+  { name: 'document-links', cmd: 'node scripts/validate-document-links.mjs', tier: ADVISORY, reason: '6 个 Markdown 相对链接解析不到（基线同样 6 个）' },
+  { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: ADVISORY, reason: '17 条断言基线即红（analysis/UI、workspace、dashboard 等真实产品债）' },
+  { name: 'assistant-runtime-decision', cmd: 'node scripts/validate-assistant-runtime-decision.mjs', tier: ADVISORY, reason: '门禁断言的 PoC 开关源码文本已迁往 assistant-config，断言本身过时' },
+  { name: 'assistant-conversations', cmd: 'node scripts/validate-assistant-conversations.mjs', tier: ADVISORY, reason: '同上：首条断言提前抛错，遮蔽其后约 30 条断言（CI 中最危险的红）' },
+  { name: 'assistant-ui', cmd: 'node scripts/validate-assistant-ui.mjs', tier: ADVISORY, reason: '同上：断言 assistant 入口的旧源码文本' },
+  { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
+  { name: 'report-studio', cmd: 'node scripts/validate-report-studio.mjs', tier: ADVISORY, reason: '2 条基线旧红（打印/响应式）' },
+  { name: 'report-studio-v2', cmd: 'node scripts/validate-report-studio-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红（正式打印数据集、固定列宽）' },
+  { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: ADVISORY, reason: '2 条基线旧红（报表/通知中心路由、reduced-motion）' },
+  { name: 'architecture', cmd: 'node scripts/validate-architecture.mjs', tier: ADVISORY, reason: '硬编码期望 19 模块，实际 21（workspace、project-artifacts 后加未同步）' },
+  { name: 'typescript-fixes', cmd: 'node scripts/validate-typescript-fixes.mjs', tier: ADVISORY, reason: '1 条基线旧红（Lucide icon 类型与 Button small size）' },
+  { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: ADVISORY, reason: '1 条基线旧红（hairline scrollbar 规格）' },
+  { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: ADVISORY, reason: '缺双 target 基线产物，需本机/浏览器环境' },
+  { name: 'navigation-regressions', cmd: 'node scripts/validate-navigation-regressions.mjs', tier: ADVISORY, reason: '3 条基线旧红（图表 containLabel、成本工作台归属、系统管理落地页）' },
+  { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏分组、着陆页等 UI 规格）' },
+  { name: 'system-expansion-v2', cmd: 'node scripts/validate-system-expansion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
+  { name: 'system-completion-v2', cmd: 'node scripts/validate-system-completion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
+  { name: 'system-workbench-v2', cmd: 'node scripts/validate-system-workbench-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏唯一入口、字典编码等）' },
+
+  // ---- blocking：当前实测全绿，必须保持绿 ----
+  { name: 'dependency-security', cmd: 'node scripts/validate-dependency-security.mjs', tier: BLOCKING },
+  { name: 'r7-security', cmd: 'node scripts/validate-r7-security-remediation.mjs', tier: BLOCKING },
+  { name: 'build-prisma-flow', cmd: 'node scripts/validate-build-prisma-flow.mjs', tier: BLOCKING },
+  { name: 'prisma7-migration', cmd: 'node scripts/validate-prisma7-migration.mjs', tier: BLOCKING },
+  { name: 'assistant-poc', cmd: 'node scripts/validate-assistant-poc.mjs', tier: BLOCKING },
+  { name: 'assistant-orphan-runs', cmd: 'node scripts/validate-assistant-orphan-runs.mjs', tier: BLOCKING },
+  { name: 'assistant-sse-parser', cmd: 'node --test apps/web/src/assistant-sse-parser.test.mjs', tier: BLOCKING },
+  { name: 'report-studio-defaults', cmd: 'node --import=./apps/api/scripts/load-test-database-url.mjs --import=tsx --test scripts/tests/report-studio-defaults.test.ts', tier: BLOCKING },
+  { name: 'audit-coverage', cmd: 'node scripts/check-audit-coverage.mjs', tier: BLOCKING },
+  { name: 'background-jobs', cmd: 'node scripts/validate-background-jobs.mjs', tier: BLOCKING },
+  { name: 'gate-integrity', cmd: 'node scripts/validate-gate-integrity.mjs', tier: BLOCKING },
+  { name: 'web-report-tests', cmd: 'npx tsx --test apps/web/src/components/date-picker-utils.test.ts apps/web/src/report-export-job.test.ts apps/web/src/report-preview-format.test.ts apps/web/src/report-print.test.ts apps/web/src/report-preview-layout.test.ts apps/web/src/report-preview-data.test.ts', tier: BLOCKING },
+  { name: 'public-access-security', cmd: 'node scripts/validate-public-access-security.mjs', tier: BLOCKING },
+  { name: 'defect-audit-v2', cmd: 'node scripts/validate-defect-audit-v2.mjs', tier: BLOCKING },
+  { name: 'assistant-safety-contract', cmd: 'node scripts/validate-assistant-safety-contract.mjs', tier: BLOCKING },
+  { name: 'assistant-runtime-contracts', cmd: 'npm run test:assistant-runtime-contracts', tier: BLOCKING },
 ];
 
 function parseArgs(argv) {
-  const opts = { list: false, only: null, skip: null };
+  const opts = { list: false, only: null, skip: null, tier: null, capture: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--list') opts.list = true;
     else if (a === '--only') opts.only = (argv[++i] || '').split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--skip') opts.skip = argv[++i] || '';
+    else if (a === '--tier') opts.tier = argv[++i];
+    else if (a === '--capture') opts.capture = true;
   }
   return opts;
 }
 
 function selectGates(opts) {
   let sel = GATES;
+  if (opts.tier && opts.tier !== 'all') sel = sel.filter((g) => g.tier === opts.tier);
   if (opts.only) sel = sel.filter((g) => opts.only.includes(g.name));
   if (opts.skip) sel = sel.filter((g) => !g.name.includes(opts.skip));
   return sel;
 }
 
-function runOne(cmd) {
+function runOne(cmd, capture) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const child = spawn(cmd, { shell: true, stdio: 'inherit', cwd: process.cwd() });
-    child.on('exit', (code) => resolve({ code: code ?? 1, ms: Date.now() - started }));
-    child.on('error', () => resolve({ code: 1, ms: Date.now() - started }));
+    const out = [];
+    const child = spawn(cmd, { shell: true, stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit', cwd: process.cwd() });
+    if (capture) {
+      child.stdout.on('data', (b) => out.push(String(b)));
+      child.stderr.on('data', (b) => out.push(String(b)));
+    }
+    child.on('exit', (code) => resolve({ code: code ?? 1, ms: Date.now() - started, text: out.join('') }));
+    child.on('error', () => resolve({ code: 1, ms: Date.now() - started, text: out.join('') }));
   });
+}
+
+// 从失败输出里抽出「哪几条断言红了」，用于债务摘要。
+function failingLines(text) {
+  if (!text) return [];
+  const named = text.split(/\r?\n/).filter((l) => /^\s*(FAIL|\[BLOCK\])/.test(l)).map((l) => l.trim());
+  if (named.length) return named;
+  const thrown = text.split(/\r?\n/).filter((l) => /AssertionError|\[BLOCK\]|Error:/.test(l)).map((l) => l.trim());
+  return thrown.length ? [thrown[0]] : ['(无断言级输出，见完整日志)'];
+}
+
+function writeStepSummary(results, tier) {
+  const file = process.env.GITHUB_STEP_SUMMARY;
+  if (!file) return;
+  const failed = results.filter((r) => r.code !== 0);
+  const lines = [];
+  lines.push(`### 门禁 ${tier === 'all' ? '' : `${tier} `}结果`, '');
+  lines.push('| 门禁 | 分级 | 结果 | 耗时 |');
+  lines.push('| --- | --- | --- | --- |');
+  for (const r of results) lines.push(`| ${r.name} | ${r.tier} | ${r.code === 0 ? 'PASS' : 'FAIL'} | ${r.ms}ms |`);
+  lines.push('', `${results.length - failed.length}/${results.length} 通过。`);
+  if (tier === ADVISORY && failed.length) {
+    lines.push('', '### 当前债务明细（non-blocking）', '');
+    for (const r of failed) {
+      lines.push(`- **${r.name}**${r.reason ? ` — ${r.reason}` : ''}`);
+      for (const l of r.fails.slice(0, 4)) lines.push(`    - \`${l.slice(0, 160)}\``);
+    }
+  }
+  appendFileSync(file, lines.join('\n') + '\n', 'utf8');
 }
 
 const opts = parseArgs(process.argv.slice(2));
 if (opts.list) {
-  GATES.forEach((g, i) => console.log(`${String(i).padStart(2)}  ${g.name}`));
+  GATES.forEach((g, i) => console.log(`${String(i).padStart(2)}  ${g.tier.padEnd(8)}  ${g.name}`));
+  console.log(`\nblocking=${GATES.filter((g) => g.tier === BLOCKING).length} advisory=${GATES.filter((g) => g.tier === ADVISORY).length}`);
   process.exit(0);
 }
 
 const chosen = selectGates(opts);
+if (!chosen.length) {
+  console.error('没有匹配的门禁');
+  process.exit(2);
+}
 const results = [];
-console.log(`\n▶ running ${chosen.length} gate(s)\n`);
+console.log(`\n▶ running ${chosen.length} gate(s)${opts.tier ? ` [tier=${opts.tier}]` : ''}\n`);
 for (const g of chosen) {
-  console.log(`\n===== [${g.name}] $ ${g.cmd} =====`);
-  const { code, ms } = await runOne(g.cmd);
+  if (!opts.capture) console.log(`\n===== [${g.name}] $ ${g.cmd} =====`);
+  const { code, ms, text } = await runOne(g.cmd, opts.capture);
   const status = code === 0 ? 'PASS' : `FAIL(exit ${code})`;
-  results.push({ name: g.name, code, ms, status });
-  console.log(`----- [${g.name}] ${status} in ${ms}ms -----\n`);
+  const fails = code === 0 ? [] : failingLines(text);
+  results.push({ ...g, code, ms, status, fails });
+  if (opts.capture) {
+    console.log(`${status.padEnd(12)} ${g.name} (${ms}ms)`);
+    for (const l of fails.slice(0, 6)) console.log(`             ${l.slice(0, 160)}`);
+    if (text && code !== 0 && !fails.length) console.log(text.split(/\r?\n/).slice(0, 8).join('\n'));
+  } else {
+    console.log(`----- [${g.name}] ${status} in ${ms}ms -----\n`);
+  }
 }
 
 const failed = results.filter((r) => r.code !== 0);
-console.log('\n================ GATE SUMMARY ================');
-for (const r of results) console.log(`  ${r.code === 0 ? 'PASS' : 'FAIL'}  ${r.name}  (${r.ms}ms)`);
+console.log(`\n================ GATE SUMMARY (${opts.tier || 'all'}) ================`);
+for (const r of results) console.log(`  ${r.code === 0 ? 'PASS' : 'FAIL'}  [${r.tier}]  ${r.name}  (${r.ms}ms)`);
 console.log(`\n${results.length - failed.length}/${results.length} passed` + (failed.length ? ` — FAILED: ${failed.map((f) => f.name).join(', ')}` : ''));
+writeStepSummary(results, opts.tier || 'all');
 process.exit(failed.length ? 1 : 0);

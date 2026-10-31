@@ -1,0 +1,66 @@
+name: Source gates
+
+# 分级门禁：blocking 必须通过，advisory 持续可见但不拦 PR。
+# 分级依据与债务原因写在 scripts/run-gates.mjs 的 GATES 表里（tier / reason），
+# 汇总在 docs/门禁债务清单.md。升 tier 只改 GATES 里那一行，让分级决定留在可评审的代码里。
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  blocking-gates:
+    name: Blocking gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # 已实测：16 条 blocking 门禁在不可达的 DATABASE_URL 下同样全绿，
+      # 说明它们不连库。这里仍显式钉一个占位值，是为了让 apps/api/.env（CI 里不存在）
+      # 不参与解释，同一份代码在本地与 CI 得出同一结论。
+      DATABASE_URL: postgresql://ci.invalid:5432/ci_placeholder?schema=public
+      # AI 助手 PoC 开关会改变源码与测试的判定路径，显式钉成生产默认（关闭），
+      # 避免"本地开着 .env、CI 没开"导致同一提交两种结论。
+      ASSISTANT_POC_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Require committed root package lock
+        run: test -f package-lock.json
+      - name: Install dependencies reproducibly
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client (imported by code under test)
+        run: npm run db:generate
+      - name: Run blocking gates
+        run: node scripts/run-gates.mjs --tier blocking --capture
+
+  advisory-gates:
+    name: Advisory gates (known debt)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # 这 19 条在基线 3feb702 就已红（既有债，非本轮拆分引入）。先让它们在 CI 里
+    # 持续可见：不拦 PR，但每次运行都输出债务明细，修绿一条就把该 gate 的 tier 升为 blocking。
+    continue-on-error: true
+    env:
+      DATABASE_URL: postgresql://ci.invalid:5432/ci_placeholder?schema=public
+      ASSISTANT_POC_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Require committed root package lock
+        run: test -f package-lock.json
+      - name: Install dependencies reproducibly
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client (imported by code under test)
+        run: npm run db:generate
+      - name: Run advisory gates (non-blocking)
+        run: node scripts/run-gates.mjs --tier advisory --capture
