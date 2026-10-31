@@ -2,16 +2,16 @@ import type { FastifyInstance } from 'fastify';
 import { moneyToCents } from '../lib/contract-amount-math.js';
 import { failure, success } from '../lib/http.js';
 import { calculateDownstreamCurrentAmount } from '../lib/downstream-contract-math.js';
-import { money, sumCents, amountFromCents } from './downstream-finance.schemas.js';
+import { money, sumCents, amountFromCents } from './downstream-finance/schemas.js';
 import { canAccessProject } from '../lib/project-access.js';
 import { authRequired, authUser } from '../lib/auth.js';
-import { asAmount, serializeSettlement, serializePayable } from './downstream-finance.helpers.js';
+import { asAmount, serializeSettlement, serializePayable } from './downstream-finance/helpers.js';
 import { prisma } from '../lib/prisma.js';
 import { calculateRetentionBalance } from '../lib/downstream-settlement-math.js';
 
-import { registerSettlementRoutes } from './downstream-finance-settlements.js';
-import { registerInvoiceRoutes } from './downstream-finance-invoices.js';
-import { registerRetentionRoutes } from './downstream-finance-retention.js';
+import { registerSettlementRoutes } from './downstream-finance/settlements.js';
+import { registerInvoiceRoutes } from './downstream-finance/invoices.js';
+import { registerRetentionRoutes } from './downstream-finance/retention.js';
 
 export async function downstreamFinanceRoutes(app: FastifyInstance) {
   app.get('/:projectId/downstream-finance', { preHandler: authRequired }, async (request, reply) => {

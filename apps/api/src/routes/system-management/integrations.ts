@@ -1,16 +1,16 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { Prisma } from '../generated/prisma/client.js';
-import { prisma } from '../lib/prisma.js';
-import { success, failure } from '../lib/http.js';
-import { authUser } from '../lib/auth.js';
-import { integrationCreate, assistantProviderPatch, assistantProviderLookup, integrationPatch, secretRotation } from './system-management.schemas.js';
-import { publicIntegration, writeAudit } from './system-management.helpers.js';
-import { decryptIntegrationSecret, encryptIntegrationSecret } from '../lib/integration-vault.js';
-import { decryptAssistantProviderKey, encryptAssistantProviderKey, isCheckpointSchemaReady, publicAssistantProviderConfig } from '../lib/assistant-provider-config.js';
-import { AssistantProviderError, fetchAssistantProviderModels, normalizeProviderBaseUrl } from '../lib/assistant-provider-client.js';
-import { requestIntegrationEndpoint, IntegrationHttpError } from '../lib/integration-http.js';
-import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
+import { Prisma } from '../../generated/prisma/client.js';
+import { prisma } from '../../lib/prisma.js';
+import { success, failure } from '../../lib/http.js';
+import { authUser } from '../../lib/auth.js';
+import { integrationCreate, assistantProviderPatch, assistantProviderLookup, integrationPatch, secretRotation } from './schemas.js';
+import { publicIntegration, writeAudit } from './helpers.js';
+import { decryptIntegrationSecret, encryptIntegrationSecret } from '../../lib/integration-vault.js';
+import { decryptAssistantProviderKey, encryptAssistantProviderKey, isCheckpointSchemaReady, publicAssistantProviderConfig } from '../../lib/assistant-provider-config.js';
+import { AssistantProviderError, fetchAssistantProviderModels, normalizeProviderBaseUrl } from '../../lib/assistant-provider-client.js';
+import { requestIntegrationEndpoint, IntegrationHttpError } from '../../lib/integration-http.js';
+import { enqueueBackgroundJob, hashJobRequest } from '../../lib/background-jobs.js';
 
 export async function registerIntegrationsRoutes(app: FastifyInstance) {
   app.get('/integrations', async () => {

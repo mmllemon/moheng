@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify';
-import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
-import { failure, success } from '../lib/http.js';
-import { nextDocumentNumber } from '../lib/document-number.js';
-import { sumCents, settlementInput, rejectInput, confirmInput, payableScheduleInput } from './downstream-finance.schemas.js';
-import { Prisma, DownstreamPayableType } from '../generated/prisma/client.js';
-import { authRequired, authUser } from '../lib/auth.js';
-import { asAmount, serializeSettlement, serializePayable, hasProjectWriteAccess, lockContract, writeAudit, transitionSettlement } from './downstream-finance.helpers.js';
-import { prisma } from '../lib/prisma.js';
-import { assertOptionalLineTotal, assertPayableScheduleTotal, calculateAdvanceBalance, calculateNetPayable, calculatePostedSettlementDelta } from '../lib/downstream-settlement-math.js';
+import { centsToMoney, moneyToCents } from '../../lib/contract-amount-math.js';
+import { failure, success } from '../../lib/http.js';
+import { nextDocumentNumber } from '../../lib/document-number.js';
+import { sumCents, settlementInput, rejectInput, confirmInput, payableScheduleInput } from './schemas.js';
+import { Prisma, DownstreamPayableType } from '../../generated/prisma/client.js';
+import { authRequired, authUser } from '../../lib/auth.js';
+import { asAmount, serializeSettlement, serializePayable, hasProjectWriteAccess, lockContract, writeAudit, transitionSettlement } from './helpers.js';
+import { prisma } from '../../lib/prisma.js';
+import { assertOptionalLineTotal, assertPayableScheduleTotal, calculateAdvanceBalance, calculateNetPayable, calculatePostedSettlementDelta } from '../../lib/downstream-settlement-math.js';
 
 export async function registerSettlementRoutes(app: FastifyInstance) {
   app.post('/:projectId/downstream-contracts/:contractId/settlements', { preHandler: authRequired }, async (request, reply) => {

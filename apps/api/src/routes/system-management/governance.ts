@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { ProjectRole, Prisma } from '../generated/prisma/client.js';
-import { prisma } from '../lib/prisma.js';
-import { success, failure } from '../lib/http.js';
-import { authUser } from '../lib/auth.js';
-import { departmentCreate, departmentPatch, orgAssignment, changeApprovalDraft, accessPolicyDraft, workflowCodeSchema, workflowDraftSchema } from './system-management.schemas.js';
-import { DEFAULT_CHANGE_APPROVER_ROLES, parseChangeApprovalDefinition } from '../lib/governance-rules.js';
-import { PROJECT_PERMISSION_BASELINES, PROJECT_PERMISSION_LABELS, defaultProjectPermissionPolicy, parseProjectPermissionPolicy } from '../lib/access-policy.js';
-import { parseWorkflowDefinition } from '../lib/workflow-definitions.js';
+import { ProjectRole, Prisma } from '../../generated/prisma/client.js';
+import { prisma } from '../../lib/prisma.js';
+import { success, failure } from '../../lib/http.js';
+import { authUser } from '../../lib/auth.js';
+import { departmentCreate, departmentPatch, orgAssignment, changeApprovalDraft, accessPolicyDraft, workflowCodeSchema, workflowDraftSchema } from './schemas.js';
+import { DEFAULT_CHANGE_APPROVER_ROLES, parseChangeApprovalDefinition } from '../../lib/governance-rules.js';
+import { PROJECT_PERMISSION_BASELINES, PROJECT_PERMISSION_LABELS, defaultProjectPermissionPolicy, parseProjectPermissionPolicy } from '../../lib/access-policy.js';
+import { parseWorkflowDefinition } from '../../lib/workflow-definitions.js';
 
 export async function registerGovernanceRoutes(app: FastifyInstance) {
   app.get('/authorization/matrix', async () => {

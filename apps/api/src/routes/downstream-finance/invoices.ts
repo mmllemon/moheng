@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
-import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
-import { failure, success } from '../lib/http.js';
-import { sumCents, invoiceInput, invoiceVerifyInput, allocationInput } from './downstream-finance.schemas.js';
-import { Prisma } from '../generated/prisma/client.js';
-import { authRequired, authUser } from '../lib/auth.js';
-import { asAmount, hasProjectWriteAccess, lockContract, writeAudit } from './downstream-finance.helpers.js';
-import { prisma } from '../lib/prisma.js';
+import { centsToMoney, moneyToCents } from '../../lib/contract-amount-math.js';
+import { failure, success } from '../../lib/http.js';
+import { sumCents, invoiceInput, invoiceVerifyInput, allocationInput } from './schemas.js';
+import { Prisma } from '../../generated/prisma/client.js';
+import { authRequired, authUser } from '../../lib/auth.js';
+import { asAmount, hasProjectWriteAccess, lockContract, writeAudit } from './helpers.js';
+import { prisma } from '../../lib/prisma.js';
 
 export async function registerInvoiceRoutes(app: FastifyInstance) {
   app.post('/:projectId/downstream-contracts/:contractId/invoices', { preHandler: authRequired }, async (request, reply) => {

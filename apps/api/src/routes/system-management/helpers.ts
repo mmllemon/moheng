@@ -5,8 +5,8 @@ import { lookup } from 'node:dns/promises';
 import { basename, join, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
-import { Prisma } from '../generated/prisma/client.js';
-import { prisma } from '../lib/prisma.js';
+import { Prisma } from '../../generated/prisma/client.js';
+import { prisma } from '../../lib/prisma.js';
 
 export function publicIntegration(row: {
   id: string; code: string; name: string; adapterType: string; endpointUrl: string | null; description: string | null;

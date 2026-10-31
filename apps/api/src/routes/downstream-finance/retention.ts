@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { retentionMovement } from './downstream-finance.helpers.js';
-import { authRequired } from '../lib/auth.js';
+import { retentionMovement } from './helpers.js';
+import { authRequired } from '../../lib/auth.js';
 
 export async function registerRetentionRoutes(app: FastifyInstance) {
   app.post('/:projectId/downstream-contracts/:contractId/retention/release', { preHandler: authRequired }, async (request, reply) => {

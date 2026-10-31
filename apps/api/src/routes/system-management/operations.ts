@@ -4,12 +4,12 @@ import { createReadStream } from 'node:fs';
 import { chmod, mkdir, mkdtemp, rm, stat, unlink } from 'node:fs/promises';
 import { basename, isAbsolute, join, parse as parsePath, resolve, sep } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { Prisma } from '../generated/prisma/client.js';
-import { prisma } from '../lib/prisma.js';
-import { success, failure } from '../lib/http.js';
-import { authUser } from '../lib/auth.js';
-import { serialiseBackup, parseDatabaseUrl, pgEnvironment, runCommand, sha256File, pruneExpiredBackups, assertIsolatedRestoreTarget, writeAudit } from './system-management.helpers.js';
-import { encryptBackupFile, decryptBackupFile, parseBackupKeyRing } from '../lib/backup-encryption.js';
+import { Prisma } from '../../generated/prisma/client.js';
+import { prisma } from '../../lib/prisma.js';
+import { success, failure } from '../../lib/http.js';
+import { authUser } from '../../lib/auth.js';
+import { serialiseBackup, parseDatabaseUrl, pgEnvironment, runCommand, sha256File, pruneExpiredBackups, assertIsolatedRestoreTarget, writeAudit } from './helpers.js';
+import { encryptBackupFile, decryptBackupFile, parseBackupKeyRing } from '../../lib/backup-encryption.js';
 
 export async function registerOperationsRoutes(app: FastifyInstance) {
   app.post('/data-quality/scan', async (request, reply) => {

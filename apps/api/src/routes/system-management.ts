@@ -5,11 +5,11 @@ import { failure, success } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
 import { authRequired, authUser } from '../lib/auth.js';
 import { parseBackupKeyRing } from '../lib/backup-encryption.js';
-import { inspectPgTools, retentionDaysFromEnv, serialiseBackup } from './system-management.helpers.js';
+import { inspectPgTools, retentionDaysFromEnv, serialiseBackup } from './system-management/helpers.js';
 import { systemConfigRoutes } from './system-config.js';
-import { registerGovernanceRoutes } from './system-management-governance.js';
-import { registerIntegrationsRoutes } from './system-management-integrations.js';
-import { registerOperationsRoutes } from './system-management-operations.js';
+import { registerGovernanceRoutes } from './system-management/governance.js';
+import { registerIntegrationsRoutes } from './system-management/integrations.js';
+import { registerOperationsRoutes } from './system-management/operations.js';
 
 export async function systemManagementRoutes(app: FastifyInstance) {
   app.addHook('preHandler', authRequired);
