@@ -16,8 +16,9 @@
 //   已修绿并升级为 blocking：architecture（改为不随模块数漂移的结构不变量）、
 //   assistant-runtime-decision / assistant-conversations / assistant-ui
 //   （断言改指向开关与助手按钮的现有归属，同时解除了它们遮蔽其后约 30 条断言的问题）、
-//   typescript-fixes / ui-polish / navigation-regressions
-//  （死文件指针 styles.css、旧类型写法字面量、CRLF 跳行匹配、已有意移除的 IA）。
+//   typescript-fixes / ui-polish / navigation-regressions / v2-work-packages
+//  （死文件指针 styles.css、旧类型写法字面量、CRLF 跳行匹配、已有意移除的 IA；
+//   v2-work-packages 同时修复了一个真实的 ≤900px 窄屏布局缺陷）。
 //   升 tier 时请在 reason 里说明该门禁为何现在必须保持绿。
 import { spawn } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
@@ -33,7 +34,6 @@ const GATES = [
   { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
   { name: 'report-studio', cmd: 'node scripts/validate-report-studio.mjs', tier: ADVISORY, reason: '2 条基线旧红（打印/响应式）' },
   { name: 'report-studio-v2', cmd: 'node scripts/validate-report-studio-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红（正式打印数据集、固定列宽）' },
-  { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: ADVISORY, reason: '2 条基线旧红（报表/通知中心路由、reduced-motion）' },
   { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: ADVISORY, reason: '缺双 target 基线产物，需本机/浏览器环境' },
   { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏分组、着陆页等 UI 规格）' },
   { name: 'system-expansion-v2', cmd: 'node scripts/validate-system-expansion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
@@ -64,6 +64,7 @@ const GATES = [
   { name: 'typescript-fixes', cmd: 'node scripts/validate-typescript-fixes.mjs', tier: BLOCKING, reason: '23/23 全绿；断言已改指 icon?: LucideIcon 与 size?: ButtonSize（仍是库类型 + sm→button-small）' },
   { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: BLOCKING, reason: '76 项全绿；滞线滚动条改为行尾无关匹配，Windows 与 Linux 结论一致' },
   { name: 'navigation-regressions', cmd: 'node scripts/validate-navigation-regressions.mjs', tier: BLOCKING, reason: '12/12 全绿；样式断言已改读真正承载规则的 legacy.css / hana.css，导航断言已跟上 2026-10-23 的 IA 调整' },
+  { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: BLOCKING, reason: '全绿。两条旧红经实测定性：一条是顶标两岛改版后的新写法（全局作用域已由 isGlobalContext + “全公司/项目” 状态段实现，项目选择器在全局上下文隐藏）；另一条确实是代码缺陷，已修 —— ≤900px 抽屉只用 transform 侧标隐身后仍占 246px 宽度，且抽屉按钮被窗口控制岛遮住而不可点击' },
 ];
 
 function parseArgs(argv) {

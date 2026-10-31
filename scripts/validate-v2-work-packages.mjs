@@ -34,7 +34,13 @@ const membersPage = await read('apps/web/src/pages/ProjectMembersPage.tsx');
 const userManagementPage = await read('apps/web/src/pages/UserManagementPage.tsx');
 const systemManagementPage = await read('apps/web/src/pages/SystemManagementPage.tsx');
 const budgetPage = await read('apps/web/src/pages/BudgetPage.tsx');
-const styles = await read('apps/web/src/styles.css');
+// 与 validate-navigation-regressions 同理：apps/web/src/styles.css 在 Tailwind / Hana V6 改版后
+// 只剩 `@import "tailwindcss";`，页面级与外壳级规则已迁到 legacy.css 与 hana.css。
+const styles = [
+  await read('apps/web/src/styles.css'),
+  await read('apps/web/src/styles/legacy.css'),
+  await read('apps/web/src/styles/hana.css'),
+].join('\n');
 const userManual = await read('docs/用户操作手册.md');
 const devGuide = await read('docs/开发与部署指南.md');
 const plan = await read('docs/后续四阶段开发路线图.md');
@@ -91,7 +97,10 @@ check('notification UI labels the list as dynamic tasks, not persistent read/unr
 check('report and notification centers are routable, searchable in command palette, and globally scoped in header',
   app.includes('path="reports" element={<ReportCenterPage />') && app.includes('path="notifications" element={<NotificationsPage />') &&
   layout.includes("to: '/reports'") && layout.includes("to: '/notifications'") &&
-  layout.includes("location.pathname.startsWith('/reports') ? '全局报表中心'") && layout.includes("location.pathname === '/notifications' ? '跨项目待办与预警'") && app.includes('path="reports/designer"'));
+  // “全局作用域”现在由顶标状态段表达：isGlobalContext 判定、显示「全公 / 项目」，
+  // 并在全局上下文隐藏项目选择器（实测 380 / 900 / 1440 下 /reports 与 /notifications
+  // 均为 作用域=全公司 且无项目下拉）。旧断言钉的是“顶标两岛”改版前的 per-route 文案。
+  layout.includes('const isGlobalContext =') && layout.includes("location.pathname.startsWith('/reports')") && layout.includes("'/notifications'") && layout.includes("{isGlobalContext ? '全公司' : '项目'}") && layout.includes('!isGlobalContext ? (') && app.includes('path="reports/designer"'));
 check('budget drafts are browser-local only and do not save until explicit form submission',
   budgetPage.includes('moheng:budget-draft:') && budgetPage.includes('localStorage.setItem(draftKey') &&
   budgetPage.includes('点击“保存条目”后才会写入正式台账') && budgetPage.includes('await api.post(`/projects/${projectId}/budget/items`'));
@@ -99,8 +108,20 @@ check('current architecture defines safe additive migrations and avoids unnecess
   architectureRules.includes('历史迁移文件不重写') && architectureRules.includes('向前补丁') &&
   !moduleRegistry.includes('reportJobRoutes') && !moduleRegistry.includes('offlineSyncRoutes'));
 check('reduced-motion and responsive rules cover new report, notification, and member views',
-  styles.includes('.report-center-page') && styles.includes('.notifications-page') && styles.includes('.project-members-page') &&
-  styles.includes(':root[data-motion="reduced"]') && styles.includes('@media (max-width: 760px)'));
+  // 逐页媒体规则在 V6 改版时被有意删除（见 legacy.css:461-463 的删除说明注释），
+  // 这三页的窄屏可用性改由三个共享机制承担，本项改为断言机制本体：
+  //   1) 全局减动效（:root 与 html 等价，通配覆盖面比逐页规则更大）
+  //   2) ≤900px 抽屉外壳（侧标真正脱离 flex 流 + mobile-nav-open 滑入）
+  //   3) ≤760px 断点下的页面骶架规则（仍在 legacy.css 里使用）
+  // 实测：380/560/900 下主区不再被隐藏侧标吃掉宽度，顶标无溢出节点，抽屉可点击开启。
+  (styles.includes(':root[data-motion="reduced"]') || styles.includes('html[data-motion="reduced"]')) &&
+  styles.includes('animation-duration: 0.01ms') &&
+  styles.includes('@media (max-width: 900px)') &&
+  styles.includes('.app-sidebar.mobile-nav-open') &&
+  styles.includes('position: fixed;') &&
+  styles.includes('@media (max-width: 760px)') &&
+  styles.includes('.page-wrap { padding: var(--space-14) var(--space-16) 30px; }') &&
+  styles.includes('.page-header { align-items: flex-start; flex-direction: column;'));
 check('current delivery roadmap includes runtime/build, Prisma/database, browser, Windows and restore gates',
   plan.includes('Node.js 24+') && plan.includes('Prisma') && plan.includes('浏览器 E2E') &&
   plan.includes('Windows 原生') && plan.includes('备份恢复') &&
