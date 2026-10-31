@@ -191,8 +191,11 @@ check('Hana paper morph follows a real trigger', paperMorphExists && layout.incl
    会留下一条永远显色的线。
 
    moheng 取 hana 的值：thumb 常显 20% 灰、悬停 40%、宽度 4px。 */
+// 这条在 Windows 上是假红：core.autocrlf=true 使工作树为 CRLF，而跳行字面量
+// '...{\n  width: 4px;' 在 \r\n 下不匹配（同一断言在 Linux runner 上一直是绿的）。
+// 改为对行尾与缩进不敏感的正则；规则本身在 hana.css:594 起完整存在（4px / 0.2 / 0.4 / 2px）。
 check('Hana hairline scrollbar is 4px, thumb 20% gray, 40% on hover',
-  hana.includes('*::-webkit-scrollbar {\n  width: 4px;')
+  /\*::?-webkit-scrollbar\s*\{\s*\r?\n\s*width:\s*4px;/.test(hana)
   && hana.includes('rgba(128, 128, 128, 0.2)')
   && hana.includes('rgba(128, 128, 128, 0.4)')
   && hana.includes('border-radius: 2px'));

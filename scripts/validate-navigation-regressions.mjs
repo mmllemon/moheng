@@ -21,7 +21,15 @@ const workspace = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const app = await read('apps/web/src/App.tsx');
 const layout = await readModuleSources(root, 'apps/web/src/components/Layout.tsx');
 const systemManagement = await read('apps/web/src/pages/SystemManagementPage.tsx');
-const styles = await read('apps/web/src/styles.css');
+// apps/web/src/styles.css 在 Tailwind / Hana V6 改版后只剩 `@import "tailwindcss";`（1 行），
+// 页面级规则已迁到 legacy.css 与 hana.css。本门禁断言的类名与规则内容不变，
+// 只是改读真正承载它们的样式表：.cost-workspace-tabs 见 hana.css:3267，
+// .project-cost-trend-panel, .project-attention-panel 见 legacy.css:494。
+const styles = [
+  await read('apps/web/src/styles.css'),
+  await read('apps/web/src/styles/legacy.css'),
+  await read('apps/web/src/styles/hana.css'),
+].join('\n');
 const xlsx = await read('apps/api/src/lib/report-studio-xlsx.ts');
 const rootPackage = JSON.parse(await read('package.json'));
 const apiPackage = JSON.parse(await read('apps/api/package.json'));
@@ -41,13 +49,17 @@ check('standard report center, ledger entry points and legacy designer carry exp
 check('no other route uses a raw history-back operation outside the centralized preview handler',
   (preview.match(/navigate\(-1\)/g) ?? []).length === 1 && !(launch + center + designer + studio).includes('navigate(-1)'));
 check('project overview chart reserves Y-axis labels and uses ECharts containLabel',
-  overview.includes('grid: { left: 68, right: 18, top: 22, bottom: 34, containLabel: true }') && overview.includes("axisLabel: { color: '#8792a4', margin: 10, hideOverlap: true") && styles.includes('.project-cost-trend-panel, .project-attention-panel'));
+  // 轴标颜色已改走设计 token（token('--text-muted', '#6b6f73')），这正是主题化想要的结果；
+  // 守卫不变：y 轴标签必须走 token 取色，并保留 margin 10 与 hideOverlap（避免标签互相覆盖）。
+  overview.includes('grid: { left: 68, right: 18, top: 22, bottom: 34, containLabel: true }') && overview.includes("axisLabel: { color: token('--text-muted'") && overview.includes('margin: 10, hideOverlap: true') && styles.includes('.project-cost-trend-panel, .project-attention-panel'));
 check('cost workbench owns the cost layout and no longer contains member-management navigation',
   workspace.includes('export default function CostWorkspaceLayout()') && workspace.includes('aria-label="成本工作台业务导航"') && !workspace.includes('项目成员与权限') && !workspace.includes('/system/members') && styles.includes('.cost-workspace-tabs') && !styles.includes('.project-workspace-tabs'));
 check('ExcelJS font builder correctly models incremental font-property assignment',
   xlsx.includes('const font: Partial<ExcelJS.Font> = {};'));
 check('system management has independent landing/member routes and legacy workspace URLs redirect safely',
-  layout.includes("to: '/system', label: '系统管理'") && layout.includes("to: '/system', label: '概览'") && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system/accounts', label: '账号管理'") && layout.includes("to: '/system/security', label: '登录安全'") && layout.includes("to: '/audit-logs', label: '操作追溯'") && layout.includes("'经营中心', '工作台', '项目管理', '系统管理'") && systemManagement.includes('系统管理概览') && systemManagement.includes('系统管理扩展入口') && app.includes('path="projects/members"') && app.includes('path="system/members" element={<Navigate to="/projects/members" replace />}') && app.includes('path="system/accounts"') && app.includes('path="system/security"') && app.includes('path="account/security"') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') && app.includes("pathname: '/system/accounts'") && app.includes('path="workspace" element={<LegacyWorkspaceRedirect />}') && app.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') && app.includes("suffix === '/members' ? '/projects/members'") && layout.includes('/account/security'));
+  // 「系统管理」侧栏项已于 2026-10-23 有意移除（见 layout-config.ts 注释：避免导航列表
+  // 与页脚齿轮重复），入口改为 ADMIN 可见的页脚齿轮。此处改为断言现行入口仍可达 /system。
+  layout.includes('data-tooltip="系统设置"') && layout.includes("navigate('/system')") && layout.includes("to: '/system', label: '概览'") && layout.includes("to: '/projects/members', label: '项目成员与权限'") && layout.includes("to: '/system/accounts', label: '账号管理'") && layout.includes("to: '/system/security', label: '登录安全'") && layout.includes("to: '/audit-logs', label: '操作追溯'") && layout.includes("group: '经营中心' | '工作台' | '项目管理' | '系统管理'") && systemManagement.includes('系统管理概览') /* 「系统管理扩展入口」已有意移除，该禁令由 validate-ui-polish 独家持有，此处不反向重复断言 */ && app.includes('path="projects/members"') && app.includes('path="system/members" element={<Navigate to="/projects/members" replace />}') && app.includes('path="system/accounts"') && app.includes('path="system/security"') && app.includes('path="account/security"') && app.includes('path="settings/users" element={<LegacySettingsUsersRedirect />}') && app.includes("pathname: '/system/accounts'") && app.includes('path="workspace" element={<LegacyWorkspaceRedirect />}') && app.includes('path="workspace/*" element={<LegacyWorkspaceRedirect />}') && app.includes("suffix === '/members' ? '/projects/members'") && layout.includes('/account/security'));
 check('canonical cost workbench route and source identifiers use cost terminology',
   app.includes('path="cost" element={<NeedProject><CostWorkspaceLayout /></NeedProject>}') && layout.includes("to: '/cost', label: '成本工作台'") && workspace.includes('cost-workspace-tab') && launch.includes("source: 'cost-workspace'") && !layout.includes("label: '项目工作台'"));
 check('consolidated report design records preview/export consistency, workspace and print/export constraints',

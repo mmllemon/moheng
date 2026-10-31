@@ -43,7 +43,12 @@ check('audit and report date parsing validates split components', auditLogs.incl
 check('conditional pagination options no longer infer take as literal 5000', auditLogs.includes('take: exportMode ? 5000 : filter.pageSize'));
 check('ExcelJS paper code compatibility cast is isolated', reportXlsx.includes('as unknown as ExcelJS.PaperSize'));
 check('ExcelJS Buffer compatibility is cast at method parameter boundary', [budgetXlsx, reportXlsxTest, budgetXlsxTest].every((source) => source.includes('Parameters<typeof workbook.xlsx.load>[0]')));
-check('Lucide icon prop uses library icon type and Button exposes small size', ui.includes('type LucideIcon') && ui.includes('icon: LucideIcon') && ui.includes("size?: 'sm' | 'md'") && ui.includes('button-small'));
+// 守卫不变：图标必须用 lucide-react 的库类型、小尺寸按钮必须真有对应样式类。
+// 但原字面量钉的是旧写法：icon 现为可选的 `icon?: LucideIcon`（仍是库类型），
+// Button 尺寸已抽成 `size?: ButtonSize` 结合类型别名（'xs'|'sm'|'md'|...），sm 仍映射 button-small。
+check('Lucide icon prop uses library icon type and Button exposes small size',
+  ui.includes('type LucideIcon') && ui.includes('icon?: LucideIcon') && ui.includes('size?: ButtonSize')
+  && /export type ButtonSize = [^\n]*'sm'[^\n]*'md'/.test(ui) && ui.includes("size === 'sm' ? 'button-small'"));
 check('React 19 refs that write current use explicit nullable generic', selectField.includes('useRef<HTMLSelectElement | null>(null)') && datePicker.includes('useRef<HTMLInputElement | null>(null)'));
 check('required React hooks are imported and owner advance type includes notes', projectsPage.includes('useEffect, useMemo, useRef') && ownerFinancePage.includes('advanceMovements: {') && ownerFinancePage.includes('notes?: string | null'));
 /* 断言意图：legacy 主题值（旧版的 'light' / 'dark'）不能被原样接受，

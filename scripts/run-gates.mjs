@@ -15,7 +15,9 @@
 //   方式在 CI 里持续可见，修绿一条就升一级，避免一次性全红阻塞所有 PR。
 //   已修绿并升级为 blocking：architecture（改为不随模块数漂移的结构不变量）、
 //   assistant-runtime-decision / assistant-conversations / assistant-ui
-//   （断言改指向开关与助手按钮的现有归属，同时解除了它们遮蔽其后约 30 条断言的问题）。
+//   （断言改指向开关与助手按钮的现有归属，同时解除了它们遮蔽其后约 30 条断言的问题）、
+//   typescript-fixes / ui-polish / navigation-regressions
+//  （死文件指针 styles.css、旧类型写法字面量、CRLF 跳行匹配、已有意移除的 IA）。
 //   升 tier 时请在 reason 里说明该门禁为何现在必须保持绿。
 import { spawn } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
@@ -32,10 +34,7 @@ const GATES = [
   { name: 'report-studio', cmd: 'node scripts/validate-report-studio.mjs', tier: ADVISORY, reason: '2 条基线旧红（打印/响应式）' },
   { name: 'report-studio-v2', cmd: 'node scripts/validate-report-studio-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红（正式打印数据集、固定列宽）' },
   { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: ADVISORY, reason: '2 条基线旧红（报表/通知中心路由、reduced-motion）' },
-  { name: 'typescript-fixes', cmd: 'node scripts/validate-typescript-fixes.mjs', tier: ADVISORY, reason: '1 条基线旧红（Lucide icon 类型与 Button small size）' },
-  { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: ADVISORY, reason: '1 条基线旧红（hairline scrollbar 规格）' },
   { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: ADVISORY, reason: '缺双 target 基线产物，需本机/浏览器环境' },
-  { name: 'navigation-regressions', cmd: 'node scripts/validate-navigation-regressions.mjs', tier: ADVISORY, reason: '3 条基线旧红（图表 containLabel、成本工作台归属、系统管理落地页）' },
   { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏分组、着陆页等 UI 规格）' },
   { name: 'system-expansion-v2', cmd: 'node scripts/validate-system-expansion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
   { name: 'system-completion-v2', cmd: 'node scripts/validate-system-completion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
@@ -62,6 +61,9 @@ const GATES = [
   { name: 'assistant-runtime-decision', cmd: 'node scripts/validate-assistant-runtime-decision.mjs', tier: BLOCKING, reason: '开关默认关与禁用时 404 属安全边界，必须保持绿' },
   { name: 'assistant-conversations', cmd: 'node scripts/validate-assistant-conversations.mjs', tier: BLOCKING, reason: '此前首条断言提前抛错遮蔽约 30 条断言；解蔽后必须保持全绿，否则整段检查再次静默失效' },
   { name: 'assistant-ui', cmd: 'node scripts/validate-assistant-ui.mjs', tier: BLOCKING, reason: '助手入口必须是标题栏全局模态按钮且默认不可见，属对外可见面约束' },
+  { name: 'typescript-fixes', cmd: 'node scripts/validate-typescript-fixes.mjs', tier: BLOCKING, reason: '23/23 全绿；断言已改指 icon?: LucideIcon 与 size?: ButtonSize（仍是库类型 + sm→button-small）' },
+  { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: BLOCKING, reason: '76 项全绿；滞线滚动条改为行尾无关匹配，Windows 与 Linux 结论一致' },
+  { name: 'navigation-regressions', cmd: 'node scripts/validate-navigation-regressions.mjs', tier: BLOCKING, reason: '12/12 全绿；样式断言已改读真正承载规则的 legacy.css / hana.css，导航断言已跟上 2026-10-23 的 IA 调整' },
 ];
 
 function parseArgs(argv) {
