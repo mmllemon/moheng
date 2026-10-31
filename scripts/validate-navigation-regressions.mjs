@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readModuleSources } from './lib/module-sources.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (file) => readFile(join(root, file), 'utf8');
@@ -18,7 +19,7 @@ const designer = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const overview = await read('apps/web/src/pages/ProjectOverviewPage.tsx');
 const workspace = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const app = await read('apps/web/src/App.tsx');
-const layout = await read('apps/web/src/components/Layout.tsx');
+const layout = await readModuleSources(root, 'apps/web/src/components/Layout.tsx');
 const systemManagement = await read('apps/web/src/pages/SystemManagementPage.tsx');
 const styles = await read('apps/web/src/styles.css');
 const xlsx = await read('apps/api/src/lib/report-studio-xlsx.ts');

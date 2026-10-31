@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,7 +11,7 @@ const [rootPackage, apiPackage, webPackage, schema, scopeMigration, operationsMi
   read('package.json').then(JSON.parse), read('apps/api/package.json').then(JSON.parse), read('apps/web/package.json').then(JSON.parse),
   read('apps/api/prisma/schema.prisma'), read('apps/api/prisma/migrations/20261016050000_project_data_scope/migration.sql'), read('apps/api/prisma/migrations/20261016040000_system_security_workflow_integration/migration.sql'),
   read('apps/api/src/lib/access-policy.ts'), read('apps/api/src/lib/project-data-scope.ts'), read('apps/api/src/lib/project-access.ts'), read('apps/api/src/routes/auth.ts'), read('apps/api/src/routes/projects.ts'),
-  read('apps/api/src/routes/reports.ts'), read('apps/api/src/routes/notifications.ts'), read('apps/api/src/routes/config-read.ts'), read('apps/api/src/lib/business-parameters.ts'), read('apps/api/src/routes/changes.ts'), read('apps/api/src/lib/workflow-definitions.ts'), read('apps/api/src/routes/system-management.ts'),
+  read('apps/api/src/routes/reports.ts'), read('apps/api/src/routes/notifications.ts'), read('apps/api/src/routes/config-read.ts'), read('apps/api/src/lib/business-parameters.ts'), read('apps/api/src/routes/changes.ts'), read('apps/api/src/lib/workflow-definitions.ts'), readModuleSources(root, 'apps/api/src/routes/system-management.ts'),
   read('apps/api/src/lib/backup-encryption.ts'), read('apps/api/src/lib/integration-http.ts'), read('apps/api/src/lib/integration-dispatch-job.ts'), read('apps/web/src/styles.css'), read('apps/web/src/pages/SystemGovernancePage.tsx'), read('apps/web/src/pages/SystemOperationsPage.tsx'), read('apps/web/src/pages/UserManagementPage.tsx'), read('.env.example'), read('README.md'), read('CHANGELOG.md'), read('docs/架构与核心业务规则.md'), read('docs/发布与迁移验收.md'),
 ]);
 check('root/API/Web versions and Node.js 24+ gate agree on the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && rootPackage.engines?.node === '>=24.0.0' && apiPackage.engines?.node === '>=24.0.0');

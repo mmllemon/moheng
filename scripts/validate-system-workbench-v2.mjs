@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,7 +11,7 @@ const check = (name, pass) => checks.push({ name, pass: Boolean(pass) });
 const [rootPackage, apiPackage, webPackage, appInfo, schema, migration, systemRoute, page, app, layout, css, dictPage, paramPage, helper, governance, manager, readme, changelog, design, acceptance] = await Promise.all([
   read('package.json').then(JSON.parse), read('apps/api/package.json').then(JSON.parse), read('apps/web/package.json').then(JSON.parse),
   read('apps/api/src/platform/app-info.ts'), read('apps/api/prisma/schema.prisma'), read('apps/api/prisma/migrations/20261016030000_system_authorization_reviews/migration.sql'),
-  read('apps/api/src/routes/system-management.ts'), read('apps/web/src/pages/SystemAuthorizationPage.tsx'), read('apps/web/src/App.tsx'), read('apps/web/src/components/Layout.tsx'),
+  readModuleSources(root, 'apps/api/src/routes/system-management.ts'), read('apps/web/src/pages/SystemAuthorizationPage.tsx'), read('apps/web/src/App.tsx'), readModuleSources(root, 'apps/web/src/components/Layout.tsx'),
   read('apps/web/src/styles.css'), read('apps/web/src/pages/SystemDictionariesPage.tsx'), read('apps/web/src/pages/SystemParametersPage.tsx'), read('apps/web/src/utils/code-suggestion.ts'),
   read('apps/web/src/pages/SystemGovernancePage.tsx'), read('apps/web/src/pages/SystemManagementPage.tsx'), read('README.md'), read('CHANGELOG.md'),
   read('docs/架构与核心业务规则.md'), read('docs/产品范围与当前状态.md'),

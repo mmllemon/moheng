@@ -54,8 +54,20 @@ export async function moduleFiles(root, entry) {
   return cache.get(key);
 }
 
-/** 读取入口文件所属模块的全部源码，按确定顺序拼接。 */
-export async function readModuleSources(root, entry) {
+/**
+ * 推荐入口：沿用调用方门禁自己的 read()，只扩大文件范围，不改变读取语义。
+ *
+ * 为什么要传 read 而不是内部自己 readFile：各门禁的 read 并不一致，
+ * 有的会把 CRLF 归一为 LF（如 validate-report-studio-v2），有的不会（如
+ * validate-typescript-fixes）。多行字面量断言（includes('a:\n   select:')）对这一点敏感。
+ * 继承各自的 read，才能保证“只改范围、不改语义”。
+ */
+export async function readModule(read, root, entry) {
   const files = await moduleFiles(root, entry);
-  return (await Promise.all(files.map((f) => readFile(join(root, f), 'utf8')))).join('\n');
+  return (await Promise.all(files.map((f) => read(f)))).join('\n');
+}
+
+/** 读取入口文件所属模块的全部源码，按确定顺序拼接（不做行尾归一）。 */
+export async function readModuleSources(root, entry) {
+  return readModule((f) => readFile(join(root, f), 'utf8'), root, entry);
 }

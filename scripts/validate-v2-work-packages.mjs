@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readModuleSources } from './lib/module-sources.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (file) => readFile(join(root, file), 'utf8');
@@ -25,7 +26,7 @@ const projectRoute = await read('apps/api/src/routes/projects.ts');
 const csv = await read('apps/api/src/lib/csv-export.ts');
 const csvTests = await read('apps/api/src/lib/csv-export.test.ts');
 const app = await read('apps/web/src/App.tsx');
-const layout = await read('apps/web/src/components/Layout.tsx');
+const layout = await readModuleSources(root, 'apps/web/src/components/Layout.tsx');
 const workspaceLayout = await read('apps/web/src/components/CostWorkspaceLayout.tsx');
 const reportsPage = await read('apps/web/src/pages/ReportCenterPage.tsx');
 const notificationsPage = await read('apps/web/src/pages/NotificationsPage.tsx');

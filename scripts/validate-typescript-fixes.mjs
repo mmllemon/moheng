@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -16,12 +17,19 @@ const [amountMath, downstreamContracts, downstreamFinance, ownerFinance, progres
   'apps/web/src/pages/ProjectsPage.tsx','apps/web/src/pages/OwnerFinancePage.tsx',
   'apps/web/src/auth-store.ts','apps/web/src/pages/ReportDesignerPage.tsx',
   'apps/api/src/lib/auth.ts','apps/api/src/routes/system-management.ts','apps/api/src/lib/assistant-run-events.ts',
-].map(read));
+].map((p) => (p === 'apps/api/src/routes/downstream-finance.ts' || p === 'apps/api/src/routes/system-management.ts') ? readModuleSources(root, p) : read(p)));
 const checks = [];
 const check = (name, condition) => checks.push({ name, passed: Boolean(condition) });
 check('regex capture group access is explicitly guarded', amountMath.includes('const wholeText = match[2]') && amountMath.includes("if (wholeText === undefined)"));
 check('missing effective contract amount import is present and array access is optional', downstreamContracts.includes('calculateEffectiveContractAmount') && downstreamContracts.includes('requestedAllocations[0]?.payableId'));
-check('project role is typed from Prisma enum', downstreamFinance.includes('ProjectRole, UserRole') && downstreamFinance.includes('userRole: UserRole'));
+// 原断言靠基线里一条长 import 中 `ProjectRole, UserRole` 相邻的子串，那个相邻只是排版偶然。
+// 拆分把两个枚举分到 schemas.ts / helpers.ts 后子串消失。改判为：两个枚举都必须从
+// generated/prisma/client 导入（即角色类型来自 Prisma 枚举，而非本地字符串字面量联合）。
+const prismaEnumImports = [...downstreamFinance.matchAll(/import\s*\{([^}]*)\}\s*from\s*'[^']*generated\/prisma\/client\.js'/g)].map((m) => m[1]);
+check('project role is typed from Prisma enum',
+  prismaEnumImports.some((names) => names.includes('ProjectRole')) &&
+  prismaEnumImports.some((names) => names.includes('UserRole')) &&
+  downstreamFinance.includes('userRole: UserRole'));
 check('bigint cent accumulators avoid Math.max number mixing', downstreamFinance.includes('open > 0n ? open : 0n') && downstreamFinance.includes('open < 0n ? -open : 0n'));
 check('error-map results are checked before tuple destructuring', (downstreamFinance.match(/const mappedError = error instanceof Error \? map\[error\.message\] : undefined;/g) ?? []).length >= 2);
 check('money formatter string is not called with toFixed', ownerFinance.includes('const amountString = (cents: bigint) => centsToMoney(cents)') && !ownerFinance.includes('centsToMoney(cents).toFixed'));

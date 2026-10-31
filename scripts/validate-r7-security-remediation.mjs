@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { readModuleSources } from './lib/module-sources.mjs';
 
 const read = (path) => readFile(path, 'utf8');
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const checks = [];
 function verify(name, assertion) {
   assertion();
@@ -14,7 +18,7 @@ const webPackage = JSON.parse(await read('apps/web/package.json'));
 const auth = await read('apps/api/src/lib/auth.ts');
 const pocRoute = await read('apps/api/src/routes/assistant-poc.ts');
 const conversations = await read('apps/api/src/routes/assistant-conversations.ts');
-const systemRoutes = await read('apps/api/src/routes/system-management.ts');
+const systemRoutes = await readModuleSources(root, 'apps/api/src/routes/system-management.ts');
 const lockfileText = await read('package-lock.json');
 const regressionTest = await read('apps/api/src/lib/auth-prehandler-regression.test.ts');
 const server = await read('apps/api/src/server.ts');

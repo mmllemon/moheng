@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,7 +13,7 @@ const routes = {
   progress: await read('apps/api/src/routes/progress-bills.ts'),
   changes: await read('apps/api/src/routes/changes.ts'),
   downstreamContracts: await read('apps/api/src/routes/downstream-contracts.ts'),
-  downstreamFinance: await read('apps/api/src/routes/downstream-finance.ts'),
+  downstreamFinance: await readModuleSources(root, 'apps/api/src/routes/downstream-finance.ts'),
   ownerFinance: await read('apps/api/src/routes/owner-finance.ts'),
   parties: await read('apps/api/src/routes/business-parties.ts'),
   auth: await read('apps/api/src/routes/auth.ts'),

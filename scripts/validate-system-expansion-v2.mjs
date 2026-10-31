@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,10 +10,10 @@ function check(name, pass) { checks.push({ name, pass: Boolean(pass) }); }
 
 const [rootPackage, apiPackage, webPackage, schema, migration, route, changes, vault, vaultTests, policy, policyTests, orgPage, opsPage, overviewPage, nav, app, server, compose, dockerfile, readme, guide, design, acceptance] = await Promise.all([
   read('package.json').then(JSON.parse), read('apps/api/package.json').then(JSON.parse), read('apps/web/package.json').then(JSON.parse), read('apps/api/prisma/schema.prisma'),
-  read('apps/api/prisma/migrations/20261016010000_system_management_expansion/migration.sql'), read('apps/api/src/routes/system-management.ts'),
+  read('apps/api/prisma/migrations/20261016010000_system_management_expansion/migration.sql'), readModuleSources(root, 'apps/api/src/routes/system-management.ts'),
   read('apps/api/src/routes/changes.ts'), read('apps/api/src/lib/integration-vault.ts'), read('apps/api/src/lib/integration-vault.test.ts'),
   read('apps/api/src/lib/governance-rules.ts'), read('apps/api/src/lib/governance-rules.test.ts'), read('apps/web/src/pages/SystemGovernancePage.tsx'),
-  read('apps/web/src/pages/SystemOperationsPage.tsx'), read('apps/web/src/pages/SystemManagementPage.tsx'), read('apps/web/src/components/Layout.tsx'),
+  read('apps/web/src/pages/SystemOperationsPage.tsx'), read('apps/web/src/pages/SystemManagementPage.tsx'), readModuleSources(root, 'apps/web/src/components/Layout.tsx'),
   read('apps/web/src/App.tsx'), read('apps/api/src/server.ts'), read('docker-compose.yml'), read('apps/api/Dockerfile'), read('README.md'),
   read('docs/安全、账号与公网部署.md'), read('docs/架构与核心业务规则.md'), read('docs/产品范围与当前状态.md'),
 ]);

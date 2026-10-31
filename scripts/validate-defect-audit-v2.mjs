@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,7 +12,7 @@ const [rootPackage, apiPackage, webPackage, gov, ui, ops, sec, dict, config, sys
   read('package.json').then(JSON.parse), read('apps/api/package.json').then(JSON.parse), read('apps/web/package.json').then(JSON.parse),
   read('apps/web/src/pages/SystemGovernancePage.tsx'), read('apps/web/src/components/Ui.tsx'), read('apps/web/src/pages/SystemOperationsPage.tsx'),
   read('apps/web/src/pages/SystemSecurityPage.tsx'), read('apps/web/src/pages/SystemDictionariesPage.tsx'), read('apps/api/src/routes/system-config.ts'),
-  read('apps/api/src/routes/system-management.ts'), read('apps/api/src/lib/auth.ts'), read('apps/api/src/routes/auth.ts'),
+  readModuleSources(root, 'apps/api/src/routes/system-management.ts'), read('apps/api/src/lib/auth.ts'), read('apps/api/src/routes/auth.ts'),
   read('apps/api/src/lib/background-job-worker.ts'), read('apps/api/src/server.ts'), read('apps/api/src/lib/auth-security.test.ts'),
   read('docs/archive/源码缺陷审计与修复记录-v2.12.1-rc.1.md'),
 ]);

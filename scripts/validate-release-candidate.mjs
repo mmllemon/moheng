@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,7 +26,7 @@ const projectRoute = await read('apps/api/src/routes/projects.ts');
 const contractRoute = await read('apps/api/src/routes/contracts.ts');
 const changeRoute = await read('apps/api/src/routes/changes.ts');
 const downstreamRoute = await read('apps/api/src/routes/downstream-contracts.ts');
-const financeRoute = await read('apps/api/src/routes/downstream-finance.ts');
+const financeRoute = await readModuleSources(root, 'apps/api/src/routes/downstream-finance.ts');
 const settlementMath = await read('apps/api/src/lib/downstream-settlement-math.ts');
 const settlementMathTests = await read('apps/api/src/lib/downstream-settlement-math.test.ts');
 const financePage = await read('apps/web/src/pages/DownstreamFinancePage.tsx');
@@ -69,7 +70,7 @@ const animatedPresence = await read('apps/web/src/components/useAnimatedPresence
 const projectsPage = await read('apps/web/src/pages/ProjectsPage.tsx');
 const brandMark = await read('apps/web/src/components/BrandMark.tsx');
 const indexHtml = await read('apps/web/index.html');
-const layout = await read('apps/web/src/components/Layout.tsx');
+const layout = await readModuleSources(root, 'apps/web/src/components/Layout.tsx');
 const docNumber = await read('apps/api/src/lib/document-number.ts');
 const progressBillsPage = await read('apps/web/src/pages/ProgressBillsPage.tsx');
 const startWindows = await read('scripts/windows/start-windows.ps1');
@@ -391,7 +392,7 @@ check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer versi
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
   indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
   layout.includes('<strong>墨衡</strong>') && layout.includes('v2.19.0-rc.2') &&
-  loginPage.includes('<strong>墨衡</strong>') && !(await read('apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
+  loginPage.includes('<strong>墨衡</strong>') && !(await readModuleSources(root, 'apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
 check('navigation group captions are removed while visual divider and group regions remain',
   workspaceLayout.includes('cost-workspace-nav-separator') && workspaceLayout.includes('cost-workspace-nav-income') &&

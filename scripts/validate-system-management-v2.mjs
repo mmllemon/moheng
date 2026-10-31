@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { readModuleSources } from './lib/module-sources.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -9,7 +10,7 @@ function check(name, pass) { checks.push({ name, pass: Boolean(pass) }); }
 
 const [rootPackage, apiPackage, webPackage] = await Promise.all(['package.json', 'apps/api/package.json', 'apps/web/package.json'].map(async (p) => JSON.parse(await read(p))));
 const [appInfo, layout, app, systemPage, accountPage, authRoutes, authLib, server, apiClient, dashboard, userGuide, designDoc] = await Promise.all([
-  read('apps/api/src/platform/app-info.ts'), read('apps/web/src/components/Layout.tsx'), read('apps/web/src/App.tsx'),
+  read('apps/api/src/platform/app-info.ts'), readModuleSources(root, 'apps/web/src/components/Layout.tsx'), read('apps/web/src/App.tsx'),
   read('apps/web/src/pages/SystemManagementPage.tsx'), read('apps/web/src/pages/AccountSecurityPage.tsx'),
   read('apps/api/src/routes/auth.ts'), read('apps/api/src/lib/auth.ts'), read('apps/api/src/server.ts'),
   read('apps/web/src/api.ts'), read('apps/web/src/pages/DashboardPage.tsx'), read('docs/用户操作手册.md'),
