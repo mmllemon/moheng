@@ -20,7 +20,7 @@ const [decision, acceptance, rootPackage, apiPackage, webPackage, server, routes
 assert.equal(rootPackage.version, apiPackage.version, 'root/API versions must match');
 assert.equal(rootPackage.version, webPackage.version, 'root/Web versions must match');
 assert.match(server, /ASSISTANT_POC_ENABLED: z\.enum\(\['true', 'false'\]\)\.default\('false'\)/, 'server-side PoC flag must default to off');
-assert.match(routes, /if \(process\.env\.ASSISTANT_POC_ENABLED !== 'true'\)/, 'PoC route must be hidden unless explicitly enabled');
+assert.match(routes, /if \(!runtime\.enabled\)[\s\S]{0,120}'ROUTE_NOT_FOUND'/, 'PoC route must be hidden unless explicitly enabled');
 assert.match(routes, /preHandler: \[featureGate, authRequired\]/, 'PoC endpoints must require auth and feature gate');
 assert.match(registry, /id: 'assistant-poc'[\s\S]*?integrationVisible: false/, 'assistant PoC must stay hidden from the public integration catalog');
 assert.match(decision, /LangGraph\.js \+ PostgreSQL `PostgresSaver`/, 'the adopted next-stage runtime/storage path must be documented');

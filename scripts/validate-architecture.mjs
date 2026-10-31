@@ -29,10 +29,27 @@ check('all API route plugins are represented in the registry',
   existingRouteFiles.every((file) => registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) || (file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) || (integratedRouteFiles.has(file) && assistantPocRoutesSource.includes('assistantConversationRoutes(app)'))),
   existingRouteFiles.filter((file) => !registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) && !(file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) && !(integratedRouteFiles.has(file) && assistantPocRoutesSource.includes('assistantConversationRoutes(app)'))).join(', '));
 const moduleIds = [...registry.matchAll(/\{ id: '([^']+)'/g)].map((match) => match[1]);
-check('module catalog has unique stable IDs and the expected 19 registered modules',
-  moduleIds.length === 19 && new Set(moduleIds).size === moduleIds.length, `module IDs found: ${moduleIds.length}`);
-check('all module registrations declare mount prefix and integration visibility, while admin-only system management stays off integration catalog',
-  (registry.match(/mountPrefix: '\/api/g) ?? []).length === 19 && (registry.match(/integrationVisible: true/g) ?? []).length === 16 && /id: 'system-management'[\s\S]*?integrationVisible: false/.test(registry));
+// 原先这里硬编码 19 / 16 两个数，模块从 19 增到 21（workspace、project-artifacts）后
+// 门禁一直红着——新增模块的人没同步魔法数，而门禁不在 CI 也没人看见。
+// 改判为不随模块数漂移的结构不变量：模块条目数 == 顶层路由插件数（内联挂载者除外）；
+// 每个条目都声明 mountPrefix 与 integrationVisible；“不上集成目录”的集合必须与显式登记名单一致，
+// 新增隐藏模块必须在这里加一行，而不是靠总数对不上。
+const inlineMountedRouteFiles = new Set(['system-config.ts', ...integratedRouteFiles]);
+const routePluginCount = existingRouteFiles.filter((file) => !inlineMountedRouteFiles.has(file)).length;
+const INTEGRATION_HIDDEN_MODULE_IDS = ['assistant-poc', 'project-artifacts', 'system-config-read', 'system-management', 'workspace'];
+const hiddenIds = registry.split(/\r?\n/)
+  .filter((line) => line.includes('integrationVisible: false'))
+  .map((line) => (line.match(/\{ id: '([^']+)'/) ?? [])[1])
+  .filter(Boolean)
+  .sort();
+check('module catalog has unique stable IDs and one entry per registered route plugin',
+  moduleIds.length > 0 && new Set(moduleIds).size === moduleIds.length && moduleIds.length === routePluginCount,
+  `module IDs: ${moduleIds.length}, route plugins: ${routePluginCount}`);
+const mountPrefixCount = (registry.match(/mountPrefix: '\/api/g) ?? []).length;
+const visibilityDeclarations = (registry.match(/integrationVisible: (?:true|false)/g) ?? []).length;
+check('all module registrations declare mount prefix and integration visibility, while admin-only modules stay off the integration catalog',
+  mountPrefixCount === moduleIds.length && visibilityDeclarations === moduleIds.length && hiddenIds.join(',') === [...INTEGRATION_HIDDEN_MODULE_IDS].sort().join(','),
+  `mountPrefix=${mountPrefixCount}/${moduleIds.length}, visibility=${visibilityDeclarations}/${moduleIds.length}, hidden=[${hiddenIds.join(', ')}]`);
 check('module catalog exposes descriptive metadata without requiring extra services',
   registry.includes('export function getApiModuleCatalog') && registry.includes('integrationVisible') &&
   server.includes("app.get('/api/meta'") && server.includes('apiMajorVersion: API_MAJOR_VERSION'));

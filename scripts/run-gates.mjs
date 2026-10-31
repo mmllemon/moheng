@@ -10,10 +10,12 @@
 //   node scripts/run-gates.mjs --skip "assistant-"
 //
 // 分级规则（重要）：
-//   tier = 该门禁在基线 3feb702 + 本轮修复后的实测状态。
-//   blocking 的 16 条当前全绿，失败即应拦住 PR；
-//   advisory 的 19 条在基线就已红（既有债，逐项原因见 docs/门禁债务清单.md），
-//   先以 non-blocking 方式在 CI 里持续可见，修绿一条就升一级，避免一次性全红阻塞所有 PR。
+//   tier = 该门禁的实测状态。blocking 20 条当前全绿，失败即应拦住 PR；
+//   advisory 15 条仍是既有债（逐项原因见 docs/门禁债务清单.md），先以 non-blocking
+//   方式在 CI 里持续可见，修绿一条就升一级，避免一次性全红阻塞所有 PR。
+//   已修绿并升级为 blocking：architecture（改为不随模块数漂移的结构不变量）、
+//   assistant-runtime-decision / assistant-conversations / assistant-ui
+//   （断言改指向开关与助手按钮的现有归属，同时解除了它们遮蔽其后约 30 条断言的问题）。
 //   升 tier 时请在 reason 里说明该门禁为何现在必须保持绿。
 import { spawn } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
@@ -26,14 +28,10 @@ const GATES = [
   { name: 'source-bundle', cmd: 'node scripts/validate-source-bundle-completeness.mjs', tier: ADVISORY, reason: '封版记录里的 lock SHA 与当前 lock 不一致（基线 575F… 亦不等于期望 A6F8…）' },
   { name: 'document-links', cmd: 'node scripts/validate-document-links.mjs', tier: ADVISORY, reason: '6 个 Markdown 相对链接解析不到（基线同样 6 个）' },
   { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: ADVISORY, reason: '17 条断言基线即红（analysis/UI、workspace、dashboard 等真实产品债）' },
-  { name: 'assistant-runtime-decision', cmd: 'node scripts/validate-assistant-runtime-decision.mjs', tier: ADVISORY, reason: '门禁断言的 PoC 开关源码文本已迁往 assistant-config，断言本身过时' },
-  { name: 'assistant-conversations', cmd: 'node scripts/validate-assistant-conversations.mjs', tier: ADVISORY, reason: '同上：首条断言提前抛错，遮蔽其后约 30 条断言（CI 中最危险的红）' },
-  { name: 'assistant-ui', cmd: 'node scripts/validate-assistant-ui.mjs', tier: ADVISORY, reason: '同上：断言 assistant 入口的旧源码文本' },
   { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
   { name: 'report-studio', cmd: 'node scripts/validate-report-studio.mjs', tier: ADVISORY, reason: '2 条基线旧红（打印/响应式）' },
   { name: 'report-studio-v2', cmd: 'node scripts/validate-report-studio-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红（正式打印数据集、固定列宽）' },
   { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: ADVISORY, reason: '2 条基线旧红（报表/通知中心路由、reduced-motion）' },
-  { name: 'architecture', cmd: 'node scripts/validate-architecture.mjs', tier: ADVISORY, reason: '硬编码期望 19 模块，实际 21（workspace、project-artifacts 后加未同步）' },
   { name: 'typescript-fixes', cmd: 'node scripts/validate-typescript-fixes.mjs', tier: ADVISORY, reason: '1 条基线旧红（Lucide icon 类型与 Button small size）' },
   { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: ADVISORY, reason: '1 条基线旧红（hairline scrollbar 规格）' },
   { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: ADVISORY, reason: '缺双 target 基线产物，需本机/浏览器环境' },
@@ -60,6 +58,10 @@ const GATES = [
   { name: 'defect-audit-v2', cmd: 'node scripts/validate-defect-audit-v2.mjs', tier: BLOCKING },
   { name: 'assistant-safety-contract', cmd: 'node scripts/validate-assistant-safety-contract.mjs', tier: BLOCKING },
   { name: 'assistant-runtime-contracts', cmd: 'npm run test:assistant-runtime-contracts', tier: BLOCKING },
+  { name: 'architecture', cmd: 'node scripts/validate-architecture.mjs', tier: BLOCKING, reason: '已改为结构不变量（模块条目数==路由插件数、可见性名单显式登记），新增模块不会再让总数对不上而长红' },
+  { name: 'assistant-runtime-decision', cmd: 'node scripts/validate-assistant-runtime-decision.mjs', tier: BLOCKING, reason: '开关默认关与禁用时 404 属安全边界，必须保持绿' },
+  { name: 'assistant-conversations', cmd: 'node scripts/validate-assistant-conversations.mjs', tier: BLOCKING, reason: '此前首条断言提前抛错遮蔽约 30 条断言；解蔽后必须保持全绿，否则整段检查再次静默失效' },
+  { name: 'assistant-ui', cmd: 'node scripts/validate-assistant-ui.mjs', tier: BLOCKING, reason: '助手入口必须是标题栏全局模态按钮且默认不可见，属对外可见面约束' },
 ];
 
 function parseArgs(argv) {

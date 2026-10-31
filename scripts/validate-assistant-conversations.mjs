@@ -27,7 +27,10 @@ for (const endpoint of [
   "app.post('/conversations/:conversationId/archive'", "app.post('/conversations/:conversationId/messages'",
   "app.post('/conversations/:conversationId/runs/:runId/cancel'", "app.get('/conversations/:conversationId/runs/:runId/events'",
 ]) check(routes.includes(endpoint), `missing endpoint ${endpoint}`);
-check(pocRoutes.includes("process.env.ASSISTANT_POC_ENABLED !== 'true'"), 'assistant must remain feature-gated off by default');
+// 开关判断已从本文件里的 `!== 'true'` 内联写法，改为 featureGate 读 runtime.enabled（env→enabled
+// 的映射在 assistant-provider-config / assistant-config，并由 assistant-config.test.ts 与
+// auth-prehandler-regression.test.ts 断言“关闭时 404 + ROUTE_NOT_FOUND”）。守卫不变：默认不开启。
+check(pocRoutes.includes('if (!runtime.enabled)') && pocRoutes.includes("'ROUTE_NOT_FOUND'"), 'assistant must remain feature-gated off by default');
 check(pocRoutes.includes('await assistantConversationRoutes(app)'), 'conversation routes must stay under the hidden PoC module');
 check(pocRoutes.includes('await assistantConversationRoutes') && !pocRoutes.includes('integrationVisible: true'), 'PoC must not be published as a public module');
 check(routes.includes("preHandler: [featureGate, authRequired]"), 'session routes must require auth and the feature gate');
@@ -52,7 +55,11 @@ check(routes.includes('status: conversation.status'), 'conversation list must ex
 check(routes.includes("if (conversation.status !== 'ACTIVE')"), 'archived conversations cannot accept new messages');
 check(routes.includes("status: 'ACTIVE', project: { deletedAt: null }") && routes.indexOf('FOR UPDATE') < routes.indexOf("status: 'ACTIVE', project: { deletedAt: null }"), 'message submission rechecks active conversation status under the row lock');
 check(routes.includes('ASSISTANT_CONVERSATION_ARCHIVED') && routes.includes('ASSISTANT_RUNTIME_NOT_CONFIGURED'), 'archival race and runtime misconfiguration return explicit safe errors');
-check(routes.includes("import { isAssistantBaseUrlValid } from '../lib/assistant-config.js'") && routes.includes('!isAssistantBaseUrlValid(process.env.OPENAI_BASE_URL)'), 'message submission must reject an invalid optional model endpoint before enqueueing a run');
+// baseUrl 现在经 runtime 配置传入（源头仍是 env OPENAI_BASE_URL，见
+// assistant-provider-config.ts:68，且可以是按 provider 存的值），比直接读 env 更严格。
+// 基线已是同款写法，此条此前被前面早抛的断言遮蔽。保留“必须在入队前校验”的顺序语义。
+const baseUrlGuardAt = routes.indexOf('isAssistantBaseUrlValid(runtime.baseUrl)');
+check(routes.includes("import { isAssistantBaseUrlValid } from '../lib/assistant-config.js'") && baseUrlGuardAt >= 0 && baseUrlGuardAt < routes.indexOf('await enqueueBackgroundJob('), 'message submission must reject an invalid optional model endpoint before enqueueing a run');
 check(routes.includes('ASSISTANT_EVENT_CURSOR_AHEAD') && routes.includes('after > ownedRun.lastEventSequence'), 'SSE rejects a cursor that skips beyond the durable event stream');
 check(eventService.includes('lastEventSequence: { increment: 1 }') && eventService.includes('sequence: run.lastEventSequence'), 'run event sequence must be monotonic and transactionally allocated');
 check(jobHandler.includes("type: 'run.started'") && jobHandler.includes("type: 'run.completed'") && jobHandler.includes("type: 'run.failed'"), 'run lifecycle must publish durable events');

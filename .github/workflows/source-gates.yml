@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      # 已实测：16 条 blocking 门禁在不可达的 DATABASE_URL 下同样全绿，
+      # 已实测：全部 blocking 门禁在不可达的 DATABASE_URL 下同样全绿（条数见 run-gates.mjs，
       # 说明它们不连库。这里仍显式钉一个占位值，是为了让 apps/api/.env（CI 里不存在）
       # 不参与解释，同一份代码在本地与 CI 得出同一结论。
       DATABASE_URL: postgresql://ci.invalid:5432/ci_placeholder?schema=public
@@ -44,7 +44,7 @@ jobs:
     name: Advisory gates (known debt)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # 这 19 条在基线 3feb702 就已红（既有债，非本轮拆分引入）。先让它们在 CI 里
+    # 这批门禁在基线 3feb702 就已红（既有债，非本轮拆分引入，条数见清单）。先让它们在 CI 里
     # 持续可见：不拦 PR，但每次运行都输出债务明细，修绿一条就把该 gate 的 tier 升为 blocking。
     continue-on-error: true
     env:
