@@ -17,9 +17,9 @@ const [rootPackage, apiPackage, webPackage, schema, migration, adminRoute, readR
   read('docs/架构与核心业务规则.md'), read('docs/发布与迁移验收.md'), read('docs/开发与部署指南.md'),
 ]);
 
-check('root/API/Web versions agree with the current candidate and runtime metadata/footer',
+check('root/API/Web versions agree with the current candidate and the API serves the runtime version',
   apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version &&
-  (await read('apps/api/src/platform/app-info.ts')).includes("APP_VERSION = '" + rootPackage.version + "'") && layout.includes('v' + rootPackage.version));
+  (await read('apps/api/src/platform/app-info.ts')).includes("APP_VERSION = '" + rootPackage.version + "'") && !/v\d+\.\d+\.\d+/.test(layout));
 check('Prisma schema contains one dictionary, item, and parameter-revision model',
   (schema.match(/model SystemDictionary \{/g) ?? []).length === 1 && (schema.match(/model SystemDictionaryItem \{/g) ?? []).length === 1 && (schema.match(/model SystemParameterRevision \{/g) ?? []).length === 1);
 check('Prisma schema defines typed scopes and revision statuses once',

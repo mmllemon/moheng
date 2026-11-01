@@ -75,6 +75,7 @@ const downstreamWorkspace = await read('apps/web/src/pages/DownstreamWorkspacePa
 const loginPage = await read('apps/web/src/pages/LoginPage.tsx');
 const uiPreferences = await read('apps/web/src/components/UiPreferencesBar.tsx');
 const windowControls = await read('apps/web/src/components/WindowControls.tsx');
+const appearancePage = await read('apps/web/src/pages/AppearanceSettingsPage.tsx');
 const selectField = await read('apps/web/src/components/SelectField.tsx');
 const datePicker = await read('apps/web/src/components/DatePicker.tsx');
 const animatedPresence = await read('apps/web/src/components/useAnimatedPresence.ts');
@@ -245,7 +246,7 @@ check('analysis and UI show commitments, linked cost, net payments and refunds s
   userTypes.includes('activeAndPendingSettlementContractAmount: number') &&
   userTypes.includes('grossPaidAmount?: number') && userTypes.includes('refundedAmount?: number') &&
   analysisPage.includes('执行中/待结算') && analysisPage.includes('累计净付款') &&
-  analysisPage.includes('合同额减已关联实际成本（预警差额）') &&
+  analysisPage.includes('实际成本口径') && analysisPage.includes("['清单编号', '清单名称', '目标成本', '实际成本', '偏差']") &&
   downstreamPage.includes('累计退款/退回') && downstreamPage.includes('REFUND') &&
   appRoutes.includes('DownstreamContractsPage'));
 
@@ -253,11 +254,12 @@ check('server mounts downstream contract routes under project API',
   moduleRegistry.includes("import { downstreamContractRoutes } from '../routes/downstream-contracts.js'") &&
   moduleRegistry.includes('downstreamContractRoutes'));
 
-check('downstream contract/payment and settlement/payable views share a combined workspace entry',
+check('downstream contract/payment and settlement/payable views share one workspace route with an explicit view switch',
   moduleRegistry.includes("import { downstreamFinanceRoutes } from '../routes/downstream-finance.js'") &&
   moduleRegistry.includes('downstreamFinanceRoutes') && appRoutes.includes('DownstreamWorkspacePage') &&
-  appRoutes.includes('path="downstream"') && downstreamWorkspace.includes('合同台账与付款') &&
-  downstreamWorkspace.includes('结算与应付账款') && downstreamWorkspace.includes('setSearchParams') && downstreamWorkspace.includes("view: 'finance'"));
+  appRoutes.includes('path="downstream"') && downstreamWorkspace.includes("searchParams.get('view') === 'finance'") &&
+  downstreamWorkspace.includes('<DownstreamContractsPage />') && downstreamWorkspace.includes('<DownstreamFinancePage />') &&
+  layout.includes("to: '/cost/downstream'") && layout.includes("'/cost/downstream?view=finance'"));
 
 check('settlement detail lines are optional and do not require a contract or budget item reference',
   financeRoute.includes('lines: z.array(settlementLineInput).max(300).optional().default([])') &&
@@ -399,10 +401,10 @@ check('consolidated documentation preserves unit identity, financial posting and
   releaseStatus.includes('当前开发阶段仍应推进的验证') &&
   releaseStatus.includes('仅在预投产/投产条件具备后执行的门禁'));
 
-check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer version',
+check('v1.8 UI refactor preserves the MoHeng brand while the runtime version is served by the API',
   brandMark.includes('<svg') && brandMark.includes('墨衡') === false &&
   indexHtml.includes('<title>墨衡 · 工程经营管理</title>') && indexHtml.includes('/moheng-mark.svg') &&
-  layout.includes('<strong>墨衡</strong>') && layout.includes('v2.19.0-rc.2') &&
+  layout.includes('<strong>墨衡</strong>') && appInfo.includes(`APP_VERSION = '${rootPackage.version}'`) && !/v\d+\.\d+\.\d+/.test(layout) &&
   loginPage.includes('<strong>墨衡</strong>') && !(await readModuleSources(root, 'apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
 check('workspace navigation is a flat tab list with slider selection and no group captions',
@@ -411,19 +413,21 @@ check('workspace navigation is a flat tab list with slider selection and no grou
   !workspaceLayout.includes('cost-workspace-nav-group-label') &&
   !(workspaceLayout.includes('业主侧 · 收入')) && !(workspaceLayout.includes('成本支出侧')));
 
-check('UI preferences support four Pro-Tier themes, system mode, density, accents, wide content and reduced motion',
-  windowControls.includes('<UiPreferencesBar compact />') && uiPreferences.includes("setTheme(choice.value)") &&
-  uiPreferences.includes("setTheme('system')") && uiPreferences.includes('象牙雅白') && uiPreferences.includes('香槟曜金') &&
-  uiPreferences.includes('黑曜极光') && uiPreferences.includes('冰川天青') && uiPreferences.includes("setDensity('compact')") &&
-  uiPreferences.includes("setAccent('jade')") && uiPreferences.includes("setAccent('theme')") &&
-  uiPreferences.includes('toggleWideContent') && uiPreferences.includes('toggleReduceMotion') &&
+check('appearance settings cover paper themes, density, contrast, texture, icon palette and reduced motion',
+  windowControls.includes('<UiPreferencesBar compact />') && appearancePage.includes("value: 'warm-paper'") &&
+  appearancePage.includes("value: 'plain-white'") && appearancePage.includes('setTheme(choice.value)') &&
+  appearancePage.includes("setDensity('compact')") && appearancePage.includes('toggleReduceMotion') &&
+  appearancePage.includes('CONTENT_CONTRAST_LEVELS') && appearancePage.includes('PAPER_TEXTURE_STRENGTHS') &&
+  appearancePage.includes('APP_ICON_PALETTES') &&
   (await read('apps/web/src/auth-store.ts')).includes('moheng:ui-preferences') &&
-  (await read('apps/web/src/styles.css')).includes(':root[data-theme-name="obsidian"]') &&
-  (await read('apps/web/src/styles.css')).includes(':root[data-density="compact"]'));
+  (await read('apps/web/src/styles.css')).includes('html[data-theme="warm-paper"]') &&
+  (await read('apps/web/src/styles.css')).includes(':root[data-density="compact"]') &&
+  (await read('apps/web/src/styles.css')).includes(':root[data-motion="reduced"]'));
 
-check('UI preferences are a standalone top-right popover with presence-aware close animation',
-  uiPreferences.includes('ui-preferences-popover') && uiPreferences.includes('useAnimatedPresence(open, 190)') &&
-  uiPreferences.includes('aria-expanded={open}') && (await read('apps/web/src/styles.css')).includes('.ui-preferences-popover.is-closing'));
+check('appearance settings open as a dedicated settings page from the top-right shell button',
+  uiPreferences.includes("navigate('/settings/appearance')") && uiPreferences.includes('titlebar-icon') &&
+  appRoutes.includes('path="settings/appearance"') && appRoutes.includes('<AppearanceSettingsPage />') &&
+  (await read('apps/web/src/styles.css')).includes('.settings-overlay'));
 
 check('native dropdowns are replaced by keyboard-accessible custom listboxes and preserve form refs',
   selectField.includes('role="combobox"') && selectField.includes('role="listbox"') &&

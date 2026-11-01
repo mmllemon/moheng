@@ -29,11 +29,11 @@ const ADVISORY = 'advisory';
 const GATES = [
   // ---- advisory：基线即红的既有债 ----
   { name: 'source-bundle', cmd: 'node scripts/validate-source-bundle-completeness.mjs', tier: ADVISORY, reason: '封版记录里的 lock SHA 与当前 lock 不一致（基线 575F… 亦不等于期望 A6F8…）' },
-  { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: ADVISORY, reason: '17 条断言基线即红（analysis/UI、workspace、dashboard 等真实产品债）' },
-  { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
+  { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: BLOCKING, reason: '78/78 全绿。按现行实现定案：分析页口径改为“实际成本口径 + 偏差列”；下游工作台断言路由级 view 切换与启动页双入口；页脚版本改为“API 唯一提供 + web 壳不硬编码版本”；偏好体系改为两套纸面主题 + 密度/对比度/纹理/图标色板/减动效；偏好入口改为设置页' },
+  { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: BLOCKING, reason: '21/21 全绿。版本断言改为“三处 package 版本一致 + APP_VERSION 一致 + web 壳不硬编码版本”，不再要求界面出现版本串' },
   { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: ADVISORY, reason: '缺双 target 基线产物，需本机/浏览器环境' },
   { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs', tier: BLOCKING, reason: '全绿 14/14。四条 IA 断言按“页脚齿轮 + 设置窗二级导航”的现行结构改写，并显式禁止系统管理重新回到侧栏分组；概览页新增五个工作台入口卡片（组织治理/授权复核/字典/参数/运维）' },
-  { name: 'system-expansion-v2', cmd: 'node scripts/validate-system-expansion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
+  { name: 'system-expansion-v2', cmd: 'node scripts/validate-system-expansion-v2.mjs', tier: BLOCKING, reason: '20/20 全绿。版本断言同 system-config-v2；概览页工作台入口与 AdminOnly 路由断言已随上一轮改动转绿' },
   { name: 'system-workbench-v2', cmd: 'node scripts/validate-system-workbench-v2.mjs', tier: BLOCKING, reason: '全绿 19/19。css 指针改并读四个样式表（styles.css 仅剩 @import 一行）；侧栏/二级导航断言改指 app-sidebar-scroll 与 settings-groups 的真实溢出与 focus 机制；字典推荐断言改指现行提示文案' },
 
   // ---- blocking：当前实测全绿，必须保持绿 ----

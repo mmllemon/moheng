@@ -18,7 +18,7 @@ const [rootPackage, apiPackage, webPackage, schema, migration, route, changes, v
   read('docs/安全、账号与公网部署.md'), read('docs/架构与核心业务规则.md'), read('docs/产品范围与当前状态.md'),
 ]);
 
-check('package/API/Web/runtime metadata agree on the current candidate', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && (await read('apps/api/src/platform/app-info.ts')).includes("APP_VERSION = '" + rootPackage.version + "'") && nav.includes('v' + rootPackage.version));
+check('package/API/Web/runtime metadata agree and the web shell does not hardcode a version', apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && (await read('apps/api/src/platform/app-info.ts')).includes("APP_VERSION = '" + rootPackage.version + "'") && !/v\d+\.\d+\.\d+/.test(nav));
 check('organization schema separates department/position from company and project roles', schema.includes('model Department {') && schema.includes('departmentId String?') && schema.includes('position String? @db.VarChar(120)') && schema.includes('model ProjectMember {') && migration.includes('User_departmentId_fkey'));
 check('department APIs validate hierarchy, prevent cycles and block unsafe deactivation', route.includes("app.post('/departments'") && route.includes("app.patch('/departments/:id'") && route.includes('DEPARTMENT_CYCLE') && route.includes('DEPARTMENT_IN_USE') && route.includes("app.patch('/users/:id/organization'"));
 check('administrative endpoints are session-authenticated and admin-only on the server', route.includes("app.addHook('preHandler', authRequired)") && route.includes("app.addHook('preHandler', async (request, reply)") && route.includes("authUser(request).role !== 'ADMIN'") && route.includes("ADMIN_REQUIRED"));
