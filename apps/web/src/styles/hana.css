@@ -157,6 +157,10 @@
        640 / 720 / 800 / unlimited
      默认 720。这里用 data-page-width 属性切换。 */
   --page-column-measure: var(--page-column-width);
+  /* 页面顶部净空：顶栏是 absolute 且 z-index 50，正文必须让开它的高度。
+     各处一律读这个变量，不再硬编码（成本工作台曾写成 20px，
+     导致七个页面的页头与右侧按钮被顶栏压住、落在岛上时还点不到）。 */
+  --page-top-clearance: calc(var(--titlebar-h, 44px) + var(--space-12));
 
   --duration-instant: 0.1s;
   --duration-fast: 0.15s;
@@ -1676,7 +1680,7 @@ html .window-controls-island .titlebar-avatar {
      所以用容器查询：页面内部需要更宽时自动放宽到满宽。 */
   width: 100%;
   margin: 0 auto;
-  padding: 56px 28px 44px;
+  padding: var(--page-top-clearance) 28px 44px;
   animation: none;
 }
 /* 单列阅读型：默认吃列宽四档 */
@@ -1689,7 +1693,7 @@ html .window-controls-island .titlebar-avatar {
    这样两处同时生效，标题不会和正文脱节。 */
 /* 只给真正的双栏布局放宽：列表+详情、设计器+预览、表格+侧栏。
    表格页不再整页放宽——收窄后 .table-scroll 会在列内横向滚动，
-   这样「内容宽度」四档对缩大多数页面才是一致生效的。 */
+   这样「内容宽度」四档对绝大多数页面才是一致生效的。 */
 .app-content:has(.projects-ledger-layout),
 .app-content:has(.report-studio-layout),
 .app-content:has(.costs-layout) {
@@ -3374,7 +3378,7 @@ html .filter-bar input[type="search"] {
   display: none !important;
   content: none !important;
 }
-.cost-workspace-content .page-wrap { padding-top: 20px; padding-bottom: 120px; }
+.cost-workspace-content .page-wrap { padding-top: var(--page-top-clearance); padding-bottom: 120px; }
 
 /* =============================================================
    外观菜单

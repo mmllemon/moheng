@@ -192,20 +192,28 @@ html .ds-section-card .owner-finance-metrics {
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   border-radius: 0;
-  /* 分隔线走 1px 间隙而不是逐项 border-left：
-     就算真的折行，行与行之间也有线，不会出现“掉下来的那项带一根孤零零的左线”。 */
-  gap: 1px;
-  background: color-mix(in srgb, var(--border) 66%, transparent);
+  /* 指标区直接落在纸面上：不进卡片，只保留上下两条极淡分隔线，
+     项间用 1px 竖线。上面已是单行等分，不会再折行，
+     所以竖线用 border-left 即可，不需要间隙着色。 */
+  gap: 0;
+  background: transparent;
 }
 html .ds-section-card .downstream-summary-grid > .change-summary,
 html .ds-section-card .change-summary-grid > .change-summary,
 html .ds-section-card .bill-summary-grid > *,
 html .ds-section-card .owner-finance-metrics > * {
   border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
   border-radius: 0;
-  background: var(--bg-card);
+  background: transparent;
   /* 旧的两列布局留下的 span 2 会在这里把第 4 项撑成双倍宽，复位。 */
   grid-column: auto;
+}
+html .ds-section-card .downstream-summary-grid > :first-child,
+html .ds-section-card .change-summary-grid > :first-child,
+html .ds-section-card .bill-summary-grid > :first-child,
+html .ds-section-card .owner-finance-metrics > :first-child {
+  border-left: 0;
 }
 /* downstream 里旧规则的 21px 数值要拉回 26px */
 html .downstream-summary-grid .change-summary strong {
@@ -943,13 +951,15 @@ html .ds-section-card:has(> .bill-summary-grid),
 html .ds-section-card:has(> .owner-finance-metrics),
 html .ds-section-card:has(> .security-metrics),
 html .ds-section-card:has(> .system-overview-metrics) {
+  /* 方案 A：指标区不进卡片。区块卡只承担“承载”角色：
+     去掉边框、圆角、底色与裁切，让指标区直接落在纸面上
+     （本文件开头的规范：容器和子项都不画卡，指标区一律画卡就变成“一张卡装 N 项”）。 */
   padding: 0;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  corner-shape: squircle;
-  background: var(--bg-card);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
 }
 /* 指标区在区块卡里时，上下分隔线已由指标区自己画，不再重复 */
 html .ds-section-card > .change-summary-grid,
