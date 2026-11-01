@@ -438,8 +438,8 @@ check('native date popups are replaced by a custom bounded calendar with keyboar
 
 check('project portfolio hides redundant project switcher, presents sourced operating summaries, and animates modal exit',
   layout.includes("['/notifications', '/projects', '/projects/members']") && layout.includes('{!isGlobalContext && activeProject && (') && projectsPage.includes('当前有效合同额合计') &&
-  projectsPage.includes('snapshot?.targetCost') && projectsPage.includes('snapshot?.actualCost') &&
-  projectsPage.includes('snapshot?.receivedAmount') && projectsPage.includes('project-modal-backdrop') &&
+  projectsPage.includes('selectedSnapshot.targetCost') && projectsPage.includes('selectedSnapshot.actualCost') &&
+  projectsPage.includes('receivedAmount: number') && projectsPage.includes('project-modal-backdrop') &&
   projectsPage.includes('closeWithMotion') && (await read('apps/web/src/styles.css')).includes('@keyframes projectDialogEnter'));
 
 check('presence helper and overlay animation states support smooth entry/exit transitions',
