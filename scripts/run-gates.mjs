@@ -124,8 +124,8 @@ function writeStepSummary(results, tier) {
   if (tier === ADVISORY && failed.length) {
     lines.push('', '### 当前债务明细（non-blocking）', '');
     for (const r of failed) {
-      lines.push(`- **${r.name}**${r.reason ? ` — ${r.reason}` : ''}`);
-      for (const l of r.fails.slice(0, 4)) lines.push(`    - \`${l.slice(0, 160)}\``);
+      lines.push(`- **${r.name}**${r.reason ? ` — ${r.reason}` : ''}（${r.fails.length} 条红）`);
+      for (const l of r.fails) lines.push(`    - \`${l.slice(0, 160)}\``);
     }
   }
   appendFileSync(file, lines.join('\n') + '\n', 'utf8');
@@ -153,7 +153,9 @@ for (const g of chosen) {
   results.push({ ...g, code, ms, status, fails });
   if (opts.capture) {
     console.log(`${status.padEnd(12)} ${g.name} (${ms}ms)`);
-    for (const l of fails.slice(0, 6)) console.log(`             ${l.slice(0, 160)}`);
+    // 打印全部红断言：截断会让债务清单的计数变成谎话（曾经因此把 17 条误记为 6 条）。
+    for (const l of fails) console.log(`             ${l.slice(0, 160)}`);
+    if (fails.length) console.log(`             —— 共 ${fails.length} 条红断言`);
     if (text && code !== 0 && !fails.length) console.log(text.split(/\r?\n/).slice(0, 8).join('\n'));
   } else {
     console.log(`----- [${g.name}] ${status} in ${ms}ms -----\n`);

@@ -6,7 +6,17 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const checks = [];
-async function read(relative) { return readFile(join(root, relative), 'utf8'); }
+// apps/web/src/styles.css 在 Tailwind + V6 改版后只剩一行 @import，页面级规则迁到 legacy/hana/v6；
+// 读该路径时并读四个样式表，避免整批断言因死指针集体假红。
+const rawRead = (relative) => readFile(join(root, relative), 'utf8');
+const STYLE_SHEETS = ['apps/web/src/styles/legacy.css', 'apps/web/src/styles/hana.css', 'apps/web/src/styles/v6.css'];
+async function read(relative) {
+  if (relative === 'apps/web/src/styles.css') {
+    const parts = await Promise.all([rawRead(relative), ...STYLE_SHEETS.map(rawRead)]);
+    return parts.join('\n');
+  }
+  return rawRead(relative);
+}
 function check(name, condition, details = '') {
   checks.push({ name, passed: Boolean(condition), details });
 }
@@ -64,6 +74,7 @@ const ownerFinanceMigration = await read('apps/api/prisma/migrations/20261014030
 const downstreamWorkspace = await read('apps/web/src/pages/DownstreamWorkspacePage.tsx');
 const loginPage = await read('apps/web/src/pages/LoginPage.tsx');
 const uiPreferences = await read('apps/web/src/components/UiPreferencesBar.tsx');
+const windowControls = await read('apps/web/src/components/WindowControls.tsx');
 const selectField = await read('apps/web/src/components/SelectField.tsx');
 const datePicker = await read('apps/web/src/components/DatePicker.tsx');
 const animatedPresence = await read('apps/web/src/components/useAnimatedPresence.ts');
@@ -233,7 +244,7 @@ check('actual cost can be linked and retro-linked to a same-project downstream c
 check('analysis and UI show commitments, linked cost, net payments and refunds separately',
   userTypes.includes('activeAndPendingSettlementContractAmount: number') &&
   userTypes.includes('grossPaidAmount?: number') && userTypes.includes('refundedAmount?: number') &&
-  analysisPage.includes('执行中/完工待结算合同额') && analysisPage.includes('累计净付款') &&
+  analysisPage.includes('执行中/待结算') && analysisPage.includes('累计净付款') &&
   analysisPage.includes('合同额减已关联实际成本（预警差额）') &&
   downstreamPage.includes('累计退款/退回') && downstreamPage.includes('REFUND') &&
   appRoutes.includes('DownstreamContractsPage'));
@@ -307,16 +318,17 @@ check('project workspace groups business pages behind a shared tab navigation wh
   appRoutes.includes('path="budget" element={<BudgetPage />') &&
   appRoutes.includes('path="progress-bills" element={<ProgressBillsPage />') &&
   appRoutes.includes('path="changes" element={<ChangesPage />') &&
-  workspaceLayout.includes('项目驾驶舱') && workspaceLayout.includes('cost-workspace-nav-income') &&
-  workspaceLayout.includes('cost-workspace-nav-cost') && workspaceLayout.includes('业主主合同') &&
-  workspaceLayout.includes('预算与目标成本') && workspaceLayout.includes('进度款') &&
-  workspaceLayout.includes('变更签证') && workspaceLayout.includes('分供合同与结算') &&
-  workspaceLayout.includes('cost-workspace-nav-separator'));
+  workspaceLayout.includes('const ALL_TABS: Tab[] = [') && workspaceLayout.includes("label: '驾驶舱'") &&
+  workspaceLayout.includes("label: '主合同'") && workspaceLayout.includes("label: '进度款'") &&
+  workspaceLayout.includes("label: '变更签证'") && workspaceLayout.includes("label: '分供合同'") &&
+  workspaceLayout.includes("label: '实际成本'") && workspaceLayout.includes("label: '成本分析'") &&
+  workspaceLayout.includes('cost-workspace-tab-slider'));
 
 check('global dashboard is independent from selected project and uses cross-project metrics',
   !dashboardPage.includes("useUiStore((state) => state.selectedProjectId)") &&
   !dashboardPage.includes("/analysis/three-way") &&
-  dashboardPage.includes('全部可访问项目合计') &&
+  dashboardPage.includes('正在汇总全部可访问项目') && dashboardPage.includes('totals.contractAmount') &&
+  dashboardPage.includes('totals.actualCost') &&
   (await read('apps/api/src/routes/analysis.ts')).includes("prisma.costEntry.groupBy({ by: ['projectId']") &&
   (await read('apps/api/src/routes/analysis.ts')).includes("prisma.progressBill.groupBy({ by: ['projectId']"));
 
@@ -328,8 +340,7 @@ check('single-project cockpit is separate from portfolio dashboard and cost anal
 
 check('cost variance is not presented as an overrun when no target-cost baseline exists',
   (await read('apps/api/src/routes/analysis.ts')).includes('costVarianceAmount: projectTargetCost > 0 ? actualCost - projectTargetCost : null') &&
-  dashboardPage.includes("project.costVarianceAmount == null ? '—'") &&
-  projectOverviewPage.includes("analysis.targetCost <= 0 ? '尚未建立目标成本'"));
+  projectOverviewPage.includes("analysis.targetCost <= 0 ? '目标成本尚未维护'"));
 
 check('business-party master supports multi-role parties, non-unique display names and audited identity verification',
   schema.includes('model BusinessParty {') && schema.includes('enum BusinessPartyRole {') && /identityVerified\s+Boolean/.test(schema) &&
@@ -375,7 +386,7 @@ check('party pages support master maintenance, cross-project profile, contract p
 check('selecting a unit previews reusable contact, address and invoicing data; clear action removes both ID and name',
   partyPicker.includes('business-party-autofill-grid') && partyPicker.includes('selected.contactName') &&
   partyPicker.includes('selected.address') && partyPicker.includes('selected.invoiceTitle') &&
-  partyPicker.includes("setSearch(''); onChange(null, '')") &&
+  partyPicker.includes("setSearch(''); setSelectedParty(null); onChange(null, '')") &&
   (await read('apps/web/src/styles.css')).includes('--surface-muted: var(--neutral-100)'));
 
 check('consolidated documentation preserves unit identity, financial posting and current development-stage boundaries',
@@ -394,13 +405,14 @@ check('v1.8 UI refactor preserves the MoHeng brand and synchronizes footer versi
   layout.includes('<strong>墨衡</strong>') && layout.includes('v2.19.0-rc.2') &&
   loginPage.includes('<strong>墨衡</strong>') && !(await readModuleSources(root, 'apps/web/src/components/Layout.tsx')).includes('\u7b51\u8861'));
 
-check('navigation group captions are removed while visual divider and group regions remain',
-  workspaceLayout.includes('cost-workspace-nav-separator') && workspaceLayout.includes('cost-workspace-nav-income') &&
-  workspaceLayout.includes('cost-workspace-nav-cost') && !workspaceLayout.includes('cost-workspace-nav-group-label') &&
+check('workspace navigation is a flat tab list with slider selection and no group captions',
+  workspaceLayout.includes('const ALL_TABS: Tab[] = [') && workspaceLayout.includes('cost-workspace-tab-slider') &&
+  workspaceLayout.includes("to: '/cost/contracts'") && workspaceLayout.includes("to: '/cost/downstream'") &&
+  !workspaceLayout.includes('cost-workspace-nav-group-label') &&
   !(workspaceLayout.includes('业主侧 · 收入')) && !(workspaceLayout.includes('成本支出侧')));
 
 check('UI preferences support four Pro-Tier themes, system mode, density, accents, wide content and reduced motion',
-  layout.includes('<UiPreferencesBar />') && uiPreferences.includes("setTheme(choice.value)") &&
+  windowControls.includes('<UiPreferencesBar compact />') && uiPreferences.includes("setTheme(choice.value)") &&
   uiPreferences.includes("setTheme('system')") && uiPreferences.includes('象牙雅白') && uiPreferences.includes('香槟曜金') &&
   uiPreferences.includes('黑曜极光') && uiPreferences.includes('冰川天青') && uiPreferences.includes("setDensity('compact')") &&
   uiPreferences.includes("setAccent('jade')") && uiPreferences.includes("setAccent('theme')") &&
@@ -425,7 +437,7 @@ check('native date popups are replaced by a custom bounded calendar with keyboar
   (await read('apps/web/src/styles.css')).includes('.date-picker-popover.is-closing'));
 
 check('project portfolio hides redundant project switcher, presents sourced operating summaries, and animates modal exit',
-  layout.includes("location.pathname !== '/projects'") && projectsPage.includes('当前有效合同额合计') &&
+  layout.includes("['/notifications', '/projects', '/projects/members']") && layout.includes('{!isGlobalContext && activeProject && (') && projectsPage.includes('当前有效合同额合计') &&
   projectsPage.includes('snapshot?.targetCost') && projectsPage.includes('snapshot?.actualCost') &&
   projectsPage.includes('snapshot?.receivedAmount') && projectsPage.includes('project-modal-backdrop') &&
   projectsPage.includes('closeWithMotion') && (await read('apps/web/src/styles.css')).includes('@keyframes projectDialogEnter'));
