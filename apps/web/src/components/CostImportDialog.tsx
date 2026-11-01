@@ -9,7 +9,7 @@ type PreviewRow = {
   rowNumber: number;
   valid: boolean;
   errors: string[];
-  data?: { date: string; type: string; description: string; amount: number; contractNo: string | null; budgetItemCode: string | null; partyName: string | null };
+  data?: { date: string; type: string; description: string; amount: number; taxRate?: number | null; taxAmount?: number | null; contractNo: string | null; budgetItemCode: string | null; partyName: string | null };
 };
 type PreviewResult = {
   rows: PreviewRow[];
@@ -127,13 +127,14 @@ export default function CostImportDialog({ projectId, onClose, onImported }: {
 
         {preview && <div className="import-preview-wrap">
           <table className="data-table">
-            <thead><tr><th>行号</th><th>日期</th><th>类型</th><th>费用说明</th><th className="align-right">金额(元)</th><th>关联</th><th>校验</th></tr></thead>
+            <thead><tr><th>行号</th><th>日期</th><th>类型</th><th>费用说明</th><th className="align-right">金额(元)</th><th className="align-right">税率</th><th>关联</th><th>校验</th></tr></thead>
             <tbody>{preview.rows.slice(0, 200).map((row) => <tr className={row.valid ? '' : 'import-row-error'} key={row.rowNumber}>
               <td>{row.rowNumber}</td>
               <td>{row.data?.date ?? '—'}</td>
               <td>{row.data ? TYPE_LABELS[row.data.type] ?? row.data.type : '—'}</td>
               <td>{row.data?.description ?? '—'}</td>
               <td className="align-right">{row.data ? row.data.amount.toFixed(2) : '—'}</td>
+              <td className="align-right">{row.data?.taxRate != null ? `${row.data.taxRate}%` : '—'}</td>
               <td>{[row.data?.contractNo, row.data?.budgetItemCode, row.data?.partyName].filter(Boolean).join(' / ') || '—'}</td>
               <td>{row.valid ? '通过' : row.errors.join('；')}</td>
             </tr>)}</tbody>

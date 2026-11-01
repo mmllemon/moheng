@@ -15,6 +15,7 @@ export const COST_IMPORT_COLUMNS: ImportColumn[] = [
   { header: '类型', width: 12 },
   { header: '费用说明', width: 34 },
   { header: '金额(元)', width: 16, numFmt: '#,##0.00' },
+  { header: '税率(%)', width: 12, numFmt: '0.00' },
   { header: '税额(元)', width: 14, numFmt: '#,##0.00' },
   { header: '关联清单编号', width: 18, numFmt: '@' },
   { header: '分供合同编号', width: 20, numFmt: '@' },
@@ -35,8 +36,9 @@ export const COST_IMPORT_TEMPLATE: ImportTemplateSpec = {
     ['日期', '必填，格式 2026-10-31 或 2026/10/31；系统按发生日期入账。'],
     ['类型', '必填，可填中文（人工 / 材料 / 机械 / 分包 / 间接费用）或枚举名（LABOR / MATERIAL / MACHINE / SUBCONTRACT / INDIRECT）。'],
     ['费用说明', '必填，最多 240 字，写清这笔钱花在什么上。'],
-    ['金额(元)', '必填，非负数。金额口径与页面录入一致，不自动拆分税额。'],
-    ['税额(元)', '可空；填写时作为记录字段保存，不参与金额运算。'],
+    ['金额(元)', '必填，非负数。**所有金额按含税金额（价税合计）填写**，系统不把金额拆成含税与不含税两笔。'],
+    ['税率(%)', '可空；填 13、9、6、3、1、0 这类百分数，最多两位小数。只填税率时系统自动反算税额。'],
+    ['税额(元)', '可空；填写时作为记录字段保存。与税率同时填写时会校验一致性，偏差超过 1 分则整行报错。'],
     ['关联清单编号', '可空；填目标成本清单里的“清单编号”，必须属于当前项目。'],
     ['分供合同编号', '可空；填分供合同编号。草稿或已终止合同不接受导入，需先在系统内处理合同状态。'],
     ['往来单位', '可空；按单位全称精确匹配。同时填分供合同时，单位必须是该合同的相对方。'],
@@ -61,6 +63,7 @@ const HEADER_ALIASES: Record<string, string> = {
   类型: 'type', 成本类型: 'type',
   费用说明: 'description', 说明: 'description',
   金额: 'amount', 金额元: 'amount', 发生金额: 'amount',
+  税率: 'taxRate', 税率百分数: 'taxRate', 税率pct: 'taxRate',
   税额: 'taxAmount', 税额元: 'taxAmount',
   关联清单编号: 'budgetItemCode', 清单编号: 'budgetItemCode',
   分供合同编号: 'contractNo', 合同编号: 'contractNo',
@@ -78,6 +81,7 @@ export type ParsedCostRowData = {
   type: string;
   description: string;
   amount: number;
+  taxRate: number | null;
   taxAmount: number | null;
   budgetItemCode: string | null;
   contractNo: string | null;
@@ -97,7 +101,7 @@ export type ParsedCostRow = {
   data?: ParsedCostRowData;
 };
 
-const normalizeHeader = (value: string) => value.replace(/[\s_（）()]/g, '').toLocaleLowerCase();
+const normalizeHeader = (value: string) => value.replace(/[\s_（）()%％]/g, '').toLocaleLowerCase();
 
 function parseDate(value: string): string | null {
   const text = value.trim().replace(/\//g, '-');
@@ -167,6 +171,11 @@ export function parseCostImportRows(headers: string[], rows: string[][]): { rows
     else if (amount == null) errors.push(`金额“${rawAmount}”不是有效数字`);
     else if (amount <= 0) errors.push('金额必须大于 0');
 
+    const rawTaxRate = cell(values, 'taxRate');
+    const taxRate = rawTaxRate ? parseNumber(rawTaxRate, 2) : null;
+    if (rawTaxRate && taxRate == null) errors.push(`税率“${rawTaxRate}”不是有效数字`);
+    if (taxRate != null && (taxRate < 0 || taxRate > 100)) errors.push('税率需在 0 到 100 之间');
+
     const rawTax = cell(values, 'taxAmount');
     const taxAmount = rawTax ? parseNumber(rawTax, 2) : null;
     if (rawTax && taxAmount == null) errors.push(`税额“${rawTax}”不是有效数字`);
@@ -192,6 +201,7 @@ export function parseCostImportRows(headers: string[], rows: string[][]): { rows
           type: type as string,
           description,
           amount: amount as number,
+          taxRate,
           taxAmount,
           budgetItemCode: cell(values, 'budgetItemCode') || null,
           contractNo: cell(values, 'contractNo') || null,

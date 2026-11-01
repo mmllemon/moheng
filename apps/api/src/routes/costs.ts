@@ -8,12 +8,14 @@ import { canAccessProject, denyIfNoProjectAccess } from '../lib/project-access.j
 import { nonNegativeMoney, positiveMoney } from '../lib/validation.js';
 import { ImportXlsxError, buildImportTemplate, decodeXlsxUpload, inspectImportWorkbook } from '../lib/tabular-import.js';
 import { COST_IMPORT_SHEET, COST_IMPORT_TEMPLATE, assertImportable, parseCostImportRows, type ParsedCostRow, type ParsedCostRowData } from '../lib/cost-import.js';
+import { resolveCostTax } from '../lib/cost-tax.js';
 
 const costInput = z.object({
   type: z.nativeEnum(CostType),
   date: z.iso.datetime(),
   amount: positiveMoney,
   taxAmount: nonNegativeMoney.optional().nullable(),
+  taxRate: z.number().min(0).max(100).optional().nullable(),
   budgetItemId: z.string().optional().nullable(),
   downstreamContractId: z.string().optional().nullable(),
   businessPartyId: z.string().optional().nullable(),
@@ -28,7 +30,7 @@ const costInput = z.object({
 });
 
 function serialise(entry: any) {
-  return { ...entry, amount: Number(entry.amount), taxAmount: entry.taxAmount == null ? null : Number(entry.taxAmount), quantity: entry.quantity == null ? null : Number(entry.quantity), unitPrice: entry.unitPrice == null ? null : Number(entry.unitPrice) };
+  return { ...entry, amount: Number(entry.amount), taxAmount: entry.taxAmount == null ? null : Number(entry.taxAmount), taxRate: entry.taxRate == null ? null : Number(entry.taxRate), quantity: entry.quantity == null ? null : Number(entry.quantity), unitPrice: entry.unitPrice == null ? null : Number(entry.unitPrice) };
 }
 
 export async function costRoutes(app: FastifyInstance) {
@@ -53,6 +55,8 @@ export async function costRoutes(app: FastifyInstance) {
     if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'ACTUAL_COST_WRITE')) return;
     const parsed = costInput.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '成本记录填写有误', parsed.error.flatten());
+    const tax = resolveCostTax({ amount: parsed.data.amount, taxAmount: parsed.data.taxAmount ?? null, taxRate: parsed.data.taxRate ?? null });
+    if (!tax.ok) return failure(reply, 400, 'COST_TAX_INCONSISTENT', tax.message);
     if (parsed.data.budgetItemId) {
       const item = await prisma.budgetItem.findFirst({ where: { id: parsed.data.budgetItemId, projectId, deletedAt: null }, select: { id: true } });
       if (!item) return failure(reply, 400, 'BUDGET_ITEM_INVALID', '关联清单项不存在或不属于当前项目');
@@ -72,7 +76,7 @@ export async function costRoutes(app: FastifyInstance) {
     const entry = await prisma.$transaction(async (tx) => {
       const created = await tx.costEntry.create({ data: {
         projectId, type: parsed.data.type, date: new Date(parsed.data.date), amount: String(parsed.data.amount),
-        taxAmount: parsed.data.taxAmount == null ? null : String(parsed.data.taxAmount), budgetItemId: parsed.data.budgetItemId ?? null,
+        taxAmount: tax.value.taxAmount == null ? null : String(tax.value.taxAmount), taxRate: tax.value.taxRate == null ? null : String(tax.value.taxRate), budgetItemId: parsed.data.budgetItemId ?? null,
         description: parsed.data.description, downstreamContractId: parsed.data.downstreamContractId ?? null, businessPartyId: contractPartyId ?? parsed.data.businessPartyId ?? null, quantity: parsed.data.quantity == null ? null : String(parsed.data.quantity),
         unit: parsed.data.unit ?? null, unitPrice: parsed.data.unitPrice == null ? null : String(parsed.data.unitPrice),
         invoiceNo: parsed.data.invoiceNo ?? null, vendorName: contractPartyId ? (await tx.businessParty.findUnique({ where: { id: contractPartyId }, select: { name: true } }))?.name ?? parsed.data.vendorName ?? null : parsed.data.businessPartyId ? (await tx.businessParty.findUnique({ where: { id: parsed.data.businessPartyId }, select: { name: true } }))?.name ?? parsed.data.vendorName ?? null : parsed.data.vendorName ?? null, teamName: parsed.data.teamName ?? null,
@@ -185,6 +189,8 @@ export async function costRoutes(app: FastifyInstance) {
     return parsed.map((row) => {
       if (!row.valid || !row.data) return row;
       const errors: string[] = [];
+      const tax = resolveCostTax({ amount: row.data.amount, taxAmount: row.data.taxAmount, taxRate: row.data.taxRate });
+      if (!tax.ok) errors.push(tax.message);
       if (row.data.budgetItemCode && !itemByCode.has(row.data.budgetItemCode)) errors.push(`关联清单编号“${row.data.budgetItemCode}”不存在或不属于当前项目`);
       const contract = row.data.contractNo ? contractByNo.get(row.data.contractNo) : undefined;
       if (row.data.contractNo && !contract) errors.push(`分供合同编号“${row.data.contractNo}”不存在或不属于当前项目`);
@@ -199,6 +205,8 @@ export async function costRoutes(app: FastifyInstance) {
         ...row,
         data: {
           ...row.data,
+          taxAmount: tax.ok ? tax.value.taxAmount : row.data.taxAmount,
+          taxRate: tax.ok ? tax.value.taxRate : row.data.taxRate,
           budgetItemId: row.data.budgetItemCode ? itemByCode.get(row.data.budgetItemCode) ?? null : null,
           downstreamContractId: contract?.id ?? null,
           businessPartyId: partyId ?? null,
@@ -254,6 +262,7 @@ export async function costRoutes(app: FastifyInstance) {
           type: data.type as CostType,
           date: new Date(`${data.date}T00:00:00.000Z`),
           amount: String(data.amount),
+          taxRate: data.taxRate == null ? null : String(data.taxRate),
           taxAmount: data.taxAmount == null ? null : String(data.taxAmount),
           budgetItemId: data.budgetItemId,
           downstreamContractId: data.downstreamContractId,

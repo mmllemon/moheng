@@ -743,6 +743,7 @@ model CostEntry {
   date         DateTime
   amount       Decimal   @db.Decimal(18, 2)
   taxAmount    Decimal?  @db.Decimal(18, 2)
+  taxRate      Decimal?  @db.Decimal(5, 2)
   budgetItemId String?
   downstreamContractId String?
   businessPartyId String?

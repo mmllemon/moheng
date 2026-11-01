@@ -9856,9 +9856,16 @@ textarea {
 .cost-import-dialog .import-preview-wrap td:nth-child(1),
 .cost-import-dialog .import-preview-wrap td:nth-child(2),
 .cost-import-dialog .import-preview-wrap td:nth-child(3),
+.cost-import-dialog .import-preview-wrap td:nth-child(5),
+.cost-import-dialog .import-preview-wrap td:nth-child(6),
 .cost-import-dialog .import-preview-wrap th:nth-child(1),
 .cost-import-dialog .import-preview-wrap th:nth-child(2),
-.cost-import-dialog .import-preview-wrap th:nth-child(3) { white-space: nowrap; }
+.cost-import-dialog .import-preview-wrap th:nth-child(3),
+.cost-import-dialog .import-preview-wrap th:nth-child(5),
+.cost-import-dialog .import-preview-wrap th:nth-child(6) { white-space: nowrap; }
 .cost-import-dialog .import-preview-wrap td:nth-child(4) { min-width: 180px; }
-.cost-import-dialog .import-preview-wrap td:nth-child(7) { color: var(--text-muted); }
-.cost-import-dialog .import-preview-wrap tr.import-row-error td:nth-child(7) { color: var(--danger, #a23a2a); }
+.cost-import-dialog .import-preview-wrap td:nth-child(8) { color: var(--text-muted); }
+.cost-import-dialog .import-preview-wrap tr.import-row-error td:nth-child(8) { color: var(--danger, #a23a2a); }
+
+/* 台账金额格里的一行小字：含税税率与税额 */
+.cost-tax-note { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 400; line-height: 1.45; color: var(--text-muted); }
