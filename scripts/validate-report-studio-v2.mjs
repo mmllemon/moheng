@@ -7,6 +7,12 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const failures = [];
 let passed = 0;
 const read = async (path) => (await readFile(join(root, path), 'utf8')).replace(/\r\n/g, '\n');
+
+// 页面级与打印样式在 Tailwind / Hana V6 改版后从 styles.css（现仅剩 @import "tailwindcss"; 一行）
+// 迁到 legacy/hana/v6。断言的类名与声明不变，只改读真正承载它们的样式表。
+const readPrintCss = async () => (await Promise.all(
+  ['apps/web/src/styles.css', 'apps/web/src/styles/legacy.css', 'apps/web/src/styles/hana.css', 'apps/web/src/styles/v6.css'].map(read),
+)).join('\n');
 function check(label, condition) {
   if (condition) { passed += 1; console.log(`PASS ${label}`); }
   else { failures.push(label); console.log(`FAIL ${label}`); }
@@ -241,11 +247,15 @@ check('formal preview printing loads full server-bounded standard and studio dat
   previewPage.includes('afterprint') && previewPage.includes('window.print()') &&
   previewPage.includes('@page { size: ${printPaper} ${printOrientation}; margin: 10mm; }') &&
   previewPage.includes("'print-fit-width' : 'print-natural-width'") &&
-  (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid.print-fit-width') &&
-  (await read('apps/web/src/styles.css')).includes('.report-preview-table.print-fit-width { width:100% !important; min-width:0 !important; table-layout:fixed !important; }') &&
-  (await read('apps/web/src/styles.css')).includes('.report-preview-table.print-natural-width { width:max-content !important; min-width:100% !important; table-layout:auto !important; }') &&
-  (await read('apps/web/src/styles.css')).includes('.report-preview-table.repeat-header thead { display:table-header-group; }') &&
-  (await read('apps/web/src/styles.css')).includes('.report-preview-table.no-repeat-header thead { display:table-row-group; }') &&
+  (await readPrintCss()).includes('.report-studio-preview-grid.print-fit-width') &&
+  // 这两条原本钉着带 !important 的完整声明串，而 !important 已被 ui-polish 的两条活断言
+  // 要求全仓移除（“legacy !important declarations are removed for predictable overrides”、
+  // “V6 stylesheet does not depend on !important”）。两条门禁互斥，所以改断言声明本体
+  //（宽度/最小宽度/table-layout 三项仍在），不再钉 !important 与空格写法。
+  /\.report-preview-table\.print-fit-width\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0[^}]*table-layout:\s*fixed/.test(await readPrintCss()) &&
+  /\.report-preview-table\.print-natural-width\s*\{[^}]*width:\s*max-content[^}]*min-width:\s*100%[^}]*table-layout:\s*auto/.test(await readPrintCss()) &&
+  (await readPrintCss()).includes('.report-preview-table.repeat-header thead { display:table-header-group; }') &&
+  (await readPrintCss()).includes('.report-preview-table.no-repeat-header thead { display:table-row-group; }') &&
   reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
   reportPrint.includes('export function describeStandardPrintResult') && reportPrintTests.includes('does not describe capped results as complete') &&
   legacyDesigner.includes('setPrintTruncated(result.truncated)') && legacyDesigner.includes('describeStandardPrintResult(result.previewRowCount, result.truncated)') &&
@@ -280,7 +290,7 @@ check('standard preview values resolve through bound field keys and print behavi
   rootPackage.scripts['validate:release-candidate'].includes('apps/web/src/report-preview-data.test.ts'));
 check('standard and studio preview grids use fixed natural-width columns to avoid stretching the last column',
   previewPage.includes("width: 'max-content'") && previewPage.includes('<colgroup>') && previewPage.includes('Math.min(72, column.width)') &&
-  (await read('apps/web/src/styles.css')).includes('.report-studio-preview-grid { width:max-content; min-width:0; table-layout:fixed;'));
+  (await readPrintCss()).includes('.report-studio-preview-grid { width:max-content; min-width:0; table-layout:fixed;'));
 check('report center uses a compact scenario-led hierarchy with a filtered ledger picker and no duplicated hero',
   !centerPage.includes('report-center-hero') && !centerPage.includes('report-intro-grid') && centerPage.includes('report-category-tabs') && centerPage.includes('visibleCatalog') && centerPage.includes('报告') && centerPage.includes('DOWNSTREAM'));
 check('workspace and ledger pages expose common preview/export buttons and unit templates have an edit entry',

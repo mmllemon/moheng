@@ -27,7 +27,15 @@ const migration = await read('apps/api/prisma/migrations/20261015010000_report_t
 const designer = await read('apps/web/src/pages/ReportDesignerPage.tsx');
 const types = await read('apps/web/src/report-template-types.ts');
 const reportCenter = await read('apps/web/src/pages/ReportCenterPage.tsx');
-const styles = await read('apps/web/src/styles.css');
+// 页面级与打印样式在 Tailwind / Hana V6 改版后从 styles.css（现仅剩 `@import "tailwindcss";` 一行）
+// 迁到 legacy.css / hana.css / v6.css。本门禁断言的类名与声明不变，只改读真正承载它们的样式表
+//（已确认这些选择器在 legacy.css 中为活规则，非注释）。
+const styles = [
+  await read('apps/web/src/styles.css'),
+  await read('apps/web/src/styles/legacy.css'),
+  await read('apps/web/src/styles/hana.css'),
+  await read('apps/web/src/styles/v6.css'),
+].join('\n');
 const app = await read('apps/web/src/App.tsx');
 const designDoc = await read('docs/报表中心规格与验收.md');
 

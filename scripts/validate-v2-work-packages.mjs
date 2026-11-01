@@ -97,9 +97,9 @@ check('notification UI labels the list as dynamic tasks, not persistent read/unr
 check('report and notification centers are routable, searchable in command palette, and globally scoped in header',
   app.includes('path="reports" element={<ReportCenterPage />') && app.includes('path="notifications" element={<NotificationsPage />') &&
   layout.includes("to: '/reports'") && layout.includes("to: '/notifications'") &&
-  // “全局作用域”现在由顶标状态段表达：isGlobalContext 判定、显示「全公 / 项目」，
+  // “全局作用域”现在由顶栏状态段表达：isGlobalContext 判定、显示「全公司 / 项目」，
   // 并在全局上下文隐藏项目选择器（实测 380 / 900 / 1440 下 /reports 与 /notifications
-  // 均为 作用域=全公司 且无项目下拉）。旧断言钉的是“顶标两岛”改版前的 per-route 文案。
+  // 均为 作用域=全公司 且无项目下拉）。旧断言钉的是“顶栏两岛”改版前的 per-route 文案。
   layout.includes('const isGlobalContext =') && layout.includes("location.pathname.startsWith('/reports')") && layout.includes("'/notifications'") && layout.includes("{isGlobalContext ? '全公司' : '项目'}") && layout.includes('!isGlobalContext ? (') && app.includes('path="reports/designer"'));
 check('budget drafts are browser-local only and do not save until explicit form submission',
   budgetPage.includes('moheng:budget-draft:') && budgetPage.includes('localStorage.setItem(draftKey') &&
@@ -111,9 +111,9 @@ check('reduced-motion and responsive rules cover new report, notification, and m
   // 逐页媒体规则在 V6 改版时被有意删除（见 legacy.css:461-463 的删除说明注释），
   // 这三页的窄屏可用性改由三个共享机制承担，本项改为断言机制本体：
   //   1) 全局减动效（:root 与 html 等价，通配覆盖面比逐页规则更大）
-  //   2) ≤900px 抽屉外壳（侧标真正脱离 flex 流 + mobile-nav-open 滑入）
+  //   2) ≤900px 抽屉外壳（侧栏真正脱离 flex 流 + mobile-nav-open 滑入）
   //   3) ≤760px 断点下的页面骶架规则（仍在 legacy.css 里使用）
-  // 实测：380/560/900 下主区不再被隐藏侧标吃掉宽度，顶标无溢出节点，抽屉可点击开启。
+  // 实测：380/560/900 下主区不再被隐藏侧栏吃掉宽度，顶栏无溢出节点，抽屉可点击开启。
   (styles.includes(':root[data-motion="reduced"]') || styles.includes('html[data-motion="reduced"]')) &&
   styles.includes('animation-duration: 0.01ms') &&
   styles.includes('@media (max-width: 900px)') &&

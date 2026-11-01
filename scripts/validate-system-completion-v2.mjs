@@ -32,8 +32,14 @@ check('backup encryption uses AES-256-GCM, authenticated tags and key IDs', back
 check('integration HTTPS requests require allowlisted public DNS addresses and forbid redirects', integrationHttp.includes('INTEGRATION_ALLOWED_HOSTS') && integrationHttp.includes('INTEGRATION_DNS_RESOLVES_PRIVATE_ADDRESS') && integrationHttp.includes("url.protocol !== 'https:'") && !integrationHttp.includes('followRedirect'));
 check('JSON deliveries queue encrypted-credential use without putting raw secret into job payload and send stable idempotency key', dispatch.includes('decryptIntegrationSecret') && dispatch.includes('idempotencyKey') && dispatch.includes('requestIntegrationEndpoint'));
 check('integration UI provides connection test and delivery history; operations UI exposes both archives', governancePage.includes('测试连接') && governancePage.includes('投递记录') && operationsPage.includes('globalsFileName') && operationsPage.includes('globals-download'));
-check('scan button base/hover/focus-visible are transparent or neutral without purple fill', css.includes('.system-expansion-page .system-quality-panel-heading > .system-quality-scan-trigger:focus-visible') && css.includes('background: transparent !important') && governancePage.includes('system-quality-scan-trigger'));
-check('user account UI allows explicit read-only scope, with confirmation and revocation notice', accountPage.includes('ALL_PROJECTS_READONLY') && accountPage.includes('window.confirm') && accountPage.includes('重新登录后生效'));
+// css 原本只读 apps/web/src/styles.css（V6 改版后仅剩 @import "tailwindcss"; 一行），
+// 规则已迁到 legacy/hana/v6。这里并读承载它们的样式表，断言本体不变。
+const cssAll = [css, await read('apps/web/src/styles/legacy.css'), await read('apps/web/src/styles/hana.css'), await read('apps/web/src/styles/v6.css')].join('\n');
+check('scan button base/hover/focus-visible are transparent or neutral without purple fill', cssAll.includes('.system-expansion-page .system-quality-panel-heading > .system-quality-scan-trigger:focus-visible') && cssAll.includes('background: transparent !important') && governancePage.includes('system-quality-scan-trigger'));
+// window.confirm 已被全仓禁掉（ui-polish 有两条活断言：“native confirm/prompt are removed from all pages”
+// 与 “confirm host provides promise-based confirm and prompt”），账号页改用 confirmThen 承诺式确认。
+// 守卫含义不变：授予跳项目只读前必须确认，且告知会话影面。旧断言钉的是已被禁用的写法。
+check('user account UI allows explicit read-only scope, with confirmation and revocation notice', accountPage.includes('ALL_PROJECTS_READONLY') && accountPage.includes('confirmThen(') && accountPage.includes('重新登录后生效'));
 check('deployment sample includes separate integration host allowlist and backup encryption keyring/global database', env.includes('INTEGRATION_ALLOWED_HOSTS=') && env.includes('BACKUP_ENCRYPTION_KEYS=') && env.includes('BACKUP_GLOBALS_DATABASE_URL=') && env.includes('RESTORE_TEST_DATABASE_URL='));
 check('design and acceptance docs state scope and unresolved end-to-end gates without claiming production ready', readme.includes('AI 功能状态') && changelog.startsWith('## v' + rootPackage.version) && design.includes('跨项目') && design.includes('审计') && acceptance.includes('发布候选（RC）'));
 check('release candidate command includes this completion contract suite', rootPackage.scripts['validate:release-candidate'].includes('validate-system-completion-v2.mjs'));

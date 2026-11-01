@@ -31,12 +31,9 @@ const GATES = [
   { name: 'source-bundle', cmd: 'node scripts/validate-source-bundle-completeness.mjs', tier: ADVISORY, reason: '封版记录里的 lock SHA 与当前 lock 不一致（基线 575F… 亦不等于期望 A6F8…）' },
   { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: ADVISORY, reason: '17 条断言基线即红（analysis/UI、workspace、dashboard 等真实产品债）' },
   { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
-  { name: 'report-studio', cmd: 'node scripts/validate-report-studio.mjs', tier: ADVISORY, reason: '2 条基线旧红（打印/响应式）' },
-  { name: 'report-studio-v2', cmd: 'node scripts/validate-report-studio-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红（正式打印数据集、固定列宽）' },
   { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: ADVISORY, reason: '缺双 target 基线产物，需本机/浏览器环境' },
   { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏分组、着陆页等 UI 规格）' },
   { name: 'system-expansion-v2', cmd: 'node scripts/validate-system-expansion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
-  { name: 'system-completion-v2', cmd: 'node scripts/validate-system-completion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
   { name: 'system-workbench-v2', cmd: 'node scripts/validate-system-workbench-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏唯一入口、字典编码等）' },
 
   // ---- blocking：当前实测全绿，必须保持绿 ----
@@ -61,10 +58,13 @@ const GATES = [
   { name: 'assistant-conversations', cmd: 'node scripts/validate-assistant-conversations.mjs', tier: BLOCKING, reason: '此前首条断言提前抛错遮蔽约 30 条断言；解蔽后必须保持全绿，否则整段检查再次静默失效' },
   { name: 'assistant-ui', cmd: 'node scripts/validate-assistant-ui.mjs', tier: BLOCKING, reason: '助手入口必须是标题栏全局模态按钮且默认不可见，属对外可见面约束' },
   { name: 'typescript-fixes', cmd: 'node scripts/validate-typescript-fixes.mjs', tier: BLOCKING, reason: '23/23 全绿；断言已改指 icon?: LucideIcon 与 size?: ButtonSize（仍是库类型 + sm→button-small）' },
-  { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: BLOCKING, reason: '76 项全绿；滞线滚动条改为行尾无关匹配，Windows 与 Linux 结论一致' },
+  { name: 'ui-polish', cmd: 'node scripts/validate-ui-polish.mjs', tier: BLOCKING, reason: '76 项全绿；hairline 滚动条改为行尾无关匹配，Windows 与 Linux 结论一致' },
   { name: 'navigation-regressions', cmd: 'node scripts/validate-navigation-regressions.mjs', tier: BLOCKING, reason: '12/12 全绿；样式断言已改读真正承载规则的 legacy.css / hana.css，导航断言已跟上 2026-10-23 的 IA 调整' },
-  { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: BLOCKING, reason: '全绿。两条旧红经实测定性：一条是顶标两岛改版后的新写法（全局作用域已由 isGlobalContext + “全公司/项目” 状态段实现，项目选择器在全局上下文隐藏）；另一条确实是代码缺陷，已修 —— ≤900px 抽屉仅用 transform 侧标隐身后仍占 246px 宽度，且抽屉按钮被窗口控制岛遮住而不可点击' },
+  { name: 'v2-work-packages', cmd: 'node scripts/validate-v2-work-packages.mjs', tier: BLOCKING, reason: '全绿。两条旧红经实测定性：一条是顶栏两岛改版后的新写法（全局作用域已由 isGlobalContext + “全公司/项目” 状态段实现，项目选择器在全局上下文隐藏）；另一条确实是代码缺陷，已修 —— ≤900px 抽屉仅用 transform 侧栏隐身后仍占 246px 宽度，且抽屉按钮被窗口控制岛遮住而不可点击' },
   { name: 'document-links', cmd: 'node scripts/validate-document-links.mjs', tier: BLOCKING, reason: '142 个本地链接目标全部可解析。原先 6 个断链源于 docs/gates 过程产物已被 cf92654 删除，INDEX 与架构文档的引用已改指活文档并保留出处提交号' },
+  { name: 'report-studio', cmd: 'node scripts/validate-report-studio.mjs', tier: BLOCKING, reason: '18/18 全绿；红因是 styles 指针指向已被清空的 styles.css，打印与响应式规则实际全在 legacy.css' },
+  { name: 'report-studio-v2', cmd: 'node scripts/validate-report-studio-v2.mjs', tier: BLOCKING, reason: '42/42 全绿；同一类原因：指针失效 + 钉住带 !important 的旧声明串（!important 已由 ui-polish 两条活断言要求全仓移除，两门禁互斥）' },
+  { name: 'system-completion-v2', cmd: 'node scripts/validate-system-completion-v2.mjs', tier: BLOCKING, reason: '23/23 全绿；除指针问题外，账号页确认已从 window.confirm 改为承诺式 confirmThen（ui-polish 已活断言禁用原生 confirm），改指现行机制' },
 ];
 
 function parseArgs(argv) {

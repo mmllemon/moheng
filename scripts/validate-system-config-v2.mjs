@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readModuleSources } from './lib/module-sources.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFile(join(root, path), 'utf8');
@@ -12,7 +13,7 @@ const [rootPackage, apiPackage, webPackage, schema, migration, adminRoute, readR
   read('apps/api/prisma/schema.prisma'), read('apps/api/prisma/migrations/20261016020000_system_dictionaries_parameters/migration.sql'),
   read('apps/api/src/routes/system-config.ts'), read('apps/api/src/routes/config-read.ts'), read('apps/api/src/platform/module-registry.ts'),
   read('apps/web/src/pages/SystemManagementPage.tsx'), read('apps/web/src/pages/SystemDictionariesPage.tsx'), read('apps/web/src/pages/SystemParametersPage.tsx'),
-  read('apps/web/src/App.tsx'), read('apps/web/src/components/Layout.tsx'), read('apps/web/src/pages/CostsPage.tsx'), read('README.md'), read('CHANGELOG.md'),
+  read('apps/web/src/App.tsx'), readModuleSources(root, 'apps/web/src/components/Layout.tsx'), read('apps/web/src/pages/CostsPage.tsx'), read('README.md'), read('CHANGELOG.md'),
   read('docs/架构与核心业务规则.md'), read('docs/发布与迁移验收.md'), read('docs/开发与部署指南.md'),
 ]);
 
