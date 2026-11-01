@@ -177,25 +177,35 @@ html .business-party-summary-strip > div:first-child {
 /* ds-section-card 里的统计区：它本身嵌在已有的卡内（卡中卡会乱），
    所以保持透明无边框，但内边距要正常（不是 0）。
    上下用 1px 极淡线分隔卡内段——对齐 hana 的 ._divider_cdbf9。 */
-html .ds-section-card .downstream-summary-grid {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+html .ds-section-card .downstream-summary-grid,
+html .ds-section-card .change-summary-grid,
+html .ds-section-card .bill-summary-grid,
+html .ds-section-card .owner-finance-metrics {
+  /* 始终单行等分：项数 3～5 都成立，且不会因宽度不足折行（折行会露出栅格背景的空档）。
+     列宽过窄时文字自己换行，不横向溢出。 */
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   padding: 0;
   margin: 0;
   border: 0;
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
   border-radius: 0;
-  background: transparent;
+  /* 分隔线走 1px 间隙而不是逐项 border-left：
+     就算真的折行，行与行之间也有线，不会出现“掉下来的那项带一根孤零零的左线”。 */
+  gap: 1px;
+  background: color-mix(in srgb, var(--border) 66%, transparent);
 }
-html .ds-section-card .downstream-summary-grid .change-summary {
-  border-top: 0;
-  border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-}
-html .ds-section-card .downstream-summary-grid .change-summary:first-child {
-  border-left: 0;
-}
-html .ds-section-card .downstream-summary-grid .change-summary:last-child {
-  /* 末项不再清零右内边距。 */
+html .ds-section-card .downstream-summary-grid > .change-summary,
+html .ds-section-card .change-summary-grid > .change-summary,
+html .ds-section-card .bill-summary-grid > *,
+html .ds-section-card .owner-finance-metrics > * {
+  border: 0;
+  border-radius: 0;
+  background: var(--bg-card);
+  /* 旧的两列布局留下的 span 2 会在这里把第 4 项撑成双倍宽，复位。 */
+  grid-column: auto;
 }
 /* downstream 里旧规则的 21px 数值要拉回 26px */
 html .downstream-summary-grid .change-summary strong {
