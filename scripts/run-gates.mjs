@@ -32,9 +32,9 @@ const GATES = [
   { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: ADVISORY, reason: '17 条断言基线即红（analysis/UI、workspace、dashboard 等真实产品债）' },
   { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
   { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: ADVISORY, reason: '缺双 target 基线产物，需本机/浏览器环境' },
-  { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏分组、着陆页等 UI 规格）' },
+  { name: 'system-management-v2', cmd: 'node scripts/validate-system-management-v2.mjs', tier: BLOCKING, reason: '全绿 14/14。四条 IA 断言按“页脚齿轮 + 设置窗二级导航”的现行结构改写，并显式禁止系统管理重新回到侧栏分组；概览页新增五个工作台入口卡片（组织治理/授权复核/字典/参数/运维）' },
   { name: 'system-expansion-v2', cmd: 'node scripts/validate-system-expansion-v2.mjs', tier: ADVISORY, reason: '2 条基线旧红' },
-  { name: 'system-workbench-v2', cmd: 'node scripts/validate-system-workbench-v2.mjs', tier: ADVISORY, reason: '5 条基线旧红（侧栏唯一入口、字典编码等）' },
+  { name: 'system-workbench-v2', cmd: 'node scripts/validate-system-workbench-v2.mjs', tier: BLOCKING, reason: '全绿 19/19。css 指针改并读四个样式表（styles.css 仅剩 @import 一行）；侧栏/二级导航断言改指 app-sidebar-scroll 与 settings-groups 的真实溢出与 focus 机制；字典推荐断言改指现行提示文案' },
 
   // ---- blocking：当前实测全绿，必须保持绿 ----
   { name: 'dependency-security', cmd: 'node scripts/validate-dependency-security.mjs', tier: BLOCKING },

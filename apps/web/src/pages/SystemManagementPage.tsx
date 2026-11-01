@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, ArrowRight, BookOpen, Database, Fingerprint, KeyRound, RefreshCw, ServerCog, ShieldAlert, ShieldCheck, SlidersHorizontal, Users, ClipboardCheck } from 'lucide-react';
+import { Activity, ArrowRight, BookOpen, Database, Fingerprint, KeyRound, RefreshCw, ServerCog, ShieldAlert, ShieldCheck, SlidersHorizontal, Users, ClipboardCheck, Workflow } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
@@ -53,6 +53,16 @@ export default function SystemManagementPage() {
       <article className="panel system-overview-metric"><span className="system-overview-icon"><Fingerprint size={18} /></span><div><small>最近 200 条中的有效会话</small><strong>{activeSessions.length}</strong><span>最长 7 天 · 闲置 12 小时失效</span></div><Link to="/system/security" aria-label="查看登录会话"><ArrowRight size={15} /></Link></article>
       <article className="panel system-overview-metric"><span className="system-overview-icon"><ShieldAlert size={18} /></span><div><small>近 7 天安全事件</small><strong>{newEventsLast7Days}</strong><span>显示最近 200 条事件中的匹配记录</span></div><Link to="/system/security" aria-label="查看安全事件"><ArrowRight size={15} /></Link></article>
       <article className="panel system-overview-metric"><span className="system-overview-icon"><KeyRound size={18} /></span><div><small>账号待处理</small><strong>{accountsNeedingAttention}</strong><span>强制改密或管理员 MFA 尚待检查</span></div><Link to="/system/accounts" aria-label="处理账号安全问题"><ArrowRight size={15} /></Link></article>
+    </section>
+
+    {/* 工作台入口：概览只给入口与用途，复杂表单留在各自工作台，
+        避免把概览做成第二套导航目录。 */}
+    <section className="system-overview-workbenches" aria-label="系统管理工作台入口">
+      <Link className="panel system-overview-workbench" to="/system/governance"><span className="system-overview-icon"><Workflow size={18} /></span><span className="system-overview-workbench-copy"><strong>组织与规则治理</strong><small>维护组织层级与版本化审批规则</small></span><ArrowRight size={15} /></Link>
+      <Link className="panel system-overview-workbench" to="/system/authorization"><span className="system-overview-icon"><ClipboardCheck size={18} /></span><span className="system-overview-workbench-copy"><strong>权限治理与授权复核</strong><small>查项目授权矩阵与待复核记录</small></span><ArrowRight size={15} /></Link>
+      <Link className="panel system-overview-workbench" to="/system/dictionaries"><span className="system-overview-icon"><BookOpen size={18} /></span><span className="system-overview-workbench-copy"><strong>基础字典</strong><small>统一分类与选项，保留历史记录</small></span><ArrowRight size={15} /></Link>
+      <Link className="panel system-overview-workbench" to="/system/parameters"><span className="system-overview-icon"><SlidersHorizontal size={18} /></span><span className="system-overview-workbench-copy"><strong>参数配置</strong><small>全局与项目级参数、草稿与生效版本</small></span><ArrowRight size={15} /></Link>
+      <Link className="panel system-overview-workbench" to="/system/operations"><span className="system-overview-icon"><ServerCog size={18} /></span><span className="system-overview-workbench-copy"><strong>运行维护与备份恢复</strong><small>备份任务、恢复演练与环境检查</small></span><ArrowRight size={15} /></Link>
     </section>
 
     <section className="system-overview-two-column">
