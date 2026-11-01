@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Upload } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Upload, X } from 'lucide-react';
 import { api } from '../api';
 import { Button } from './Ui';
 
@@ -106,9 +107,12 @@ export default function CostImportDialog({ projectId, onClose, onImported }: {
 
   const invalidRows = preview?.rows.filter((row) => !row.valid) ?? [];
 
-  return <div className="modal-backdrop">
-    <div className="dialog import-dialog" role="dialog" aria-modal="true" aria-label="导入实际成本">
-      <div className="dialog-header"><div><strong>导入实际成本</strong><small>上传 .xlsx 模板，校验通过后整批写入；任何一行有问题都不会导入。</small></div></div>
+  return createPortal(<div className="modal-backdrop">
+    <div className="dialog import-dialog cost-import-dialog" role="dialog" aria-modal="true" aria-label="导入实际成本">
+      <div className="dialog-header">
+        <div><h2>导入实际成本</h2><p>上传 .xlsx 模板，校验通过后整批写入；任何一行有问题都整批不导入。</p></div>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭导入对话框"><X size={18} /></Button>
+      </div>
       <div className="dialog-body">
         <div className="import-steps">
           <Button variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>下载导入模板</Button>
@@ -121,10 +125,10 @@ export default function CostImportDialog({ projectId, onClose, onImported }: {
         {error && <div className="form-alert">{error}</div>}
         {preview?.unknownColumns.length ? <div className="inline-notice">以下表头未被识别，已忽略：{preview.unknownColumns.join('、')}</div> : null}
 
-        {preview && <div className="table-scroll import-preview-wrap">
+        {preview && <div className="import-preview-wrap">
           <table className="data-table">
             <thead><tr><th>行号</th><th>日期</th><th>类型</th><th>费用说明</th><th className="align-right">金额(元)</th><th>关联</th><th>校验</th></tr></thead>
-            <tbody>{preview.rows.slice(0, 200).map((row) => <tr key={row.rowNumber}>
+            <tbody>{preview.rows.slice(0, 200).map((row) => <tr className={row.valid ? '' : 'import-row-error'} key={row.rowNumber}>
               <td>{row.rowNumber}</td>
               <td>{row.data?.date ?? '—'}</td>
               <td>{row.data ? TYPE_LABELS[row.data.type] ?? row.data.type : '—'}</td>
@@ -141,8 +145,8 @@ export default function CostImportDialog({ projectId, onClose, onImported }: {
       </div>
       <div className="dialog-footer">
         <Button variant="ghost" onClick={onClose} disabled={busy}>取消</Button>
-        <Button onClick={() => void commit()} disabled={busy || !preview?.canImport}>{busy ? '处理中…' : `导入 ${preview?.validCount ?? 0} 行`}</Button>
+        <Button onClick={() => void commit()} disabled={busy || !preview?.canImport}>{busy ? '处理中…' : preview?.canImport ? `导入 ${preview.validCount} 行` : '修正后重新上传'}</Button>
       </div>
     </div>
-  </div>;
+  </div>, document.body);
 }
