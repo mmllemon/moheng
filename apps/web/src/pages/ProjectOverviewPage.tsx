@@ -126,8 +126,10 @@ export default function ProjectOverviewPage() {
       </article>
     </section>
 
+    {downstream?.summary && <section className="panel project-cockpit-downstream"><div className="panel-heading"><div><h3>分供合同与付款概览</h3><p>合同额、关联成本和现金支付采用独立口径。</p></div><Button variant="secondary" onClick={() => navigate('/cost/downstream')}>查看台账 <ArrowRight size={14} /></Button></div><div className="project-cockpit-downstream-facts"><div><span>执行中合同额</span><strong>{formatMoney(downstream.summary.activeAndPendingSettlementContractAmount, 0)}</strong></div><div><span>关联实际成本</span><strong>{formatMoney(downstream.summary.linkedActualCost, 0)}</strong></div><div><span>累计净付款</span><strong>{formatMoney(downstream.summary.paidAmount, 0)}</strong></div></div></section>}
+
     <section className="project-entry-strip" aria-label="业务台账快捷入口">
-      <span className="project-entry-label">业务台账</span>
+      <span className="project-entry-label">进入业务台账</span>
       {entryCards.map((item) => { const Icon = item.icon; return <button key={item.to} className="project-entry-item" title={item.description} onClick={() => navigate(item.to)}>
         <Icon size={15} className="project-entry-icon" />
         <span className="project-entry-name">{item.title}</span>
@@ -135,7 +137,5 @@ export default function ProjectOverviewPage() {
         <small className="project-entry-note">{item.note}</small>
       </button>; })}
     </section>
-
-    {downstream?.summary && <section className="panel project-cockpit-downstream"><div className="panel-heading"><div><h3>分供合同与付款概览</h3><p>合同额、关联成本和现金支付采用独立口径。</p></div><Button variant="secondary" onClick={() => navigate('/cost/downstream')}>查看台账 <ArrowRight size={14} /></Button></div><div className="project-cockpit-downstream-facts"><div><span>执行中合同额</span><strong>{formatMoney(downstream.summary.activeAndPendingSettlementContractAmount, 0)}</strong></div><div><span>关联实际成本</span><strong>{formatMoney(downstream.summary.linkedActualCost, 0)}</strong></div><div><span>累计净付款</span><strong>{formatMoney(downstream.summary.paidAmount, 0)}</strong></div></div></section>}
   </div>;
 }

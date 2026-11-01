@@ -7567,7 +7567,7 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .project-cockpit-chart .project-chart-bottom { margin-top: var(--space-4); }
 /* 项目驾驶舱：业务台账快捷带。原先的 6 张大卡把合同额、目标成本、实际成本又展示了一遍，
    与上方 hero 重复，且名称在窄格里被折成两三行；改成一条可扫读的带状入口，金额仍在，版面只占一行。 */
-.project-entry-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--space-16); padding-bottom: var(--space-6); border-top: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
+.project-entry-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--space-24); padding-bottom: var(--space-6); border-top: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
 .project-entry-label { grid-column: 1 / -1; padding: var(--space-10) 0 var(--space-2); color: var(--text-muted); font-size: var(--fs-hint); letter-spacing: .04em; }
 .project-entry-item { display: flex; align-items: baseline; gap: var(--space-6); min-width: 0; padding: var(--space-8) var(--space-8); border: 0; border-radius: var(--radius-compact); background: none; color: var(--text); cursor: pointer; text-align: left; transition: background var(--duration-fast); }
 .project-entry-item:hover { background: var(--state-hover-bg); }
