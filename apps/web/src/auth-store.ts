@@ -119,7 +119,9 @@ export function applyUiPreferences(value: UiPreferences) {
   root.dataset.density = value.density;
   root.dataset.motion = value.reduceMotion ? 'reduced' : 'full';
   root.dataset.pageWidth = value.pageWidth;
-  root.dataset.contentWidth = value.wideContent ? 'wide' : 'standard';
+  /* 旧的 wideContent 布尔不再写 data-content-width：两套机制曾互相覆盖，
+     四档宽度现在只由 data-page-width 与 --page-column-measure 一处决定。
+     字段仍在存储里，仅为兼容旧配置。 */
   root.dataset.headingFont = value.headingFont;
   root.dataset.appIcon = value.appIcon;
   /* 适配 Windows 圆角：true 写 off 属性（关闭封顶，用 Hana Web 观感）；false 则是较小圆角。

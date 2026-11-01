@@ -1687,13 +1687,10 @@ html .window-controls-island .titlebar-avatar {
    对齐 hana 的做法——一处定义、多处读取（标题层和正文列读同一个变量）。
    挂到 .app-content（标题栏和 .page-wrap 的共同祖先）上，
    这样两处同时生效，标题不会和正文脱节。 */
+/* 只给真正的双栏布局放宽：列表+详情、设计器+预览、表格+侧栏。
+   表格页不再整页放宽——收窄后 .table-scroll 会在列内横向滚动，
+   这样「内容宽度」四档对缩大多数页面才是一致生效的。 */
 .app-content:has(.projects-ledger-layout),
-.app-content:has(.projects-table),
-.app-content:has(.data-table),
-.app-content:has(.table-scroll),
-.app-content:has(.system-policy-table),
-.app-content:has(.audit-log-table),
-.app-content:has(.members-table-panel),
 .app-content:has(.report-studio-layout),
 .app-content:has(.costs-layout) {
   --page-column-measure: 100%;
@@ -4771,7 +4768,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
 
 html[data-density="compact"] .data-table thead th { height: 30px; }
 html[data-density="compact"] .data-table tbody td { height: 30px; padding-top: var(--space-4); padding-bottom: var(--space-4); }html[data-density="compact"] .v6-log-row { padding-top: var(--space-8); padding-bottom: var(--space-8); }
-html[data-content-width="wide"] .page-wrap { max-width: 1600px; }
 
 html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-motion="reduced"] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 

@@ -807,8 +807,6 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 :root[data-density="compact"] .owner-finance-metrics { gap: var(--space-8); margin-bottom: var(--space-12); }
 :root[data-density="compact"] .owner-metric { min-height: 88px; padding: var(--space-12) var(--space-12); }
 :root[data-density="compact"] .owner-finance-tabs { margin-bottom: var(--space-10); }
-:root[data-content-width="wide"] .content-area { max-width: 2400px; padding-left: 17px; padding-right: 17px; }
-:root[data-content-width="wide"] .page-wrap, :root[data-content-width="wide"] .owner-finance-page { max-width: 2200px; }
 :root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after { animation-duration: .01ms ; animation-iteration-count: 1 ; scroll-behavior: auto ; transition-duration: .01ms ; }
 
 @media (max-width: 1320px) {
@@ -884,7 +882,6 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .sidebar-note strong, .user-meta strong { color: var(--sidebar-text); }
 .topbar, .ui-preferences-bar, .project-context-bar, .app-footer { color: var(--text-muted); border-color: var(--card-border); background: color-mix(in srgb, var(--card-bg) 92%, transparent); }
 .topbar { min-height: 58px; height: 58px; padding: 0 26px; backdrop-filter: blur(18px) saturate(145%); }
-:root[data-content-width="wide"] .content-area { max-width: none; }
 .page-wrap { max-width: 1560px; }
 .eyebrow { color: var(--text-muted); font-size: var(--fs-hint); letter-spacing: .13em; }
 .panel, .metric-card, .project-overview-card, .project-list-card, .owner-metric, .owner-special-balances article, .downstream-analysis-grid > div {
