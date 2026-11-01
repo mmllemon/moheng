@@ -185,6 +185,7 @@ export async function costRoutes(app: FastifyInstance) {
     return parsed.map((row) => {
       if (!row.valid || !row.data) return row;
       const errors: string[] = [];
+      if (row.data.budgetItemCode && !itemByCode.has(row.data.budgetItemCode)) errors.push(`关联清单编号“${row.data.budgetItemCode}”不存在或不属于当前项目`);
       const contract = row.data.contractNo ? contractByNo.get(row.data.contractNo) : undefined;
       if (row.data.contractNo && !contract) errors.push(`分供合同编号“${row.data.contractNo}”不存在或不属于当前项目`);
       if (contract && (contract.status === 'DRAFT' || contract.status === 'TERMINATED')) errors.push(`分供合同“${row.data.contractNo}”处于${contract.status === 'DRAFT' ? '草稿' : '已终止'}状态，不接受导入`);
