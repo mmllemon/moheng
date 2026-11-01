@@ -9844,3 +9844,8 @@ textarea {
   font-size: var(--text-2xs, var(--fs-hint));
   letter-spacing: 0.02em;
 }
+
+/* 导入对话框的步骤行与辅助信息（实际成本批量导入） */
+.import-steps { display: flex; align-items: center; gap: var(--space-8); flex-wrap: wrap; }
+.import-meta { color: var(--text-muted); font-size: var(--fs-hint); }
+.import-preview-wrap { max-height: 46vh; margin-top: var(--space-12); }

@@ -6,6 +6,8 @@ import { authRequired, authUser } from '../lib/auth.js';
 import { failure, success } from '../lib/http.js';
 import { canAccessProject, denyIfNoProjectAccess } from '../lib/project-access.js';
 import { nonNegativeMoney, positiveMoney } from '../lib/validation.js';
+import { ImportXlsxError, buildImportTemplate, decodeXlsxUpload, inspectImportWorkbook } from '../lib/tabular-import.js';
+import { COST_IMPORT_SHEET, COST_IMPORT_TEMPLATE, assertImportable, parseCostImportRows, type ParsedCostRow, type ParsedCostRowData } from '../lib/cost-import.js';
 
 const costInput = z.object({
   type: z.nativeEnum(CostType),
@@ -132,5 +134,145 @@ export async function costRoutes(app: FastifyInstance) {
       await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'CostEntry', entityId: entryId, action: 'ARCHIVE', changes: { amount: String(entry.amount) } } });
     });
     return success({ archived: true });
+  });
+
+  /* ── 实际成本批量导入 ──────────────────────────────────────────────
+     链路与目标成本清单一致：下载模板 → 上传检视 → 预览（含关联项解析）→ 整批提交。
+     设计取舍：预览与提交都由服务端重新解析同一份 headers/rows，不信任前端归一化后的数据；
+     只要有一行不过校验，整批不写。 */
+
+  app.get('/:projectId/costs/import-template.xlsx', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'ACTUAL_COST_WRITE')) return;
+    const buffer = await buildImportTemplate(COST_IMPORT_TEMPLATE);
+    return reply
+      .header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('content-disposition', `attachment; filename="moheng-cost-import-template.xlsx"; filename*=UTF-8''${encodeURIComponent('墨衡-实际成本导入模板.xlsx')}`)
+      .send(buffer);
+  });
+
+  app.post('/:projectId/costs/import-xlsx/inspect', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'ACTUAL_COST_WRITE')) return;
+    const body = z.object({ filename: z.string(), base64: z.string() }).safeParse(request.body);
+    if (!body.success) return failure(reply, 400, 'VALIDATION_ERROR', '请上传 .xlsx 文件', body.error.flatten());
+    try {
+      const buffer = decodeXlsxUpload(body.data.filename, body.data.base64);
+      return success(await inspectImportWorkbook(buffer, { sheetNames: [COST_IMPORT_SHEET] }));
+    } catch (error) {
+      if (error instanceof ImportXlsxError) return failure(reply, 400, error.code, error.message);
+      throw error;
+    }
+  });
+
+  /** 把行里的清单编号 / 合同编号 / 单位名称解析成 ID，并把业务规则错误逐行附上。 */
+  const resolveCostRows = async (projectId: string, parsed: ParsedCostRow[]): Promise<ParsedCostRow[]> => {
+    const codes = [...new Set(parsed.map((row) => row.data?.budgetItemCode).filter((code): code is string => Boolean(code)))];
+    const contractNos = [...new Set(parsed.map((row) => row.data?.contractNo).filter((no): no is string => Boolean(no)))];
+    const partyNames = [...new Set(parsed.map((row) => row.data?.partyName).filter((name): name is string => Boolean(name)))];
+
+    const [items, contracts, parties] = await Promise.all([
+      codes.length ? prisma.budgetItem.findMany({ where: { projectId, deletedAt: null, code: { in: codes } }, select: { id: true, code: true } }) : [],
+      contractNos.length ? prisma.downstreamContract.findMany({ where: { projectId, deletedAt: null, contractNo: { in: contractNos } }, select: { id: true, contractNo: true, status: true, counterpartyPartyId: true } }) : [],
+      partyNames.length ? prisma.businessParty.findMany({ where: { status: 'ACTIVE', name: { in: partyNames } }, select: { id: true, name: true } }) : [],
+    ]);
+    const itemByCode = new Map(items.map((item) => [item.code, item.id]));
+    const contractByNo = new Map(contracts.map((contract) => [contract.contractNo, contract]));
+    const partyByName = new Map(parties.map((party) => [party.name, party.id]));
+
+    return parsed.map((row) => {
+      if (!row.valid || !row.data) return row;
+      const errors: string[] = [];
+      const contract = row.data.contractNo ? contractByNo.get(row.data.contractNo) : undefined;
+      if (row.data.contractNo && !contract) errors.push(`分供合同编号“${row.data.contractNo}”不存在或不属于当前项目`);
+      if (contract && (contract.status === 'DRAFT' || contract.status === 'TERMINATED')) errors.push(`分供合同“${row.data.contractNo}”处于${contract.status === 'DRAFT' ? '草稿' : '已终止'}状态，不接受导入`);
+      const partyId = row.data.partyName ? partyByName.get(row.data.partyName) : undefined;
+      if (row.data.partyName && !partyId) errors.push(`往来单位“${row.data.partyName}”不存在、已停用或已归档`);
+      if (contract && partyId && contract.counterpartyPartyId && partyId !== contract.counterpartyPartyId) {
+        errors.push(`往来单位与分供合同“${row.data.contractNo}”的相对方不一致；关联合同时应使用合同相对方档案`);
+      }
+      if (errors.length) return { ...row, valid: false, errors: [...row.errors, ...errors] };
+      return {
+        ...row,
+        data: {
+          ...row.data,
+          budgetItemId: row.data.budgetItemCode ? itemByCode.get(row.data.budgetItemCode) ?? null : null,
+          downstreamContractId: contract?.id ?? null,
+          businessPartyId: partyId ?? null,
+          vendorName: contract ? null : row.data.partyName,
+        } as ParsedCostRowData & { budgetItemId: string | null; downstreamContractId: string | null; businessPartyId: string | null; vendorName: string | null },
+      };
+    });
+  };
+
+  const costImportBody = z.object({ headers: z.array(z.string()).min(1), rows: z.array(z.array(z.string())).min(1).max(5000) });
+
+  app.post('/:projectId/costs/import/preview', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'ACTUAL_COST_WRITE')) return;
+    const body = costImportBody.safeParse(request.body);
+    if (!body.success) return failure(reply, 400, 'VALIDATION_ERROR', '导入数据格式不正确', body.error.flatten());
+    const { rows, missingColumns, unknownColumns } = parseCostImportRows(body.data.headers, body.data.rows);
+    if (missingColumns.length) return failure(reply, 400, 'IMPORT_COLUMN_MISSING', `缺少必需列：${missingColumns.join('、')}`, { missingColumns, unknownColumns });
+    const resolved = await resolveCostRows(projectId, rows);
+    return success({
+      rows: resolved,
+      total: resolved.length,
+      validCount: resolved.filter((row) => row.valid).length,
+      invalidCount: resolved.filter((row) => !row.valid).length,
+      unknownColumns,
+      canImport: resolved.every((row) => row.valid),
+    });
+  });
+
+  app.post('/:projectId/costs/import', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'ACTUAL_COST_WRITE')) return;
+    const body = costImportBody.safeParse(request.body);
+    if (!body.success) return failure(reply, 400, 'VALIDATION_ERROR', '导入数据格式不正确', body.error.flatten());
+    const { rows, missingColumns } = parseCostImportRows(body.data.headers, body.data.rows);
+    if (missingColumns.length) return failure(reply, 400, 'IMPORT_COLUMN_MISSING', `缺少必需列：${missingColumns.join('、')}`);
+    const resolved = await resolveCostRows(projectId, rows);
+    try {
+      assertImportable(resolved);
+    } catch (error) {
+      if (error instanceof ImportXlsxError) return failure(reply, 400, error.code, error.message, { rows: resolved.filter((row) => !row.valid) });
+      throw error;
+    }
+
+    const imported = await prisma.$transaction(async (tx) => {
+      let count = 0;
+      for (const row of resolved) {
+        const data = row.data as (ParsedCostRowData & { budgetItemId: string | null; downstreamContractId: string | null; businessPartyId: string | null; vendorName: string | null });
+        await tx.costEntry.create({ data: {
+          projectId,
+          type: data.type as CostType,
+          date: new Date(`${data.date}T00:00:00.000Z`),
+          amount: String(data.amount),
+          taxAmount: data.taxAmount == null ? null : String(data.taxAmount),
+          budgetItemId: data.budgetItemId,
+          downstreamContractId: data.downstreamContractId,
+          businessPartyId: data.businessPartyId,
+          description: data.description,
+          quantity: data.quantity == null ? null : String(data.quantity),
+          unit: data.unit,
+          unitPrice: data.unitPrice == null ? null : String(data.unitPrice),
+          invoiceNo: data.invoiceNo,
+          vendorName: data.vendorName ?? null,
+          teamName: data.teamName,
+          notes: data.notes,
+          createdById: user.sub,
+        } });
+        count += 1;
+      }
+      await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'CostEntry', entityId: projectId, action: 'IMPORT_XLSX', changes: { imported: count } } });
+      return count;
+    });
+
+    return reply.code(201).send(success({ imported, sourceFormat: 'XLSX' as const }));
   });
 }

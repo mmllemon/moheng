@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, Building2, Download, FilePlus2, Filter, Link2, Plus, Receipt, Search, X } from 'lucide-react';
+import { Archive, Building2, Download, FilePlus2, Filter, Link2, Plus, Receipt, Search, Upload, X } from 'lucide-react';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
@@ -12,6 +12,7 @@ import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { BudgetItem, CostEntry, CostType } from '../types';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
+import CostImportDialog from '../components/CostImportDialog';
 import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, PageNote } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
@@ -98,7 +99,7 @@ function CostContractLinkDialog({ projectId, entry, contracts, onClose, onNotice
 
 export default function CostsPage() {
   const projectId = useUiStore((state) => state.selectedProjectId)!; const queryClient = useQueryClient();
-  const [type, setType] = useState<CostType | 'ALL'>('ALL'); const [q, setQ] = useState(''); const [dialogOpen, setDialogOpen] = useState(false); const [linkingEntry, setLinkingEntry] = useState<CostEntry | null>(null); const [notice, setNotice] = useState(''); const [serverError, setServerError] = useState('');
+  const [type, setType] = useState<CostType | 'ALL'>('ALL'); const [q, setQ] = useState(''); const [dialogOpen, setDialogOpen] = useState(false); const [importOpen, setImportOpen] = useState(false); const [linkingEntry, setLinkingEntry] = useState<CostEntry | null>(null); const [notice, setNotice] = useState(''); const [serverError, setServerError] = useState('');
   const costsQuery = useQuery({ queryKey: ['costs', projectId], queryFn: () => api.get<CostEntry[]>(`/projects/${projectId}/costs`) });
   const budgetQuery = useQuery({ queryKey: ['budget', projectId], queryFn: () => api.get<BudgetItem[]>(`/projects/${projectId}/budget`) });
   const downstreamQuery = useQuery({ queryKey: ['downstream-contracts', projectId], queryFn: () => api.get<{ items: DownstreamContractOption[] }>(`/projects/${projectId}/downstream-contracts`) });
@@ -110,7 +111,7 @@ export default function CostsPage() {
   if (costsQuery.error || budgetQuery.error || downstreamQuery.error) return <div className="page-wrap"><ErrorBlock message={(costsQuery.error ?? budgetQuery.error ?? downstreamQuery.error as Error).toString()} retry={() => { void costsQuery.refetch(); void budgetQuery.refetch(); void downstreamQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap">
-    <PageHeader eyebrow="PROJECT COST / ACTUALS" title="实际成本录入" subtitle="按人工、材料、机械、分包和间接费分类登记，形成实际发生的成本台账。" actions={<><ProjectLedgerReportButton reportKey="actual-cost" /><Button variant="secondary" onClick={() => exportCosts(filtered)}><Download size={15} />导出 CSV</Button><Button onClick={() => setDialogOpen(true)}><Plus size={16} />新增成本</Button></>} />
+    <PageHeader eyebrow="PROJECT COST / ACTUALS" title="实际成本录入" subtitle="按人工、材料、机械、分包和间接费分类登记，形成实际发生的成本台账。" actions={<><ProjectLedgerReportButton reportKey="actual-cost" /><Button variant="secondary" onClick={() => exportCosts(filtered)}><Download size={15} />导出 CSV</Button><Button variant="secondary" onClick={() => setImportOpen(true)}><Upload size={15} />导入</Button><Button onClick={() => setDialogOpen(true)}><Plus size={16} />新增成本</Button></>} />
     {notice && <div className="success-notice">{notice}<button onClick={() => setNotice('')}><X size={14} /></button></div>}{serverError && <div className="form-alert">{serverError}</div>}
     <div className="cost-type-cards">{costTypes.filter((item) => item.value !== 'ALL').map((item) => { const subtotal = rows.filter((r) => r.type === item.value).reduce((sum, row) => sum + row.amount, 0); return <button className={`cost-type-card ${type === item.value ? 'active' : ''}`} aria-pressed={type === item.value} key={item.value} onClick={() => setType(type === item.value ? 'ALL' : item.value as CostType)}><span className="cost-type-label">{item.label}</span><strong>{formatMoney(subtotal, 0)}</strong><small>{rows.filter((r) => r.type === item.value).length} 条记录</small></button>; })}</div>
     <div className="panel data-table-panel"><div className="panel-heading"><div><h3>成本明细台账</h3><p>当前筛选 {filtered.length} 条 · 合计 {formatMoney(total, 0)} · 金额单位：元</p></div><div className="table-heading-actions">{type !== 'ALL' && <button type="button" className="ldg-tool-link" onClick={() => setType('ALL')}>清除类型筛选</button>}</div></div>
@@ -120,5 +121,6 @@ export default function CostsPage() {
     <PageNote>“实际成本”仅表示已录入且未归档的发生额。请将发生额关联至相应采购/分包合同；合同付款台账只计入现金流，不能重复计入实际成本。尚未签约的剩余工作仍需通过预计成本测算管理。</PageNote>
     {dialogOpen && <CostDialog projectId={projectId} items={budgetQuery.data ?? []} contracts={downstreamQuery.data?.items ?? []} onClose={() => setDialogOpen(false)} />}
     {linkingEntry && <CostContractLinkDialog projectId={projectId} entry={linkingEntry} contracts={downstreamQuery.data?.items ?? []} onClose={() => setLinkingEntry(null)} onNotice={setNotice} />}
+    {importOpen && <CostImportDialog projectId={projectId} onClose={() => setImportOpen(false)} onImported={(count) => { setNotice(`已导入 ${count} 条成本记录。`); void costsQuery.refetch(); }} />}
   </div>;
 }

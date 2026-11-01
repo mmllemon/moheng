@@ -20,7 +20,7 @@ export interface BudgetXlsxInspection {
   cellTypes: string[][];
 }
 
-function preflightZip(buffer: Buffer): void {
+export function preflightZip(buffer: Buffer): void {
   const minimumEocd = 22;
   const eocdSearchStart = Math.max(0, buffer.length - 22 - 0xffff);
   let eocd = -1;
