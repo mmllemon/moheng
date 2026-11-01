@@ -64,3 +64,55 @@ jobs:
         run: npm run db:generate
       - name: Run advisory gates (non-blocking)
         run: node scripts/run-gates.mjs --tier advisory --capture
+
+  db-integration:
+    name: Database migrations and PostgreSQL integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # 前两张 job 都刻意不连库（占位 DATABASE_URL），所以「迁移没应用」
+    # 「迁移与 schema.prisma 不相等」这类问题在 PR 阶段看不见。
+    # 2026-10-29 就是这么漏的：运行库少一条迁移，全站接口 500。
+    # 这个 job 用真实 PostgreSQL 把迁移链跑一遍，并跑两个 PG 集成套件。
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: moheng
+          POSTGRES_PASSWORD: moheng
+          POSTGRES_DB: moheng_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U moheng -d moheng_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://moheng:moheng@127.0.0.1:5432/moheng_ci?schema=public
+      ASSISTANT_POC_ENABLED: 'false'
+      REPORT_STUDIO_DATA_TESTS: 'true'
+      ASSISTANT_RECOVERY_TESTS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Require committed root package lock
+        run: test -f package-lock.json
+      - name: Install dependencies reproducibly
+        run: npm ci --no-audit --no-fund
+      - name: Generate Prisma client
+        run: npm run db:generate
+      - name: Apply every migration to an empty database
+        run: npm run prisma:deploy -w @cms/api
+      - name: Assert no migration is left pending
+        working-directory: apps/api
+        run: npx prisma migrate status
+      - name: Assert migrations reproduce schema.prisma exactly
+        working-directory: apps/api
+        # --exit-code：有差异时以非零退出，把「迁移链与 schema 漂移」变成硬失败。
+        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+      - name: Report Studio data integration (real PostgreSQL)
+        run: npm run test:report-studio-data:postgres -w @cms/api
+      - name: Assistant recovery integration (real PostgreSQL)
+        run: npm run test:assistant-recovery:postgres -w @cms/api
