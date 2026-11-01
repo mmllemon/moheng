@@ -139,7 +139,7 @@ Absolutely、delve、deep-think、新暖纸 `new-warm-paper`、青夜·高对比
 > tab squircle 11 / round 1。全库 squircle 1262 次、round 336 次，而 round 几乎全给了圆形元素
 > （`border-radius: 50%` 的头像、徽标、spinner、关闭圆钮）。
 > 正确结论：**矩形控件用 squircle，圆形元素用 round**；墨衡旧实现按错误口径只落了 62 处 `corner-shape`，
-> 这是与 Hana 形态差异的主因。修法见 [UI 差异诊断](UI差异诊断-hana1135.md)。
+> 这是与 Hana 形态差异的主因。修法见 [UI 差异诊断](archive/UI差异诊断-hana1135.md)。
 > 系数 1.8409 本身 ✅ 实证（`continuous-corners.css`，squircle 支持时生效，否则回退 1）；各档基数 6/5/4/8 为 ⚠ DOM 实测。
 - 状态 token：`--state-hover-bg`（4% 墨色）、`--state-hover-bg-strong`（7%）、`--state-selected-bg`（7% accent）、`--state-selected-border`（18% accent）、`--state-focus-bg`（4% accent）、`--state-focus-ring`（52% accent）。列表/表格/命令项/会话行共用，禁止再写 `#f6f1e5`、bronze 首列竖条或 hover 改 padding。
 - 卡片 inset：`--card-inset: var(--space-16)`。卡片正文、汇总格、提示条、列表行、空状态至少 16px 横向内缩；表头/表格通过 16px 外边距而不是把首个单元格贴到卡片边缘。
