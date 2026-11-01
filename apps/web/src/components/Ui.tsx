@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDownRight, ArrowUpRight, Plus, Search, type LucideIcon } from 'lucide-react';
+import { describeError } from '../lib/errors';
 
 export function Section({ title, subtitle, actions, icon: Icon, children, className = '' }: {
   title: string; subtitle?: string; actions?: ReactNode; icon?: LucideIcon; children: ReactNode; className?: string;
@@ -227,8 +228,16 @@ export function LoadingBlock({ label = '正在加载数据…' }: { label?: stri
   return <div className="loading-block"><span className="spinner" />{label}</div>;
 }
 
-export function ErrorBlock({ message, retry }: { message: string; retry?: () => void }) {
-  return <div className="error-block"><strong>数据暂时不可用</strong><p>{message}</p>{retry && <Button variant="secondary" onClick={retry}>重试</Button>}</div>;
+export function ErrorBlock({ message, error, retry }: { message?: string; error?: unknown; retry?: () => void }) {
+  /* 标题与下一步由 describeError 定性：服务端 5xx、权限 403、登录失效、
+     网络断开、迁移未应用不再长得一模一样（都是“数据暂时不可用”）。 */
+  const view = describeError(error, message);
+  return <div className="error-block">
+    <strong>{view.title}</strong>
+    <p>{view.hint}</p>
+    {view.code && <small className="error-block-code">错误码 {view.code}</small>}
+    {retry && <Button variant="secondary" onClick={retry}>重试</Button>}
+  </div>;
 }
 
 /* DataPanel：卡头 + 状态分支 + 内容。

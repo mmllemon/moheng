@@ -41,7 +41,7 @@ export default function SystemManagementPage() {
   if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
   if (usersQuery.isLoading || sessionsQuery.isLoading || eventsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在汇总系统管理状态…" /></div>;
   const failedQuery = usersQuery.error ? usersQuery : sessionsQuery.error ? sessionsQuery : eventsQuery.error ? eventsQuery : null;
-  if (failedQuery) return <div className="page-wrap"><ErrorBlock message={(failedQuery.error as Error).message} retry={() => { void usersQuery.refetch(); void sessionsQuery.refetch(); void eventsQuery.refetch(); }} /></div>;
+  if (failedQuery) return <div className="page-wrap"><ErrorBlock error={failedQuery.error} retry={() => { void usersQuery.refetch(); void sessionsQuery.refetch(); void eventsQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap system-management-page">
     {/* 页面级操作按钮：PageHeader 在设置窗内会自动 portal 到标题栏，

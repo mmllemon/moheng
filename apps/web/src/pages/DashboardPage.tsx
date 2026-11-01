@@ -55,7 +55,7 @@ export default function DashboardPage() {
   }), [data?.projects, sortKey]);
 
   if (dashboard.isLoading) return <div className="page-wrap"><LoadingBlock label="正在汇总全部可访问项目…" /></div>;
-  if (dashboard.error) return <div className="page-wrap"><ErrorBlock message={(dashboard.error as Error).message} retry={() => void dashboard.refetch()} /></div>;
+  if (dashboard.error) return <div className="page-wrap"><ErrorBlock error={dashboard.error} retry={() => void dashboard.refetch()} /></div>;
 
   const totals = data!.totals;
   const constructionCount = data!.projects.filter((project) => project.status === 'CONSTRUCTION').length;

@@ -109,7 +109,7 @@ export default function SystemDictionariesPage() {
 
   if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
   if (dictionariesQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在读取统一基础字典…" /></div>;
-  if (dictionariesQuery.error) return <div className="page-wrap"><ErrorBlock message={(dictionariesQuery.error as Error).message} retry={() => { void dictionariesQuery.refetch(); }} /></div>;
+  if (dictionariesQuery.error) return <div className="page-wrap"><ErrorBlock error={dictionariesQuery.error} retry={() => { void dictionariesQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page system-config-page">
     <PageHeader eyebrow="SYSTEM MANAGEMENT / DICTIONARIES" title="统一基础字典" subtitle="集中维护跨业务模块可复用的分类与选项。编码创建后保持稳定；停用只影响后续选择，不删除历史记录。合同金额、结算状态等核心财务枚举不会被动态字典直接覆盖。" actions={<Button size="header" variant="ghost" onClick={() => { void dictionariesQuery.refetch(); }}><RefreshCw size={14} />刷新</Button>} />

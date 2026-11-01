@@ -9793,3 +9793,54 @@ textarea {
   font-size: var(--fs-hint);
   line-height: 1.5;
 }
+
+/* -------------------------------------------------------------
+  库结构提示条（SchemaStateNotice）
+  -------------------------------------------------------------
+  一条系统状态，不是页面内容：固定在主内容区底部，不参与页面层级，
+  也不随内容滚动。纸面卡片样式，与 .panel 同一套 token，不用 !important。
+------------------------------------------------------------- */
+.schema-state-notice {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  z-index: 45;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-10);
+  padding: var(--space-12) var(--space-14);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft, 0 6px 24px -18px rgba(19, 25, 23, 0.45));
+}
+.schema-state-notice p { display: flex; flex-direction: column; gap: var(--space-2); margin: 0; min-width: 0; }
+.schema-state-notice strong { color: var(--text); font-size: var(--fs-ui); font-weight: 600; }
+.schema-state-notice p span { color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.5; word-break: break-word; }
+.schema-state-notice-mark {
+  width: 8px; height: 8px; flex: 0 0 8px; margin-top: 6px; border-radius: 50%;
+  background: var(--accent);
+}
+.schema-state-notice.is-unreachable .schema-state-notice-mark { background: var(--danger, #b4453a); }
+.schema-state-notice-close {
+  margin-left: auto; flex: 0 0 auto; align-self: center;
+  height: 26px; padding: 0 var(--space-10);
+  border: 1px solid var(--border); border-radius: var(--radius-control);
+  background: transparent; color: var(--text-muted);
+  font-size: var(--fs-hint); cursor: pointer;
+}
+.schema-state-notice-close:hover { color: var(--text); border-color: var(--accent); }
+@media (max-width: 640px) {
+  .schema-state-notice { left: 10px; right: 10px; bottom: 10px; }
+}
+
+/* 错误块里的错误码：只给排障用，弱化到提示级，不抢标题。 */
+.error-block-code {
+  display: block;
+  margin-top: var(--space-4);
+  color: var(--text-muted);
+  font-family: var(--font-num, var(--num));
+  font-size: var(--text-2xs, var(--fs-hint));
+  letter-spacing: 0.02em;
+}

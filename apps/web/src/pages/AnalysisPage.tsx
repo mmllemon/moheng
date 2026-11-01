@@ -29,7 +29,7 @@ export default function AnalysisPage() {
   const query = useQuery({ queryKey: ['analysis', projectId], queryFn: () => api.get<Analysis>(`/projects/${projectId}/analysis/three-way`) });
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
   if (query.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
-  if (query.error) return <div className="page-wrap"><ErrorBlock message={(query.error as Error).message} retry={() => void query.refetch()} /></div>;
+  if (query.error) return <div className="page-wrap"><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
   const data = query.data!;
   const project = projectsQuery.data?.find((item) => item.id === projectId);
   const asOf = (() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; })();

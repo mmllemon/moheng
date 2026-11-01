@@ -47,7 +47,7 @@ export default function SystemSecurityPage() {
   const [tab, setTab] = useState<'sessions' | 'events'>('sessions');
   if (user?.role !== 'ADMIN') return <div className="page-wrap"><PageHeader eyebrow="SYSTEM / SECURITY" title="安全中心" subtitle="登录事件与会话控制仅对系统管理员开放。" /><EmptyState title="没有管理权限" description="请使用系统管理员账号登录后查看安全事件。" /></div>;
   if (sessionsQuery.isLoading || eventsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在加载登录安全信息…" /></div>;
-  if (sessionsQuery.error || eventsQuery.error) return <div className="page-wrap"><ErrorBlock message={((sessionsQuery.error ?? eventsQuery.error) as Error).message} retry={() => { void sessionsQuery.refetch(); void eventsQuery.refetch(); }} /></div>;
+  if (sessionsQuery.error || eventsQuery.error) return <div className="page-wrap"><ErrorBlock error={sessionsQuery.error ?? eventsQuery.error} retry={() => { void sessionsQuery.refetch(); void eventsQuery.refetch(); }} /></div>;
 
   const sessions = sessionsQuery.data ?? [];
   const events = eventsQuery.data ?? [];

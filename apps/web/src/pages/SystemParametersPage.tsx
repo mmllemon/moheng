@@ -58,7 +58,7 @@ export default function SystemParametersPage() {
   if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
   if (projectsQuery.isLoading || revisionsQuery.isLoading || effectiveQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在读取统一参数与版本历史…" /></div>;
   const failedQuery = [projectsQuery, revisionsQuery, effectiveQuery].find((query) => query.error);
-  if (failedQuery?.error) return <div className="page-wrap"><ErrorBlock message={(failedQuery.error as Error).message} retry={() => { void projectsQuery.refetch(); void revisionsQuery.refetch(); void effectiveQuery.refetch(); }} /></div>;
+  if (failedQuery?.error) return <div className="page-wrap"><ErrorBlock error={failedQuery.error} retry={() => { void projectsQuery.refetch(); void revisionsQuery.refetch(); void effectiveQuery.refetch(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page system-config-page">
     <PageHeader eyebrow="SYSTEM MANAGEMENT / PARAMETERS" title="统一参数配置" subtitle="配置采用版本化草稿与显式发布；支持全局默认值、项目级覆盖和历史版本回滚。敏感密钥必须存入环境变量或集成凭据保险库，不作为普通参数保存。" actions={<Button size="header" variant="ghost" onClick={() => { void refresh(); }}><RefreshCw size={14} />刷新</Button>} />

@@ -53,7 +53,14 @@ verify('department ancestor query uses explicitly typed cursor snapshot', () => 
 verify('SystemPoliciesPage uses ErrorBlock message prop', () => assert.match(policiesPage, /<ErrorBlock message=\{loadError instanceof Error \? loadError\.message : String\(loadError\)\}/));
 verify('SystemPoliciesPage uses ErrorBlock retry prop', () => assert.match(policiesPage, /retry=\{\(\) => \{ void accessQuery\.refetch\(\); void workflowQuery\.refetch\(\); void rulesQuery\.refetch\(\); \}\}/));
 verify('SystemPoliciesPage no longer uses invalid ErrorBlock props', () => assert.doesNotMatch(policiesPage, /<ErrorBlock error=\{loadError\} onRetry=/));
-verify('ErrorBlock component contract remains message/retry', () => assert.match(uiComponents, /export function ErrorBlock\(\{ message, retry \}: \{ message: string; retry\?: \(\) => void \}\)/));
+verify('ErrorBlock accepts message/error/retry and never renders raw stack details', () => {
+  assert.match(uiComponents, /export function ErrorBlock\(\{ message, error, retry \}: \{ message\?: string; error\?: unknown; retry\?: \(\) => void \}\)/);
+  /* 定性交给 describeError，组件本身只渲染 title/hint/code，不把 stack 或整个错误对象丢到界面上。
+     （旧断言把签名钉成 message/retry，是 R7 修完非法 error+onRetry 那轮的产物；
+     现在 error 作为“可分类的原始错误”重新引入，但 message 仍兼容。） */
+  assert.match(uiComponents, /describeError\(error, message\)/);
+  assert.doesNotMatch(uiComponents, /error\.stack|JSON\.stringify\(error\)/);
+});
 verify('Fastify unknown error is safely narrowed', () => assert.match(server, /error instanceof Error \? error\.message : String\(error\)/));
 
 for (const [pkg, version] of Object.entries({

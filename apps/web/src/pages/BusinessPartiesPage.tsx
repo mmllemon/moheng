@@ -36,7 +36,7 @@ export default function BusinessPartiesPage() {
   };
 
   if (query.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
-  if (query.error) return <div className="page-wrap"><ErrorBlock message={(query.error as Error).message} retry={() => void query.refetch()} /></div>;
+  if (query.error) return <div className="page-wrap"><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
   return <div className="page-wrap business-parties-page">
     <PageHeader eyebrow="BUSINESS PARTIES / MASTER DATA" title="往来单位库" subtitle="统一维护建设单位、材料供应商、分包、租赁与服务单位；合同相对方通过统一单位 ID 关联。主体身份未核验前，跨项目汇总仅作初步查询。" actions={<Button onClick={() => { setCreateOpen(true); setError(''); }}><FilePlus2 size={15} />新建单位档案</Button>} />
     <section className="business-party-summary-strip"><div><Building2 size={18} /><span><strong>{query.data?.length ?? 0}</strong><small>搜索匹配单位</small></span></div><div><Users size={18} /><span><strong>{new Set((query.data ?? []).flatMap((p) => p.roles)).size}</strong><small>已使用角色类型</small></span></div><p>单位档案是公司级主数据；单位经营档案的项目金额只统计当前账号有权限访问的项目。</p></section>

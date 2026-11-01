@@ -148,7 +148,7 @@ export default function DownstreamContractsPage() {
     onError: (cause) => setError(cause instanceof ApiError ? cause.message : '合同状态更新失败'),
   });
   if (query.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
-  if (query.error) return <div className="page-wrap"><ErrorBlock message={(query.error as Error).message} retry={() => void query.refetch()} /></div>;
+  if (query.error) return <div className="page-wrap"><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
   const rows = query.data?.items ?? []; const summary = query.data?.summary;
   return <div className="page-wrap">
     <PageHeader eyebrow="PROJECT COST / COMMITMENTS" title="分供合同台账" subtitle="统一管理分包、材料采购、机械租赁与服务合同；合同金额、实际成本和现金支付分别核算。" actions={<><ProjectLedgerReportButton reportKey="downstream-contracts" /><Button variant="secondary" onClick={() => navigate('/cost/downstream?view=finance')}>结算与应付账款<ArrowRight size={14} /></Button><Button onClick={() => setCreating(true)}><Plus size={16} />新增分供合同</Button></>} />

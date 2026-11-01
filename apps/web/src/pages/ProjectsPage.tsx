@@ -141,7 +141,7 @@ export default function ProjectsPage() {
 
 
   if (projectsQuery.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
-  if (projectsQuery.error) return <div className="page-wrap"><ErrorBlock message={(projectsQuery.error as Error).message} retry={() => void projectsQuery.refetch()} /></div>;
+  if (projectsQuery.error) return <div className="page-wrap"><ErrorBlock error={projectsQuery.error} retry={() => void projectsQuery.refetch()} /></div>;
 
   return <div className="page-wrap projects-page projects-ledger-page">
     <PageHeader eyebrow="WORKSPACE / PROJECTS" title="项目管理" subtitle="先判断项目经营状态，再进入具体合同、目标成本、成本与结算工作。" actions={<Button onClick={() => setDialog({ open: true })}><Plus size={16} />新建项目</Button>} />

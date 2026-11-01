@@ -149,7 +149,7 @@ export default function AuditLogsPage() {
       context={<Button variant="ghost" onClick={() => void logsQuery.refetch()} disabled={logsQuery.isFetching}><RefreshCw size={14} className={logsQuery.isFetching ? 'audit-refreshing' : ''} />刷新</Button>}
     >
       <SettingsSection.Card density="padded" className="audit-table-panel">
-      {logsQuery.isLoading ? <LoadingBlock label="正在加载操作记录…" /> : logsQuery.error ? <ErrorBlock message={(logsQuery.error as Error).message} retry={() => void logsQuery.refetch()} /> : !result?.items.length ? <EmptyState title="没有匹配的操作记录" description="可以调整项目、业务对象或日期范围，或者重置筛选条件。" action={resetFilters} /> : <>
+      {logsQuery.isLoading ? <LoadingBlock label="正在加载操作记录…" /> : logsQuery.error ? <ErrorBlock error={logsQuery.error} retry={() => void logsQuery.refetch()} /> : !result?.items.length ? <EmptyState title="没有匹配的操作记录" description="可以调整项目、业务对象或日期范围，或者重置筛选条件。" action={resetFilters} /> : <>
         <div className="table-scroll"><table className="data-table audit-log-table"><thead><tr><th>操作时间</th><th>操作人</th><th>项目</th><th>业务对象</th><th>操作类型</th><th>变更摘要</th><th>详情</th></tr></thead><tbody>{result.items.map((item) => <Fragment key={item.id}>
           <tr key={item.id} className={`audit-log-row ${expandedId === item.id ? 'is-expanded' : ''}`}>
             <td className="audit-time-cell"><strong>{new Date(item.createdAt).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })}</strong><small>{new Date(item.createdAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</small></td>

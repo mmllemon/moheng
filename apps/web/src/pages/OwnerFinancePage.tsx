@@ -116,7 +116,7 @@ export default function OwnerFinancePage() {
   }
 
   if (query.isLoading) return <div className="page-wrap owner-finance-page"><LoadingBlock label="正在加载业主结算与应收账款…" /></div>;
-  if (query.error) return <div className="page-wrap owner-finance-page"><ErrorBlock message={(query.error as Error).message} retry={() => void query.refetch()} /></div>;
+  if (query.error) return <div className="page-wrap owner-finance-page"><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
   if (!projectId || !data?.hasMainContract) return <div className="page-wrap owner-finance-page"><EmptyState title="尚未建立业主主合同" description="请先在“业主主合同”中建立项目主合同，再办理竣工结算、应收账款与收款核销。" /></div>;
 
   const tabs = [

@@ -335,7 +335,7 @@ export default function BudgetPage() {
   }
 
   if (budgetQuery.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
-  if (budgetQuery.error) return <div className="page-wrap"><ErrorBlock message={(budgetQuery.error as Error).message} retry={() => void budgetQuery.refetch()} /></div>;
+  if (budgetQuery.error) return <div className="page-wrap"><ErrorBlock error={budgetQuery.error} retry={() => void budgetQuery.refetch()} /></div>;
   return <div className="page-wrap budget-page">
     <PageHeader
       title="预算与目标成本"

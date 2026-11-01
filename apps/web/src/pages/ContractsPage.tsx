@@ -56,7 +56,7 @@ export default function ContractsPage() {
   });
 
   if (contractQuery.isLoading || projectQuery.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
-  if (contractQuery.error || projectQuery.error) return <div className="page-wrap"><ErrorBlock message={(contractQuery.error ?? projectQuery.error as Error).toString()} retry={() => { void contractQuery.refetch(); void projectQuery.refetch(); }} /></div>;
+  if (contractQuery.error || projectQuery.error) return <div className="page-wrap"><ErrorBlock error={contractQuery.error ?? projectQuery.error} retry={() => { void contractQuery.refetch(); void projectQuery.refetch(); }} /></div>;
 
   const contract = contractQuery.data;
   const originalAmount = contract?.originalContractAmount ?? contract?.amount ?? 0;

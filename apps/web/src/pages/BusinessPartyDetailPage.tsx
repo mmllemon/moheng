@@ -36,7 +36,7 @@ export default function BusinessPartyDetailPage() {
   }
   function goProject(projectId: string) { setSelectedProjectId(projectId); navigate('/cost'); }
   if (query.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
-  if (query.error) return <div className="page-wrap"><ErrorBlock message={(query.error as Error).message} retry={() => void query.refetch()} /></div>;
+  if (query.error) return <div className="page-wrap"><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
   const data = query.data!; const { party, summary } = data;
   return <div className="page-wrap business-party-detail-page">
     <div className="business-party-backline"><Link to="/parties"><ArrowLeft size={15} />返回往来单位库</Link><span>最后更新：{formatDate(party.updatedAt)}</span></div>

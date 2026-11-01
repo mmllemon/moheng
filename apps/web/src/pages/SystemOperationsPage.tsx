@@ -44,7 +44,7 @@ export default function SystemOperationsPage() {
 
   if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
   if (overviewQuery.isLoading || backupsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在检查服务、数据库、任务与备份状态…" /></div>;
-  if (overviewQuery.error) return <div className="page-wrap"><ErrorBlock message={(overviewQuery.error as Error).message} retry={() => { void reload(); }} /></div>;
+  if (overviewQuery.error) return <div className="page-wrap"><ErrorBlock error={overviewQuery.error} retry={() => { void reload(); }} /></div>;
   if (!overview) return <div className="page-wrap"><ErrorBlock message="系统状态暂时不可用" retry={() => { void reload(); }} /></div>;
 
   const totalJobs = Object.values(overview.backgroundJobs.counts).reduce((sum, value) => sum + value, 0);

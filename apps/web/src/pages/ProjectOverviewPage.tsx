@@ -24,7 +24,7 @@ export default function ProjectOverviewPage() {
   const queries = [projectQuery, analysisQuery, billsQuery, changesQuery, downstreamQuery];
   if (queries.some((query) => query.isLoading)) return <div className="page-wrap"><LoadingBlock label="正在汇总项目经营数据…" /></div>;
   const failed = queries.find((query) => query.error);
-  if (failed) return <div className="page-wrap"><ErrorBlock message={(failed.error as Error).message} retry={() => { queries.forEach((query) => void query.refetch()); }} /></div>;
+  if (failed) return <div className="page-wrap"><ErrorBlock error={failed.error} retry={() => { queries.forEach((query) => void query.refetch()); }} /></div>;
 
   const project = projectQuery.data!;
   const analysis = analysisQuery.data!;

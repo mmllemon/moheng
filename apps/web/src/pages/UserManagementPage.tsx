@@ -69,7 +69,7 @@ export default function UserManagementPage() {
 
   if (currentUser?.role !== 'ADMIN') return <div className="page-wrap"><PageHeader eyebrow="SYSTEM / ACCOUNT ADMIN" title="系统账号管理" subtitle="公司级账号身份管理仅对系统管理员开放。" /><EmptyState title="没有管理权限" description="请使用系统管理员账号登录后维护系统账号。" /></div>;
   if (usersQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在加载系统账号…" /></div>;
-  if (usersQuery.error) return <div className="page-wrap"><ErrorBlock message={(usersQuery.error as Error).message} retry={() => void usersQuery.refetch()} /></div>;
+  if (usersQuery.error) return <div className="page-wrap"><ErrorBlock error={usersQuery.error} retry={() => void usersQuery.refetch()} /></div>;
   const users = usersQuery.data ?? [];
 
   return <div className="page-wrap">

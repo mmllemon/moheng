@@ -19,6 +19,7 @@ import ToastHost from './ToastHost';
 import FocusTrap from './FocusTrap';
 import PaperDialogMorph from './PaperDialogMorph';
 import UiPreferencesBar from './UiPreferencesBar';
+import SchemaStateNotice from './SchemaStateNotice';
 import { ProjectList } from './ProjectList';
 import { PanelMenu } from './PanelMenu';
 import { WindowControls } from './WindowControls';
@@ -760,6 +761,7 @@ export default function Layout() {
           logout={logout}
         />
         {isSettingsArea ? <div className="settings-underlay" aria-hidden="true" /> : <div className="route-transition" key={location.pathname}><Outlet /></div>}
+        <SchemaStateNotice />
       </main>
       <FocusTrap />
       <PaperDialogMorph />

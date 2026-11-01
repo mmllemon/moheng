@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { prisma } from './lib/prisma.js';
 import { APP_VERSION, API_MAJOR_VERSION } from './platform/app-info.js';
 import { getApiModuleCatalog, registerApiModules } from './platform/module-registry.js';
+import { describeSchemaState } from './platform/schema-state.js';
 import { failure, success } from './lib/http.js';
 import { startBackgroundWorker } from './lib/background-job-worker.js';
 import {
@@ -205,6 +206,9 @@ app.get('/api/meta', async () => success({
   apiBasePath: '/api',
   compatibilityPolicy: '现有 /api 路径在 v1 兼容周期内保持稳定；破坏性变更需引入新的主版本路径。',
   modules: getApiModuleCatalog(),
+  /* 库与仓库迁移目录是否对齐。前端据此提示“库落后几条迁移”，
+     而不是让每个业务接口各自 500、页面统一显示“数据暂时不可用”。 */
+  schemaState: await describeSchemaState(),
 }));
 
 // In production, serve the compiled React SPA from the same origin as the API.

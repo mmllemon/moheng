@@ -56,7 +56,7 @@ export default function SystemAuthorizationPage() {
   if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
   const failedQuery = [matrixQuery, reviewsQuery].find((query) => query.error);
   if (matrixQuery.isLoading || reviewsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在读取权限基线与授权复核记录…" /></div>;
-  if (failedQuery?.error) return <div className="page-wrap"><ErrorBlock message={(failedQuery.error as Error).message} retry={() => { void refresh(); }} /></div>;
+  if (failedQuery?.error) return <div className="page-wrap"><ErrorBlock error={failedQuery.error} retry={() => { void refresh(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page system-authorization-page">
     <PageHeader eyebrow="SYSTEM MANAGEMENT / AUTHORIZATION" title="权限治理与授权复核" subtitle="展示现行服务端角色规则，按项目成员关系复核跨项目访问。该页面不直接授予权限；角色分配仍通过项目管理流程完成。" actions={<Button size="header" variant="ghost" onClick={() => { void refresh(); }}><RefreshCw size={14} />刷新</Button>} />
@@ -85,7 +85,7 @@ export default function SystemAuthorizationPage() {
     </SettingsSection>
 
     {selectedReviewId && <SettingsSection hidden={tab !== 'reviews'} className="system-authorization-detail" title={detail ? `快照详情 · ${displayDate(detail.createdAt)}` : '快照详情'} description="快照只反映生成时刻的授权状态，不会随之后的成员变更而改写。" actions={detail ? <StatusBadge status={detail.status === 'REVIEWED' ? 'ACTIVE' : 'PENDING'} /> : null}>
-      {detailQuery.isLoading ? <LoadingBlock label="正在读取授权复核快照…" /> : detailQuery.error ? <ErrorBlock message={(detailQuery.error as Error).message} retry={() => { void detailQuery.refetch(); }} /> : detail ? <>
+      {detailQuery.isLoading ? <LoadingBlock label="正在读取授权复核快照…" /> : detailQuery.error ? <ErrorBlock error={detailQuery.error} retry={() => { void detailQuery.refetch(); }} /> : detail ? <>
         {snapshot?.truncated && <p className="system-quality-truncated settings-inset-block">本次快照触及记录上限，标记为截断；不能将统计视为全量授权清单。</p>}
         <div className="system-quality-summary system-authorization-stats"><div><small>启用账号</small><strong>{detail.summary.activeAccounts}</strong></div><div><small>项目授权</small><strong>{detail.summary.grants}</strong></div><div><small>需复核项目</small><strong className={detail.summary.projectsWithoutOwner == null || detail.summary.projectsWithoutOwner > 0 ? 'quality-warning' : ''}>{detail.summary.projectsWithoutOwner == null ? '未完整计算' : detail.summary.projectsWithoutOwner}</strong></div><div><small>发现项</small><strong className={detail.summary.findings ? 'quality-warning' : 'quality-ok'}>{detail.summary.findings}</strong></div></div>
         <div className="settings-subhead"><div><h3>发现项</h3><p>以下为复核提示，并不代表系统已自动更改授权。</p></div></div>

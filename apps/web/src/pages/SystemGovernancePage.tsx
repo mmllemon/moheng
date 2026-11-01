@@ -67,7 +67,7 @@ export default function SystemGovernancePage() {
   if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
   const loadError = [departmentsQuery, usersQuery, rulesQuery, integrationsQuery].find((query) => query.error);
   if (departmentsQuery.isLoading || usersQuery.isLoading || rulesQuery.isLoading || integrationsQuery.isLoading) return <div className="page-wrap"><LoadingBlock label="正在加载组织、规则与集成配置…" /></div>;
-  if (loadError?.error) return <div className="page-wrap"><ErrorBlock message={(loadError.error as Error).message} retry={() => { void refreshAll(); }} /></div>;
+  if (loadError?.error) return <div className="page-wrap"><ErrorBlock error={loadError.error} retry={() => { void refreshAll(); }} /></div>;
 
   return <div className="page-wrap system-expansion-page">
     <PageHeader eyebrow="SYSTEM MANAGEMENT / GOVERNANCE" title="组织、规则与集成治理" subtitle="管理部门归属、内部审批规则版本、外部凭据与数据质量。公司账号角色和项目角色仍分离；发布规则只控制公司内部变更审批，不改变外部确认金额生效规则。" actions={<Button size="header" variant="ghost" onClick={() => { void refreshAll(); }}><RefreshCw size={14} />刷新</Button>} />
