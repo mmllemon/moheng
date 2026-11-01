@@ -1259,3 +1259,101 @@ html .projects-kpi-strip > div:first-child {
   font-style: normal;
   font-weight: 400;
 }
+
+/* -------------------------------------------------------------
+  九、指标区统一（2026-10-29）
+  -------------------------------------------------------------
+  全站指标条一律：纸面上分组，不画卡；上下各一条极淡分隔线；
+  每格四边 16px。单行条额外给项间 1px 竖线（首项无线）。
+
+  背景：区块卡里那四种条（change / bill / downstream / owner-finance）
+  上一轮去掉了卡壳，却没有补内边距 —— 文字直接贴着上下细线；
+  其他页面又没有上下两条线。同一个「指标区」在不同页面长成三种样子。
+
+  特异度：旧规则 html .change-summary-grid > div 是 (0,1,2)，
+  这里用 html body 前缀抬到 (0,1,2) 同级、靠后取胜。
+  两列 / 多行的条只套「不画卡 + 16px 内距 + 上下线」，
+  行首竖线仍由上面的 nth-child 规则处理。
+------------------------------------------------------------- */
+html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
+  .owner-finance-metrics, .security-metrics,
+  .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
+  .ldg-stats, .an-stats) {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
+  .owner-finance-metrics, .security-metrics,
+  .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
+  .ldg-stats, .an-stats) > * {
+  padding: var(--space-16);
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
+  .owner-finance-metrics, .security-metrics,
+  .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
+  .ldg-stats, .an-stats) > :first-child {
+  /* 首格贴齐内容列左缘（容器已无内边距，再留 16px 会整体缩进一格）。 */
+  padding-left: 0;
+  border-left: 0;
+}
+html body :is(.system-overview-metrics, .business-party-summary-strip,
+  .system-authorization-scope-grid, .report-studio-entry-grid,
+  .system-ops-summary) {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+/* 两列 / 多行条的单元格：各自的旧规则特异度较高（例如
+   article.panel.system-overview-metric 与 v6 的 :nth-child(odd)），
+   所以这里按实际元素名逐个抬特异度，把四边内距拉齐到 16px。
+   行首竖线仍交给上面的 nth-child 规则，不在这里重置 border-left。 */
+html body .system-overview-metrics > article.panel.system-overview-metric,
+html body .business-party-summary-strip > div,
+html body .system-authorization-scope-grid > *,
+html body .report-studio-entry-grid > *,
+html body .system-ops-summary > *,
+html body .system-ops-summary > .system-ops-summary-cell {
+  padding: var(--space-16);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+/* 首格贴齐内容列左缘：各条的容器都已无内边距，
+   首格若再留 16px，整条会相对标题缩进一格。 */
+html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
+  .owner-finance-metrics, .security-metrics,
+  .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
+  .ldg-stats, .an-stats) > :first-child,
+html body .system-overview-metrics > article.panel.system-overview-metric:first-child,
+html body .business-party-summary-strip > div:first-child,
+html body .system-authorization-scope-grid > :first-child,
+html body .report-studio-entry-grid > :first-child,
+html body .system-ops-summary > :first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* 区块卡里的四种条：首格左内距被 hana 的
+   .downstream-summary-grid .change-summary:first-child（0,3,0）占着，
+   这里用 0,4,1 压回去，保证与其它指标条一样贴齐内容列。 */
+html body .ds-section-card .downstream-summary-grid > .change-summary:first-child,
+html body .ds-section-card .change-summary-grid > .change-summary:first-child,
+html body .ds-section-card .bill-summary-grid > :first-child,
+html body .ds-section-card .owner-finance-metrics > :first-child {
+  padding-left: 0;
+}
