@@ -160,8 +160,8 @@ export default function AnalysisPage() {
         </dl>
         {data.downstreamContractSummary && <p className="an-basis-note">分供合同：执行中/待结算 {formatMoney(data.downstreamContractSummary.activeAndPendingSettlementContractAmount, 0)}，已关联实际成本 {formatMoney(data.downstreamContractSummary.linkedActualCost, 0)}，累计净付款 {formatMoney(data.downstreamContractSummary.paidAmount, 0)}；承诺、成本、付款不直接相加。</p>}
       </section>
+      <CashflowPanel projectId={projectId} />
     </div>
-    <CashflowPanel projectId={projectId} />
   </div>;
 }
 
