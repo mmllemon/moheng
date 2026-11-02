@@ -593,7 +593,7 @@ async function main() {
     amount: 5_000_000, paidAt: iso('2026-10-22T00:00:00.000Z'), referenceNo: 'SK-D2-01', notes: '业主首期到账',
   });
   const secondDownstream = await admin<{ id: string }>('POST', `/projects/${secondProjectId}/downstream-contracts`, {
-    contractNo: 'D2-CL-01', name: '高低压配电设备采购合同', type: 'MATERIAL_PURCHASE', counterpartyName: '恒瑞钢材贸易有限公司',
+    contractNo: 'D2-CL-01', name: '高低压配电设备采购合同', type: 'MATERIAL_PURCHASE', counterpartyName: '华通电气设备有限公司',
     signedAt: iso('2026-08-01T00:00:00.000Z'), startDate: iso('2026-08-01T00:00:00.000Z'), originalAmount: 6_000_000,
     taxIncluded: true, scope: '配电柜、变压器及配套设备供货。', paymentTerms: '设备到场付 50%，竣工验收后付清。',
   });

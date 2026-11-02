@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
 import type { Analysis, Project, ProjectCashflow } from '../types';
 import { Button, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, percentage, StatusBadge } from '../components/Ui';
+import { CashflowDetail } from '../components/CashflowDetail';
 import { eacCaption } from '../lib/eac-caption';
 
 const typeLabels: Record<string, string> = { LABOR: '人工费', MATERIAL: '材料费', MACHINE: '机械费', SUBCONTRACT: '分包费', INDIRECT: '其他间接费' };
@@ -166,7 +168,15 @@ export default function AnalysisPage() {
 }
 
 function CashflowPanel({ projectId }: { projectId: string }) {
+  const [bucketKey, setBucketKey] = useState<string | null>(null);
   const query = useQuery({ queryKey: ['cashflow', projectId], queryFn: () => api.get<ProjectCashflow>(`/projects/${projectId}/analysis/cashflow`) });
+  // 明细单独取：只有点开某个月才请求，首屏和曲线不受影响。
+  const bucketQuery = useQuery({
+    queryKey: ['cashflow-bucket', projectId, bucketKey],
+    queryFn: () => api.get<ProjectCashflow>(`/projects/${projectId}/analysis/cashflow?bucket=${encodeURIComponent(bucketKey!)}`),
+    enabled: Boolean(bucketKey),
+    staleTime: 30_000,
+  });
   if (query.isLoading) return <div className="an-panel is-full"><div className="an-panel-head"><div><h2>资金计划</h2><p>按到期日统计未来现金进出</p></div></div><LoadingBlock /></div>;
   if (query.error) return <div className="an-panel is-full"><div className="an-panel-head"><div><h2>资金计划</h2></div></div><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
   const plan = query.data!;
@@ -174,10 +184,12 @@ function CashflowPanel({ projectId }: { projectId: string }) {
   const hasCurve = plan.buckets.some((bucket) => bucket.inflow > 0 || bucket.outflow > 0);
   const uncoveredTotal = plan.uncovered.unplannedContractAmount;
   const wan = (value: number) => (value / 10000).toFixed(1);
+  const activeBucket = bucketKey ? plan.buckets.find((bucket) => bucket.key === bucketKey) : undefined;
+  const detail = bucketQuery.data?.bucket;
 
   return <section className="an-panel is-full" aria-label="资金计划">
     <div className="an-panel-head">
-      <div><h2>资金计划</h2><p>未来 {plan.months} 个月 · 只算已经确定到期日的金额</p></div>
+      <div><h2>资金计划</h2><p>未来 {plan.months} 个月 · 只算已经确定到期日的金额 · 点月份看明细</p></div>
       <span className="an-legend"><i className="is-inflow" />应收<i className="is-outflow" />应付</span>
     </div>
     <div className="cf-summary">
@@ -186,18 +198,35 @@ function CashflowPanel({ projectId }: { projectId: string }) {
       <div><span>净额</span><strong className={plan.window.net < 0 ? 'text-danger' : plan.window.net > 0 ? 'text-success' : undefined}>{signed(plan.window.net)}</strong><small>负数表示这个区间要垫钱</small></div>
     </div>
     {hasCurve ? <div className="cf-chart">
-      {plan.buckets.map((bucket) => <div className="cf-month" key={bucket.key}>
-        <div className="cf-bars">
-          <span className="cf-bar is-inflow" title={`${bucket.label} 应收 ${formatMoney(bucket.inflow, 0)}`} style={{ height: bucket.inflow > 0 ? `${Math.max(3, (bucket.inflow / peak) * 100)}%` : 0 }} />
-          <span className="cf-bar is-outflow" title={`${bucket.label} 应付 ${formatMoney(bucket.outflow, 0)}`} style={{ height: bucket.outflow > 0 ? `${Math.max(3, (bucket.outflow / peak) * 100)}%` : 0 }} />
-        </div>
-        <div className="cf-values">{bucket.inflow > 0 || bucket.outflow > 0 ? <span>{wan(bucket.inflow)} / {wan(bucket.outflow)}</span> : <span className="is-blank">—</span>}</div>
+      {plan.buckets.map((bucket) => <button
+        type="button"
+        className={`cf-month${bucketKey === bucket.key ? ' is-active' : ''}`}
+        key={bucket.key}
+        aria-pressed={bucketKey === bucket.key}
+        onClick={() => setBucketKey((current) => current === bucket.key ? null : bucket.key)}
+        title={`${bucket.label}应收 ${formatMoney(bucket.inflow, 0)}，应付 ${formatMoney(bucket.outflow, 0)}；点开看明细`}
+      >
+        <span className="cf-bars">
+          <span className="cf-bar is-inflow" style={{ height: bucket.inflow > 0 ? `${Math.max(3, (bucket.inflow / peak) * 100)}%` : 0 }} />
+          <span className="cf-bar is-outflow" style={{ height: bucket.outflow > 0 ? `${Math.max(3, (bucket.outflow / peak) * 100)}%` : 0 }} />
+        </span>
+        <span className="cf-values">{bucket.inflow > 0 || bucket.outflow > 0 ? <span>{wan(bucket.inflow)} / {wan(bucket.outflow)}</span> : <span className="is-blank">—</span>}</span>
         <small>{bucket.label}</small>
         <em className={bucket.net < 0 ? 'text-danger' : bucket.net > 0 ? 'text-success' : ''}>{bucket.net === 0 ? '持平' : `${bucket.net > 0 ? '+' : '−'}${wan(Math.abs(bucket.net))}万`}</em>
-      </div>)}
+      </button>)}
     </div> : <div className="an-empty">未来 {plan.months} 个月没有带到期日的应收应付；先给应收单补录到期安排，或给分供合同维护付款计划。</div>}
+    {bucketKey && <CashflowDetail
+      title={`${detail?.label ?? activeBucket?.label ?? bucketKey}明细`}
+      subtitle={detail ? `${detail.items.length} 笔 · 应收 ${formatMoney(detail.inflow, 0)} / 应付 ${formatMoney(detail.outflow, 0)}` : undefined}
+      groups={detail ? [{ key: 'project', name: '', detail }] : []}
+      loading={bucketQuery.isLoading}
+      error={(bucketQuery.error as Error | null) ?? null}
+      onRetry={() => void bucketQuery.refetch()}
+      onClose={() => setBucketKey(null)}
+    />}
     {(plan.overdue.inflow > 0 || plan.overdue.outflow > 0) && <p className="an-basis-note">
       已经逾期：应收 {formatMoney(plan.overdue.inflow, 0)}，应付 {formatMoney(plan.overdue.outflow, 0)}。逾期金额不计入上面任何一个月，因为它早就该发生了。
+      <button type="button" className="cf-inline-link" onClick={() => setBucketKey('overdue')}>看明细</button>
     </p>}
     <dl className="an-defs">
       <div><dt>收入口径</dt><dd>应收单净额减已核销；有分期按分期到期日拆开，未指定期次的到账按比例摊回各期</dd></div>

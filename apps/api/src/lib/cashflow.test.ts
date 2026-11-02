@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { allocateScheduleOpen, buildCashflow, type CashflowEntry } from './cashflow.js';
+import { allocateScheduleOpen, buildCashflow, cashflowSlot, type CashflowEntry } from './cashflow.js';
 
 const asOf = new Date('2026-11-02T10:00:00.000Z');
 const entry = (direction: 'INFLOW' | 'OUTFLOW', date: string | null, amount: number, source: CashflowEntry['source'] = 'RECEIVABLE'): CashflowEntry => ({
@@ -112,4 +112,68 @@ test('已核销完的分期不返回', () => {
 test('没有分期或未收额为零时返回空数组', () => {
   assert.deepEqual(allocateScheduleOpen({ totalOpen: 0, schedules: [{ id: 'a', amount: 1, allocated: 0 }] }), []);
   assert.deepEqual(allocateScheduleOpen({ totalOpen: 100, schedules: [] }), []);
+});
+
+test('下钻明细合计与图表同月桶严格相等', () => {
+  const entries: CashflowEntry[] = [
+    entry('INFLOW', '2026-11-15', 1_000_000),
+    entry('INFLOW', '2026-11-28', 500_000.5),
+    entry('OUTFLOW', '2026-11-20', 800_000.25, 'PAYABLE'),
+    entry('OUTFLOW', '2026-11-25', 300_000, 'PLAN'),
+    entry('OUTFLOW', '2026-12-01', 9_999, 'PAYABLE'),
+  ];
+  const plan = buildCashflow(entries, { asOf });
+  const bucket = plan.buckets[0]!;
+  const slot = cashflowSlot(entries, { asOf, key: bucket.key });
+  assert.equal(slot.items.length, 4);
+  assert.equal(Math.round(slot.inflow * 100), Math.round(bucket.inflow * 100));
+  assert.equal(Math.round(slot.outflow * 100), Math.round(bucket.outflow * 100));
+  assert.equal(Math.round(slot.net * 100), Math.round(bucket.net * 100));
+  // 明细分到分，不能因为浮点相加出现 0.01 的偏差
+  assert.equal(Math.round(slot.inflow * 100), 150_000_050);
+  assert.equal(Math.round(slot.outflow * 100), 110_000_025);
+  assert.equal(slot.label, '11月');
+});
+
+test('下钻明细按先收后付、到期日升序排列', () => {
+  const entries: CashflowEntry[] = [
+    entry('OUTFLOW', '2026-11-05', 100, 'PAYABLE'),
+    entry('INFLOW', '2026-11-20', 200),
+    entry('INFLOW', '2026-11-03', 300),
+  ];
+  const slot = cashflowSlot(entries, { asOf, key: '2026-11' });
+  assert.deepEqual(slot.items.map((item) => `${item.direction}:${item.amount}`), ['INFLOW:300', 'INFLOW:200', 'OUTFLOW:100']);
+});
+
+test('下钻可以取逾期、未设到期日、窗口以外三个非月份桶', () => {
+  const entries: CashflowEntry[] = [
+    entry('OUTFLOW', '2025-10-20', 1_920_000, 'PAYABLE'),
+    entry('INFLOW', null, 6_000_000),
+    entry('INFLOW', '2027-09-30', 900_000),
+  ];
+  const plan = buildCashflow(entries, { asOf });
+  const overdue = cashflowSlot(entries, { asOf, key: 'overdue' });
+  const unscheduled = cashflowSlot(entries, { asOf, key: 'unscheduled' });
+  const beyond = cashflowSlot(entries, { asOf, key: 'beyond' });
+  assert.equal(overdue.outflow, plan.overdue.outflow);
+  assert.equal(overdue.label, '已逾期');
+  assert.equal(unscheduled.inflow, plan.unscheduled.inflow);
+  assert.equal(unscheduled.items[0]!.dueAt, null);
+  assert.equal(beyond.inflow, plan.beyondWindow.inflow);
+});
+
+test('下钻带上原始单据线索，便于回查', () => {
+  const entries: CashflowEntry[] = [{
+    direction: 'INFLOW', dueAt: new Date('2026-11-10T00:00:00.000Z'), amount: 500_000, source: 'RECEIVABLE',
+    ref: { id: 'rec-1', scheduleId: 'sch-2', title: '第 1 期进度款', sub: '应收单 YS-001 · 第 2 期' },
+  }];
+  const slot = cashflowSlot(entries, { asOf, key: '2026-11' });
+  assert.deepEqual(slot.items[0]!.ref, { id: 'rec-1', scheduleId: 'sch-2', title: '第 1 期进度款', sub: '应收单 YS-001 · 第 2 期' });
+});
+
+test('空桶返回零合计而不是 null', () => {
+  const slot = cashflowSlot([], { asOf, key: '2026-11' });
+  assert.deepEqual(slot.items, []);
+  assert.equal(slot.inflow, 0);
+  assert.equal(slot.net, 0);
 });

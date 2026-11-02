@@ -47,12 +47,23 @@ export type ProjectEac = {
 };
 export type CashflowTotals = { inflow: number; outflow: number; net: number };
 export type CashflowBucket = { key: string; label: string; inflow: number; outflow: number; net: number };
+/** 下钻明细的一行，ref 指回原始台账单据。 */
+export type CashflowDetailItem = {
+  direction: 'INFLOW' | 'OUTFLOW';
+  dueAt: string | null;
+  amount: number;
+  source: 'RECEIVABLE' | 'PAYABLE' | 'PLAN' | 'INVOICE_TAX';
+  ref?: { id: string; scheduleId?: string; title: string; sub?: string };
+};
+export type CashflowBucketDetail = { key: string; label: string; inflow: number; outflow: number; net: number; items: CashflowDetailItem[] };
 export type ProjectCashflow = {
   asOf: string; months: number; buckets: CashflowBucket[];
   overdue: CashflowTotals; unscheduled: CashflowTotals; beyondWindow: CashflowTotals; window: CashflowTotals;
   sourceCounts: { receivable: number; payable: number; plan: number; invoiceTax: number };
   invoiceTax: { count: number; amount: number };
   uncovered: { receivableWithoutDueDate: number; payableWithoutDueDate: number; unplannedContractCount: number; unplannedContractAmount: number };
+  /** 请求带 bucket 参数时才有。 */
+  bucket?: CashflowBucketDetail;
 };
 export type PortfolioCashflowProject = {
   projectId: string; name: string; code: string;
@@ -67,6 +78,9 @@ export type PortfolioCashflow = {
   uncovered: { receivableWithoutDueDate: number; payableWithoutDueDate: number; unplannedContractCount: number; unplannedContractAmount: number };
   projects: PortfolioCashflowProject[];
   scope: { projectCount: number; crossProject: boolean };
+  /** 请求带 bucket 参数时才有：汇总行由明细相加得到。 */
+  bucket?: { key: string; label: string; count: number; projectCount: number; inflow: number; outflow: number; net: number };
+  bucketProjects?: Array<CashflowBucketDetail & { projectId: string; name: string; code: string }>;
 };
 export type Analysis = {
   project: { id: string; name: string; code: string }; contractAmount: number; targetCost: number; actualCost: number;

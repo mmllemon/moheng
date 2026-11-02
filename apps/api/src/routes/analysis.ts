@@ -8,7 +8,7 @@ import { canAccessProject } from '../lib/project-access.js';
 import { calculateDownstreamCurrentAmount, calculateContractCostGap } from '../lib/downstream-contract-math.js';
 import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
 import { computeProjectEac } from '../lib/project-eac.js';
-import { buildCashflow, CASHFLOW_DEFAULT_MONTHS } from '../lib/cashflow.js';
+import { buildCashflow, cashflowSlot, CASHFLOW_DEFAULT_MONTHS } from '../lib/cashflow.js';
 import { loadProjectCashflowSources, netPaymentCents } from '../lib/project-cashflow.js';
 import { aggregatePortfolioCashflows } from '../lib/portfolio-cashflow.js';
 
@@ -136,12 +136,18 @@ export async function analysisRoutes(app: FastifyInstance) {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
     if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
-    const requestedMonths = Number((request.query as { months?: string })?.months);
+    const query = request.query as { months?: string; bucket?: string };
+    const requestedMonths = Number(query?.months);
     const months = Number.isFinite(requestedMonths) && requestedMonths > 0 ? Math.min(24, Math.trunc(requestedMonths)) : CASHFLOW_DEFAULT_MONTHS;
 
     const sources = await loadProjectCashflowSources(projectId);
-    const plan = buildCashflow(sources.entries, { asOf: new Date(), months });
-    return success({ ...plan, sourceCounts: sources.sourceCounts, invoiceTax: sources.invoiceTax, uncovered: sources.uncovered });
+    const asOf = new Date();
+    const plan = buildCashflow(sources.entries, { asOf, months });
+    const payload = { ...plan, sourceCounts: sources.sourceCounts, invoiceTax: sources.invoiceTax, uncovered: sources.uncovered };
+    // 下钻：只算被点开的那个桶，与上面曲线用同一个 asOf，否则日期边界会错开一笔。
+    const bucketKey = typeof query?.bucket === 'string' && query.bucket.trim() ? query.bucket.trim() : null;
+    if (!bucketKey) return success(payload);
+    return success({ ...payload, bucket: cashflowSlot(sources.entries, { asOf, months, key: bucketKey }) });
   });
 
   // 公司级资金计划：把当前用户可见的每个项目按同一套口径算一遍，再按月归并。
@@ -150,7 +156,8 @@ export async function analysisRoutes(app: FastifyInstance) {
   app.get('/dashboard/cashflow', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request);
     const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'PROJECT_READ');
-    const requestedMonths = Number((request.query as { months?: string })?.months);
+    const query = request.query as { months?: string; bucket?: string };
+    const requestedMonths = Number(query?.months);
     const months = Number.isFinite(requestedMonths) && requestedMonths > 0 ? Math.min(24, Math.trunc(requestedMonths)) : CASHFLOW_DEFAULT_MONTHS;
     const projects = await prisma.project.findMany({
       where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
@@ -159,13 +166,41 @@ export async function analysisRoutes(app: FastifyInstance) {
     });
     // 同一份 asOf 传给每个项目，否则跨零点时月份桶会错位。
     const asOf = new Date();
+    const bucketKey = typeof query?.bucket === 'string' && query.bucket.trim() ? query.bucket.trim() : null;
     const inputs = await Promise.all(projects.map(async (project) => {
       const sources = await loadProjectCashflowSources(project.id);
-      return { projectId: project.id, name: project.name, code: project.code, plan: buildCashflow(sources.entries, { asOf, months }), invoiceTax: sources.invoiceTax, uncovered: sources.uncovered };
+      return {
+        projectId: project.id, name: project.name, code: project.code,
+        plan: buildCashflow(sources.entries, { asOf, months }),
+        invoiceTax: sources.invoiceTax,
+        uncovered: sources.uncovered,
+        // 只有点开某个月才需要条目级明细，平时不返回，避免把首屏响应撑大。
+        bucket: bucketKey ? cashflowSlot(sources.entries, { asOf, months, key: bucketKey }) : null,
+      };
     }));
-    const portfolio = aggregatePortfolioCashflows(inputs, asOf);
+    const portfolio = aggregatePortfolioCashflows(inputs.map(({ bucket: _bucket, ...rest }) => rest), asOf);
     // scope 必须回传：管理者很容易把“我能看到的项目”当成“全公司”，数字得把这个边界说清楚。
-    return success({ ...portfolio, scope: { projectCount: projects.length, crossProject: canReadAllProjects } });
+    const payload: Record<string, unknown> = { ...portfolio, scope: { projectCount: projects.length, crossProject: canReadAllProjects } };
+    if (bucketKey) {
+      const rows = inputs
+        .map((input) => ({ projectId: input.projectId, name: input.name, code: input.code, ...(input.bucket ?? { key: bucketKey, label: bucketKey, inflow: 0, outflow: 0, net: 0, items: [] }) }))
+        .filter((row) => row.items.length > 0)
+        .sort((left, right) => (left.net - right.net) || left.name.localeCompare(right.name, 'zh-CN'));
+      // 汇总行由明细相加得到，不另取一份，避免“合计对不上明细”。
+      const inflow = rows.reduce((sum, row) => sum + Math.round(row.inflow * 100), 0);
+      const outflow = rows.reduce((sum, row) => sum + Math.round(row.outflow * 100), 0);
+      payload.bucket = {
+        key: bucketKey,
+        label: rows[0]?.label ?? bucketKey,
+        count: rows.reduce((sum, row) => sum + row.items.length, 0),
+        projectCount: rows.length,
+        inflow: inflow / 100,
+        outflow: outflow / 100,
+        net: (inflow - outflow) / 100,
+      };
+      payload.bucketProjects = rows;
+    }
+    return success(payload);
   });
 
   app.get('/dashboard', { preHandler: authRequired }, async (request, reply) => {

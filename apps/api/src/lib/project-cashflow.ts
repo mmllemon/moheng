@@ -42,15 +42,15 @@ export async function loadProjectCashflowSources(projectId: string): Promise<Pro
   const [receivables, payables, plans, contracts, invoices] = await Promise.all([
     prisma.ownerReceivable.findMany({
       where: { projectId, status: { not: 'VOID' } },
-      select: { id: true, netAmount: true, dueAt: true, allocations: { select: { amount: true } }, schedules: { select: { id: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
+      select: { id: true, receivableNo: true, title: true, netAmount: true, dueAt: true, allocations: { select: { amount: true } }, schedules: { select: { id: true, scheduleNo: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
     }),
     prisma.downstreamPayable.findMany({
       where: { downstreamContract: { projectId, deletedAt: null } },
-      select: { id: true, downstreamContractId: true, netAmount: true, dueAt: true, paymentAllocations: { select: { amount: true } }, schedules: { select: { id: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
+      select: { id: true, downstreamContractId: true, payableNo: true, netAmount: true, dueAt: true, paymentAllocations: { select: { amount: true } }, schedules: { select: { id: true, scheduleNo: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } }, downstreamContract: { select: { name: true, counterpartyName: true, contractNo: true } } },
     }),
     prisma.downstreamPaymentPlan.findMany({
       where: { downstreamContract: { projectId, deletedAt: null } },
-      select: { id: true, downstreamContractId: true, dueAt: true, plannedAmount: true, payments: { select: { type: true, amount: true } } },
+      select: { id: true, downstreamContractId: true, stageName: true, dueAt: true, plannedAmount: true, payments: { select: { type: true, amount: true } }, downstreamContract: { select: { name: true, counterpartyName: true } } },
     }),
     prisma.downstreamContract.findMany({
       where: { projectId, deletedAt: null, status: { in: ['ACTIVE', 'COMPLETED'] } },
@@ -58,7 +58,7 @@ export async function loadProjectCashflowSources(projectId: string): Promise<Pro
     }),
     prisma.ownerInvoice.findMany({
       where: { projectId, status: 'ISSUED' },
-      select: { id: true, invoiceNo: true, invoiceDate: true, taxAmount: true },
+      select: { id: true, invoiceNo: true, invoiceDate: true, taxRate: true, taxAmount: true },
     }),
   ]);
 
@@ -75,12 +75,23 @@ export async function loadProjectCashflowSources(projectId: string): Promise<Pro
     });
     if (!allocated.length) {
       if (!receivable.dueAt) receivableUnscheduled += 1;
-      entries.push({ direction: 'INFLOW', dueAt: receivable.dueAt, amount: open, source: 'RECEIVABLE' });
+      entries.push({
+        direction: 'INFLOW', dueAt: receivable.dueAt, amount: open, source: 'RECEIVABLE',
+        ref: { id: receivable.id, title: receivable.title, sub: `应收单 ${receivable.receivableNo}` },
+      });
       continue;
     }
     for (const row of allocated) {
       const schedule = receivable.schedules.find((item) => item.id === row.id);
-      entries.push({ direction: 'INFLOW', dueAt: schedule?.dueAt ?? receivable.dueAt, amount: row.open, source: 'RECEIVABLE' });
+      entries.push({
+        direction: 'INFLOW', dueAt: schedule?.dueAt ?? receivable.dueAt, amount: row.open, source: 'RECEIVABLE',
+        ref: {
+          id: receivable.id,
+          ...(schedule ? { scheduleId: schedule.id } : {}),
+          title: receivable.title,
+          sub: schedule ? `应收单 ${receivable.receivableNo} · 第 ${schedule.scheduleNo} 期` : `应收单 ${receivable.receivableNo}`,
+        },
+      });
     }
   }
 
@@ -93,12 +104,25 @@ export async function loadProjectCashflowSources(projectId: string): Promise<Pro
     });
     if (!allocated.length) {
       if (!payable.dueAt) payableUnscheduled += 1;
-      entries.push({ direction: 'OUTFLOW', dueAt: payable.dueAt, amount: open, source: 'PAYABLE' });
+      entries.push({
+        direction: 'OUTFLOW', dueAt: payable.dueAt, amount: open, source: 'PAYABLE',
+        ref: { id: payable.id, title: payable.downstreamContract.name, sub: `应付单 ${payable.payableNo} · ${payable.downstreamContract.counterpartyName}` },
+      });
       continue;
     }
     for (const row of allocated) {
       const schedule = payable.schedules.find((item) => item.id === row.id);
-      entries.push({ direction: 'OUTFLOW', dueAt: schedule?.dueAt ?? payable.dueAt, amount: row.open, source: 'PAYABLE' });
+      entries.push({
+        direction: 'OUTFLOW', dueAt: schedule?.dueAt ?? payable.dueAt, amount: row.open, source: 'PAYABLE',
+        ref: {
+          id: payable.id,
+          ...(schedule ? { scheduleId: schedule.id } : {}),
+          title: payable.downstreamContract.name,
+          sub: schedule
+            ? `应付单 ${payable.payableNo} · 第 ${schedule.scheduleNo} 期 · ${payable.downstreamContract.counterpartyName}`
+            : `应付单 ${payable.payableNo} · ${payable.downstreamContract.counterpartyName}`,
+        },
+      });
     }
   }
 
@@ -112,7 +136,10 @@ export async function loadProjectCashflowSources(projectId: string): Promise<Pro
     const open = money(plan.plannedAmount) - paid;
     if (open <= 0.005) continue;
     planCount += 1;
-    entries.push({ direction: 'OUTFLOW', dueAt: plan.dueAt, amount: open, source: 'PLAN' });
+    entries.push({
+      direction: 'OUTFLOW', dueAt: plan.dueAt, amount: open, source: 'PLAN',
+      ref: { id: plan.id, title: plan.downstreamContract.name, sub: `${plan.stageName} · 付款计划 · ${plan.downstreamContract.counterpartyName}` },
+    });
   }
 
   // 销项发票：只计税额，按开票月入支出。票面金额已包含在应收里。
@@ -123,7 +150,10 @@ export async function loadProjectCashflowSources(projectId: string): Promise<Pro
     if (tax <= 0.005) continue;
     invoiceTaxCount += 1;
     invoiceTaxAmount += tax;
-    entries.push({ direction: 'OUTFLOW', dueAt: invoice.invoiceDate, amount: tax, source: 'INVOICE_TAX' });
+    entries.push({
+      direction: 'OUTFLOW', dueAt: invoice.invoiceDate, amount: tax, source: 'INVOICE_TAX',
+      ref: { id: invoice.id, title: '销项发票', sub: `票号 ${invoice.invoiceNo} · 税率 ${(Number(invoice.taxRate) * 100).toFixed(2).replace(/\.?0+$/, '')}% · 按开票月计销项税` },
+    });
   }
 
   // 既没有应付也没有付款计划的合同，其剩余合同额完全不在资金计划里，必须单独提示。

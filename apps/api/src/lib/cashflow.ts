@@ -21,12 +21,25 @@ export const CASHFLOW_DEFAULT_MONTHS = 6;
 
 export type CashflowDirection = 'INFLOW' | 'OUTFLOW';
 
+/** 明细行指回原始台账的能力。buildCashflow 只关心金额与日期，ref 只用于下钻展示。 */
+export type CashflowEntryRef = {
+  /** 应收单 / 应付单 / 付款计划 / 销项发票的 id。 */
+  id: string;
+  /** 分期 id，有分期时指回具体一期。 */
+  scheduleId?: string;
+  /** 明细主标题，例如「锦澜花园二期住宅项目」。 */
+  title: string;
+  /** 明细副标题，例如「应付单 YS-0012 · 第 2 期」。 */
+  sub?: string;
+};
+
 export type CashflowEntry = {
   direction: CashflowDirection;
   /** 到期日；为空表示台账里没有可靠日期。 */
   dueAt: Date | null;
   amount: number;
   source: 'RECEIVABLE' | 'PAYABLE' | 'PLAN' | 'INVOICE_TAX';
+  ref?: CashflowEntryRef;
 };
 
 export type CashflowBucket = {
@@ -72,6 +85,35 @@ function totalsOf(acc: Accumulator): CashflowTotals {
 
 const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
+/** 窗口的三个非月份桶，键名与月份桶（YYYY-MM）互不冲突。 */
+export const CASHFLOW_SLOT_OVERDUE = 'overdue';
+export const CASHFLOW_SLOT_UNSCHEDULED = 'unscheduled';
+export const CASHFLOW_SLOT_BEYOND = 'beyond';
+
+type SlotContext = { todayStart: Date; windowEnd: Date; bucketKeys: Set<string> };
+
+function slotContext(asOf: Date, months: number): SlotContext {
+  const todayStart = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate());
+  const windowEnd = new Date(asOf.getFullYear(), asOf.getMonth() + months, 1);
+  const bucketKeys = new Set<string>();
+  for (let index = 0; index < months; index += 1) bucketKeys.add(monthKey(new Date(asOf.getFullYear(), asOf.getMonth() + index, 1)));
+  return { todayStart, windowEnd, bucketKeys };
+}
+
+/**
+ * 把一笔金额归到具体的桶。图表与明细下钻必须共用这一个函数，
+ * 否则同一个界面里“柱子的高度”和“点开的明细合计”会对不上。
+ */
+function slotOf(entry: CashflowEntry, context: SlotContext): string | null {
+  if (toCents(entry.amount) <= 0n) return null;
+  if (!entry.dueAt || Number.isNaN(entry.dueAt.getTime())) return CASHFLOW_SLOT_UNSCHEDULED;
+  const due = new Date(entry.dueAt.getFullYear(), entry.dueAt.getMonth(), entry.dueAt.getDate());
+  if (due.getTime() < context.todayStart.getTime()) return CASHFLOW_SLOT_OVERDUE;
+  if (due.getTime() >= context.windowEnd.getTime()) return CASHFLOW_SLOT_BEYOND;
+  const key = monthKey(due);
+  return context.bucketKeys.has(key) ? key : CASHFLOW_SLOT_BEYOND;
+}
+
 /**
  * 把应收/应付的分期未收额按台账未收总额封顶。
  *
@@ -103,42 +145,34 @@ export function allocateScheduleOpen(input: {
 export function buildCashflow(entries: CashflowEntry[], options: { asOf: Date; months?: number }): CashflowPlan {
   const months = Math.max(1, Math.min(24, Math.trunc(options.months ?? CASHFLOW_DEFAULT_MONTHS)));
   const asOf = options.asOf;
-  const todayStart = new Date(asOf.getFullYear(), asOf.getMonth(), asOf.getDate());
-  const windowEnd = new Date(asOf.getFullYear(), asOf.getMonth() + months, 1);
+  const context = slotContext(asOf, months);
 
   const bucketKeys: string[] = [];
-  const bucketIndex = new Map<string, number>();
-  for (let index = 0; index < months; index += 1) {
-    const cursor = new Date(asOf.getFullYear(), asOf.getMonth() + index, 1);
-    const key = monthKey(cursor);
-    bucketKeys.push(key);
-    bucketIndex.set(key, index);
-  }
+  for (let index = 0; index < months; index += 1) bucketKeys.push(monthKey(new Date(asOf.getFullYear(), asOf.getMonth() + index, 1)));
 
-  const accs = bucketKeys.map(() => emptyAcc());
+  const accs = new Map<string, Accumulator>(bucketKeys.map((key) => [key, emptyAcc()]));
   const overdue = emptyAcc();
   const unscheduled = emptyAcc();
   const beyondWindow = emptyAcc();
 
   for (const entry of entries) {
+    const slot = slotOf(entry, context);
+    if (!slot) continue;
     const cents = toCents(entry.amount);
-    if (cents <= 0n) continue;
-    if (!entry.dueAt || Number.isNaN(entry.dueAt.getTime())) { add(unscheduled, entry.direction, cents); continue; }
-    const due = new Date(entry.dueAt.getFullYear(), entry.dueAt.getMonth(), entry.dueAt.getDate());
-    if (due.getTime() < todayStart.getTime()) { add(overdue, entry.direction, cents); continue; }
-    if (due.getTime() >= windowEnd.getTime()) { add(beyondWindow, entry.direction, cents); continue; }
-    const index = bucketIndex.get(monthKey(due));
-    const target = index === undefined ? undefined : accs[index];
+    if (slot === CASHFLOW_SLOT_OVERDUE) { add(overdue, entry.direction, cents); continue; }
+    if (slot === CASHFLOW_SLOT_UNSCHEDULED) { add(unscheduled, entry.direction, cents); continue; }
+    if (slot === CASHFLOW_SLOT_BEYOND) { add(beyondWindow, entry.direction, cents); continue; }
+    const target = accs.get(slot);
     if (!target) { add(beyondWindow, entry.direction, cents); continue; }
     add(target, entry.direction, cents);
   }
 
-  const buckets: CashflowBucket[] = bucketKeys.map((key, index) => ({
+  const buckets: CashflowBucket[] = bucketKeys.map((key) => ({
     key,
     label: `${Number(key.slice(5))}月`,
-    ...totalsOf(accs[index] ?? emptyAcc()),
+    ...totalsOf(accs.get(key) ?? emptyAcc()),
   }));
-  const windowAcc = accs.reduce<Accumulator>((acc, acc2) => ({ inflow: acc.inflow + acc2.inflow, outflow: acc.outflow + acc2.outflow }), emptyAcc());
+  const windowAcc = [...accs.values()].reduce<Accumulator>((acc, item) => ({ inflow: acc.inflow + item.inflow, outflow: acc.outflow + item.outflow }), emptyAcc());
 
   return {
     asOf: asOf.toISOString(),
@@ -149,4 +183,60 @@ export function buildCashflow(entries: CashflowEntry[], options: { asOf: Date; m
     beyondWindow: totalsOf(beyondWindow),
     window: totalsOf(windowAcc),
   };
+}
+
+export type CashflowSlotDetail = {
+  key: string;
+  label: string;
+  inflow: number;
+  outflow: number;
+  net: number;
+  /** 按方向、到期日、金额排序；合计与 buildCashflow 的同名桶严格相等。 */
+  items: Array<{ direction: CashflowDirection; dueAt: string | null; amount: number; source: CashflowEntry['source']; ref?: CashflowEntryRef }>;
+};
+
+const SLOT_LABELS: Record<string, string> = {
+  [CASHFLOW_SLOT_OVERDUE]: '已逾期',
+  [CASHFLOW_SLOT_UNSCHEDULED]: '未设到期日',
+  [CASHFLOW_SLOT_BEYOND]: '窗口以外',
+};
+
+const SLOT_ALIASES: Record<string, string> = { 逾期: CASHFLOW_SLOT_OVERDUE, 未设到期日: CASHFLOW_SLOT_UNSCHEDULED, 窗口外: CASHFLOW_SLOT_BEYOND };
+
+/**
+ * 下钻：把某一个桶拆成具体台账条目。
+ *
+ * key 取月份键（YYYY-MM）或 overdue / unscheduled / beyond。
+ * 与 buildCashflow 共用 slotOf 与同一 params，因此拿到的明细合计一定等于图表上的那个数；
+ * 调用方不需要、也不应该自己再按日期过滤一遍。
+ */
+export function cashflowSlot(entries: CashflowEntry[], options: { asOf: Date; months?: number; key: string }): CashflowSlotDetail {
+  const months = Math.max(1, Math.min(24, Math.trunc(options.months ?? CASHFLOW_DEFAULT_MONTHS)));
+  const context = slotContext(options.asOf, months);
+  const requested = SLOT_ALIASES[options.key] ?? options.key;
+  const acc = emptyAcc();
+  const items: CashflowSlotDetail['items'] = [];
+  for (const entry of entries) {
+    if (slotOf(entry, context) !== requested) continue;
+    const cents = toCents(entry.amount);
+    add(acc, entry.direction, cents);
+    items.push({
+      direction: entry.direction,
+      dueAt: entry.dueAt ? entry.dueAt.toISOString() : null,
+      amount: fromCents(cents),
+      source: entry.source,
+      ...(entry.ref ? { ref: entry.ref } : {}),
+    });
+  }
+  const order: Record<CashflowEntry['source'], number> = { RECEIVABLE: 0, PAYABLE: 1, PLAN: 2, INVOICE_TAX: 3 };
+  items.sort((left, right) => {
+    if (left.direction !== right.direction) return left.direction === 'INFLOW' ? -1 : 1;
+    const leftDue = left.dueAt ?? '';
+    const rightDue = right.dueAt ?? '';
+    if (leftDue !== rightDue) return leftDue.localeCompare(rightDue);
+    if (order[left.source] !== order[right.source]) return order[left.source] - order[right.source];
+    return right.amount - left.amount;
+  });
+  const label = SLOT_LABELS[requested] ?? `${Number(requested.slice(5))}月`;
+  return { key: requested, label, ...totalsOf(acc), items };
 }
