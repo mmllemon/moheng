@@ -29,7 +29,7 @@ export async function analysisRoutes(app: FastifyInstance) {
     const project = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, include: { mainContract: true } });
     if (!project) return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
 
-    const [budgetItems, allCosts, costByType, monthlyCosts, changes, pendingChanges, bills, certifiedBills, downstreamContracts] = await Promise.all([
+    const [budgetItems, allCosts, costByType, monthlyCosts, changes, pendingChanges, bills, certifiedBills, receiptTypes, downstreamContracts] = await Promise.all([
       prisma.budgetItem.findMany({ where: { projectId, deletedAt: null }, include: { _count: { select: { children: true } } }, orderBy: { sortOrder: 'asc' } }),
       prisma.costEntry.aggregate({ where: { projectId, deletedAt: null }, _sum: { amount: true } }),
       prisma.costEntry.groupBy({ by: ['type'], where: { projectId, deletedAt: null }, _sum: { amount: true } }),
@@ -39,6 +39,8 @@ export async function analysisRoutes(app: FastifyInstance) {
       prisma.progressBill.aggregate({ where: { projectId, deletedAt: null }, _sum: { amount: true, approvedAmount: true, paidAmount: true } }),
       // 只有核定过的产值才算进度信号；未审批的申报额会虚增完成比。
       prisma.progressBill.aggregate({ where: { projectId, deletedAt: null, status: { in: ['APPROVED', 'PAID'] } }, _sum: { approvedAmount: true } }),
+      // 回款口径要含结算款到账；只取普通到账与退款，预付款单独核算，不算作回款。
+      prisma.ownerReceipt.groupBy({ by: ['type'], where: { projectId, type: { in: ['RECEIPT', 'REFUND'] } }, _sum: { amount: true } }),
       prisma.downstreamContract.findMany({ where: { projectId, deletedAt: null }, include: { adjustments: { select: { direction: true, amount: true } }, payments: { select: { type: true, amount: true } }, costEntries: { where: { deletedAt: null }, select: { amount: true } } } }),
     ]);
 
@@ -52,6 +54,7 @@ export async function analysisRoutes(app: FastifyInstance) {
       return sum + (change.direction === 'DECREASE' ? -amount : amount);
     }, 0);
     const certifiedRevenue = money(certifiedBills._sum.approvedAmount);
+    const netReceiptAmount = receiptTypes.reduce((sum, row) => sum + (row.type === 'REFUND' ? -money(row._sum.amount) : money(row._sum.amount)), 0);
     const pendingChangeExposure = pendingChanges.reduce((sum, change) => {
       const amount = money(change.submittedAmount);
       return sum + (change.direction === 'DECREASE' ? -amount : amount);
@@ -122,7 +125,7 @@ export async function analysisRoutes(app: FastifyInstance) {
       targetProfitMargin: targetCost > 0 && contractAmount > 0 ? (contractAmount - targetCost) / contractAmount : null,
       confirmedChangeAmount,
       downstreamContractSummary,
-      billSummary: { totalSubmitted, approvedAmount: approvedRevenue, certifiedAmount: certifiedRevenue, paidAmount: totalPaid },
+      billSummary: { totalSubmitted, approvedAmount: approvedRevenue, certifiedAmount: certifiedRevenue, paidAmount: totalPaid, netReceiptAmount },
       costByType: costTypes,
       byBudget: [...groupMap.values()].filter((item) => item.childCount === 0).map(({ childCount: _childCount, ...item }) => item),
       monthlyActualCost: monthly,

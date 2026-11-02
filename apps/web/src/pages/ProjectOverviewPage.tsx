@@ -64,7 +64,7 @@ export default function ProjectOverviewPage() {
   };
 
   const executionRate = analysis.targetCost > 0 ? analysis.actualCost / analysis.targetCost : null;
-  const collectionRate = analysis.contractAmount > 0 ? analysis.billSummary.paidAmount / analysis.contractAmount : null;
+  const collectionRate = analysis.contractAmount > 0 ? analysis.billSummary.netReceiptAmount / analysis.contractAmount : null;
   const executionPct = executionRate == null ? 0 : Math.min(100, Math.max(0, executionRate * 100));
   const collectionPct = collectionRate == null ? 0 : Math.min(100, Math.max(0, collectionRate * 100));
   const hasMonthlyCost = analysis.monthlyActualCost.some((row) => row.amount > 0);
@@ -96,7 +96,7 @@ export default function ProjectOverviewPage() {
         <div className="project-cockpit-money">
           <div><span>目标成本</span><strong>{formatMoney(analysis.targetCost, 0)}</strong></div>
           <div><span>实际成本</span><strong>{formatMoney(analysis.actualCost, 0)}</strong></div>
-          <div><span>累计回款</span><strong>{formatMoney(analysis.billSummary.paidAmount, 0)}</strong></div>
+          <div><span>累计回款</span><strong>{formatMoney(analysis.billSummary.netReceiptAmount, 0)}</strong></div>
         </div>
       </div>
       <div className="project-cockpit-health">
@@ -108,7 +108,7 @@ export default function ProjectOverviewPage() {
         <div className="project-cockpit-health-row">
           <div><span>回款率</span><strong>{collectionRate == null ? '—' : percentage(collectionRate)}</strong></div>
           <div className="project-cockpit-meter" aria-hidden="true"><span style={{ width: `${collectionPct}%` }} /></div>
-          <small>{collectionRate == null ? '尚未建立主合同' : `已回款 ${formatMoney(analysis.billSummary.paidAmount, 0)}`}</small>
+          <small>{collectionRate == null ? '尚未建立主合同' : `已回款 ${formatMoney(analysis.billSummary.netReceiptAmount, 0)}，含结算款到账`}</small>
         </div>
         <div className="project-cockpit-health-row is-plain">
           <div><span>成本余量</span><strong className={analysis.targetCost - analysis.actualCost < 0 ? 'text-danger' : ''}>{analysis.targetCost > 0 ? formatMoney(analysis.targetCost - analysis.actualCost, 0) : '未建立'}</strong></div>

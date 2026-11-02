@@ -64,7 +64,7 @@ export async function notificationRoutes(app: FastifyInstance) {
     for (const row of overduePayableSchedules) {
       const open = Number(row.amount) - row.allocations.reduce((sum, allocation) => sum + Number(allocation.amount), 0); if (open <= 0.005) continue;
       const contract = row.payable.downstreamContract; const p = projectMap.get(contract.projectId); if (!p) continue;
-      items.push({ id: `downstream-payable:${row.id}`, kind: 'OVERDUE_PAYABLE', severity: 'danger', title: `分供应付计划已逾期：${row.scheduleNo}`, description: `${contract.contractNo} · ${contract.counterpartyName} · 未核销 ${open.toFixed(2)} 元`, projectId: p.id, projectName: p.name, projectCode: p.code, occurredAt: row.dueAt.toISOString(), href: '/workspace/downstream?view=finance', amount: open });
+      items.push({ id: `downstream-payable:${row.id}`, kind: 'OVERDUE_PAYABLE', severity: 'danger', title: `分供应付已逾期：${contract.contractNo} 第 ${row.scheduleNo} 期`, description: `${contract.contractNo} · ${contract.counterpartyName} · 未核销 ${open.toFixed(2)} 元`, projectId: p.id, projectName: p.name, projectCode: p.code, occurredAt: row.dueAt.toISOString(), href: '/workspace/downstream?view=finance', amount: open });
     }
     for (const row of pendingSettlements) {
       const p = projectMap.get(row.downstreamContract.projectId); if (!p) continue;

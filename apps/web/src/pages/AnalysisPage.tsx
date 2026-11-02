@@ -50,9 +50,13 @@ export default function AnalysisPage() {
 
   const monthly = data.monthlyActualCost.slice(-6);
   const monthMax = Math.max(2, Math.ceil(Math.max(1, ...monthly.map((row) => row.amount)) / 10000));
-  // 刻度按上限均分到 5 档左右；固定步长 2 会在单月成本上百万时挤出上百条网格线。
-  const monthStep = Math.max(1, Math.ceil(monthMax / 5));
-  const monthTicks = Array.from({ length: Math.floor(monthMax / monthStep) + 1 }, (_, index) => monthMax - index * monthStep);
+  // 刻度取整到 1/2/2.5/5 × 10ⁿ，避免出现 178、356 这类不好读的数。
+  const monthRawStep = monthMax / 5;
+  const monthMagnitude = 10 ** Math.floor(Math.log10(Math.max(1, monthRawStep)));
+  const monthNormalized = monthRawStep / monthMagnitude;
+  const monthStep = (monthNormalized <= 1 ? 1 : monthNormalized <= 2 ? 2 : monthNormalized <= 2.5 ? 2.5 : monthNormalized <= 5 ? 5 : 10) * monthMagnitude;
+  const monthTop = Math.ceil(monthMax / monthStep) * monthStep;
+  const monthTicks = Array.from({ length: Math.round(monthTop / monthStep) + 1 }, (_, index) => monthTop - index * monthStep);
 
   const exportAnalysis = () => {
     const rows: Array<Array<string | number>> = [
@@ -99,12 +103,14 @@ export default function AnalysisPage() {
           {topRows.map((row) => {
             const variance = row.actualCost - row.targetCost;
             return <div className="an-variance-row" key={row.id}>
-              <div className="an-variance-name"><strong>{row.name}</strong><span>{row.code}</span></div>
+              <div className="an-variance-head">
+                <div className="an-variance-name"><strong>{row.name}</strong><span>{row.code}</span></div>
+                <div className="an-variance-nums"><strong>{formatMoney(row.targetCost, 0)}</strong><span>已发生 {formatMoney(row.actualCost, 0)}</span><b className={variance > 0 ? 'text-danger' : ''}>偏差 {signed(variance)}</b></div>
+              </div>
               <div className="an-variance-track">
                 <span className="an-variance-target" style={{ width: `${Math.min(100, (row.targetCost / scaleMax) * 100)}%` }} />
                 <span className="an-variance-actual" style={{ width: `${Math.min(100, (row.actualCost / scaleMax) * 100)}%` }} />
               </div>
-              <div className="an-variance-nums"><strong>{formatMoney(row.targetCost, 0)}</strong><span>已发生 {formatMoney(row.actualCost, 0)}</span><b className={variance > 0 ? 'text-danger' : ''}>偏差 {signed(variance)}</b></div>
             </div>;
           })}
         </div> : <div className="an-empty">还没有末级清单数据。</div>}
@@ -125,7 +131,7 @@ export default function AnalysisPage() {
         <div className="an-panel-head"><div><h2>月度成本</h2><p>最近六个月 · 按成本发生日期统计</p></div><span className="an-mini">万元</span></div>
         {monthly.length ? <div className="an-month-chart">
           <div className="an-month-axis">{monthTicks.map((tick) => <span key={tick}>{tick}</span>)}</div>
-          <div className="an-month-plot">{monthly.map((row) => <div className="an-month-col" key={row.month}><span className="an-month-value">{row.amount > 0 ? (row.amount / 10000).toFixed(1) : ''}</span><span className="an-month-bar" style={{ height: `${row.amount > 0 ? Math.max(2, (row.amount / (monthMax * 10000)) * 100) : 1}%` }} /><small>{row.month.slice(5)}</small></div>)}</div>
+          <div className="an-month-plot">{monthly.map((row) => <div className="an-month-col" key={row.month}><span className="an-month-value">{row.amount > 0 ? (row.amount / 10000).toFixed(1) : ''}</span><span className="an-month-bar" style={{ height: `${row.amount > 0 ? Math.max(2, (row.amount / (monthTop * 10000)) * 100) : 1}%` }} /><small>{row.month.slice(5)}</small></div>)}</div>
         </div> : <div className="an-empty">最近六个月没有成本发生。</div>}
       </section>
 

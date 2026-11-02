@@ -121,7 +121,10 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
       prisma.ownerAdvanceMovement.findMany({ where: { projectId, mainContractId: main.id }, orderBy: { occurredAt: 'desc' } }),
     ]);
     const receivableBase = receivableRows.map(serialiseReceivable);
-    const contractNetOpenCents = sumCents(receivableBase.map((r: any) => Math.round(r.openAmount * 100)));
+    /* openAmount 已经是元，这里要的是分。直接用 sumCents 会把元再乘一次 100，
+       导致应收未收余额与合同净敏口放大 100 倍，并让“可收款上限”失去约束力。 */
+    const sumCentsOfYuan = (values: number[]) => values.reduce<bigint>((sum, value) => sum + BigInt(Math.round(value * 100)), 0n);
+    const contractNetOpenCents = sumCentsOfYuan(receivableBase.map((r: any) => r.openAmount));
     const contractNetOpenAmount = Number(centsToMoney(contractNetOpenCents));
     const receivables = receivableBase.map((r: any) => ({
       ...r,
@@ -130,9 +133,9 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
     const receipts = receiptRows.map((row: any) => ({ ...row, amount: num(row.amount), refundAmount: num(row.refunds.reduce((sum: number, item: any) => sum + num(item.amount), 0)), refundableAmount: Math.max(0, num(row.amount) - row.refunds.reduce((sum: number, item: any) => sum + num(item.amount), 0)), allocations: row.allocations.map((a: any) => ({ ...a, amount: num(a.amount) })) }));
     const totalGrossCents = sumCents(receivables.filter((r: any) => ['PROGRESS_BILL', 'FINAL_SETTLEMENT', 'ADJUSTMENT'].includes(r.type)).map((r: any) => r.grossAmount));
     const postedNetCents = sumCents(receivables.map((r: any) => r.netAmount).filter((value: number) => value > 0));
-    const openCents = sumCents(receivables.map((r: any) => Math.max(0, Math.round(r.openAmount * 100))));
-    const creditCents = sumCents(receivables.map((r: any) => Math.max(0, Math.round(-r.openAmount * 100))));
-    const overdueCents = sumCents(receivables.filter((r: any) => r.dueAt && new Date(r.dueAt).getTime() < Date.now()).map((r: any) => Math.max(0, Math.round(r.openAmount * 100))));
+    const openCents = sumCentsOfYuan(receivables.map((r: any) => Math.max(0, r.openAmount)));
+    const creditCents = sumCentsOfYuan(receivables.map((r: any) => Math.max(0, -r.openAmount)));
+    const overdueCents = sumCentsOfYuan(receivables.filter((r: any) => r.dueAt && new Date(r.dueAt).getTime() < Date.now()).map((r: any) => Math.max(0, r.openAmount)));
     const appliedCents = sumCents(receivables.map((r: any) => r.allocatedAmount));
     const retentionCents = retentionRows.reduce((sum, row) => sum + (row.type === 'WITHHOLD' ? moneyToCents(row.amount) : -moneyToCents(row.amount)), 0n);
     const advanceCents = advanceRows.reduce((sum, row) => sum + (row.type === 'RECEIPT' ? moneyToCents(row.amount) : -moneyToCents(row.amount)), 0n);
