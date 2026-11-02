@@ -9,6 +9,7 @@ import { nextDocumentNumber } from '../lib/document-number.js';
 import { moneyToCents, centsToMoney } from '../lib/contract-amount-math.js';
 import { calculateContractNetOpenCents, calculateOwnerReceivableStatus, calculateOwnerSettlementDelta, calculateReceivableOpenCents, capReceiptCents, ownerSettlementDeductionError } from '../lib/owner-settlement-math.js';
 import { positiveMoney } from '../lib/validation.js';
+import { computeInvoiceTax, invoiceableRemainingCents } from '../lib/owner-invoice-tax.js';
 
 const signedMoney = z.number().finite().min(-999999999999999).max(999999999999999);
 const lineInput = z.object({
@@ -86,13 +87,31 @@ function serialiseSettlement(row: any) {
   return { ...row, submittedAmount: num(row.submittedAmount), confirmedAmount: row.confirmedAmount == null ? null : num(row.confirmedAmount), postedDeltaAmount: row.postedDeltaAmount == null ? null : num(row.postedDeltaAmount), previousCumulativeAmount: row.previousCumulativeAmount == null ? null : num(row.previousCumulativeAmount), cumulativeAfterAmount: row.cumulativeAfterAmount == null ? null : num(row.cumulativeAfterAmount), advanceDeductionAmount: num(row.advanceDeductionAmount), retentionAmount: num(row.retentionAmount), otherDeductionAmount: num(row.otherDeductionAmount), netReceivableAmount: row.netReceivableAmount == null ? null : num(row.netReceivableAmount), lines: (row.lines ?? []).map((line: any) => ({ ...line, quantity: line.quantity == null ? null : num(line.quantity), unitPrice: line.unitPrice == null ? null : num(line.unitPrice), amount: num(line.amount) })) };
 }
 
+function serialiseInvoice(row: any) {
+  return { ...row, amount: num(row.amount), taxRate: num(row.taxRate), taxAmount: num(row.taxAmount), receivable: row.receivable ?? null };
+}
+
+const ownerInvoiceInput = z.object({
+  invoiceNo: z.string().trim().min(1).max(80),
+  invoiceDate: z.iso.datetime(),
+  amount: positiveMoney,
+  taxRate: z.number().finite().min(0).max(0.3),
+  /** 关联应收单；预收款开票等没有对应应收时可空。 */
+  receivableId: z.string().trim().min(1).optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+});
+const ownerInvoiceVoidInput = z.object({
+  reason: z.string().trim().min(3).max(500),
+  voidedAt: z.iso.datetime().optional().nullable(),
+});
+
 export async function ownerFinanceRoutes(app: FastifyInstance) {
   app.get('/:projectId/owner-finance', { preHandler: authRequired }, async (request, reply) => {
     const user = authUser(request); const { projectId } = request.params as { projectId: string };
     if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
     const main = await prisma.mainContract.findUnique({ where: { projectId }, include: { project: { select: { id: true, code: true, name: true, ownerName: true } } } });
     if (!main) return success({ hasMainContract: false, mainContract: null, summary: null, settlements: [], receivables: [], receipts: [], retentionMovements: [], advanceMovements: [] });
-    const [settlementRows, receivableRows, receiptRows, retentionRows, advanceRows] = await Promise.all([
+    const [settlementRows, receivableRows, receiptRows, retentionRows, advanceRows, invoiceRows] = await Promise.all([
       prisma.ownerContractSettlement.findMany({ where: { projectId, mainContractId: main.id }, include: { lines: { orderBy: { sortOrder: 'asc' } }, posting: true }, orderBy: [{ createdAt: 'desc' }] }),
       prisma.ownerReceivable.findMany({
         where: { projectId, mainContractId: main.id },
@@ -119,8 +138,16 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
       }),
       prisma.ownerRetentionMovement.findMany({ where: { projectId, mainContractId: main.id }, orderBy: { effectiveAt: 'desc' } }),
       prisma.ownerAdvanceMovement.findMany({ where: { projectId, mainContractId: main.id }, orderBy: { occurredAt: 'desc' } }),
+      prisma.ownerInvoice.findMany({ where: { projectId, mainContractId: main.id }, include: { receivable: { select: { id: true, receivableNo: true, title: true } } }, orderBy: { invoiceDate: 'desc' } }),
     ]);
     const receivableBase = receivableRows.map(serialiseReceivable);
+    const invoices = invoiceRows.map(serialiseInvoice);
+    /* 已开票额只算开票状态为 ISSUED 的票；红冲后额度自动回到应收单上，不需要额外返还动作。 */
+    const invoicedByReceivable = new Map<string, number>();
+    for (const invoice of invoices) {
+      if (invoice.status !== 'ISSUED' || !invoice.receivableId) continue;
+      invoicedByReceivable.set(invoice.receivableId, (invoicedByReceivable.get(invoice.receivableId) ?? 0) + invoice.amount);
+    }
     /* openAmount 已经是元，这里要的是分。直接用 sumCents 会把元再乘一次 100，
        导致应收未收余额与合同净敏口放大 100 倍，并让“可收款上限”失去约束力。 */
     const sumCentsOfYuan = (values: number[]) => values.reduce<bigint>((sum, value) => sum + BigInt(Math.round(value * 100)), 0n);
@@ -129,6 +156,8 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
     const receivables = receivableBase.map((r: any) => ({
       ...r,
       collectionLimitAmount: Math.max(0, Math.min(Math.max(0, r.openAmount), Math.max(0, contractNetOpenAmount))),
+      invoicedAmount: Math.round((invoicedByReceivable.get(r.id) ?? 0) * 100) / 100,
+      uninvoicedAmount: invoiceableRemainingCents(Number(moneyToCents(r.netAmount)), Math.round((invoicedByReceivable.get(r.id) ?? 0) * 100)) / 100,
     }));
     const receipts = receiptRows.map((row: any) => ({ ...row, amount: num(row.amount), refundAmount: num(row.refunds.reduce((sum: number, item: any) => sum + num(item.amount), 0)), refundableAmount: Math.max(0, num(row.amount) - row.refunds.reduce((sum: number, item: any) => sum + num(item.amount), 0)), allocations: row.allocations.map((a: any) => ({ ...a, amount: num(a.amount) })) }));
     const totalGrossCents = sumCents(receivables.filter((r: any) => ['PROGRESS_BILL', 'FINAL_SETTLEMENT', 'ADJUSTMENT'].includes(r.type)).map((r: any) => r.grossAmount));
@@ -143,8 +172,11 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
     return success({
       hasMainContract: true,
       mainContract: { id: main.id, contractNo: main.contractNo, name: main.name, amount: num(main.amount), taxIncluded: main.taxIncluded, retentionRate: num(main.retentionRate), advanceDeductionRate: num(main.advanceDeductionRate), guaranteeEndAt: main.guaranteeEndAt, project: main.project },
-      summary: { approvedAndPostedGrossAmount: num(centsToMoney(totalGrossCents)), positiveReceivablePostedAmount: num(centsToMoney(postedNetCents)), receivedNetAmount: num(centsToMoney(appliedCents)), cashReceiptNetAmount: num(centsToMoney(receiptNetCents)), openReceivableAmount: num(centsToMoney(openCents)), contractNetOpenAmount, overdueReceivableAmount: num(centsToMoney(overdueCents)), customerCreditAmount: num(centsToMoney(creditCents)), retentionBalanceAmount: num(centsToMoney(retentionCents)), advanceBalanceAmount: num(centsToMoney(advanceCents)), settlementCount: settlementRows.length, receivableCount: receivables.length, receiptCount: receipts.length },
-      settlements: settlementRows.map(serialiseSettlement), receivables, receipts,
+      summary: { approvedAndPostedGrossAmount: num(centsToMoney(totalGrossCents)), positiveReceivablePostedAmount: num(centsToMoney(postedNetCents)), receivedNetAmount: num(centsToMoney(appliedCents)), cashReceiptNetAmount: num(centsToMoney(receiptNetCents)), openReceivableAmount: num(centsToMoney(openCents)), contractNetOpenAmount, overdueReceivableAmount: num(centsToMoney(overdueCents)), customerCreditAmount: num(centsToMoney(creditCents)), retentionBalanceAmount: num(centsToMoney(retentionCents)), advanceBalanceAmount: num(centsToMoney(advanceCents)), settlementCount: settlementRows.length, receivableCount: receivables.length, receiptCount: receipts.length,
+        invoicedGrossAmount: num(centsToMoney(invoices.filter((row: any) => row.status === 'ISSUED').reduce<bigint>((sum, row: any) => sum + moneyToCents(row.amount), 0n))),
+        invoiceTaxAmount: num(centsToMoney(invoices.filter((row: any) => row.status === 'ISSUED').reduce<bigint>((sum, row: any) => sum + moneyToCents(row.taxAmount), 0n))),
+        invoiceCount: invoices.filter((row: any) => row.status === 'ISSUED').length, voidedInvoiceCount: invoices.filter((row: any) => row.status === 'VOID').length },
+      settlements: settlementRows.map(serialiseSettlement), receivables, receipts, invoices,
       retentionMovements: retentionRows.map((r) => ({ ...r, amount: num(r.amount) })),
       advanceMovements: advanceRows.map((r) => ({ ...r, amount: num(r.amount) })),
     });
@@ -441,6 +473,70 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
     } catch (error) {
       if (error instanceof OwnerFinanceError) return failure(reply, error.statusCode, error.code, error.message);
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') return failure(reply, 409, 'OWNER_SCHEDULE_CONFLICT', '分期修改发生并发冲突，请刷新后重试');
+      throw error;
+    }
+  });
+
+  /* ------------------------------ 业主销项发票 ------------------------------ */
+  // 建筑业增值税：先开具发票的，纳税义务发生时间为开具发票的当天。
+  // 所以开票登记的价值不在票面金额（收入侧已按应收算过），而在开票那个月必须缴的销项税额。
+  app.post('/:projectId/owner-invoices', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request); const { projectId } = request.params as { projectId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
+    const parsed = ownerInvoiceInput.safeParse(request.body);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '业主发票资料有误', parsed.error.flatten());
+    try {
+      const created = await prisma.$transaction(async (tx) => {
+        const main = await tx.mainContract.findUnique({ where: { projectId }, select: { id: true } });
+        if (!main) throw new OwnerFinanceError(409, 'MAIN_CONTRACT_REQUIRED', '请先登记业主主合同');
+        let receivableId: string | null = null;
+        if (parsed.data.receivableId) {
+          const receivable = await tx.ownerReceivable.findFirst({
+            where: { id: parsed.data.receivableId, projectId, mainContractId: main.id },
+            include: { invoices: { where: { status: 'ISSUED' }, select: { amount: true } } },
+          });
+          if (!receivable) throw new OwnerFinanceError(404, 'RECEIVABLE_NOT_FOUND', '应收单不存在或不属于当前项目');
+          const invoicedCents = receivable.invoices.reduce<bigint>((sum, row) => sum + moneyToCents(row.amount), 0n);
+          const remaining = invoiceableRemainingCents(Number(moneyToCents(receivable.netAmount)), Number(invoicedCents));
+          const requested = Number(moneyToCents(parsed.data.amount));
+          if (requested > remaining) throw new OwnerFinanceError(400, 'INVOICE_EXCEEDS_RECEIVABLE', `开票金额超过该应收可开票余额 ${(remaining / 100).toFixed(2)} 元`);
+          receivableId = receivable.id;
+        }
+        const tax = computeInvoiceTax(parsed.data.amount, parsed.data.taxRate);
+        const row = await tx.ownerInvoice.create({ data: {
+          projectId, mainContractId: main.id, receivableId, invoiceNo: parsed.data.invoiceNo, invoiceDate: new Date(parsed.data.invoiceDate),
+          amount: String(tax.grossAmount), taxRate: String(parsed.data.taxRate), taxAmount: String(tax.taxAmount),
+          notes: parsed.data.notes ?? null, createdById: user.sub,
+        } });
+        await audit(tx, projectId, user.sub, 'OwnerInvoice', row.id, 'OWNER_INVOICE_ISSUED', { invoiceNo: row.invoiceNo, invoiceDate: parsed.data.invoiceDate, amount: tax.grossAmount, taxRate: parsed.data.taxRate, taxAmount: tax.taxAmount, netAmount: tax.netAmount, receivableId });
+        return row;
+      });
+      return reply.code(201).send(success(serialiseInvoice(created)));
+    } catch (error) {
+      if (error instanceof OwnerFinanceError) return failure(reply, error.statusCode, error.code, error.message);
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return failure(reply, 409, 'INVOICE_NO_EXISTS', '发票号已存在，请核对后重试');
+      throw error;
+    }
+  });
+
+  app.post('/:projectId/owner-invoices/:invoiceId/void', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request); const { projectId, invoiceId } = request.params as { projectId: string; invoiceId: string };
+    if (await denyIfNoProjectAccess(user.sub, user.role, projectId, reply, [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR], 'OWNER_FINANCE_WRITE')) return;
+    const parsed = ownerInvoiceVoidInput.safeParse(request.body);
+    if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '红冲资料有误', parsed.error.flatten());
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const invoice = await tx.ownerInvoice.findFirst({ where: { id: invoiceId, projectId } });
+        if (!invoice) throw new OwnerFinanceError(404, 'INVOICE_NOT_FOUND', '发票不存在或不属于当前项目');
+        if (invoice.status === 'VOID') throw new OwnerFinanceError(409, 'INVOICE_ALREADY_VOID', '该发票已红冲，无需重复操作');
+        const updated = await tx.ownerInvoice.update({ where: { id: invoiceId }, data: { status: 'VOID', voidedAt: parsed.data.voidedAt ? new Date(parsed.data.voidedAt) : new Date(), voidReason: parsed.data.reason } });
+        // 红冲后该票不再计入已开票额与资金计划的税金支出，历史记录保留。
+        await audit(tx, projectId, user.sub, 'OwnerInvoice', invoiceId, 'OWNER_INVOICE_VOIDED', { invoiceNo: invoice.invoiceNo, amount: num(invoice.amount), taxAmount: num(invoice.taxAmount), reason: parsed.data.reason, receivableId: invoice.receivableId });
+        return updated;
+      });
+      return success(serialiseInvoice(result));
+    } catch (error) {
+      if (error instanceof OwnerFinanceError) return failure(reply, error.statusCode, error.code, error.message);
       throw error;
     }
   });

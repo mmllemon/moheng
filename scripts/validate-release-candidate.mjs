@@ -464,9 +464,10 @@ check('Pro-Tier surface styling includes tabular numerics, floating table rows a
   (await read('apps/web/src/styles.css')).includes('border-spacing: 0 3px') &&
   (await read('apps/web/src/styles.css')).includes(':root[data-motion="reduced"]'));
 
-check('owner finance UI is restructured into metrics and four interactive content tabs with responsive sticky tables',
-  ownerFinancePage.includes("useState<'settlements' | 'receivables' | 'cashflow' | 'retention'>('settlements')") &&
+check('owner finance UI is restructured into metrics and five interactive content tabs with responsive sticky tables',
+  ownerFinancePage.includes("useState<'settlements' | 'receivables' | 'invoices' | 'cashflow' | 'retention'>('settlements')") &&
   ownerFinancePage.includes('owner-finance-tabs') && ownerFinancePage.includes('owner-finance-metrics') &&
+  ownerFinancePage.includes("activeTab === 'invoices'") &&
   ownerFinancePage.includes("activeTab === 'cashflow'") && ownerFinancePage.includes("activeTab === 'retention'") &&
   (await read('apps/web/src/styles.css')).includes('.owner-finance-metrics') &&
   (await read('apps/web/src/styles.css')).includes('.owner-finance-table-wrap') &&

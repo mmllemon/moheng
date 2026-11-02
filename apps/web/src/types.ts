@@ -50,7 +50,8 @@ export type CashflowBucket = { key: string; label: string; inflow: number; outfl
 export type ProjectCashflow = {
   asOf: string; months: number; buckets: CashflowBucket[];
   overdue: CashflowTotals; unscheduled: CashflowTotals; beyondWindow: CashflowTotals; window: CashflowTotals;
-  sourceCounts: { receivable: number; payable: number; plan: number };
+  sourceCounts: { receivable: number; payable: number; plan: number; invoiceTax: number };
+  invoiceTax: { count: number; amount: number };
   uncovered: { receivableWithoutDueDate: number; payableWithoutDueDate: number; unplannedContractCount: number; unplannedContractAmount: number };
 };
 export type Analysis = {

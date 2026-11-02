@@ -14,9 +14,10 @@ type SettlementType = 'FINAL' | 'ADJUSTMENT';
 type SettlementStatus = 'DRAFT' | 'SUBMITTED' | 'INTERNAL_APPROVED' | 'COUNTERPARTY_CONFIRMED' | 'POSTED' | 'REJECTED';
 type Schedule = { id: string; scheduleNo: string; dueAt: string; amount: number; allocatedAmount: number; openAmount: number; notes?: string | null };
 type OwnerSettlement = { id: string; settlementNo: string; type: SettlementType; status: SettlementStatus; submittedAmount: number; confirmedAmount?: number | null; postedDeltaAmount?: number | null; previousCumulativeAmount?: number | null; cumulativeAfterAmount?: number | null; advanceDeductionAmount: number; retentionAmount: number; otherDeductionAmount: number; netReceivableAmount?: number | null; dueAt?: string | null; confirmationReference?: string | null; confirmedAt?: string | null; rejectionReason?: string | null; notes?: string | null; createdAt: string; lines: { id: string; description: string; amount: number }[] };
-type Receivable = { id: string; receivableNo: string; type: string; title: string; grossAmount: number; advanceDeductionAmount: number; retentionAmount: number; otherDeductionAmount: number; netAmount: number; allocatedAmount: number; openAmount: number; collectionLimitAmount?: number; dueAt?: string | null; status: string; notes?: string | null; schedules: Schedule[]; sourceProgressBillId?: string | null };
+type Receivable = { id: string; receivableNo: string; type: string; title: string; grossAmount: number; advanceDeductionAmount: number; retentionAmount: number; otherDeductionAmount: number; netAmount: number; allocatedAmount: number; openAmount: number; collectionLimitAmount?: number; invoicedAmount?: number; uninvoicedAmount?: number; dueAt?: string | null; status: string; notes?: string | null; schedules: Schedule[]; sourceProgressBillId?: string | null };
 type Receipt = { id: string; receiptNo: string; type: string; amount: number; receivedAt: string; referenceNo?: string | null; notes?: string | null; originalReceiptId?: string | null; refundAmount: number; refundableAmount: number; allocations: { id: string; amount: number; receivable: { id: string; receivableNo: string; title: string } }[] };
-type OwnerFinance = { hasMainContract: boolean; mainContract: null | { id: string; contractNo: string; name: string; amount: number; taxIncluded: boolean; retentionRate: number; advanceDeductionRate: number; guaranteeEndAt?: string | null; project: { code: string; name: string; ownerName: string } }; summary: null | { approvedAndPostedGrossAmount: number; positiveReceivablePostedAmount: number; receivedNetAmount: number; cashReceiptNetAmount: number; openReceivableAmount: number; contractNetOpenAmount?: number; overdueReceivableAmount: number; customerCreditAmount: number; retentionBalanceAmount: number; advanceBalanceAmount: number; settlementCount: number; receivableCount: number; receiptCount: number }; settlements: OwnerSettlement[]; receivables: Receivable[]; receipts: Receipt[]; retentionMovements: { id: string; type: string; amount: number; effectiveAt: string; reference?: string | null; notes?: string | null }[]; advanceMovements: { id: string; type: string; amount: number; occurredAt: string; reference?: string | null; notes?: string | null }[] };
+type OwnerInvoice = { id: string; invoiceNo: string; invoiceDate: string; amount: number; taxRate: number; taxAmount: number; status: 'ISSUED' | 'VOID'; voidedAt?: string | null; voidReason?: string | null; notes?: string | null; receivableId?: string | null; receivable?: { id: string; receivableNo: string; title: string } | null };
+type OwnerFinance = { hasMainContract: boolean; mainContract: null | { id: string; contractNo: string; name: string; amount: number; taxIncluded: boolean; retentionRate: number; advanceDeductionRate: number; guaranteeEndAt?: string | null; project: { code: string; name: string; ownerName: string } }; summary: null | { approvedAndPostedGrossAmount: number; positiveReceivablePostedAmount: number; receivedNetAmount: number; cashReceiptNetAmount: number; openReceivableAmount: number; contractNetOpenAmount?: number; overdueReceivableAmount: number; customerCreditAmount: number; retentionBalanceAmount: number; advanceBalanceAmount: number; settlementCount: number; receivableCount: number; receiptCount: number; invoicedGrossAmount?: number; invoiceTaxAmount?: number; invoiceCount?: number; voidedInvoiceCount?: number }; settlements: OwnerSettlement[]; receivables: Receivable[]; receipts: Receipt[]; invoices?: OwnerInvoice[]; retentionMovements: { id: string; type: string; amount: number; effectiveAt: string; reference?: string | null; notes?: string | null }[]; advanceMovements: { id: string; type: string; amount: number; occurredAt: string; reference?: string | null; notes?: string | null }[] };
 
 const settlementStatusLabels: Record<string, string> = { DRAFT: '草稿', SUBMITTED: '待内部审核', INTERNAL_APPROVED: '待外部确认', COUNTERPARTY_CONFIRMED: '待过账', POSTED: '已过账', REJECTED: '已退回' };
 const settlementTypeLabels: Record<string, string> = { FINAL: '竣工结算', ADJUSTMENT: '结算调整' };
@@ -68,6 +69,35 @@ function ScheduleDialog({ projectId, receivable, onClose, onSaved }: { projectId
   return <Modal title="设置应收到期分期" subtitle={`应收单 ${receivable.receivableNo} · 应收净额 ${formatMoney(receivable.netAmount)}；有到账核销后不能重写分期。`} onClose={onClose} wide><form onSubmit={(e) => void submit(e)}>{rows.map((row, i) => <div className="form-grid two-cols schedule-editor-row" key={`${i}-${row.scheduleNo}`}><div className="field"><label>期次编号 *</label><input value={row.scheduleNo} onChange={(e) => update(i, 'scheduleNo', e.target.value)} required /></div><div className="field"><label>到期日 *</label><DatePicker value={row.dueAt} onChange={(e) => update(i, 'dueAt', e.target.value)} required /></div><div className="field"><label>本期金额（元） *</label><input type="number" min="0.01" step="0.01" value={row.amount} onChange={(e) => update(i, 'amount', e.target.value)} required /></div><div className="field"><label>备注</label><input value={row.notes} onChange={(e) => update(i, 'notes', e.target.value)} /></div></div>)}<div className="row-actions"><Button variant="secondary" onClick={() => setRows((list) => [...list, { scheduleNo: String(list.length + 1).padStart(2, '0'), dueAt: currentDateInputValue(), amount: '', notes: '' }])} disabled={rows.length >= 50}><Plus size={14} />增加一期</Button><Button variant="secondary" onClick={() => setRows((list) => list.length > 1 ? list.slice(0, -1) : list)} disabled={rows.length <= 1}>移除末期</Button><span className="muted-note">分期合计 {formatMoney(total)} / 应收净额 {formatMoney(receivable.netAmount)}</span></div><ErrorMessage value={error} /><div className="dialog-footer"><Button variant="secondary" onClick={onClose}>取消</Button><Button type="submit" disabled={saving || Math.abs(total - receivable.netAmount) >= 0.005}>{saving ? '保存中…' : '保存分期'}</Button></div></form></Modal>;
 }
 
+function InvoiceDialog({ projectId, receivables, onClose, onSaved }: { projectId: string; receivables: Receivable[]; onClose: () => void; onSaved: (message: string) => void }) {
+  const qc = useQueryClient();
+  const [invoiceNo, setInvoiceNo] = useState(''); const [invoiceDate, setInvoiceDate] = useState(currentDateInputValue()); const [amount, setAmount] = useState(''); const [taxRate, setTaxRate] = useState('0.09'); const [receivableId, setReceivableId] = useState(''); const [notes, setNotes] = useState(''); const [error, setError] = useState(''); const [saving, setSaving] = useState(false);
+  const selected = receivables.find((row) => row.id === receivableId) ?? null;
+  const gross = Number(amount) || 0; const rate = Number(taxRate) || 0;
+  const net = rate > 0 ? gross / (1 + rate) : gross; const tax = gross - net;
+  async function submit(e: FormEvent) {
+    e.preventDefault(); setSaving(true); setError('');
+    try {
+      await api.post(`/projects/${projectId}/owner-invoices`, { invoiceNo, invoiceDate: dateInputToIso(invoiceDate), amount: gross, taxRate: rate, receivableId: receivableId || null, notes: notes || null });
+      await qc.invalidateQueries({ queryKey: ['owner-finance', projectId] });
+      await qc.invalidateQueries({ queryKey: ['cashflow', projectId] });
+      onSaved('销项发票已登记，税额按开票月计入资金计划的税金支出。'); onClose();
+    } catch (cause) { setError(cause instanceof ApiError ? cause.message : '登记发票失败'); } finally { setSaving(false); }
+  }
+  return <Modal title="登记业主销项发票" subtitle="建筑业先开票即纳税义务发生：开票那个月要缴的销项税额，会作为支出进入资金计划。" onClose={onClose} wide><form onSubmit={(e) => void submit(e)}><div className="form-grid two-cols">
+    <div className="field"><label>发票号 *</label><input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} required placeholder="例如 26501000000123456789" /></div>
+    <div className="field"><label>开票日期 *</label><DatePicker value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} required /></div>
+    <div className="field"><label>票面含税金额（元） *</label><input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} required /></div>
+    <div className="field"><label>税率 / 征收率 *</label><SelectField value={taxRate} onChange={(e) => setTaxRate(e.target.value)}><option value="0.09">9%（一般计税）</option><option value="0.03">3%（简易计税）</option><option value="0.01">1%（小规模减按）</option><option value="0">0%（不征税）</option></SelectField></div>
+    <div className="field span-2"><label>关联应收单</label><SelectField value={receivableId} onChange={(e) => setReceivableId(e.target.value)}><option value="">不关联（如预收款开票）</option>{receivables.filter((row) => row.netAmount > 0).map((row) => <option key={row.id} value={row.id}>{row.receivableNo} · {row.title} · 可开票 {formatMoney(row.uninvoicedAmount ?? row.netAmount)}</option>)}</SelectField></div>
+    <div className="field span-2"><label>备注</label><input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="开票事由、对应结算节点等" /></div>
+  </div>
+    <div className="inline-notice"><ReceiptText size={15} /><span>不含税金额 {formatMoney(net)}，销项税额 {formatMoney(tax)}。税额按含税金额反算，入库时算定，不随税率变动重算。</span></div>
+    {selected && gross > 0 && gross > (selected.uninvoicedAmount ?? 0) + 0.005 && <div className="form-alert">该应收可开票余额为 {formatMoney(selected.uninvoicedAmount ?? 0)}，本票已超出，保存会被拒绝。</div>}
+    <ErrorMessage value={error} />
+    <div className="dialog-footer"><Button variant="secondary" onClick={onClose}>取消</Button><Button type="submit" disabled={saving || !invoiceNo.trim() || gross <= 0}>{saving ? '保存中…' : '登记发票'}</Button></div></form></Modal>;
+}
+
 export default function OwnerFinancePage() {
   const projectId = useUiStore((state) => state.selectedProjectId);
   const qc = useQueryClient();
@@ -80,9 +110,10 @@ export default function OwnerFinancePage() {
   const [advance, setAdvance] = useState(false);
   const [retention, setRetention] = useState(false);
   const [scheduling, setScheduling] = useState<Receivable | null>(null);
+  const [invoicing, setInvoicing] = useState(false);
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'ALL' | 'OPEN' | 'OVERDUE'>('ALL');
-  const [activeTab, setActiveTab] = useState<'settlements' | 'receivables' | 'cashflow' | 'retention'>('settlements');
+  const [activeTab, setActiveTab] = useState<'settlements' | 'receivables' | 'invoices' | 'cashflow' | 'retention'>('settlements');
 
   const query = useQuery({ queryKey: ['owner-finance', projectId], queryFn: () => api.get<OwnerFinance>(`/projects/${projectId}/owner-finance`), enabled: Boolean(projectId) });
   const mutation = useMutation({
@@ -105,6 +136,17 @@ export default function OwnerFinancePage() {
     return matches && (view === 'ALL' || (view === 'OPEN' && item.openAmount > 0) || (view === 'OVERDUE' && overdue));
   }), [data?.receivables, search, view]);
 
+  async function voidInvoice(invoice: OwnerInvoice) {
+    const reason = await promptAction({ title: '红冲销项发票', description: `红冲 ${invoice.invoiceNo}（销项税 ${formatMoney(invoice.taxAmount)}）后，该票不再计入已开票额，也不再计入资金计划的税金支出；原记录保留。`, inputLabel: '红冲原因', placeholder: '例如：开票金额有误，已重开', minLength: 3, confirmText: '确认红冲', tone: 'danger' });
+    if (!reason) return;
+    try {
+      await api.post(`/projects/${projectId}/owner-invoices/${invoice.id}/void`, { reason });
+      await qc.invalidateQueries({ queryKey: ['owner-finance', projectId] });
+      await qc.invalidateQueries({ queryKey: ['cashflow', projectId] });
+      setNotice('发票已红冲，开票额度与税金支出同步回退。'); setError('');
+    } catch (cause) { setError(cause instanceof ApiError ? cause.message : '红冲失败'); }
+  }
+
   async function act(settlement: OwnerSettlement, action: 'SUBMIT' | 'APPROVE' | 'REJECT' | 'POST') {
     if (action === 'POST' && !(await confirmAction({ title: '确认过账结算单', description: `确认过账 ${settlement.settlementNo}？这将生成正式应收账款，过账后须通过调整单更正。`, confirmText: '确认过账', tone: 'danger' }))) return;
     let reason: string | undefined;
@@ -122,6 +164,7 @@ export default function OwnerFinancePage() {
   const tabs = [
     { id: 'settlements' as const, label: '竣工结算', count: data.settlements.length, icon: ClipboardCheck },
     { id: 'receivables' as const, label: '应收账款', count: data.receivables.length, icon: Banknote },
+    { id: 'invoices' as const, label: '销项发票', count: (data.invoices ?? []).filter((invoice) => invoice.status === 'ISSUED').length, icon: ReceiptText },
     { id: 'cashflow' as const, label: '收退款流水', count: data.receipts.length, icon: RefreshCw },
     { id: 'retention' as const, label: '质保金与预付款', count: data.retentionMovements.length + data.advanceMovements.length, icon: ShieldCheck },
   ];
@@ -135,6 +178,7 @@ export default function OwnerFinancePage() {
         {activeTab === 'receivables' && <ProjectLedgerReportButton reportKey="owner-receivables" label="预览 / 导出应收台账" />}
         {activeTab === 'cashflow' && <ProjectLedgerReportButton reportKey="owner-receipts" label="预览 / 导出收退款流水" />}
         {(activeTab === 'settlements' || activeTab === 'retention') && <ProjectSummaryReportButton label="预览 / 导出项目综合报表" />}
+        {activeTab === 'invoices' && <Button variant="secondary" onClick={() => setInvoicing(true)}><ReceiptText size={15} />登记销项发票</Button>}
         <Button variant="secondary" onClick={() => setAdvance(true)}><Wallet size={15} />登记预付款</Button>
         <Button variant="secondary" onClick={() => setRetention(true)} disabled={(summary?.retentionBalanceAmount ?? 0) <= 0}><ShieldCheck size={15} />释放质保金</Button>
         <Button onClick={() => setCreating(true)}><Plus size={15} />新建结算</Button>
@@ -182,7 +226,20 @@ export default function OwnerFinancePage() {
       <div className="panel-heading"><div><h3><Banknote size={17} />应收账款与到期管理</h3><p>应收来源包括核定进度款、竣工结算差额及质保金释放；分期计划不等于实际到账。</p></div><span className="table-count">{receivables.length} 项</span></div>
       <div className="owner-finance-toolbar"><label className="owner-finance-search"><ReceiptText size={15} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="搜索应收编号或来源…" aria-label="搜索应收账款" /></label><div className="owner-finance-filters"><label><span>范围</span><SelectField value={view} onChange={(event) => setView(event.target.value as typeof view)}><option value="ALL">全部应收</option><option value="OPEN">存在未收余额</option><option value="OVERDUE">逾期应收</option></SelectField></label><span className="results-count">显示 {receivables.length} 项</span></div></div>
       {!receivables.length ? <EmptyState title="暂无符合条件的应收账款" description="可切换筛选条件，或等待进度款核定、结算过账后自动形成应收单。" /> : <div className="table-scroll owner-finance-table-wrap"><table className="data-table owner-finance-table owner-receivable-table"><thead><tr><th>应收编号 / 来源</th><th>状态</th><th className="align-right">应收基数</th><th className="align-right">扣回与留置</th><th className="align-right">净应收</th><th className="align-right">已核销</th><th className="align-right">未收 / 待返还</th><th>到期 / 分期</th><th>操作</th></tr></thead><tbody>{receivables.map((ar) => <tr key={ar.id}>
-        <td><strong className="table-primary-text">{ar.receivableNo}</strong><small className="table-subtext">{receivableTypeLabels[ar.type] ?? ar.type} · {ar.title}</small>{ar.notes && <small className="table-subtext">{ar.notes}</small>}</td><td><StatusBadge status={ar.status} /></td><td className="align-right numeric">{formatMoney(ar.grossAmount)}</td><td className="align-right numeric">{formatMoney(ar.advanceDeductionAmount + ar.retentionAmount + ar.otherDeductionAmount)}<small className="table-subtext">预扣 {formatMoney(ar.advanceDeductionAmount)} · 质保 {formatMoney(ar.retentionAmount)}</small></td><td className="align-right numeric">{formatMoney(ar.netAmount)}</td><td className="align-right numeric">{formatMoney(ar.allocatedAmount)}</td><td className={`align-right numeric ${ar.openAmount < 0 ? 'amount-negative' : ''}`}><strong>{formatMoney(ar.openAmount)}</strong></td><td>{formatDate(ar.dueAt)}<small className="table-subtext">{ar.schedules.length ? `${ar.schedules.length} 期` : '未设置分期'}</small>{ar.dueAt && new Date(ar.dueAt).getTime() < Date.now() && ar.openAmount > 0 && <small className="table-subtext text-danger">逾期未收</small>}</td><td><div className="row-actions owner-finance-row-actions">{ar.openAmount > 0 && ar.netAmount > 0 && (ar.collectionLimitAmount ?? ar.openAmount) > 0 && <Button size="xs" variant="ghost" onClick={() => setReceiving(ar)}>登记到账</Button>}{ar.netAmount > 0 && ar.allocatedAmount === 0 && <Button size="xs" variant="ghost" onClick={() => setScheduling(ar)}>设置分期</Button>}</div></td>
+        <td><strong className="table-primary-text">{ar.receivableNo}</strong><small className="table-subtext">{receivableTypeLabels[ar.type] ?? ar.type} · {ar.title}</small>{ar.notes && <small className="table-subtext">{ar.notes}</small>}</td><td><StatusBadge status={ar.status} /></td><td className="align-right numeric">{formatMoney(ar.grossAmount)}</td><td className="align-right numeric">{formatMoney(ar.advanceDeductionAmount + ar.retentionAmount + ar.otherDeductionAmount)}<small className="table-subtext">预扣 {formatMoney(ar.advanceDeductionAmount)} · 质保 {formatMoney(ar.retentionAmount)}</small></td><td className="align-right numeric">{formatMoney(ar.netAmount)}{(ar.invoicedAmount ?? 0) > 0 && <small className="table-subtext">已开票 {formatMoney(ar.invoicedAmount ?? 0)}</small>}{(ar.invoicedAmount ?? 0) === 0 && <small className="table-subtext">未开票</small>}</td><td className="align-right numeric">{formatMoney(ar.allocatedAmount)}</td><td className={`align-right numeric ${ar.openAmount < 0 ? 'amount-negative' : ''}`}><strong>{formatMoney(ar.openAmount)}</strong></td><td>{formatDate(ar.dueAt)}<small className="table-subtext">{ar.schedules.length ? `${ar.schedules.length} 期` : '未设置分期'}</small>{ar.dueAt && new Date(ar.dueAt).getTime() < Date.now() && ar.openAmount > 0 && <small className="table-subtext text-danger">逾期未收</small>}</td><td><div className="row-actions owner-finance-row-actions">{ar.openAmount > 0 && ar.netAmount > 0 && (ar.collectionLimitAmount ?? ar.openAmount) > 0 && <Button size="xs" variant="ghost" onClick={() => setReceiving(ar)}>登记到账</Button>}{ar.netAmount > 0 && ar.allocatedAmount === 0 && <Button size="xs" variant="ghost" onClick={() => setScheduling(ar)}>设置分期</Button>}</div></td>
+      </tr>)}</tbody></table></div>}
+    </section>}
+
+    {activeTab === 'invoices' && <section className="panel owner-finance-section owner-finance-tab-panel">
+      <div className="panel-heading"><div><h3><ReceiptText size={17} />销项发票与开票额度</h3><p>开票即产生纳税义务。票面金额不重复计入收入（应收已经在收入侧），只有销项税额按开票月进资金计划。</p></div><span className="table-count">已开票 {formatMoney(summary?.invoicedGrossAmount ?? 0)} · 销项税 {formatMoney(summary?.invoiceTaxAmount ?? 0)}</span></div>
+      {!(data.invoices ?? []).length ? <EmptyState title="还没有登记销项发票" description="业主付款前通常要求先开票。登记后，开票月的销项税额会作为支出进入资金计划。" action={() => setInvoicing(true)} /> : <div className="table-scroll owner-finance-table-wrap"><table className="data-table owner-finance-table"><thead><tr><th>发票号 / 关联应收</th><th>开票日期</th><th className="align-right">含税金额</th><th className="align-right">税率</th><th className="align-right">销项税额</th><th>状态</th><th>操作</th></tr></thead><tbody>{(data.invoices ?? []).map((invoice) => <tr key={invoice.id}>
+        <td><strong className="table-primary-text">{invoice.invoiceNo}</strong><small className="table-subtext">{invoice.receivable ? `${invoice.receivable.receivableNo} · ${invoice.receivable.title}` : '未关联应收（如预收款开票）'}</small>{invoice.notes && <small className="table-subtext">{invoice.notes}</small>}{invoice.status === 'VOID' && invoice.voidReason && <small className="table-subtext text-danger">红冲：{invoice.voidReason}</small>}</td>
+        <td>{formatDate(invoice.invoiceDate)}</td>
+        <td className={`align-right numeric ${invoice.status === 'VOID' ? 'muted-note' : ''}`}>{formatMoney(invoice.amount)}</td>
+        <td className="align-right numeric">{(invoice.taxRate * 100).toFixed(0)}%</td>
+        <td className={`align-right numeric ${invoice.status === 'VOID' ? 'muted-note' : ''}`}>{formatMoney(invoice.taxAmount)}</td>
+        <td>{invoice.status === 'ISSUED' ? <span className="status-badge status-green"><span className="status-dot" />已开票</span> : <span className="status-badge status-gray"><span className="status-dot" />已红冲</span>}{invoice.status === 'VOID' && invoice.voidedAt && <small className="table-subtext">{formatDate(invoice.voidedAt)}</small>}</td>
+        <td><div className="row-actions owner-finance-row-actions">{invoice.status === 'ISSUED' && <Button size="xs" variant="danger" onClick={() => void voidInvoice(invoice)}>红冲</Button>}</div></td>
       </tr>)}</tbody></table></div>}
     </section>}
 
@@ -206,5 +263,6 @@ export default function OwnerFinancePage() {
     {advance && <AdvanceDialog projectId={projectId} onClose={() => setAdvance(false)} onSaved={setNotice} />}
     {retention && <RetentionDialog projectId={projectId} balance={summary?.retentionBalanceAmount ?? 0} onClose={() => setRetention(false)} onSaved={setNotice} />}
     {scheduling && <ScheduleDialog projectId={projectId} receivable={scheduling} onClose={() => setScheduling(null)} onSaved={setNotice} />}
+    {invoicing && <InvoiceDialog projectId={projectId} receivables={data.receivables} onClose={() => setInvoicing(false)} onSaved={setNotice} />}
   </div>;
 }

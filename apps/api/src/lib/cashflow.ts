@@ -9,6 +9,9 @@
  *   2. 应付未付（downstreamPayable 净额减已付款核销），按应付分期到期日；
  *   3. 付款计划（downstreamPaymentPlan 计划额减已付款），**只用于还没有应付的分供合同**。
  *      一旦合同已经结算出应付，付款计划就只是同一笔业务的另一层表达，不能再加一遍。
+ *   4. 销项发票的税额（ownerInvoice.taxAmount），按开票月计入支出。
+ *      建筑业先开票即纳税义务发生，钱没到税先交；但只计税额，
+ *      票面金额已经包含在应收里，整张票再加一遍会把同一笔收入算两次。
  *
  * 没有到期日的金额不进曲线，单独统计，因为把它塞进某个月份等于编一个到期日。
  */
@@ -23,7 +26,7 @@ export type CashflowEntry = {
   /** 到期日；为空表示台账里没有可靠日期。 */
   dueAt: Date | null;
   amount: number;
-  source: 'RECEIVABLE' | 'PAYABLE' | 'PLAN';
+  source: 'RECEIVABLE' | 'PAYABLE' | 'PLAN' | 'INVOICE_TAX';
 };
 
 export type CashflowBucket = {

@@ -140,7 +140,7 @@ export async function analysisRoutes(app: FastifyInstance) {
     const requestedMonths = Number((request.query as { months?: string })?.months);
     const months = Number.isFinite(requestedMonths) && requestedMonths > 0 ? Math.min(24, Math.trunc(requestedMonths)) : CASHFLOW_DEFAULT_MONTHS;
 
-    const [receivables, payables, plans, contracts] = await Promise.all([
+    const [receivables, payables, plans, contracts, invoices] = await Promise.all([
       prisma.ownerReceivable.findMany({
         where: { projectId, status: { not: 'VOID' } },
         select: { id: true, netAmount: true, dueAt: true, allocations: { select: { amount: true } }, schedules: { select: { id: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
@@ -156,6 +156,10 @@ export async function analysisRoutes(app: FastifyInstance) {
       prisma.downstreamContract.findMany({
         where: { projectId, deletedAt: null, status: { in: ['ACTIVE', 'COMPLETED'] } },
         select: { id: true, originalAmount: true, adjustments: { select: { direction: true, amount: true } }, payments: { select: { type: true, amount: true } } },
+      }),
+      prisma.ownerInvoice.findMany({
+        where: { projectId, status: 'ISSUED' },
+        select: { id: true, invoiceNo: true, invoiceDate: true, taxAmount: true },
       }),
     ]);
 
@@ -212,6 +216,17 @@ export async function analysisRoutes(app: FastifyInstance) {
       entries.push({ direction: 'OUTFLOW', dueAt: plan.dueAt, amount: open, source: 'PLAN' });
     }
 
+    // 销项发票：只计税额，按开票月入支出。票面金额已包含在应收里，整张票再加一遍会算两次。
+    let invoiceTaxCount = 0;
+    let invoiceTaxAmount = 0;
+    for (const invoice of invoices) {
+      const tax = money(invoice.taxAmount);
+      if (tax <= 0.005) continue;
+      invoiceTaxCount += 1;
+      invoiceTaxAmount += tax;
+      entries.push({ direction: 'OUTFLOW', dueAt: invoice.invoiceDate, amount: tax, source: 'INVOICE_TAX' });
+    }
+
     // 既没有应付也没有付款计划的合同，其剩余合同额完全不在资金计划里，必须单独提示。
     const unplannedContracts = contracts
       .filter((contract) => !contractsWithPayables.has(contract.id) && !contractsWithPlans.has(contract.id))
@@ -225,7 +240,8 @@ export async function analysisRoutes(app: FastifyInstance) {
     const plan = buildCashflow(entries, { asOf: new Date(), months });
     return success({
       ...plan,
-      sourceCounts: { receivable: receivables.length, payable: payables.length, plan: planCount },
+      sourceCounts: { receivable: receivables.length, payable: payables.length, plan: planCount, invoiceTax: invoiceTaxCount },
+      invoiceTax: { count: invoiceTaxCount, amount: Math.round(invoiceTaxAmount * 100) / 100 },
       uncovered: {
         // 没有到期日、无法落到任何月份的记录数，比金额更能说明台账缺什么。
         receivableWithoutDueDate: receivableUnscheduled,

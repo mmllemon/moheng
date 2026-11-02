@@ -345,6 +345,7 @@ model User {
   postedOwnerSettlementPostings OwnerSettlementPosting[] @relation("OwnerSettlementPoster")
   createdOwnerReceivables OwnerReceivable[] @relation("OwnerReceivableCreator")
   createdOwnerReceipts OwnerReceipt[] @relation("OwnerReceiptCreator")
+  createdOwnerInvoices OwnerInvoice[] @relation("OwnerInvoiceCreator")
   createdOwnerRetentionMovements OwnerRetentionMovement[] @relation("OwnerRetentionMovementCreator")
   createdOwnerAdvanceMovements OwnerAdvanceMovement[] @relation("OwnerAdvanceMovementCreator")
   createdAt    DateTime        @default(now())
@@ -578,6 +579,7 @@ model Project {
   ownerReceipts OwnerReceipt[]
   ownerRetentionMovements OwnerRetentionMovement[]
   ownerAdvanceMovements OwnerAdvanceMovement[]
+  ownerInvoices   OwnerInvoice[]
   ownerSettlementPostings OwnerSettlementPosting[]
   auditLogs      AuditLog[]
   baselineMigrationReconciliations ContractBaselineMigrationReconciliation[]
@@ -710,6 +712,7 @@ model MainContract {
   ownerReceipts       OwnerReceipt[]
   ownerRetentionMovements OwnerRetentionMovement[]
   ownerAdvanceMovements OwnerAdvanceMovement[]
+  ownerInvoices       OwnerInvoice[]
   ownerSettlementPostings OwnerSettlementPosting[]
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -1286,6 +1289,7 @@ model OwnerReceivable {
   createdBy               User                  @relation("OwnerReceivableCreator", fields: [createdById], references: [id], onDelete: Restrict)
   schedules               OwnerReceivableSchedule[]
   allocations             OwnerReceiptAllocation[]
+  invoices                OwnerInvoice[]
 
   @@unique([projectId, receivableNo])
   @@index([projectId, status, dueAt])
@@ -1305,6 +1309,47 @@ model OwnerReceivableSchedule {
 
   @@unique([receivableId, scheduleNo])
   @@index([dueAt])
+}
+
+enum OwnerInvoiceStatus {
+  ISSUED
+  VOID
+}
+
+/// 业主销项发票。
+/// 建筑业税法：先开具发票的，纳税义务发生时间为开具发票的当天。
+/// 所以这张票的意义不在票面金额（收入侧已经按应收算过），
+/// 而在开票那个月必须缴的销项税额：一笔确定的现金流出。
+model OwnerInvoice {
+  id             String             @id @default(cuid())
+  projectId      String
+  mainContractId String
+  /// 关联应收单。预收款开票、无对应应收时可空。
+  receivableId   String?
+  invoiceNo      String
+  invoiceDate    DateTime
+  /// 票面含税金额
+  amount         Decimal            @db.Decimal(18, 2)
+  /// 0.09 / 0.03 / 0.01 / 0
+  taxRate        Decimal            @db.Decimal(5, 4)
+  /// 销项税额，按含税金额反算，入库时算定
+  taxAmount      Decimal            @db.Decimal(18, 2)
+  taxIncluded    Boolean            @default(true)
+  status         OwnerInvoiceStatus @default(ISSUED)
+  voidedAt       DateTime?
+  voidReason     String?
+  notes          String?
+  createdById    String
+  project        Project            @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  mainContract   MainContract       @relation(fields: [mainContractId], references: [id], onDelete: Restrict)
+  receivable     OwnerReceivable?   @relation(fields: [receivableId], references: [id], onDelete: Restrict)
+  createdBy      User               @relation("OwnerInvoiceCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@unique([projectId, invoiceNo])
+  @@index([projectId, status, invoiceDate])
+  @@index([receivableId])
 }
 
 model OwnerReceipt {

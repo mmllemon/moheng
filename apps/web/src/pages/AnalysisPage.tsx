@@ -182,7 +182,7 @@ function CashflowPanel({ projectId }: { projectId: string }) {
     </div>
     <div className="cf-summary">
       <div><span>未来 {plan.months} 个月应收</span><strong>{formatMoney(plan.window.inflow, 0)}</strong><small>已到期与未到期的应收单，按分期到期日</small></div>
-      <div><span>未来 {plan.months} 个月应付</span><strong>{formatMoney(plan.window.outflow, 0)}</strong><small>已过账应付，按分期到期日；无分期时用应付到期日</small></div>
+      <div><span>未来 {plan.months} 个月应付</span><strong>{formatMoney(plan.window.outflow, 0)}</strong><small>已过账应付与付款计划，另含已开票的销项税额</small></div>
       <div><span>净额</span><strong className={plan.window.net < 0 ? 'text-danger' : plan.window.net > 0 ? 'text-success' : undefined}>{signed(plan.window.net)}</strong><small>负数表示这个区间要垫钱</small></div>
     </div>
     {hasCurve ? <div className="cf-chart">
@@ -202,6 +202,7 @@ function CashflowPanel({ projectId }: { projectId: string }) {
     <dl className="an-defs">
       <div><dt>收入口径</dt><dd>应收单净额减已核销；有分期按分期到期日拆开，未指定期次的到账按比例摊回各期</dd></div>
       <div><dt>支出口径</dt><dd>已过账应付净额减付款核销；付款计划只用于尚未结算出应付的合同，避免同一笔支出算两次</dd></div>
+      {plan.invoiceTax.amount > 0 && <div><dt>销项税</dt><dd>已开发票 {plan.invoiceTax.count} 张，销项税额 {formatMoney(plan.invoiceTax.amount, 0)}，按开票月计入支出。建筑业先开票即纳税义务发生，钱没到税先交；只计税额，票面金额包含在应收里不重复算</dd></div>}
       <div><dt>不进曲线的金额</dt><dd>没有到期日的应收 {formatMoney(plan.unscheduled.inflow, 0)}，没有到期日的应付 {formatMoney(plan.unscheduled.outflow, 0)}；窗口之外另有应收 {formatMoney(plan.beyondWindow.inflow, 0)}、应付 {formatMoney(plan.beyondWindow.outflow, 0)}</dd></div>
       {uncoveredTotal > 0 && <div><dt>尚未纳入计划</dt><dd>{plan.uncovered.unplannedContractCount} 份分供合同既无应付也无付款计划，剩余合同额 {formatMoney(uncoveredTotal, 0)}，这部分支出还没排进任何月份</dd></div>}
     </dl>

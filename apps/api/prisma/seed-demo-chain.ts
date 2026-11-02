@@ -344,6 +344,15 @@ async function main() {
   });
   step('第 4 期进度款应收补录到期安排 2 期');
 
+  // 业主付款前要求先开票：建筑业先开票即纳税义务发生，这笔销项税会在开票月进资金计划，
+  // 即使钱还没到。票面金额不重复计入收入，只计税额。
+  await admin('POST', `/projects/${projectId}/owner-invoices`, {
+    invoiceNo: '26501000000123456789', invoiceDate: iso('2026-11-08T00:00:00.000Z'),
+    amount: 3_000_000, taxRate: 0.09, receivableId: period4Receivable.id,
+    notes: '第 4 期进度款首期开票，业主付款前要求先票',
+  });
+  step('销项发票 3,000,000 @9%，销项税额 247,706.42');
+
   /* 业主预付款与最终结算 */
   await admin('POST', `/projects/${projectId}/owner-finance/advances`, {
     amount: 1_600_000, receivedAt: iso('2026-03-25T00:00:00.000Z'), referenceNo: 'YFK-2026-01', notes: '合同价款 5% 预付款',
@@ -538,6 +547,8 @@ async function main() {
   const analysis = await admin<any>('GET', `/projects/${projectId}/analysis/three-way`);
   const finance = await admin<any>('GET', `/projects/${projectId}/downstream-finance`);
   const cashflow = await admin<any>('GET', `/projects/${projectId}/analysis/cashflow`);
+  const ownerFinanceAtEnd = await admin<any>('GET', `/projects/${projectId}/owner-finance`);
+  const invoicedPeriod4 = (ownerFinanceAtEnd.receivables ?? []).find((row: any) => Number(row.netAmount) === 5_300_000);
   const checks: Array<[string, boolean, string]> = [
     ['合同额含生效变更', Number(analysis.contractAmount) === 32_350_000, `${analysis.contractAmount}`],
     ['目标成本合计', Number(analysis.targetCost) === budgetTotal, `${analysis.targetCost}`],
@@ -553,6 +564,9 @@ async function main() {
     ['没有到期日的应收已消化', Number(cashflow.unscheduled?.inflow ?? 0) === 0, `未设到期日应收 ${cashflow.unscheduled?.inflow ?? 0}`],
     // 第 3 期核定 720 万只到账 650 万，按核定日 + 30 天已过期，应该同时出现在逾期桶和待办预警里。
     ['逾期应收能落入逾期桶', Number(cashflow.overdue?.inflow ?? 0) > 0, `逾期应收 ${cashflow.overdue?.inflow ?? 0}`],
+    // 开票即纳税义务发生：销项税按开票月入资金计划，票面金额不重复计收入。
+    ['销项税额已入资金计划', Math.abs(Number(cashflow.invoiceTax?.amount ?? 0) - 247_706.42) < 0.01, `${cashflow.invoiceTax?.amount ?? 0}`],
+    ['应收开票额与可开票余额', Number(invoicedPeriod4?.invoicedAmount ?? 0) === 3_000_000 && Number(invoicedPeriod4?.uninvoicedAmount ?? 0) === 2_300_000, `已开 ${invoicedPeriod4?.invoicedAmount ?? 0} / 可开 ${invoicedPeriod4?.uninvoicedAmount ?? 0}`],
   ];
   const failed = checks.filter(([, ok]) => !ok);
 
@@ -570,6 +584,7 @@ async function main() {
   for (const bucket of cashflow.buckets ?? []) console.log(`  ${bucket.key}  应收 ${money(bucket.inflow)}  应付 ${money(bucket.outflow)}  净 ${money(bucket.net)}`);
   console.log(`  逾期  应收 ${money(cashflow.overdue?.inflow ?? 0)}  应付 ${money(cashflow.overdue?.outflow ?? 0)}`);
   console.log(`  未设到期日  应收 ${money(cashflow.unscheduled?.inflow ?? 0)}  应付 ${money(cashflow.unscheduled?.outflow ?? 0)}`);
+  console.log(`  销项税  已开票 ${cashflow.invoiceTax?.count ?? 0} 张，税额 ${money(cashflow.invoiceTax?.amount ?? 0)}`);
   console.log(`\n自检 ${checks.length - failed.length}/${checks.length} 项通过`);
   for (const [name, ok, actual] of checks) console.log(`  ${ok ? '✓' : '✗'} ${name}：${actual}`);
   console.log(`\n项目编号 ${PROJECT.code}，项目 id ${projectId}`);
