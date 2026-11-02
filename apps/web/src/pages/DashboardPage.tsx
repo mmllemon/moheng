@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
 import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
-import type { Project } from '../types';
+import type { PortfolioCashflow, Project } from '../types';
 
 type PortfolioProject = Project & {
   targetCost: number;
@@ -40,11 +40,64 @@ function downloadCsv(rows: Array<Array<string | number>>, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { data?: PortfolioCashflow; loading: boolean; error: Error | null; onRetry: () => void; onOpen: (projectId: string) => void }) {
+  if (loading) return <section className="v6-block dash-cashflow" aria-label="未来六个月现金缺口"><div className="v6-block-head"><div><h2>未来六个月现金缺口</h2><span>按到期日汇总全部可访问项目</span></div></div><LoadingBlock label="正在汇总各项目现金安排…" /></section>;
+  if (error || !data) return <section className="v6-block dash-cashflow" aria-label="未来六个月现金缺口"><div className="v6-block-head"><div><h2>未来六个月现金缺口</h2></div></div><ErrorBlock error={error} retry={onRetry} /></section>;
+  const peak = Math.max(1, ...data.buckets.flatMap((bucket) => [bucket.inflow, bucket.outflow]));
+  const hasCurve = data.buckets.some((bucket) => bucket.inflow > 0 || bucket.outflow > 0);
+  const wan = (value: number) => (value / 10000).toFixed(1);
+  const signedWan = (value: number) => value === 0 ? '—' : `${value > 0 ? '+' : '−'}${wan(Math.abs(value))}万`;
+  const overdues = data.overdue.inflow > 0 || data.overdue.outflow > 0;
+  return <section className="v6-block dash-cashflow" aria-label="未来六个月现金缺口">
+    <div className="v6-block-head">
+      <div><h2>未来六个月现金缺口</h2><span>覆盖 {data.scope.projectCount} 个可访问项目 · 只算已经确定到期日的金额</span></div>
+      <span className="an-legend"><i className="is-inflow" />应收<i className="is-outflow" />应付</span>
+    </div>
+    <div className="cf-summary">
+      <div><span>未来 {data.months} 个月应收</span><strong>{formatMoney(data.window.inflow, 0)}</strong><small>各项目应收未收，按分期到期日</small></div>
+      <div><span>未来 {data.months} 个月应付</span><strong>{formatMoney(data.window.outflow, 0)}</strong><small>已过账应付与付款计划，另含已开票销项税</small></div>
+      <div><span>净额</span><strong className={data.window.net < 0 ? 'text-danger' : data.window.net > 0 ? 'text-success' : undefined}>{data.window.net === 0 ? '—' : `${data.window.net > 0 ? '+' : '−'}${formatMoney(Math.abs(data.window.net), 0)}`}</strong><small>负数表示这个区间要集中调度资金</small></div>
+    </div>
+    {hasCurve ? <div className="cf-chart">
+      {data.buckets.map((bucket) => <div className="cf-month" key={bucket.key}>
+        <div className="cf-bars">
+          <span className="cf-bar is-inflow" title={`${bucket.label} 应收 ${formatMoney(bucket.inflow, 0)}`} style={{ height: bucket.inflow > 0 ? `${Math.max(3, (bucket.inflow / peak) * 100)}%` : 0 }} />
+          <span className="cf-bar is-outflow" title={`${bucket.label} 应付 ${formatMoney(bucket.outflow, 0)}`} style={{ height: bucket.outflow > 0 ? `${Math.max(3, (bucket.outflow / peak) * 100)}%` : 0 }} />
+        </div>
+        <div className="cf-values">{bucket.inflow > 0 || bucket.outflow > 0 ? <span>{wan(bucket.inflow)} / {wan(bucket.outflow)}</span> : <span className="is-blank">—</span>}</div>
+        <small>{bucket.label}</small>
+        <em className={bucket.net < 0 ? 'text-danger' : bucket.net > 0 ? 'text-success' : ''}>{bucket.net === 0 ? '持平' : signedWan(bucket.net)}</em>
+      </div>)}
+    </div> : <div className="an-empty">未来 {data.months} 个月没有带到期日的应收应付；先给应收单补录到期安排，或给分供合同维护付款计划。</div>}
+    {(overdues || data.unscheduled.inflow > 0 || data.unscheduled.outflow > 0 || data.invoiceTax.amount > 0) && <p className="an-basis-note">
+      {overdues && <>已经逾期：应收 {formatMoney(data.overdue.inflow, 0)}，应付 {formatMoney(data.overdue.outflow, 0)}，不进上面任何一个月。 </>}
+      {(data.unscheduled.inflow > 0 || data.unscheduled.outflow > 0) && <>没有到期日的应收 {formatMoney(data.unscheduled.inflow, 0)}、应付 {formatMoney(data.unscheduled.outflow, 0)}，同样没进曲线。 </>}
+      {data.invoiceTax.amount > 0 && <>已开票销项税 {formatMoney(data.invoiceTax.amount, 0)}（{data.invoiceTax.count} 张）已按开票月计入支出。</>}
+    </p>}
+    <div className="table-scroll">
+      <table className="data-table v6-table dash-cashflow-table">
+        <thead><tr><th>项目</th><th className="align-right">应收</th><th className="align-right">应付</th><th className="align-right">净额</th><th className="align-right">逾期应收 / 应付</th><th /></tr></thead>
+        <tbody>{data.projects.map((row) => <tr key={row.projectId} onClick={() => onOpen(row.projectId)} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') onOpen(row.projectId); }}>
+          <td><strong className="table-primary-text">{row.name}</strong><small className="table-subtext">{row.unscheduled.inflow > 0 ? `${row.code} · 未设到期日应收 ${formatMoney(row.unscheduled.inflow, 0)}` : row.code}</small></td>
+          <td className="align-right numeric">{formatMoney(row.window.inflow, 0)}</td>
+          <td className="align-right numeric">{formatMoney(row.window.outflow, 0)}</td>
+          <td className={`align-right numeric ${row.window.net < 0 ? 'amount-negative' : ''}`}><strong>{row.window.net === 0 ? '—' : `${row.window.net > 0 ? '+' : '−'}${formatMoney(Math.abs(row.window.net), 0)}`}</strong></td>
+          <td className="align-right numeric">{formatMoney(row.overdue.inflow, 0)} / {formatMoney(row.overdue.outflow, 0)}</td>
+          <td className="align-right"><ChevronRight size={14} className="v6-row-arrow" /></td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+  </section>;
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate();
   const setSelectedProjectId = useUiStore((state) => state.setSelectedProjectId);
   const currentUser = useAuthStore((state) => state.user);
   const dashboard = useQuery({ queryKey: ['dashboard'], queryFn: () => api.get<DashboardData>('/dashboard') });
+  /* 公司级资金计划单独取数：它比经营汇总重（每个项目五张表），只是“不进月”或“缺到期日”的金额，
+     不该拖慢经营总览的首屏。 */
+  const cashflowQuery = useQuery({ queryKey: ['portfolio-cashflow'], queryFn: () => api.get<PortfolioCashflow>('/dashboard/cashflow'), staleTime: 60_000 });
   const [sortKey, setSortKey] = useState<SortKey>('contract');
   const [logDate, setLogDate] = useState(() => new Date().toISOString().slice(0, 10));
   const data = dashboard.data;
@@ -103,6 +156,8 @@ export default function DashboardPage() {
           <div><dt>在施项目</dt><dd>{constructionCount} 个<span>待结算 {settlementCount}</span></dd></div>
         </dl>
       </section>
+
+      <PortfolioCashflowBlock data={cashflowQuery.data} loading={cashflowQuery.isLoading} error={cashflowQuery.error as Error | null} onRetry={() => void cashflowQuery.refetch()} onOpen={(id) => { setSelectedProjectId(id); navigate('/cost/analysis'); }} />
 
       <div className="v6-split v6-split-table">
         <section className="v6-block" aria-label="项目台账">

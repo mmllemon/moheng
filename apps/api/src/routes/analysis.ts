@@ -8,13 +8,12 @@ import { canAccessProject } from '../lib/project-access.js';
 import { calculateDownstreamCurrentAmount, calculateContractCostGap } from '../lib/downstream-contract-math.js';
 import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
 import { computeProjectEac } from '../lib/project-eac.js';
-import { allocateScheduleOpen, buildCashflow, CASHFLOW_DEFAULT_MONTHS, type CashflowEntry } from '../lib/cashflow.js';
+import { buildCashflow, CASHFLOW_DEFAULT_MONTHS } from '../lib/cashflow.js';
+import { loadProjectCashflowSources, netPaymentCents } from '../lib/project-cashflow.js';
+import { aggregatePortfolioCashflows } from '../lib/portfolio-cashflow.js';
 
 const money = (value: unknown) => Number(value ?? 0);
 const sumMoney = (values: unknown[]) => Number(centsToMoney(values.reduce<bigint>((sum, value) => sum + moneyToCents(value), 0n)));
-function netPaymentCents(payments: { type: DownstreamPaymentType; amount: unknown }[]): bigint {
-  return payments.reduce<bigint>((sum, payment) => sum + (payment.type === 'REFUND' ? -moneyToCents(payment.amount) : moneyToCents(payment.amount)), 0n);
-}
 function grossPaymentCents(payments: { type: DownstreamPaymentType; amount: unknown }[]): bigint {
   return payments.filter((payment) => payment.type !== 'REFUND').reduce<bigint>((sum, payment) => sum + moneyToCents(payment.amount), 0n);
 }
@@ -140,116 +139,33 @@ export async function analysisRoutes(app: FastifyInstance) {
     const requestedMonths = Number((request.query as { months?: string })?.months);
     const months = Number.isFinite(requestedMonths) && requestedMonths > 0 ? Math.min(24, Math.trunc(requestedMonths)) : CASHFLOW_DEFAULT_MONTHS;
 
-    const [receivables, payables, plans, contracts, invoices] = await Promise.all([
-      prisma.ownerReceivable.findMany({
-        where: { projectId, status: { not: 'VOID' } },
-        select: { id: true, netAmount: true, dueAt: true, allocations: { select: { amount: true } }, schedules: { select: { id: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
-      }),
-      prisma.downstreamPayable.findMany({
-        where: { downstreamContract: { projectId, deletedAt: null } },
-        select: { id: true, downstreamContractId: true, netAmount: true, dueAt: true, paymentAllocations: { select: { amount: true } }, schedules: { select: { id: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
-      }),
-      prisma.downstreamPaymentPlan.findMany({
-        where: { downstreamContract: { projectId, deletedAt: null } },
-        select: { id: true, downstreamContractId: true, dueAt: true, plannedAmount: true, payments: { select: { type: true, amount: true } } },
-      }),
-      prisma.downstreamContract.findMany({
-        where: { projectId, deletedAt: null, status: { in: ['ACTIVE', 'COMPLETED'] } },
-        select: { id: true, originalAmount: true, adjustments: { select: { direction: true, amount: true } }, payments: { select: { type: true, amount: true } } },
-      }),
-      prisma.ownerInvoice.findMany({
-        where: { projectId, status: 'ISSUED' },
-        select: { id: true, invoiceNo: true, invoiceDate: true, taxAmount: true },
-      }),
-    ]);
+    const sources = await loadProjectCashflowSources(projectId);
+    const plan = buildCashflow(sources.entries, { asOf: new Date(), months });
+    return success({ ...plan, sourceCounts: sources.sourceCounts, invoiceTax: sources.invoiceTax, uncovered: sources.uncovered });
+  });
 
-    const entries: CashflowEntry[] = [];
-    let receivableUnscheduled = 0;
-    let payableUnscheduled = 0;
-
-    for (const receivable of receivables) {
-      const open = money(receivable.netAmount) - sumMoney(receivable.allocations.map((row) => row.amount));
-      if (open <= 0.005) continue;
-      const allocated = allocateScheduleOpen({
-        totalOpen: open,
-        schedules: receivable.schedules.map((schedule) => ({ id: schedule.id, amount: money(schedule.amount), allocated: sumMoney(schedule.allocations.map((row) => row.amount)) })),
-      });
-      if (!allocated.length) {
-        if (!receivable.dueAt) receivableUnscheduled += 1;
-        entries.push({ direction: 'INFLOW', dueAt: receivable.dueAt, amount: open, source: 'RECEIVABLE' });
-        continue;
-      }
-      for (const row of allocated) {
-        const schedule = receivable.schedules.find((item) => item.id === row.id);
-        entries.push({ direction: 'INFLOW', dueAt: schedule?.dueAt ?? receivable.dueAt, amount: row.open, source: 'RECEIVABLE' });
-      }
-    }
-
-    for (const payable of payables) {
-      const open = money(payable.netAmount) - sumMoney(payable.paymentAllocations.map((row) => row.amount));
-      if (open <= 0.005) continue;
-      const allocated = allocateScheduleOpen({
-        totalOpen: open,
-        schedules: payable.schedules.map((schedule) => ({ id: schedule.id, amount: money(schedule.amount), allocated: sumMoney(schedule.allocations.map((row) => row.amount)) })),
-      });
-      if (!allocated.length) {
-        if (!payable.dueAt) payableUnscheduled += 1;
-        entries.push({ direction: 'OUTFLOW', dueAt: payable.dueAt, amount: open, source: 'PAYABLE' });
-        continue;
-      }
-      for (const row of allocated) {
-        const schedule = payable.schedules.find((item) => item.id === row.id);
-        entries.push({ direction: 'OUTFLOW', dueAt: schedule?.dueAt ?? payable.dueAt, amount: row.open, source: 'PAYABLE' });
-      }
-    }
-
-    // 付款计划只覆盖还没有结算出应付的合同；已结算的合同一律以应付为准，避免重复计支出。
-    const contractsWithPayables = new Set(payables.map((row) => row.downstreamContractId));
-    const contractsWithPlans = new Set(plans.map((row) => row.downstreamContractId));
-    let planCount = 0;
-    for (const plan of plans) {
-      if (contractsWithPayables.has(plan.downstreamContractId)) continue;
-      const paid = plan.payments.reduce((sum, row) => sum + (row.type === 'REFUND' ? -money(row.amount) : money(row.amount)), 0);
-      const open = money(plan.plannedAmount) - paid;
-      if (open <= 0.005) continue;
-      planCount += 1;
-      entries.push({ direction: 'OUTFLOW', dueAt: plan.dueAt, amount: open, source: 'PLAN' });
-    }
-
-    // 销项发票：只计税额，按开票月入支出。票面金额已包含在应收里，整张票再加一遍会算两次。
-    let invoiceTaxCount = 0;
-    let invoiceTaxAmount = 0;
-    for (const invoice of invoices) {
-      const tax = money(invoice.taxAmount);
-      if (tax <= 0.005) continue;
-      invoiceTaxCount += 1;
-      invoiceTaxAmount += tax;
-      entries.push({ direction: 'OUTFLOW', dueAt: invoice.invoiceDate, amount: tax, source: 'INVOICE_TAX' });
-    }
-
-    // 既没有应付也没有付款计划的合同，其剩余合同额完全不在资金计划里，必须单独提示。
-    const unplannedContracts = contracts
-      .filter((contract) => !contractsWithPayables.has(contract.id) && !contractsWithPlans.has(contract.id))
-      .map((contract) => {
-        const current = calculateDownstreamCurrentAmount(contract.originalAmount, contract.adjustments);
-        const paid = netPaymentCents(contract.payments);
-        return money(current) - Number(centsToMoney(paid));
-      })
-      .filter((amount) => amount > 0.005);
-
-    const plan = buildCashflow(entries, { asOf: new Date(), months });
-    return success({
-      ...plan,
-      sourceCounts: { receivable: receivables.length, payable: payables.length, plan: planCount, invoiceTax: invoiceTaxCount },
-      invoiceTax: { count: invoiceTaxCount, amount: Math.round(invoiceTaxAmount * 100) / 100 },
-      uncovered: {
-        // 没有到期日、无法落到任何月份的记录数，比金额更能说明台账缺什么。
-        receivableWithoutDueDate: receivableUnscheduled,
-        payableWithoutDueDate: payableUnscheduled,
-        unplannedContractCount: unplannedContracts.length,
-        unplannedContractAmount: Math.round(unplannedContracts.reduce((sum, amount) => sum + amount, 0) * 100) / 100,
-      },
+  // 公司级资金计划：把当前用户可见的每个项目按同一套口径算一遍，再按月归并。
+  // 项目之间没有共享的应收应付，所以窗口内金额可直接相加；去重规则由
+  // loadProjectCashflowSources 保证，与项目级接口完全一致。
+  app.get('/dashboard/cashflow', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const canReadAllProjects = user.role === 'ADMIN' || await hasCrossProjectReadScope(user.sub, user.role, 'PROJECT_READ');
+    const requestedMonths = Number((request.query as { months?: string })?.months);
+    const months = Number.isFinite(requestedMonths) && requestedMonths > 0 ? Math.min(24, Math.trunc(requestedMonths)) : CASHFLOW_DEFAULT_MONTHS;
+    const projects = await prisma.project.findMany({
+      where: { deletedAt: null, ...(canReadAllProjects ? {} : { members: { some: { userId: user.sub } } }) },
+      select: { id: true, name: true, code: true },
+      orderBy: { code: 'asc' },
     });
+    // 同一份 asOf 传给每个项目，否则跨零点时月份桶会错位。
+    const asOf = new Date();
+    const inputs = await Promise.all(projects.map(async (project) => {
+      const sources = await loadProjectCashflowSources(project.id);
+      return { projectId: project.id, name: project.name, code: project.code, plan: buildCashflow(sources.entries, { asOf, months }), invoiceTax: sources.invoiceTax, uncovered: sources.uncovered };
+    }));
+    const portfolio = aggregatePortfolioCashflows(inputs, asOf);
+    // scope 必须回传：管理者很容易把“我能看到的项目”当成“全公司”，数字得把这个边界说清楚。
+    return success({ ...portfolio, scope: { projectCount: projects.length, crossProject: canReadAllProjects } });
   });
 
   app.get('/dashboard', { preHandler: authRequired }, async (request, reply) => {

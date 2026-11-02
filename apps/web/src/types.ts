@@ -54,6 +54,20 @@ export type ProjectCashflow = {
   invoiceTax: { count: number; amount: number };
   uncovered: { receivableWithoutDueDate: number; payableWithoutDueDate: number; unplannedContractCount: number; unplannedContractAmount: number };
 };
+export type PortfolioCashflowProject = {
+  projectId: string; name: string; code: string;
+  window: CashflowTotals; overdue: CashflowTotals; unscheduled: CashflowTotals; beyondWindow: CashflowTotals;
+  invoiceTax: { count: number; amount: number };
+  uncovered: { receivableWithoutDueDate: number; payableWithoutDueDate: number; unplannedContractCount: number; unplannedContractAmount: number };
+};
+export type PortfolioCashflow = {
+  asOf: string; months: number; buckets: CashflowBucket[];
+  overdue: CashflowTotals; unscheduled: CashflowTotals; beyondWindow: CashflowTotals; window: CashflowTotals;
+  invoiceTax: { count: number; amount: number };
+  uncovered: { receivableWithoutDueDate: number; payableWithoutDueDate: number; unplannedContractCount: number; unplannedContractAmount: number };
+  projects: PortfolioCashflowProject[];
+  scope: { projectCount: number; crossProject: boolean };
+};
 export type Analysis = {
   project: { id: string; name: string; code: string }; contractAmount: number; targetCost: number; actualCost: number;
   eac: ProjectEac; downstreamContractSummary?: { contractCount: number; activeContractCount: number; activeAndPendingSettlementContractCount?: number; currentContractAmount: number; activeAndPendingSettlementContractAmount: number; paidAmount: number; grossPaidAmount?: number; refundedAmount?: number; linkedActualCost: number; contractValueMinusLinkedActualCost: number; linkedActualCostOverContractValue: number }; targetProfit: number | null; targetProfitMargin: number | null;

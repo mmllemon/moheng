@@ -38,6 +38,18 @@ const PROJECT = {
   managerName: '陈工',
   address: '演示市锦澜路 88 号',
 };
+/* 第二个项目只建到“可以进资金计划”的程度：一张带到期日的应收、一份带付款计划的分供合同。
+   公司级聚合必须有两个以上有金额的项目才能看出“汇总”与“按项目排序”到底在做什么。 */
+const SECOND_PROJECT = {
+  code: 'DEMO-CHAIN-02',
+  name: '观澜路综合管廊机电改造项目',
+  ownerName: '观澜建设投资有限公司',
+  contractAmount: 18_000_000,
+  startDate: '2026-07-01T00:00:00.000Z',
+  plannedEndDate: '2027-06-30T00:00:00.000Z',
+  managerName: '林工',
+  address: '演示市观澜路 12 号',
+};
 
 const iso = (date: string) => new Date(date).toISOString();
 /** YYYY-MM-DD 往后推 n 天，仍返回 YYYY-MM-DD。 */
@@ -100,10 +112,7 @@ function client(token: string) {
 
 /* ---------------- 清理 ---------------- */
 
-async function cleanup() {
-  const project = await prisma.project.findUnique({ where: { code: PROJECT.code }, select: { id: true } });
-  if (!project) return;
-  const projectId = project.id;
+async function purgeProject(projectId: string) {
   const contracts = await prisma.downstreamContract.findMany({ where: { projectId }, select: { id: true } });
   const contractIds = contracts.map((row) => row.id);
   const settlements = await prisma.downstreamContractSettlement.findMany({ where: { downstreamContractId: { in: contractIds } }, select: { id: true } });
@@ -139,6 +148,8 @@ async function cleanup() {
   await prisma.downstreamContract.deleteMany({ where: { id: { in: contractIds } } });
 
   await prisma.ownerReceiptAllocation.deleteMany({ where: { OR: [{ receiptId: { in: receiptIds } }, { receivableId: { in: receivableIds } }] } });
+  // 销项发票引用应收单与主合同，必须先于两者删除。
+  await prisma.ownerInvoice.deleteMany({ where: { projectId } });
   // 预付款流水引用到账单，留存流水引用结算单；两者都必须先于被引用对象删除。
   await prisma.ownerAdvanceMovement.deleteMany({ where: { projectId } });
   await prisma.ownerRetentionMovement.deleteMany({ where: { projectId } });
@@ -163,6 +174,13 @@ async function cleanup() {
   const evidenceDir = resolve(evidenceRoot, projectId);
   if (evidenceDir.startsWith(evidenceRoot) && existsSync(evidenceDir)) await rm(evidenceDir, { recursive: true, force: true });
   console.log(`  清理旧演示项目：${projectId}`);
+}
+
+async function cleanup() {
+  for (const code of [PROJECT.code, SECOND_PROJECT.code]) {
+    const project = await prisma.project.findUnique({ where: { code }, select: { id: true } });
+    if (project) await purgeProject(project.id);
+  }
 }
 
 /* ---------------- 造数 ---------------- */
@@ -543,10 +561,57 @@ async function main() {
   const totalCost = costPlan.reduce((sum, item) => sum + item[3], 0);
   step(`实际成本 ${costPlan.length} 笔，合计 ${money(totalCost)}`);
 
+  /* 第二个项目：给公司级资金计划提供第二个有金额的分支。
+     只建到“能进资金计划”的程度，不重走一条完整链路。 */
+  const secondOwnerMatches = await admin<any[]>(`GET`, `/parties?search=${encodeURIComponent(SECOND_PROJECT.ownerName)}`).catch(() => [] as any[]);
+  const secondOwnerId = secondOwnerMatches?.length
+    ? secondOwnerMatches[0].id
+    : (await admin<{ id: string }>('POST', '/parties', { name: SECOND_PROJECT.ownerName, roles: ['OWNER'], identityVerified: true, identityVerificationNote: '演示数据：建设单位' })).id;
+  const secondProject = await admin<{ id: string }>('POST', '/projects', {
+    name: SECOND_PROJECT.name, code: SECOND_PROJECT.code, type: 'MEP', ownerName: SECOND_PROJECT.ownerName, ownerPartyId: secondOwnerId,
+    contractAmount: SECOND_PROJECT.contractAmount, startDate: iso(SECOND_PROJECT.startDate), plannedEndDate: iso(SECOND_PROJECT.plannedEndDate),
+    address: SECOND_PROJECT.address, managerName: SECOND_PROJECT.managerName, status: 'CONSTRUCTION',
+  });
+  const secondProjectId = secondProject.id;
+  for (const [member, role] of [[adminUser, 'OWNER'], [reviewerUser, 'MANAGER']] as const) {
+    if (member) await admin('POST', `/projects/${secondProjectId}/members`, { userId: member.id, role }).catch(() => null);
+  }
+  await admin('PUT', `/projects/${secondProjectId}/contracts/main`, {
+    counterpartyPartyId: secondOwnerId, counterpartyName: SECOND_PROJECT.ownerName, contractNo: `${SECOND_PROJECT.code}-HT-01`,
+    name: '观澜路综合管廊机电改造施工合同', signedAt: iso('2026-06-20T00:00:00.000Z'), amount: SECOND_PROJECT.contractAmount,
+    taxIncluded: true, retentionRate: 0.03, advanceDeductionRate: 0, paymentTermDays: 45,
+    paymentTerms: '按月计量，业主核定后 45 日内支付。',
+  });
+  const secondBill = await admin<{ id: string }>('POST', `/projects/${secondProjectId}/progress-bills`, {
+    periodNo: 1, applyDate: iso('2026-10-20T00:00:00.000Z'), measureDate: iso('2026-10-20T00:00:00.000Z'), amount: 8_000_000, notes: '首期计量申报',
+  });
+  for (const status of ['SUBMITTED', 'UNDER_REVIEW'] as const) {
+    await admin('PATCH', `/projects/${secondProjectId}/progress-bills/${secondBill.id}/status`, { status });
+  }
+  await admin('PATCH', `/projects/${secondProjectId}/progress-bills/${secondBill.id}/status`, { status: 'APPROVED', approvedAmount: 8_000_000 });
+  await admin('POST', `/projects/${secondProjectId}/progress-bills/${secondBill.id}/payments`, {
+    amount: 5_000_000, paidAt: iso('2026-10-22T00:00:00.000Z'), referenceNo: 'SK-D2-01', notes: '业主首期到账',
+  });
+  const secondDownstream = await admin<{ id: string }>('POST', `/projects/${secondProjectId}/downstream-contracts`, {
+    contractNo: 'D2-CL-01', name: '高低压配电设备采购合同', type: 'MATERIAL_PURCHASE', counterpartyName: '恒瑞钢材贸易有限公司',
+    signedAt: iso('2026-08-01T00:00:00.000Z'), startDate: iso('2026-08-01T00:00:00.000Z'), originalAmount: 6_000_000,
+    taxIncluded: true, scope: '配电柜、变压器及配套设备供货。', paymentTerms: '设备到场付 50%，竣工验收后付清。',
+  });
+  await admin('PATCH', `/projects/${secondProjectId}/downstream-contracts/${secondDownstream.id}/status`, { status: 'ACTIVE' });
+  for (const plan of [{ stageName: '设备到场', dueAt: '2026-11-25', plannedAmount: 3_000_000 }, { stageName: '竣工验收', dueAt: '2027-01-20', plannedAmount: 2_000_000 }]) {
+    await admin('POST', `/projects/${secondProjectId}/downstream-contracts/${secondDownstream.id}/payment-plans`, {
+      stageName: plan.stageName, dueAt: iso(`${plan.dueAt}T00:00:00.000Z`), plannedAmount: plan.plannedAmount,
+    });
+  }
+  step(`${SECOND_PROJECT.code}：应收 300 万未收、付款计划 500 万，供公司级汇总`);
+
   /* 交叉校验：派生数据必须与业务事实一致 */
   const analysis = await admin<any>('GET', `/projects/${projectId}/analysis/three-way`);
   const finance = await admin<any>('GET', `/projects/${projectId}/downstream-finance`);
   const cashflow = await admin<any>('GET', `/projects/${projectId}/analysis/cashflow`);
+  const portfolio = await admin<any>('GET', '/dashboard/cashflow');
+  const portfolioInflow = (portfolio.projects ?? []).reduce((sum: number, row: any) => sum + Number(row.window?.inflow ?? 0), 0);
+  const portfolioOutflow = (portfolio.projects ?? []).reduce((sum: number, row: any) => sum + Number(row.window?.outflow ?? 0), 0);
   const ownerFinanceAtEnd = await admin<any>('GET', `/projects/${projectId}/owner-finance`);
   const invoicedPeriod4 = (ownerFinanceAtEnd.receivables ?? []).find((row: any) => Number(row.netAmount) === 5_300_000);
   const checks: Array<[string, boolean, string]> = [
@@ -567,6 +632,9 @@ async function main() {
     // 开票即纳税义务发生：销项税按开票月入资金计划，票面金额不重复计收入。
     ['销项税额已入资金计划', Math.abs(Number(cashflow.invoiceTax?.amount ?? 0) - 247_706.42) < 0.01, `${cashflow.invoiceTax?.amount ?? 0}`],
     ['应收开票额与可开票余额', Number(invoicedPeriod4?.invoicedAmount ?? 0) === 3_000_000 && Number(invoicedPeriod4?.uninvoicedAmount ?? 0) === 2_300_000, `已开 ${invoicedPeriod4?.invoicedAmount ?? 0} / 可开 ${invoicedPeriod4?.uninvoicedAmount ?? 0}`],
+    // 公司级聚合：覆盖多个项目，且窗口金额等于各项目之和。
+    ['公司级资金计划覆盖多项目', Number(portfolio.scope?.projectCount ?? 0) >= 2 && (portfolio.projects ?? []).length >= 2, `${portfolio.scope?.projectCount} 个项目`],
+    ['公司级窗口金额等于各项目之和', Math.abs(Number(portfolio.window?.inflow ?? 0) - portfolioInflow) < 0.01 && Math.abs(Number(portfolio.window?.outflow ?? 0) - portfolioOutflow) < 0.01, `汇总 收${portfolio.window?.inflow ?? 0} 付${portfolio.window?.outflow ?? 0}｜分行合计 收${Math.round(portfolioInflow * 100) / 100} 付${Math.round(portfolioOutflow * 100) / 100}`],
   ];
   const failed = checks.filter(([, ok]) => !ok);
 
@@ -585,6 +653,9 @@ async function main() {
   console.log(`  逾期  应收 ${money(cashflow.overdue?.inflow ?? 0)}  应付 ${money(cashflow.overdue?.outflow ?? 0)}`);
   console.log(`  未设到期日  应收 ${money(cashflow.unscheduled?.inflow ?? 0)}  应付 ${money(cashflow.unscheduled?.outflow ?? 0)}`);
   console.log(`  销项税  已开票 ${cashflow.invoiceTax?.count ?? 0} 张，税额 ${money(cashflow.invoiceTax?.amount ?? 0)}`);
+  console.log('\n公司级资金计划（覆盖 ' + (portfolio.scope?.projectCount ?? 0) + ' 个项目）');
+  console.log(`  窗口  应收 ${money(portfolio.window?.inflow ?? 0)}  应付 ${money(portfolio.window?.outflow ?? 0)}  净 ${money(portfolio.window?.net ?? 0)}`);
+  for (const row of portfolio.projects ?? []) console.log(`  ${String(row.code).padEnd(14)} 应收 ${money(row.window.inflow)}  应付 ${money(row.window.outflow)}  净 ${money(row.window.net)}`);
   console.log(`\n自检 ${checks.length - failed.length}/${checks.length} 项通过`);
   for (const [name, ok, actual] of checks) console.log(`  ${ok ? '✓' : '✗'} ${name}：${actual}`);
   console.log(`\n项目编号 ${PROJECT.code}，项目 id ${projectId}`);
