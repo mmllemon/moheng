@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download } from 'lucide-react';
 import { api } from '../api';
 import { useUiStore } from '../auth-store';
-import type { Analysis, Project } from '../types';
+import type { Analysis, Project, ProjectCashflow } from '../types';
 import { Button, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, percentage, StatusBadge } from '../components/Ui';
 import { eacCaption } from '../lib/eac-caption';
 
@@ -161,5 +161,50 @@ export default function AnalysisPage() {
         {data.downstreamContractSummary && <p className="an-basis-note">分供合同：执行中/待结算 {formatMoney(data.downstreamContractSummary.activeAndPendingSettlementContractAmount, 0)}，已关联实际成本 {formatMoney(data.downstreamContractSummary.linkedActualCost, 0)}，累计净付款 {formatMoney(data.downstreamContractSummary.paidAmount, 0)}；承诺、成本、付款不直接相加。</p>}
       </section>
     </div>
+    <CashflowPanel projectId={projectId} />
   </div>;
+}
+
+function CashflowPanel({ projectId }: { projectId: string }) {
+  const query = useQuery({ queryKey: ['cashflow', projectId], queryFn: () => api.get<ProjectCashflow>(`/projects/${projectId}/analysis/cashflow`) });
+  if (query.isLoading) return <div className="an-panel is-full"><div className="an-panel-head"><div><h2>资金计划</h2><p>按到期日统计未来现金进出</p></div></div><LoadingBlock /></div>;
+  if (query.error) return <div className="an-panel is-full"><div className="an-panel-head"><div><h2>资金计划</h2></div></div><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
+  const plan = query.data!;
+  const peak = Math.max(1, ...plan.buckets.flatMap((bucket) => [bucket.inflow, bucket.outflow]));
+  const hasCurve = plan.buckets.some((bucket) => bucket.inflow > 0 || bucket.outflow > 0);
+  const uncoveredTotal = plan.uncovered.unplannedContractAmount;
+  const wan = (value: number) => (value / 10000).toFixed(1);
+
+  return <section className="an-panel is-full" aria-label="资金计划">
+    <div className="an-panel-head">
+      <div><h2>资金计划</h2><p>未来 {plan.months} 个月 · 只算已经确定到期日的金额</p></div>
+      <span className="an-legend"><i className="is-inflow" />应收<i className="is-outflow" />应付</span>
+    </div>
+    <div className="cf-summary">
+      <div><span>未来 {plan.months} 个月应收</span><strong>{formatMoney(plan.window.inflow, 0)}</strong><small>已到期与未到期的应收单，按分期到期日</small></div>
+      <div><span>未来 {plan.months} 个月应付</span><strong>{formatMoney(plan.window.outflow, 0)}</strong><small>已过账应付，按分期到期日；无分期时用应付到期日</small></div>
+      <div><span>净额</span><strong className={plan.window.net < 0 ? 'text-danger' : plan.window.net > 0 ? 'text-success' : undefined}>{signed(plan.window.net)}</strong><small>负数表示这个区间要垫钱</small></div>
+    </div>
+    {hasCurve ? <div className="cf-chart">
+      {plan.buckets.map((bucket) => <div className="cf-month" key={bucket.key}>
+        <div className="cf-bars">
+          <span className="cf-bar is-inflow" title={`${bucket.label} 应收 ${formatMoney(bucket.inflow, 0)}`} style={{ height: bucket.inflow > 0 ? `${Math.max(3, (bucket.inflow / peak) * 100)}%` : 0 }} />
+          <span className="cf-bar is-outflow" title={`${bucket.label} 应付 ${formatMoney(bucket.outflow, 0)}`} style={{ height: bucket.outflow > 0 ? `${Math.max(3, (bucket.outflow / peak) * 100)}%` : 0 }} />
+        </div>
+        <div className="cf-values">{bucket.inflow > 0 || bucket.outflow > 0 ? <span>{wan(bucket.inflow)} / {wan(bucket.outflow)}</span> : <span className="is-blank">—</span>}</div>
+        <small>{bucket.label}</small>
+        <em className={bucket.net < 0 ? 'text-danger' : bucket.net > 0 ? 'text-success' : ''}>{bucket.net === 0 ? '持平' : `${bucket.net > 0 ? '+' : '−'}${wan(Math.abs(bucket.net))}万`}</em>
+      </div>)}
+    </div> : <div className="an-empty">未来 {plan.months} 个月没有带到期日的应收应付；先给应收单补录到期安排，或给分供合同维护付款计划。</div>}
+    {(plan.overdue.inflow > 0 || plan.overdue.outflow > 0) && <p className="an-basis-note">
+      已经逾期：应收 {formatMoney(plan.overdue.inflow, 0)}，应付 {formatMoney(plan.overdue.outflow, 0)}。逾期金额不计入上面任何一个月，因为它早就该发生了。
+    </p>}
+    <dl className="an-defs">
+      <div><dt>收入口径</dt><dd>应收单净额减已核销；有分期按分期到期日拆开，未指定期次的到账按比例摊回各期</dd></div>
+      <div><dt>支出口径</dt><dd>已过账应付净额减付款核销；付款计划只用于尚未结算出应付的合同，避免同一笔支出算两次</dd></div>
+      <div><dt>不进曲线的金额</dt><dd>没有到期日的应收 {formatMoney(plan.unscheduled.inflow, 0)}，没有到期日的应付 {formatMoney(plan.unscheduled.outflow, 0)}；窗口之外另有应收 {formatMoney(plan.beyondWindow.inflow, 0)}、应付 {formatMoney(plan.beyondWindow.outflow, 0)}</dd></div>
+      {uncoveredTotal > 0 && <div><dt>尚未纳入计划</dt><dd>{plan.uncovered.unplannedContractCount} 份分供合同既无应付也无付款计划，剩余合同额 {formatMoney(uncoveredTotal, 0)}，这部分支出还没排进任何月份</dd></div>}
+    </dl>
+    {plan.uncovered.receivableWithoutDueDate > 0 && <p className="an-basis-note">有 {plan.uncovered.receivableWithoutDueDate} 张应收单没有到期日（多数是进度款应收），它们的金额只能统计在“没有到期日”里，不会被安排到某个月。给应收单补录到期安排后就会进入曲线。</p>}
+  </section>;
 }

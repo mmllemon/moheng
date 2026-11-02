@@ -315,6 +315,18 @@ async function main() {
   }
   step(`进度款 4 期，核定 ${money(certified)}，到账 ${money(received)}`);
 
+  // 进度款应收在审批生成时没有到期日，只能在还没有到账前补录分期；已有到账就锁定了。
+  const financeAfterBills = await admin<any>('GET', `/projects/${projectId}/owner-finance`);
+  const period4Receivable = (financeAfterBills.receivables ?? []).find((row: any) => row.type === 'PROGRESS_BILL' && Number(row.netAmount) === 5_300_000);
+  if (!period4Receivable) throw new Error('未找到第 4 期进度款应收');
+  await admin('PUT', `/projects/${projectId}/owner-finance/receivables/${period4Receivable.id}/schedules`, {
+    schedules: [
+      { scheduleNo: '01', dueAt: iso('2026-12-10T00:00:00.000Z'), amount: 3_000_000, notes: '第 4 期进度款首期约定付款' },
+      { scheduleNo: '02', dueAt: iso('2027-02-10T00:00:00.000Z'), amount: 2_300_000, notes: '第 4 期进度款尾期约定付款' },
+    ],
+  });
+  step('第 4 期进度款应收补录到期安排 2 期');
+
   /* 业主预付款与最终结算 */
   await admin('POST', `/projects/${projectId}/owner-finance/advances`, {
     amount: 1_600_000, receivedAt: iso('2026-03-25T00:00:00.000Z'), referenceNo: 'YFK-2026-01', notes: '合同价款 5% 预付款',
@@ -345,6 +357,20 @@ async function main() {
     amount: 400_000, receivedAt: iso('2026-11-28T00:00:00.000Z'), referenceNo: 'SK-JS-01', notes: '结算款首笔到账',
   });
   step('结算应收到账 400,000');
+
+  // 合同外增项走调整结算：最终结算过账后只能用调整单修正。
+  const ownerAdjustment = await admin<{ id: string }>('POST', `/projects/${projectId}/owner-finance/settlements`, {
+    type: 'ADJUSTMENT', submittedAmount: 600_000, dueAt: iso('2027-01-15T00:00:00.000Z'),
+    notes: '地下室抗浮加固增项结算调整',
+  });
+  await admin('POST', `/projects/${projectId}/owner-finance/settlements/${ownerAdjustment.id}/action`, { action: 'SUBMIT' });
+  await reviewer('POST', `/projects/${projectId}/owner-finance/settlements/${ownerAdjustment.id}/action`, { action: 'APPROVE' });
+  await admin('POST', `/projects/${projectId}/owner-finance/settlements/${ownerAdjustment.id}/action`, {
+    action: 'CONFIRM', confirmedAmount: 600_000, confirmationReference: 'JL-TZ-2026-001', confirmedAt: iso('2026-11-25T00:00:00.000Z'),
+    dueAt: iso('2027-01-15T00:00:00.000Z'), advanceDeductionAmount: 0, retentionAmount: 0, otherDeductionAmount: 0,
+  });
+  await admin('POST', `/projects/${projectId}/owner-finance/settlements/${ownerAdjustment.id}/action`, { action: 'POST' });
+  step('业主增项调整结算 +600,000 已过账');
 
   /* 分供合同 */
   const downstreamPlan = [
@@ -390,6 +416,20 @@ async function main() {
     type: 'ADVANCE', amount: 600_000, paidAt: iso('2026-04-12T00:00:00.000Z'), referenceNo: 'FK-2026-001', notes: '劳务预付款',
   });
   step('劳务合同补充协议 +180,000，付款计划 3 期，预付款 600,000');
+
+  // 还没结算出应付的合同靠付款计划进入资金计划：这两份是资金计划支出侧的主要来源。
+  for (const plan of [
+    { key: 'steel', stageName: '首批钢材到货', dueAt: '2026-11-20', plannedAmount: 1_800_000 },
+    { key: 'steel', stageName: '主体结构钢材', dueAt: '2026-12-18', plannedAmount: 2_400_000 },
+    { key: 'steel', stageName: '尾款', dueAt: '2027-01-25', plannedAmount: 1_200_000 },
+    { key: 'pile', stageName: '桩基完工计量', dueAt: '2026-12-05', plannedAmount: 1_700_000 },
+    { key: 'pile', stageName: '桩基尾款', dueAt: '2027-01-15', plannedAmount: 1_300_000 },
+  ]) {
+    await admin('POST', `/projects/${projectId}/downstream-contracts/${contracts[plan.key]}/payment-plans`, {
+      stageName: plan.stageName, dueAt: iso(`${plan.dueAt}T00:00:00.000Z`), plannedAmount: plan.plannedAmount,
+    });
+  }
+  step('材料、桩基合同付款计划 5 期');
 
   /* 分供阶段结算 → 应付 → 付款 */
   const laborSettlement = await admin<{ id: string }>('POST', `/projects/${projectId}/downstream-contracts/${contracts.labor}/settlements`, {
@@ -480,6 +520,7 @@ async function main() {
   /* 交叉校验：派生数据必须与业务事实一致 */
   const analysis = await admin<any>('GET', `/projects/${projectId}/analysis/three-way`);
   const finance = await admin<any>('GET', `/projects/${projectId}/downstream-finance`);
+  const cashflow = await admin<any>('GET', `/projects/${projectId}/analysis/cashflow`);
   const checks: Array<[string, boolean, string]> = [
     ['合同额含生效变更', Number(analysis.contractAmount) === 32_350_000, `${analysis.contractAmount}`],
     ['目标成本合计', Number(analysis.targetCost) === budgetTotal, `${analysis.targetCost}`],
@@ -488,6 +529,9 @@ async function main() {
     ['完工估算可计算', analysis.eac?.status === 'READY', `${analysis.eac?.status} / ${analysis.eac?.completionRatio}`],
     ['应付未付余额', Number(finance.summary?.openPayableAmount) > 0, `${finance.summary?.openPayableAmount}`],
     ['留存余额已计提', Number(finance.summary?.retentionBalanceAmount) > 0, `${finance.summary?.retentionBalanceAmount}`],
+    ['资金计划收入侧有到期金额', Number(cashflow.window?.inflow) > 0, `${cashflow.window?.inflow}`],
+    ['资金计划支出侧有到期金额', Number(cashflow.window?.outflow) > 0, `${cashflow.window?.outflow}`],
+    ['付款计划只计未结算合同', cashflow.sourceCounts?.plan === 5, `${cashflow.sourceCounts?.plan} 期计划计入（劳务合同已有应付，其 3 期被跳过）`],
   ];
   const failed = checks.filter(([, ok]) => !ok);
 
@@ -501,6 +545,10 @@ async function main() {
   console.log(`  预计利润率            ${analysis.eac?.margin ? `${(analysis.eac.margin.likely * 100).toFixed(2)}%` : '—'}`);
   console.log(`  应付未付              ${money(Number(finance.summary?.openPayableAmount))}`);
   console.log(`  质保金余额            ${money(Number(finance.summary?.retentionBalanceAmount))}`);
+  console.log('\n资金计划（未来 6 个月）');
+  for (const bucket of cashflow.buckets ?? []) console.log(`  ${bucket.key}  应收 ${money(bucket.inflow)}  应付 ${money(bucket.outflow)}  净 ${money(bucket.net)}`);
+  console.log(`  逾期  应收 ${money(cashflow.overdue?.inflow ?? 0)}  应付 ${money(cashflow.overdue?.outflow ?? 0)}`);
+  console.log(`  未设到期日  应收 ${money(cashflow.unscheduled?.inflow ?? 0)}  应付 ${money(cashflow.unscheduled?.outflow ?? 0)}`);
   console.log(`\n自检 ${checks.length - failed.length}/${checks.length} 项通过`);
   for (const [name, ok, actual] of checks) console.log(`  ${ok ? '✓' : '✗'} ${name}：${actual}`);
   console.log(`\n项目编号 ${PROJECT.code}，项目 id ${projectId}`);

@@ -8,6 +8,7 @@ import { canAccessProject } from '../lib/project-access.js';
 import { calculateDownstreamCurrentAmount, calculateContractCostGap } from '../lib/downstream-contract-math.js';
 import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
 import { computeProjectEac } from '../lib/project-eac.js';
+import { allocateScheduleOpen, buildCashflow, CASHFLOW_DEFAULT_MONTHS, type CashflowEntry } from '../lib/cashflow.js';
 
 const money = (value: unknown) => Number(value ?? 0);
 const sumMoney = (values: unknown[]) => Number(centsToMoney(values.reduce<bigint>((sum, value) => sum + moneyToCents(value), 0n)));
@@ -129,6 +130,109 @@ export async function analysisRoutes(app: FastifyInstance) {
       costByType: costTypes,
       byBudget: [...groupMap.values()].filter((item) => item.childCount === 0).map(({ childCount: _childCount, ...item }) => item),
       monthlyActualCost: monthly,
+    });
+  });
+
+  app.get('/projects/:projectId/analysis/cashflow', { preHandler: authRequired }, async (request, reply) => {
+    const user = authUser(request);
+    const { projectId } = request.params as { projectId: string };
+    if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
+    const requestedMonths = Number((request.query as { months?: string })?.months);
+    const months = Number.isFinite(requestedMonths) && requestedMonths > 0 ? Math.min(24, Math.trunc(requestedMonths)) : CASHFLOW_DEFAULT_MONTHS;
+
+    const [receivables, payables, plans, contracts] = await Promise.all([
+      prisma.ownerReceivable.findMany({
+        where: { projectId, status: { not: 'VOID' } },
+        select: { id: true, netAmount: true, dueAt: true, allocations: { select: { amount: true } }, schedules: { select: { id: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
+      }),
+      prisma.downstreamPayable.findMany({
+        where: { downstreamContract: { projectId, deletedAt: null } },
+        select: { id: true, downstreamContractId: true, netAmount: true, dueAt: true, paymentAllocations: { select: { amount: true } }, schedules: { select: { id: true, amount: true, dueAt: true, allocations: { select: { amount: true } } } } },
+      }),
+      prisma.downstreamPaymentPlan.findMany({
+        where: { downstreamContract: { projectId, deletedAt: null } },
+        select: { id: true, downstreamContractId: true, dueAt: true, plannedAmount: true, payments: { select: { type: true, amount: true } } },
+      }),
+      prisma.downstreamContract.findMany({
+        where: { projectId, deletedAt: null, status: { in: ['ACTIVE', 'COMPLETED'] } },
+        select: { id: true, originalAmount: true, adjustments: { select: { direction: true, amount: true } }, payments: { select: { type: true, amount: true } } },
+      }),
+    ]);
+
+    const entries: CashflowEntry[] = [];
+    let receivableUnscheduled = 0;
+    let payableUnscheduled = 0;
+
+    for (const receivable of receivables) {
+      const open = money(receivable.netAmount) - sumMoney(receivable.allocations.map((row) => row.amount));
+      if (open <= 0.005) continue;
+      const allocated = allocateScheduleOpen({
+        totalOpen: open,
+        schedules: receivable.schedules.map((schedule) => ({ id: schedule.id, amount: money(schedule.amount), allocated: sumMoney(schedule.allocations.map((row) => row.amount)) })),
+      });
+      if (!allocated.length) {
+        if (!receivable.dueAt) receivableUnscheduled += 1;
+        entries.push({ direction: 'INFLOW', dueAt: receivable.dueAt, amount: open, source: 'RECEIVABLE' });
+        continue;
+      }
+      for (const row of allocated) {
+        const schedule = receivable.schedules.find((item) => item.id === row.id);
+        entries.push({ direction: 'INFLOW', dueAt: schedule?.dueAt ?? receivable.dueAt, amount: row.open, source: 'RECEIVABLE' });
+      }
+    }
+
+    for (const payable of payables) {
+      const open = money(payable.netAmount) - sumMoney(payable.paymentAllocations.map((row) => row.amount));
+      if (open <= 0.005) continue;
+      const allocated = allocateScheduleOpen({
+        totalOpen: open,
+        schedules: payable.schedules.map((schedule) => ({ id: schedule.id, amount: money(schedule.amount), allocated: sumMoney(schedule.allocations.map((row) => row.amount)) })),
+      });
+      if (!allocated.length) {
+        if (!payable.dueAt) payableUnscheduled += 1;
+        entries.push({ direction: 'OUTFLOW', dueAt: payable.dueAt, amount: open, source: 'PAYABLE' });
+        continue;
+      }
+      for (const row of allocated) {
+        const schedule = payable.schedules.find((item) => item.id === row.id);
+        entries.push({ direction: 'OUTFLOW', dueAt: schedule?.dueAt ?? payable.dueAt, amount: row.open, source: 'PAYABLE' });
+      }
+    }
+
+    // 付款计划只覆盖还没有结算出应付的合同；已结算的合同一律以应付为准，避免重复计支出。
+    const contractsWithPayables = new Set(payables.map((row) => row.downstreamContractId));
+    const contractsWithPlans = new Set(plans.map((row) => row.downstreamContractId));
+    let planCount = 0;
+    for (const plan of plans) {
+      if (contractsWithPayables.has(plan.downstreamContractId)) continue;
+      const paid = plan.payments.reduce((sum, row) => sum + (row.type === 'REFUND' ? -money(row.amount) : money(row.amount)), 0);
+      const open = money(plan.plannedAmount) - paid;
+      if (open <= 0.005) continue;
+      planCount += 1;
+      entries.push({ direction: 'OUTFLOW', dueAt: plan.dueAt, amount: open, source: 'PLAN' });
+    }
+
+    // 既没有应付也没有付款计划的合同，其剩余合同额完全不在资金计划里，必须单独提示。
+    const unplannedContracts = contracts
+      .filter((contract) => !contractsWithPayables.has(contract.id) && !contractsWithPlans.has(contract.id))
+      .map((contract) => {
+        const current = calculateDownstreamCurrentAmount(contract.originalAmount, contract.adjustments);
+        const paid = netPaymentCents(contract.payments);
+        return money(current) - Number(centsToMoney(paid));
+      })
+      .filter((amount) => amount > 0.005);
+
+    const plan = buildCashflow(entries, { asOf: new Date(), months });
+    return success({
+      ...plan,
+      sourceCounts: { receivable: receivables.length, payable: payables.length, plan: planCount },
+      uncovered: {
+        // 没有到期日、无法落到任何月份的记录数，比金额更能说明台账缺什么。
+        receivableWithoutDueDate: receivableUnscheduled,
+        payableWithoutDueDate: payableUnscheduled,
+        unplannedContractCount: unplannedContracts.length,
+        unplannedContractAmount: Math.round(unplannedContracts.reduce((sum, amount) => sum + amount, 0) * 100) / 100,
+      },
     });
   });
 

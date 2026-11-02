@@ -45,6 +45,14 @@ export type ProjectEac = {
   budgetEfficiencyCost: number | null;
   margin: ProjectEacRange | null;
 };
+export type CashflowTotals = { inflow: number; outflow: number; net: number };
+export type CashflowBucket = { key: string; label: string; inflow: number; outflow: number; net: number };
+export type ProjectCashflow = {
+  asOf: string; months: number; buckets: CashflowBucket[];
+  overdue: CashflowTotals; unscheduled: CashflowTotals; beyondWindow: CashflowTotals; window: CashflowTotals;
+  sourceCounts: { receivable: number; payable: number; plan: number };
+  uncovered: { receivableWithoutDueDate: number; payableWithoutDueDate: number; unplannedContractCount: number; unplannedContractAmount: number };
+};
 export type Analysis = {
   project: { id: string; name: string; code: string }; contractAmount: number; targetCost: number; actualCost: number;
   eac: ProjectEac; downstreamContractSummary?: { contractCount: number; activeContractCount: number; activeAndPendingSettlementContractCount?: number; currentContractAmount: number; activeAndPendingSettlementContractAmount: number; paidAmount: number; grossPaidAmount?: number; refundedAmount?: number; linkedActualCost: number; contractValueMinusLinkedActualCost: number; linkedActualCostOverContractValue: number }; targetProfit: number | null; targetProfitMargin: number | null;
