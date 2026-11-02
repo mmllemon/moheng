@@ -30,11 +30,26 @@ export type ChangeRecord = {
   evidenceVerificationNote?: string | null; effectiveAt?: string | null; mainContract?: { id: string; contractNo: string; name: string } | null; internalAmountReviewStatus: InternalAmountReviewStatus;
   internalAmountReviewTriggeredAt?: string | null; internalAmountReviewReferenceAmount?: number | string | null; internalAmountReviewExternalAmount?: number | string | null; internalAmountReviewCompletedAt?: string | null; internalAmountReviewCompletedById?: string | null; internalAmountReviewNote?: string | null; evidenceFiles: EvidenceFile[];
 };
+export type ProjectEacRange = { low: number; likely: number; high: number };
+export type ProjectEac = {
+  status: 'READY' | 'INSUFFICIENT_DATA' | 'NO_BASELINE';
+  method: 'CERTIFIED_REVENUE_RATIO' | null;
+  budgetAtCompletion: number | null;
+  actualCost: number;
+  certifiedRevenue: number;
+  pendingChangeExposure: number;
+  completionRatio: number | null;
+  minCompletionRatio: number;
+  caution: boolean;
+  valuation: ProjectEacRange | null;
+  budgetEfficiencyCost: number | null;
+  margin: ProjectEacRange | null;
+};
 export type Analysis = {
   project: { id: string; name: string; code: string }; contractAmount: number; targetCost: number; actualCost: number;
-  forecastCost: number; forecastBasis: string; downstreamContractSummary?: { contractCount: number; activeContractCount: number; activeAndPendingSettlementContractCount?: number; currentContractAmount: number; activeAndPendingSettlementContractAmount: number; paidAmount: number; grossPaidAmount?: number; refundedAmount?: number; linkedActualCost: number; contractValueMinusLinkedActualCost: number; linkedActualCostOverContractValue: number }; targetProfit: number; targetProfitMargin: number | null;
-  forecastProfit: number; forecastProfitMargin: number | null; confirmedChangeAmount: number;
-  billSummary: { totalSubmitted: number; approvedAmount: number; paidAmount: number };
+  eac: ProjectEac; downstreamContractSummary?: { contractCount: number; activeContractCount: number; activeAndPendingSettlementContractCount?: number; currentContractAmount: number; activeAndPendingSettlementContractAmount: number; paidAmount: number; grossPaidAmount?: number; refundedAmount?: number; linkedActualCost: number; contractValueMinusLinkedActualCost: number; linkedActualCostOverContractValue: number }; targetProfit: number | null; targetProfitMargin: number | null;
+  confirmedChangeAmount: number;
+  billSummary: { totalSubmitted: number; approvedAmount: number; certifiedAmount: number; paidAmount: number };
   costByType: Record<CostType, number>; byBudget: { id: string; code: string; name: string; targetCost: number; actualCost: number }[];
   monthlyActualCost: { month: string; amount: number }[];
 };

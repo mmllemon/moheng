@@ -4,6 +4,7 @@ import { api } from '../api';
 import { useUiStore } from '../auth-store';
 import type { Analysis, Project } from '../types';
 import { Button, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, percentage, StatusBadge } from '../components/Ui';
+import { eacCaption } from '../lib/eac-caption';
 
 const typeLabels: Record<string, string> = { LABOR: '人工费', MATERIAL: '材料费', MACHINE: '机械费', SUBCONTRACT: '分包费', INDIRECT: '其他间接费' };
 const typeColors: Record<string, string> = { MATERIAL: '#2c5a51', LABOR: '#8b6a3e', MACHINE: '#6f7f6a', SUBCONTRACT: '#b08a52', INDIRECT: '#9aa39a' };
@@ -35,6 +36,7 @@ export default function AnalysisPage() {
   const asOf = (() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; })();
   const remaining = data.targetCost - data.actualCost;
   const costRatio = data.targetCost > 0 ? data.actualCost / data.targetCost : null;
+  const eac = data.eac;
 
   const topRows = [...data.byBudget].sort((a, b) => b.actualCost - a.actualCost || b.targetCost - a.targetCost).slice(0, 3);
   const scaleMax = Math.max(100000, Math.ceil(Math.max(1, ...topRows.flatMap((row) => [row.targetCost, row.actualCost])) / 100000) * 100000);
@@ -48,7 +50,9 @@ export default function AnalysisPage() {
 
   const monthly = data.monthlyActualCost.slice(-6);
   const monthMax = Math.max(2, Math.ceil(Math.max(1, ...monthly.map((row) => row.amount)) / 10000));
-  const monthTicks = Array.from({ length: Math.floor(monthMax / 2) + 1 }, (_, index) => monthMax - index * 2);
+  // 刻度按上限均分到 5 档左右；固定步长 2 会在单月成本上百万时挤出上百条网格线。
+  const monthStep = Math.max(1, Math.ceil(monthMax / 5));
+  const monthTicks = Array.from({ length: Math.floor(monthMax / monthStep) + 1 }, (_, index) => monthMax - index * monthStep);
 
   const exportAnalysis = () => {
     const rows: Array<Array<string | number>> = [
@@ -59,6 +63,14 @@ export default function AnalysisPage() {
       ['实际已发生成本', data.actualCost],
       ['成本余量', remaining],
       ['成本执行率', costRatio == null ? '—' : percentage(costRatio)],
+      ['完工估算（EAC）', eac.method === 'CERTIFIED_REVENUE_RATIO' ? '按业主核定产值折算成本效率' : eacCaption(eac)],
+      ['业主核定产值', data.billSummary.certifiedAmount],
+      ['产值完成比', eac.completionRatio == null ? '—' : percentage(eac.completionRatio)],
+      ['EAC 乐观', eac.valuation?.low ?? '—'],
+      ['EAC 中性', eac.valuation?.likely ?? '—'],
+      ['EAC 悲观', eac.valuation?.high ?? '—'],
+      ['目标利润率', data.targetProfitMargin == null ? '—' : percentage(data.targetProfitMargin)],
+      ['预计利润率', eac.margin == null ? '—' : percentage(eac.margin.likely)],
       [],
       ['清单编号', '清单名称', '目标成本', '实际成本', '偏差'],
       ...data.byBudget.map((row) => [row.code, row.name, row.targetCost, row.actualCost, row.actualCost - row.targetCost]),
@@ -113,15 +125,30 @@ export default function AnalysisPage() {
         <div className="an-panel-head"><div><h2>月度成本</h2><p>最近六个月 · 按成本发生日期统计</p></div><span className="an-mini">万元</span></div>
         {monthly.length ? <div className="an-month-chart">
           <div className="an-month-axis">{monthTicks.map((tick) => <span key={tick}>{tick}</span>)}</div>
-          <div className="an-month-plot">{monthly.map((row) => <div className="an-month-col" key={row.month}><span className="an-month-value">{row.amount > 0 ? (row.amount / 10000).toFixed(1) : '0'}</span><span className="an-month-bar" style={{ height: `${row.amount > 0 ? Math.max(2, (row.amount / (monthMax * 10000)) * 100) : 1}%` }} /><small>{row.month.slice(5)}</small></div>)}</div>
+          <div className="an-month-plot">{monthly.map((row) => <div className="an-month-col" key={row.month}><span className="an-month-value">{row.amount > 0 ? (row.amount / 10000).toFixed(1) : ''}</span><span className="an-month-bar" style={{ height: `${row.amount > 0 ? Math.max(2, (row.amount / (monthMax * 10000)) * 100) : 1}%` }} /><small>{row.month.slice(5)}</small></div>)}</div>
         </div> : <div className="an-empty">最近六个月没有成本发生。</div>}
       </section>
 
-      <section className="an-panel" aria-label="口径与基准">
-        <div className="an-panel-head"><div><h2>口径与基准</h2><p>只读 · 数据以当前台账为准</p></div></div>
+      <section className="an-panel" aria-label="完工估算与口径">
+        <div className="an-panel-head"><div><h2>完工估算</h2><p>EAC · 已发生成本按核定产值折算</p></div><span className="an-mini">{eac.method === 'CERTIFIED_REVENUE_RATIO' ? '产值折算' : '待建立'}</span></div>
+        {eac.status === 'READY' && eac.valuation && eac.margin ? <>
+          <div className="an-eac-range">
+            <div><span>剩余按目标成本</span><strong>{formatMoney(eac.budgetEfficiencyCost ?? 0, 0)}</strong><small>剩余工作回到预算效率</small></div>
+            <div><span>剩余按当前效率</span><strong>{formatMoney(eac.valuation.likely, 0)}</strong><small>已发生成本 ÷ 完成比</small></div>
+          </div>
+          <div className="an-eac-facts">
+            <div><span>产值完成比</span><strong>{percentage(eac.completionRatio)}</strong></div>
+            <div><span>预计利润率</span><strong className={eac.margin.likely >= 0 ? 'text-success' : 'text-danger'}>{percentage(eac.margin.likely)}</strong></div>
+            <div><span>目标利润率</span><strong>{percentage(data.targetProfitMargin)}</strong></div>
+            <div><span>未确认变更敞口</span><strong>{formatMoney(eac.pendingChangeExposure, 0)}</strong></div>
+          </div>
+          <p className="an-basis-note">完工成本区间 {formatMoney(eac.valuation.low, 0)} – {formatMoney(eac.valuation.high, 0)}；区间跨度就是成本效率与预算的差距，上限已含未确认变更敞口。</p>
+          {eac.caution && <p className="an-basis-note">产值完成比仍低，产值月报滞后会把估算抬高，请同时参考区间上限。</p>}
+        </> : <div className="an-empty">{eacCaption(eac)}</div>}
         <dl className="an-defs">
-          <div><dt>目标成本基准</dt><dd>{data.forecastBasis === 'TARGET_COST_BASELINE' ? '按目标成本锁定；调整需走变更' : '尚未建立目标成本基线'}</dd></div>
-          <div><dt>实际成本口径</dt><dd>按发生日期计入，不含已归档记录</dd></div>
+          <div><dt>完工预算基准</dt><dd>{eac.status === 'NO_BASELINE' ? '尚未建立目标成本基线' : '目标成本末级清单合计，调整需走变更'}</dd></div>
+          <div><dt>产值口径</dt><dd>只计已审批或已付款的进度款核定金额</dd></div>
+          <div><dt>实际成本口径</dt><dd>按发生日期计入，含税金额，不含已归档记录</dd></div>
           <div><dt>合同额口径</dt><dd>有效合同额，含已生效变更</dd></div>
           <div><dt>数据时间</dt><dd>{asOf}</dd></div>
         </dl>

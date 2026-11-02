@@ -7,6 +7,7 @@ import { hasCrossProjectReadScope } from '../lib/project-data-scope.js';
 import { canAccessProject } from '../lib/project-access.js';
 import { calculateDownstreamCurrentAmount, calculateContractCostGap } from '../lib/downstream-contract-math.js';
 import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
+import { computeProjectEac } from '../lib/project-eac.js';
 
 const money = (value: unknown) => Number(value ?? 0);
 const sumMoney = (values: unknown[]) => Number(centsToMoney(values.reduce<bigint>((sum, value) => sum + moneyToCents(value), 0n)));
@@ -28,13 +29,16 @@ export async function analysisRoutes(app: FastifyInstance) {
     const project = await prisma.project.findFirst({ where: { id: projectId, deletedAt: null }, include: { mainContract: true } });
     if (!project) return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
 
-    const [budgetItems, allCosts, costByType, monthlyCosts, changes, bills, downstreamContracts] = await Promise.all([
+    const [budgetItems, allCosts, costByType, monthlyCosts, changes, pendingChanges, bills, certifiedBills, downstreamContracts] = await Promise.all([
       prisma.budgetItem.findMany({ where: { projectId, deletedAt: null }, include: { _count: { select: { children: true } } }, orderBy: { sortOrder: 'asc' } }),
       prisma.costEntry.aggregate({ where: { projectId, deletedAt: null }, _sum: { amount: true } }),
       prisma.costEntry.groupBy({ by: ['type'], where: { projectId, deletedAt: null }, _sum: { amount: true } }),
       prisma.costEntry.findMany({ where: { projectId, deletedAt: null, date: { gte: new Date(new Date().getFullYear(), new Date().getMonth() - 5, 1) } }, select: { amount: true, date: true }, orderBy: { date: 'asc' } }),
       prisma.change.findMany({ where: { projectId, deletedAt: null, externalConfirmationStatus: 'EFFECTIVE', externalConfirmedAmount: { not: null } }, select: { direction: true, externalConfirmedAmount: true } }),
+      prisma.change.findMany({ where: { projectId, deletedAt: null, status: { in: ['SUBMITTED', 'UNDER_REVIEW'] } }, select: { direction: true, submittedAmount: true } }),
       prisma.progressBill.aggregate({ where: { projectId, deletedAt: null }, _sum: { amount: true, approvedAmount: true, paidAmount: true } }),
+      // 只有核定过的产值才算进度信号；未审批的申报额会虚增完成比。
+      prisma.progressBill.aggregate({ where: { projectId, deletedAt: null, status: { in: ['APPROVED', 'PAID'] } }, _sum: { approvedAmount: true } }),
       prisma.downstreamContract.findMany({ where: { projectId, deletedAt: null }, include: { adjustments: { select: { direction: true, amount: true } }, payments: { select: { type: true, amount: true } }, costEntries: { where: { deletedAt: null }, select: { amount: true } } } }),
     ]);
 
@@ -47,8 +51,13 @@ export async function analysisRoutes(app: FastifyInstance) {
       const amount = money(change.externalConfirmedAmount);
       return sum + (change.direction === 'DECREASE' ? -amount : amount);
     }, 0);
-    // This forecast is explicitly a baseline estimate, not an earned-value forecast.
-    const forecastCost = targetCost > 0 ? targetCost : actualCost;
+    const certifiedRevenue = money(certifiedBills._sum.approvedAmount);
+    const pendingChangeExposure = pendingChanges.reduce((sum, change) => {
+      const amount = money(change.submittedAmount);
+      return sum + (change.direction === 'DECREASE' ? -amount : amount);
+    }, 0);
+    // 完工估算按业主核定产值折算成本效率；缺基线或缺样本时 computeProjectEac 会明确拒绝给数。
+    const eac = computeProjectEac({ contractAmount, budgetAtCompletion: targetCost, actualCost, certifiedRevenue, pendingChangeExposure });
     const groupMap = new Map(budgetItems.map((item) => [item.id, { id: item.id, code: item.code, name: item.name, targetCost: money(item.totalPrice), actualCost: 0, childCount: item._count.children }]));
     const byBudget = await prisma.costEntry.groupBy({ by: ['budgetItemId'], where: { projectId, deletedAt: null, budgetItemId: { not: null } }, _sum: { amount: true } });
     for (const row of byBudget) {
@@ -107,15 +116,13 @@ export async function analysisRoutes(app: FastifyInstance) {
       contractAmount,
       targetCost,
       actualCost,
-      forecastCost,
-      forecastBasis: targetCost > 0 ? 'TARGET_COST_BASELINE' : 'ACTUAL_COST_FALLBACK',
-      targetProfit: contractAmount - targetCost,
-      targetProfitMargin: contractAmount > 0 ? (contractAmount - targetCost) / contractAmount : null,
-      forecastProfit: contractAmount - forecastCost,
-      forecastProfitMargin: contractAmount > 0 ? (contractAmount - forecastCost) / contractAmount : null,
+      eac,
+      // 目标口径只在维护了目标成本时成立，否则不是 100% 利润，而是没有基准。
+      targetProfit: targetCost > 0 ? contractAmount - targetCost : null,
+      targetProfitMargin: targetCost > 0 && contractAmount > 0 ? (contractAmount - targetCost) / contractAmount : null,
       confirmedChangeAmount,
       downstreamContractSummary,
-      billSummary: { totalSubmitted, approvedAmount: approvedRevenue, paidAmount: totalPaid },
+      billSummary: { totalSubmitted, approvedAmount: approvedRevenue, certifiedAmount: certifiedRevenue, paidAmount: totalPaid },
       costByType: costTypes,
       byBudget: [...groupMap.values()].filter((item) => item.childCount === 0).map(({ childCount: _childCount, ...item }) => item),
       monthlyActualCost: monthly,

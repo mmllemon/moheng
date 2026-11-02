@@ -6,6 +6,7 @@ import { api } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectSummaryReportButton } from '../components/ReportLaunchButton';
 import { Button, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge, percentage } from '../components/Ui';
+import { eacCaption } from '../lib/eac-caption';
 import type { Analysis, ChangeRecord, ProgressBill, Project } from '../types';
 
 type ProjectDetail = Project & { mainContract?: { id: string; contractNo: string; name: string; amount: number; signedAt?: string | null } | null };
@@ -117,7 +118,7 @@ export default function ProjectOverviewPage() {
     </section>
 
     <section className="project-cockpit-main">
-      <article className="panel project-cockpit-chart"><div className="panel-heading"><div><h3>月度实际成本</h3><p>最近六个月 · 仅统计已录入且未归档的成本</p></div><span className="chart-mini-label">金额：元</span></div>{hasMonthlyCost ? <ReactECharts key={themeName} option={monthlyOption} style={{ height: 260 }} notMerge lazyUpdate /> : <div className="project-cockpit-chart-empty"><Activity size={18} /><strong>近六个月还没有实际成本记录</strong><span>录入成本后，这里会显示月度发生额。</span></div>}<div className="project-chart-bottom"><span>基准预计利润率</span><strong className={(analysis.forecastProfitMargin ?? 0) >= 0 ? 'text-success' : 'text-danger'}>{percentage(analysis.forecastProfitMargin)}</strong><small>当前按目标成本简化估算，非完整 EAC 预测</small></div></article>
+      <article className="panel project-cockpit-chart"><div className="panel-heading"><div><h3>月度实际成本</h3><p>最近六个月 · 仅统计已录入且未归档的成本</p></div><span className="chart-mini-label">金额：元</span></div>{hasMonthlyCost ? <ReactECharts key={themeName} option={monthlyOption} style={{ height: 260 }} notMerge lazyUpdate /> : <div className="project-cockpit-chart-empty"><Activity size={18} /><strong>近六个月还没有实际成本记录</strong><span>录入成本后，这里会显示月度发生额。</span></div>}<div className="project-chart-bottom"><span>预计利润率</span><strong className={analysis.eac.margin ? (analysis.eac.margin.likely >= 0 ? 'text-success' : 'text-danger') : undefined}>{percentage(analysis.eac.margin?.likely ?? null)}</strong><small>{eacCaption(analysis.eac)}</small></div></article>
       <article className="panel project-attention-panel"><div className="panel-heading"><div><h3>待跟进业务</h3><p>本项目尚需推进的业务记录</p></div><CircleAlert size={18} className="heading-muted-icon" /></div>
         <button className="project-attention-row" onClick={() => navigate('/cost/progress-bills')}><span className="attention-icon"><CalendarClock size={16} /></span><span><strong>进度款待跟进</strong><small>未到账或仍处于流转中的申报</small></span><b>{pendingBills.length}</b><ArrowRight size={14} /></button>
         <button className="project-attention-row" onClick={() => navigate('/cost/changes')}><span className="attention-icon"><AlertTriangle size={16} /></span><span><strong>变更签证待跟进</strong><small>已提交或审核中的变更</small></span><b>{pendingChanges.length}</b><ArrowRight size={14} /></button>
