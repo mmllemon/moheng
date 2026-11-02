@@ -723,6 +723,10 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .dash-cashflow .an-basis-note{margin-top:var(--space-12)}
 .dash-cashflow .table-scroll{margin-top:var(--space-12);border-top:1px solid var(--line-2)}
 .dash-cashflow-table tbody td{padding-top:var(--space-8);padding-bottom:var(--space-8)}
+/* 没有现金计划的项目不进表格，折叠成表下的一句提示；名字保留可点入口，方便直接去补到期日。 */
+.dash-cashflow-idle{margin:var(--space-12) var(--space-16) 0;padding-top:var(--space-10);border-top:1px solid var(--line-2);font-size:var(--fs-hint);line-height:1.9;color:var(--meta)}
+.dash-cashflow-idle-link{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);cursor:pointer;border-bottom:1px dotted var(--line-2)}
+.dash-cashflow-idle-link:hover,.dash-cashflow-idle-link:focus-visible{color:var(--accent);border-bottom-color:var(--accent)}
 @media (max-width:1180px){.an-grid{grid-template-columns:1fr}}
 @media (max-width:940px){  .an-variance-nums strong,.an-variance-nums span,.an-variance-nums b{font-size:var(--fs-hint)}
 }

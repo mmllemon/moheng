@@ -48,6 +48,11 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
   const wan = (value: number) => (value / 10000).toFixed(1);
   const signedWan = (value: number) => value === 0 ? '—' : `${value > 0 ? '+' : '−'}${wan(Math.abs(value))}万`;
   const overdues = data.overdue.inflow > 0 || data.overdue.outflow > 0;
+  /* 全零项目不占表格行：一行 0 / 0 / — 只提供噪声，折叠成表下的一向提示，并保留点进项目补数据的入口。 */
+  const hasCash = (row: PortfolioCashflow['projects'][number]) => row.window.inflow > 0 || row.window.outflow > 0
+    || row.overdue.inflow > 0 || row.overdue.outflow > 0 || row.unscheduled.inflow > 0 || row.unscheduled.outflow > 0;
+  const activeRows = data.projects.filter(hasCash);
+  const idleRows = data.projects.filter((row) => !hasCash(row));
   return <section className="v6-block dash-cashflow" aria-label="未来六个月现金缺口">
     <div className="v6-block-head">
       <div><h2>未来六个月现金缺口</h2><span>覆盖 {data.scope.projectCount} 个可访问项目 · 只算已经确定到期日的金额</span></div>
@@ -74,10 +79,10 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
       {(data.unscheduled.inflow > 0 || data.unscheduled.outflow > 0) && <>没有到期日的应收 {formatMoney(data.unscheduled.inflow, 0)}、应付 {formatMoney(data.unscheduled.outflow, 0)}，同样没进曲线。 </>}
       {data.invoiceTax.amount > 0 && <>已开票销项税 {formatMoney(data.invoiceTax.amount, 0)}（{data.invoiceTax.count} 张）已按开票月计入支出。</>}
     </p>}
-    <div className="table-scroll">
+    {activeRows.length > 0 && <div className="table-scroll">
       <table className="data-table v6-table dash-cashflow-table">
         <thead><tr><th>项目</th><th className="align-right">应收</th><th className="align-right">应付</th><th className="align-right">净额</th><th className="align-right">逾期应收 / 应付</th><th /></tr></thead>
-        <tbody>{data.projects.map((row) => <tr key={row.projectId} onClick={() => onOpen(row.projectId)} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') onOpen(row.projectId); }}>
+        <tbody>{activeRows.map((row) => <tr key={row.projectId} onClick={() => onOpen(row.projectId)} tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter') onOpen(row.projectId); }}>
           <td><strong className="table-primary-text">{row.name}</strong><small className="table-subtext">{row.unscheduled.inflow > 0 ? `${row.code} · 未设到期日应收 ${formatMoney(row.unscheduled.inflow, 0)}` : row.code}</small></td>
           <td className="align-right numeric">{formatMoney(row.window.inflow, 0)}</td>
           <td className="align-right numeric">{formatMoney(row.window.outflow, 0)}</td>
@@ -86,7 +91,13 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
           <td className="align-right"><ChevronRight size={14} className="v6-row-arrow" /></td>
         </tr>)}</tbody>
       </table>
-    </div>
+    </div>}
+    {idleRows.length > 0 && <p className="dash-cashflow-idle">
+      {idleRows.map((row, index) => <span key={row.projectId}>{index > 0 ? '、' : ''}<button type="button" className="dash-cashflow-idle-link" onClick={() => onOpen(row.projectId)} title={`${row.code} · 打开项目视图补到期安排或付款计划`}>{row.name}</button></span>)}
+      {idleRows.length > 1 && ` 等 ${idleRows.length} 个项目`}
+      {activeRows.length > 0 ? '在本区间既无应收也无应付，' : '都还没有可用的到期日数据，'}
+      补齐应收到期日或付款计划后才会进上面这张表。
+    </p>}
   </section>;
 }
 
