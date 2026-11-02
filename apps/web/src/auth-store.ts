@@ -10,6 +10,15 @@ export const PAGE_WIDTHS: PageWidth[] = ['640', '720', '800', 'unlimited'];
 export function normalizePageWidth(value: unknown): PageWidth {
   return value === '640' || value === '800' || value === 'unlimited' ? value : '720';
 }
+/* 表格宽度三档：跟正文 / 1240 / 铺满。
+   阅读标尺（--page-column-measure）约束的是正文每行字数，台账按列扫描，不受它约束。
+   但一档设置只管正文、却在台账页静默失效，等于设置项在骗人，所以单独列一档。
+   默认 1240：实测最宽的变更签证表需要 1184 可用宽度（1240 减两侧 28 内边距）。 */
+export type TableWidth = 'inherit' | '1240' | 'full';
+export const TABLE_WIDTHS: TableWidth[] = ['inherit', '1240', 'full'];
+export function normalizeTableWidth(value: unknown): TableWidth {
+  return value === 'inherit' || value === 'full' ? value : '1240';
+}
 type AuthState = {
   accessToken: string | null;
   user: User | null;
@@ -52,6 +61,8 @@ type UiPreferences = {
      '640' | '720' | '800' | 'unlimited'，默认 '720'。
      旧的布尔 wideContent 保留字段但不再驱动宽度，避免旧配置丢失。 */
   pageWidth: PageWidth;
+  /* 台账页宽度。默认 '1240'，与正文阅读宽度分开（见 TableWidth 注释）。 */
+  tableWidth: TableWidth;
   wideContent: boolean;
   paperTexture: PaperTextureStyle;
   paperTextureStrength: number;
@@ -73,6 +84,7 @@ const defaultUiPreferences: UiPreferences = {
   accent: 'theme',
   reduceMotion: false,
   pageWidth: '720',
+  tableWidth: '1240',
   wideContent: false,
   paperTexture: 'rice',
   paperTextureStrength: 1,
@@ -97,6 +109,7 @@ function readUiPreferences(): UiPreferences {
       accent: value.accent === 'indigo' || value.accent === 'jade' || value.accent === 'cinnabar' ? value.accent : 'theme',
       reduceMotion: Boolean(value.reduceMotion),
       pageWidth: normalizePageWidth(value.pageWidth),
+      tableWidth: normalizeTableWidth(value.tableWidth),
       wideContent: Boolean(value.wideContent),
       paperTexture,
       paperTextureStrength: normalizePaperTextureStrength(Number(value.paperTextureStrength ?? 1)),
@@ -119,6 +132,7 @@ export function applyUiPreferences(value: UiPreferences) {
   root.dataset.density = value.density;
   root.dataset.motion = value.reduceMotion ? 'reduced' : 'full';
   root.dataset.pageWidth = value.pageWidth;
+  root.dataset.tableWidth = value.tableWidth;
   /* 旧的 wideContent 布尔不再写 data-content-width：两套机制曾互相覆盖，
      四档宽度现在只由 data-page-width 与 --page-column-measure 一处决定。
      字段仍在存储里，仅为兼容旧配置。 */
@@ -163,6 +177,7 @@ type UiState = UiPreferences & {
   toggleReduceMotion: () => void;
   toggleWindowsCardRadius: () => void;
   setPageWidth: (width: PageWidth) => void;
+  setTableWidth: (width: TableWidth) => void;
   toggleWideContent: () => void;
   setPaperTexture: (texture: PaperTextureStyle) => void;
   setPaperTextureStrength: (strength: number) => void;
@@ -179,6 +194,7 @@ function preferencesFromState(state: UiState): UiPreferences {
     accent: state.accent,
     reduceMotion: state.reduceMotion,
     pageWidth: state.pageWidth,
+    tableWidth: state.tableWidth,
     wideContent: state.wideContent,
     paperTexture: state.paperTexture,
     paperTextureStrength: state.paperTextureStrength,
@@ -214,6 +230,7 @@ export const useUiStore = create<UiState>((set) => ({
   toggleReduceMotion: () => set((state) => updateUiPreferences(set, state, { reduceMotion: !state.reduceMotion })),
   toggleWindowsCardRadius: () => set((state) => updateUiPreferences(set, state, { windowsCardRadius: !state.windowsCardRadius })),
   setPageWidth: (pageWidth) => set((state) => updateUiPreferences(set, state, { pageWidth })),
+  setTableWidth: (tableWidth) => set((state) => updateUiPreferences(set, state, { tableWidth })),
   toggleWideContent: () => set((state) => updateUiPreferences(set, state, { wideContent: !state.wideContent })),
   setPaperTexture: (paperTexture) => set((state) => updateUiPreferences(set, state, { paperTexture })),
   setPaperTextureStrength: (strength) => set((state) => updateUiPreferences(set, state, { paperTextureStrength: normalizePaperTextureStrength(strength) })),
