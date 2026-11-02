@@ -12,18 +12,18 @@ import { Button, CardHead, dateInputToIso, ErrorBlock, formatDate, formatMoney, 
 import { Link } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 
-type Contract = { id: string; projectId: string; contractNo: string; name: string; signedAt?: string | null; amount: number; effectiveAmount?: number; originalContractAmount?: number; counterpartyPartyId?: string | null; counterpartyParty?: { id: string; name: string; creditCode?: string | null } | null; taxIncluded: boolean; retentionRate: number; advanceDeductionRate: number; paymentTerms?: string | null; guaranteeEndAt?: string | null; notes?: string | null };
+type Contract = { id: string; projectId: string; contractNo: string; name: string; signedAt?: string | null; amount: number; effectiveAmount?: number; originalContractAmount?: number; counterpartyPartyId?: string | null; counterpartyParty?: { id: string; name: string; creditCode?: string | null } | null; taxIncluded: boolean; retentionRate: number; advanceDeductionRate: number; paymentTermDays?: number | null; paymentTerms?: string | null; guaranteeEndAt?: string | null; notes?: string | null };
 type ProjectBrief = { id: string; name: string; code: string; ownerName: string; ownerPartyId?: string | null };
 const contractSchema = z.object({
   counterpartyPartyId: z.string().nullable().optional(), counterpartyName: z.string().trim().min(2, '请选择或填写建设单位'),
   contractNo: z.string().trim().optional().or(z.literal('')), name: z.string().trim().min(1, '请输入合同名称'),
   signedAt: z.string().optional(), amount: z.coerce.number().min(0, '金额不能小于 0'), taxIncluded: z.boolean(),
   retentionRate: z.coerce.number().min(0).max(100, '比例范围为 0—100'), advanceDeductionRate: z.coerce.number().min(0).max(100, '比例范围为 0—100'),
-  paymentTerms: z.string().optional(), guaranteeEndAt: z.string().optional(), notes: z.string().optional(),
+  paymentTermDays: z.string().optional(), paymentTerms: z.string().optional(), guaranteeEndAt: z.string().optional(), notes: z.string().optional(),
 });
 type ContractValues = z.infer<typeof contractSchema>;
 const asDate = (value?: string | null) => value ? new Date(value).toISOString().slice(0, 10) : '';
-const blankValues: ContractValues = { counterpartyPartyId: null, counterpartyName: '', contractNo: '', name: '', signedAt: '', amount: 0, taxIncluded: true, retentionRate: 3, advanceDeductionRate: 0, paymentTerms: '', guaranteeEndAt: '', notes: '' };
+const blankValues: ContractValues = { counterpartyPartyId: null, counterpartyName: '', contractNo: '', name: '', signedAt: '', amount: 0, taxIncluded: true, retentionRate: 3, advanceDeductionRate: 0, paymentTermDays: '', paymentTerms: '', guaranteeEndAt: '', notes: '' };
 
 export default function ContractsPage() {
   const projectId = useUiStore((state) => state.selectedProjectId);
@@ -36,7 +36,7 @@ export default function ContractsPage() {
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting, isDirty } } = useForm<ContractValues>({ resolver: zodResolver(contractSchema) as never, defaultValues: blankValues });
 
   useEffect(() => {
-    if (contractQuery.data) reset({ counterpartyPartyId: contractQuery.data.counterpartyPartyId ?? projectQuery.data?.ownerPartyId ?? null, counterpartyName: contractQuery.data.counterpartyParty?.name ?? projectQuery.data?.ownerName ?? '', contractNo: contractQuery.data.contractNo, name: contractQuery.data.name, signedAt: asDate(contractQuery.data.signedAt), amount: contractQuery.data.amount, taxIncluded: contractQuery.data.taxIncluded, retentionRate: contractQuery.data.retentionRate * 100, advanceDeductionRate: contractQuery.data.advanceDeductionRate * 100, paymentTerms: contractQuery.data.paymentTerms ?? '', guaranteeEndAt: asDate(contractQuery.data.guaranteeEndAt), notes: contractQuery.data.notes ?? '' });
+    if (contractQuery.data) reset({ counterpartyPartyId: contractQuery.data.counterpartyPartyId ?? projectQuery.data?.ownerPartyId ?? null, counterpartyName: contractQuery.data.counterpartyParty?.name ?? projectQuery.data?.ownerName ?? '', contractNo: contractQuery.data.contractNo, name: contractQuery.data.name, signedAt: asDate(contractQuery.data.signedAt), amount: contractQuery.data.amount, taxIncluded: contractQuery.data.taxIncluded, retentionRate: contractQuery.data.retentionRate * 100, advanceDeductionRate: contractQuery.data.advanceDeductionRate * 100, paymentTermDays: contractQuery.data.paymentTermDays == null ? '' : String(contractQuery.data.paymentTermDays), paymentTerms: contractQuery.data.paymentTerms ?? '', guaranteeEndAt: asDate(contractQuery.data.guaranteeEndAt), notes: contractQuery.data.notes ?? '' });
     else if (contractQuery.isSuccess) reset({ ...blankValues, counterpartyPartyId: projectQuery.data?.ownerPartyId ?? null, counterpartyName: projectQuery.data?.ownerName ?? '' });
   }, [contractQuery.data, contractQuery.isSuccess, projectQuery.data?.ownerName, projectQuery.data?.ownerPartyId, reset]);
 
@@ -44,7 +44,7 @@ export default function ContractsPage() {
     if (!projectId) return;
     setError(''); setNotice('');
     try {
-      await api.put(`/projects/${projectId}/contracts/main`, { ...values, counterpartyPartyId: values.counterpartyPartyId ?? null, retentionRate: values.retentionRate / 100, advanceDeductionRate: values.advanceDeductionRate / 100, signedAt: values.signedAt ? dateInputToIso(values.signedAt) : null, guaranteeEndAt: values.guaranteeEndAt ? dateInputToIso(values.guaranteeEndAt) : null, paymentTerms: values.paymentTerms || null, notes: values.notes || null });
+      await api.put(`/projects/${projectId}/contracts/main`, { ...values, counterpartyPartyId: values.counterpartyPartyId ?? null, retentionRate: values.retentionRate / 100, advanceDeductionRate: values.advanceDeductionRate / 100, paymentTermDays: values.paymentTermDays && values.paymentTermDays.trim() !== '' ? Number(values.paymentTermDays) : null, signedAt: values.signedAt ? dateInputToIso(values.signedAt) : null, guaranteeEndAt: values.guaranteeEndAt ? dateInputToIso(values.guaranteeEndAt) : null, paymentTerms: values.paymentTerms || null, notes: values.notes || null });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['contract', projectId] }), queryClient.invalidateQueries({ queryKey: ['projects'] }),
         queryClient.invalidateQueries({ queryKey: ['project-detail', projectId] }), queryClient.invalidateQueries({ queryKey: ['project-brief', projectId] }), queryClient.invalidateQueries({ queryKey: ['analysis', projectId] }), queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
@@ -81,6 +81,7 @@ export default function ContractsPage() {
         <div><span>质保金比例</span><strong>{(contract.retentionRate * 100).toFixed(2)}%</strong></div>
         <div><span>预付款回扣比例</span><strong>{(contract.advanceDeductionRate * 100).toFixed(2)}%</strong></div>
         <div><span>质保金到期日</span><strong>{formatDate(contract.guaranteeEndAt)}</strong></div>
+        <div><span>约定付款期限</span><strong>{contract.paymentTermDays == null ? '未约定' : `${contract.paymentTermDays} 天`}</strong><small>进度款审批通过后据此推算应收到期日</small></div>
         <div className="span-detail-wide"><span>付款方式及条件</span><p>{contract.paymentTerms || '尚未填写'}</p></div>
         <div className="span-detail-wide"><span>合同备注</span><p>{contract.notes || '无备注'}</p></div>
       </div></section>
@@ -97,7 +98,8 @@ export default function ContractsPage() {
         <div className="field"><label>质保金比例</label><div className="input-suffix"><input type="number" min="0" max="100" step="0.1" {...register('retentionRate')} /><span>%</span></div>{errors.retentionRate && <small className="field-error">{errors.retentionRate.message}</small>}</div>
         <div className="field"><label>预付款回扣比例</label><div className="input-suffix"><input type="number" min="0" max="100" step="0.1" {...register('advanceDeductionRate')} /><span>%</span></div>{errors.advanceDeductionRate && <small className="field-error">{errors.advanceDeductionRate.message}</small>}</div>
         <div className="field"><label>质保金到期日</label><DatePicker {...register('guaranteeEndAt')} /></div>
-        <div className="field"><label>价税口径</label><label className="checkbox-line"><input type="checkbox" {...register('taxIncluded')} />合同金额含税</label></div>
+        <div className="field"><label>约定付款期限</label><div className="input-suffix"><input type="number" min="0" max="365" step="1" {...register('paymentTermDays')} placeholder="30" /><span>天</span></div><small className="field-hint">留空表示合同未约定。填写后，进度款审批通过时按“审批日 + 天数”生成应收到期日。</small></div>
+        <div className="field span-2"><label>价税口径</label><label className="checkbox-line"><input type="checkbox" {...register('taxIncluded')} />合同金额含税</label></div>
         <div className="field span-2"><label>付款方式及条件</label><textarea rows={3} {...register('paymentTerms')} placeholder="例如：按月计量申报，审批后 28 天内付款。以正式合同为准。" /></div>
         <div className="field span-2"><label>备注</label><textarea rows={2} {...register('notes')} placeholder="合同特别条款、暂定金说明等" /></div>
       </div>{error && <div className="form-alert">{error}</div>}<div className="inline-notice"><LockKeyhole size={15} /><span>合同金额及价款变化写入审计流水。业主变更在满足有效外部确认规则后调整当前有效合同额。</span></div><div className="dialog-footer"><Button variant="secondary" onClick={() => setEditorOpen(false)} disabled={isSubmitting}>取消</Button><Button type="submit" disabled={isSubmitting || (Boolean(contract) && !isDirty)}><Save size={15} />{isSubmitting ? '保存中…' : '保存合同资料'}</Button></div></form>

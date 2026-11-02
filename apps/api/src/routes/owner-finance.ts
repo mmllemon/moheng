@@ -428,7 +428,13 @@ export async function ownerFinanceRoutes(app: FastifyInstance) {
         if (sum !== moneyToCents(ar.netAmount)) throw new OwnerFinanceError(400, 'SCHEDULE_TOTAL_MISMATCH', '各期金额之和必须严格等于应收净额');
         await tx.ownerReceivableSchedule.deleteMany({ where: { receivableId } });
         await tx.ownerReceivableSchedule.createMany({ data: parsed.data.schedules.map((s) => ({ receivableId, scheduleNo: s.scheduleNo, dueAt: new Date(s.dueAt), amount: String(s.amount), notes: s.notes ?? null })) });
-        await audit(tx, projectId, user.sub, 'OwnerReceivable', receivableId, 'OWNER_RECEIVABLE_SCHEDULES_REPLACED', { receivableNo: ar.receivableNo, schedules: parsed.data.schedules });
+        // 应收单自身的到期日跟着首期走。审批时按付款期限自动算出的日子可能已被
+        // 实际谈定的分期覆盖；不跟进就会出现“应收单 12-02 到期、资金计划按 12-10 计”两张皮。
+        const earliestDueAt = parsed.data.schedules
+          .map((s) => new Date(s.dueAt).getTime())
+          .reduce((min, value) => (value < min ? value : min), Number.POSITIVE_INFINITY);
+        await tx.ownerReceivable.update({ where: { id: receivableId }, data: { dueAt: new Date(earliestDueAt) } });
+        await audit(tx, projectId, user.sub, 'OwnerReceivable', receivableId, 'OWNER_RECEIVABLE_SCHEDULES_REPLACED', { receivableNo: ar.receivableNo, previousDueAt: ar.dueAt, dueAt: new Date(earliestDueAt), schedules: parsed.data.schedules });
         return tx.ownerReceivableSchedule.findMany({ where: { receivableId }, orderBy: { dueAt: 'asc' } });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       return success(result.map((s) => ({ ...s, amount: num(s.amount) })));

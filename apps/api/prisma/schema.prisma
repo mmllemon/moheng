@@ -696,6 +696,9 @@ model MainContract {
   taxIncluded         Boolean  @default(true)
   retentionRate       Decimal  @default(0.03) @db.Decimal(7, 5)
   advanceDeductionRate Decimal @default(0) @db.Decimal(7, 5)
+  /// 约定付款期限（天）。进度款审批通过后，应收到期日 = 审批日 + 天数。
+  /// 为空表示合同未约定，系统不替业务编日期，应收就落在「未设到期日」。
+  paymentTermDays     Int?
   paymentTerms        String?
   guaranteeEndAt      DateTime?
   notes               String?

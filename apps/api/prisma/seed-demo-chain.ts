@@ -40,6 +40,12 @@ const PROJECT = {
 };
 
 const iso = (date: string) => new Date(date).toISOString();
+/** YYYY-MM-DD 往后推 n 天，仍返回 YYYY-MM-DD。 */
+const addDays = (date: string, days: number) => {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+};
 const money = (value: number) => value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const steps: string[] = [];
 const step = (message: string) => { steps.push(message); console.log(`  ✓ ${message}`); };
@@ -218,10 +224,10 @@ async function main() {
   await admin('PUT', `/projects/${projectId}/contracts/main`, {
     counterpartyPartyId: parties.owner, counterpartyName: PROJECT.ownerName, contractNo: `${PROJECT.code}-HT-01`,
     name: '锦澜花园二期住宅施工总承包合同', signedAt: iso('2026-02-10T00:00:00.000Z'), amount: PROJECT.contractAmount,
-    taxIncluded: true, retentionRate: 0.03, advanceDeductionRate: 0.05,
+    taxIncluded: true, retentionRate: 0.03, advanceDeductionRate: 0.05, paymentTermDays: 30,
     paymentTerms: '按月计量，业主核定后 30 日内支付至 80%，竣工结算后支付至 97%，质保金 3% 缺陷责任期满支付。',
   });
-  step('主合同（留存 3%，预付款 5%）');
+  step('主合同（留存 3%，预付款 5%，付款期限 30 天）');
 
   /* 目标成本清单 */
   const budgetPlan = [
@@ -304,6 +310,16 @@ async function main() {
     await admin('PATCH', `/projects/${projectId}/progress-bills/${created.id}/status`, { status: 'SUBMITTED' });
     await admin('PATCH', `/projects/${projectId}/progress-bills/${created.id}/status`, { status: 'UNDER_REVIEW' });
     await admin('PATCH', `/projects/${projectId}/progress-bills/${created.id}/status`, { status: 'APPROVED', approvedAmount: bill.approved });
+    // 审批时按付款期限推算的到期日以“审批时刻”为基准；演示脚本在一秒内把四期都审批完，
+    // 会把 5 到 9 月的历史各期全算成未来到期。这里按各期核定日回写到期日，让时间线自洽；
+    // 真实业务里就是“核定后 30 日内付款”，与合同条款一致。已有到账后这扇门就关了。
+    const billsAfterApprove = await admin<any>('GET', `/projects/${projectId}/progress-bills`);
+    const receivableId = (billsAfterApprove ?? []).find((item: any) => item.periodNo === bill.periodNo)?.ownerReceivable?.id;
+    if (receivableId) {
+      await admin('PUT', `/projects/${projectId}/owner-finance/receivables/${receivableId}/schedules`, {
+        schedules: [{ scheduleNo: '01', dueAt: iso(addDays(bill.applyDate, 30)), amount: bill.approved, notes: '按期核定日 + 合同 30 天付款期限' }],
+      });
+    }
     if (bill.received > 0) {
       await admin('POST', `/projects/${projectId}/progress-bills/${created.id}/payments`, {
         amount: bill.received, paidAt: iso(`${bill.applyDate}T00:00:00.000Z`),
@@ -315,7 +331,8 @@ async function main() {
   }
   step(`进度款 4 期，核定 ${money(certified)}，到账 ${money(received)}`);
 
-  // 进度款应收在审批生成时没有到期日，只能在还没有到账前补录分期；已有到账就锁定了。
+  // 进度款应收在审批时已按主合同付款期限自动带出到期日；这里改成分两期，
+  // 演示“自动推算的日期可以被实际谈定的付款安排覆盖”。已有到账后这扇门就关了。
   const financeAfterBills = await admin<any>('GET', `/projects/${projectId}/owner-finance`);
   const period4Receivable = (financeAfterBills.receivables ?? []).find((row: any) => row.type === 'PROGRESS_BILL' && Number(row.netAmount) === 5_300_000);
   if (!period4Receivable) throw new Error('未找到第 4 期进度款应收');
@@ -532,6 +549,10 @@ async function main() {
     ['资金计划收入侧有到期金额', Number(cashflow.window?.inflow) > 0, `${cashflow.window?.inflow}`],
     ['资金计划支出侧有到期金额', Number(cashflow.window?.outflow) > 0, `${cashflow.window?.outflow}`],
     ['付款计划只计未结算合同', cashflow.sourceCounts?.plan === 5, `${cashflow.sourceCounts?.plan} 期计划计入（劳务合同已有应付，其 3 期被跳过）`],
+    // 主合同约定 30 天付款后，每一张应收都应该有到期日；有悬空金额就说明源头又断了。
+    ['没有到期日的应收已消化', Number(cashflow.unscheduled?.inflow ?? 0) === 0, `未设到期日应收 ${cashflow.unscheduled?.inflow ?? 0}`],
+    // 第 3 期核定 720 万只到账 650 万，按核定日 + 30 天已过期，应该同时出现在逾期桶和待办预警里。
+    ['逾期应收能落入逾期桶', Number(cashflow.overdue?.inflow ?? 0) > 0, `逾期应收 ${cashflow.overdue?.inflow ?? 0}`],
   ];
   const failed = checks.filter(([, ok]) => !ok);
 

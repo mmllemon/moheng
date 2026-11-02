@@ -9,6 +9,7 @@ import { nonNegativeMoney, positiveMoney } from '../lib/validation.js';
 import { centsToMoney, moneyToCents } from '../lib/contract-amount-math.js';
 import { nextDocumentNumber } from '../lib/document-number.js';
 import { calculateContractNetOpenCents, calculateReceivableOpenCents, capReceiptCents } from '../lib/owner-settlement-math.js';
+import { dueAtFromPaymentTermDays } from '../lib/payment-term.js';
 
 const billInput = z.object({
   periodNo: z.number().int().positive(),
@@ -23,8 +24,9 @@ const paymentInput = z.object({ amount: positiveMoney, paidAt: z.iso.datetime(),
 function sumAllocations(values: unknown[]): bigint { return values.reduce<bigint>((sum, value) => sum + moneyToCents(value), 0n); }
 
 function serialise(row: any) {
-  return { ...row, amount: Number(row.amount), approvedAmount: row.approvedAmount == null ? null : Number(row.approvedAmount), paidAmount: Number(row.paidAmount), payments: row.payments?.map((p: any) => ({ ...p, amount: Number(p.amount) })), mainContract: row.mainContract ?? null };
+  return { ...row, amount: Number(row.amount), approvedAmount: row.approvedAmount == null ? null : Number(row.approvedAmount), paidAmount: Number(row.paidAmount), payments: row.payments?.map((p: any) => ({ ...p, amount: Number(p.amount) })), mainContract: row.mainContract ?? null, ownerReceivable: row.ownerReceivable ? { ...row.ownerReceivable, netAmount: Number(row.ownerReceivable.netAmount) } : null };
 }
+
 
 const transitions: Record<ProgressBillStatus, ProgressBillStatus[]> = {
   DRAFT: ['SUBMITTED'], SUBMITTED: ['UNDER_REVIEW', 'REJECTED'], UNDER_REVIEW: ['APPROVED', 'REJECTED'],
@@ -43,7 +45,7 @@ export async function progressBillRoutes(app: FastifyInstance) {
     const user = authUser(request);
     const { projectId } = request.params as { projectId: string };
     if (!(await canAccessProject(user.sub, user.role, projectId, undefined, 'PROJECT_READ'))) return failure(reply, 403, 'PROJECT_ACCESS_DENIED', '你没有访问该项目的权限');
-    const rows = await prisma.progressBill.findMany({ where: { projectId, deletedAt: null }, include: { payments: { orderBy: { paidAt: 'desc' } }, mainContract: { select: { id: true, contractNo: true, name: true } } }, orderBy: { periodNo: 'desc' } });
+    const rows = await prisma.progressBill.findMany({ where: { projectId, deletedAt: null }, include: { payments: { orderBy: { paidAt: 'desc' } }, mainContract: { select: { id: true, contractNo: true, name: true } }, ownerReceivable: { select: { id: true, receivableNo: true, dueAt: true, netAmount: true, status: true } } }, orderBy: { periodNo: 'desc' } });
     return success(rows.map(serialise));
   });
 
@@ -100,11 +102,17 @@ export async function progressBillRoutes(app: FastifyInstance) {
           const main = await tx.mainContract.findUnique({ where: { id: old.mainContractId }, include: { project: { select: { code: true } } } });
           if (!main) throw new Error('MAIN_CONTRACT_REQUIRED');
           const receivableNo = await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'YS', date: new Date() });
-          await tx.ownerReceivable.create({ data: {
+          // 按合同约定付款天数推算到期日；这是资金计划能落到月份的唯一依据。
+          // 合同没约定时 dueAt 为空，应收会进入“未设到期日”，不靠审批日期充数。
+          const dueAt = dueAtFromPaymentTermDays(main.paymentTermDays);
+          const createdReceivable = await tx.ownerReceivable.create({ data: {
             projectId, mainContractId: main.id, receivableNo, type: 'PROGRESS_BILL', title: `进度款第${old.periodNo}期应收`, sourceProgressBillId: billId,
-            grossAmount: String(amount), advanceDeductionAmount: '0', retentionAmount: '0', otherDeductionAmount: '0', netAmount: String(amount), status: 'OPEN', notes: old.notes ?? null, createdById: user.sub,
+            grossAmount: String(amount), advanceDeductionAmount: '0', retentionAmount: '0', otherDeductionAmount: '0', netAmount: String(amount), dueAt, status: 'OPEN', notes: old.notes ?? null, createdById: user.sub,
           } });
-          await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'OwnerReceivable', entityId: billId, action: 'PROGRESS_BILL_RECEIVABLE_CREATED', changes: { periodNo: old.periodNo, receivableNo, amount: String(amount) } } });
+          if (dueAt) {
+            await tx.ownerReceivableSchedule.create({ data: { receivableId: createdReceivable.id, scheduleNo: '01', dueAt, amount: String(amount), notes: '按主合同约定付款期限自动生成' } });
+          }
+          await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'OwnerReceivable', entityId: billId, action: 'PROGRESS_BILL_RECEIVABLE_CREATED', changes: { periodNo: old.periodNo, receivableNo, amount: String(amount), dueAt: dueAt?.toISOString() ?? null, paymentTermDays: main.paymentTermDays } } });
         }
       }
       await tx.auditLog.create({ data: { projectId, userId: user.sub, entity: 'ProgressBill', entityId: billId, action: 'STATUS_CHANGE', changes: { from: old.status, to: result.status, approvedAmount: parsed.data.approvedAmount } } });
@@ -142,7 +150,9 @@ export async function progressBillRoutes(app: FastifyInstance) {
         let receivable = await tx.ownerReceivable.findUnique({ where: { sourceProgressBillId: billId }, include: { allocations: { select: { amount: true } } } });
         if (!receivable) {
           const receivableNo = await nextDocumentNumber(tx, { projectId, projectCode: main.project.code, type: 'YS', date: new Date() });
-          receivable = await tx.ownerReceivable.create({ data: { projectId, mainContractId: main.id, receivableNo, type: 'PROGRESS_BILL', title: `进度款第${bill.periodNo}期应收`, sourceProgressBillId: billId, grossAmount: centsToMoney(limitCents), advanceDeductionAmount: '0', retentionAmount: '0', otherDeductionAmount: '0', netAmount: centsToMoney(limitCents), status: 'OPEN', notes: bill.notes, createdById: user.sub }, include: { allocations: { select: { amount: true } } } });
+          const dueAt = dueAtFromPaymentTermDays(main.paymentTermDays);
+          receivable = await tx.ownerReceivable.create({ data: { projectId, mainContractId: main.id, receivableNo, type: 'PROGRESS_BILL', title: `进度款第${bill.periodNo}期应收`, sourceProgressBillId: billId, grossAmount: centsToMoney(limitCents), advanceDeductionAmount: '0', retentionAmount: '0', otherDeductionAmount: '0', netAmount: centsToMoney(limitCents), dueAt, status: 'OPEN', notes: bill.notes, createdById: user.sub }, include: { allocations: { select: { amount: true } } } });
+          if (dueAt) await tx.ownerReceivableSchedule.create({ data: { receivableId: receivable.id, scheduleNo: '01', dueAt, amount: centsToMoney(limitCents), notes: '按主合同约定付款期限自动生成' } });
         }
         const receivableAllocated = sumAllocations(receivable.allocations.map((allocation) => allocation.amount));
         const receivableOpen = calculateReceivableOpenCents(moneyToCents(receivable.netAmount), receivableAllocated);
