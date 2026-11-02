@@ -66,6 +66,8 @@ moheng-cleanup-stale-branches.ps1
 *.delbak
 *.btnbak
 msg.tmp
+# 临时诊断脚本与截图，跑完即删；漏删时不该进提交
+.tmp-*
 scripts/_mig_*.mjs
 *.bak2
 *.bak3
