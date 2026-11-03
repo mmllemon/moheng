@@ -4,7 +4,7 @@ import { Fragment, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, BadgeCheck, Banknote, BarChart3, ClipboardCheck, FilePlus2, FileSignature, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Banknote, ClipboardCheck, FilePlus2, FileSignature, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
@@ -153,7 +153,6 @@ export default function DownstreamContractsPage() {
   return <div className="page-wrap">
     <PageHeader eyebrow="PROJECT COST / COMMITMENTS" title="分供合同台账" subtitle="统一管理分包、材料采购、机械租赁与服务合同；合同金额、实际成本和现金支付分别核算。" actions={<><ProjectLedgerReportButton reportKey="downstream-contracts" /><Button variant="secondary" onClick={() => navigate('/cost/downstream?view=finance')}>结算与应付账款<ArrowRight size={14} /></Button><Button onClick={() => setCreating(true)}><Plus size={16} />新增分供合同</Button></>} />
     {notice && <div className="success-notice">{notice}<Button variant="ghost" size="icon" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></Button></div>}{error && <div className="form-alert">{error}</div>}
-    <Section title="数据概览" subtitle="合同数、执行中合同额、关联成本与现金流分别核算；概览数字不替代明细台账。" icon={BarChart3}>
     <Metrics columns={5} items={[
       { label: '分供合同数', value: summary?.contractCount ?? 0, detail: '含草稿及历史合同' },
       { label: '执行中/完工待结算合同额', value: formatMoney(summary?.activeAndPendingSettlementContractAmount ?? 0, 0), detail: `执行中 + 完工待结算合同当前金额合计（${summary?.activeAndPendingSettlementContractCount ?? 0} 份）` },
@@ -161,7 +160,6 @@ export default function DownstreamContractsPage() {
       { label: '累计净付款', value: formatMoney(summary?.paidAmount ?? 0, 0), detail: `累计付款 ${formatMoney(summary?.grossPaidAmount ?? 0, 0)} − 退款 ${formatMoney(summary?.refundedAmount ?? 0, 0)}`, emphasis: true },
       { label: '累计退款/退回', value: formatMoney(summary?.refundedAmount ?? 0, 0), detail: '单独记现金流，不自动冲减成本' },
     ]} />
-    </Section>
     <div className="inline-notice"><ShieldAlert size={17} /><span>口径说明：合同当前金额 = 原始签约金额 + 已登记且有效的补充协议净额。执行中/完工待结算合同额是这些合同当前金额的合计，并非精确的未履约承诺额。付款计划是预计现金流，付款台账是实际现金流；只有成本录入才计入实际成本。合同额与已关联实际成本的算术差额不是预计成本或预计完工成本。</span></div>
     <Section title="明细" subtitle="合同金额调整必须登记已签署生效的补充协议，不允许直接覆盖原始金额。" icon={FileSignature}>
       {!rows.length ? <EmptyState title="当前项目还没有分供合同" description="先建立采购、劳务/专业分包或租赁合同，再按实际业务维护付款计划、实际支付和合同关联成本。" action={() => setCreating(true)} /> : (

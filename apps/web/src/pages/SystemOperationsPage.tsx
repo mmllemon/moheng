@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Activity, Archive, CheckCircle2, Database, Download, HardDrive, RefreshCw, ServerCog, ShieldAlert } from 'lucide-react';
+import { Activity, Archive, CheckCircle2, Download, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore } from '../auth-store';
-import { Button, ErrorBlock, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
+import { Button, ErrorBlock, LoadingBlock, Metrics, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 
 type BackupRun = { id: string; type: 'BACKUP' | 'RESTORE_DRILL'; status: 'RUNNING' | 'SUCCEEDED' | 'FAILED'; sourceBackupId: string | null; fileName: string | null; fileSize: string | null; sha256: string | null; globalsFileName: string | null; globalsFileSize: string | null; globalsSha256: string | null; startedAt: string; finishedAt: string | null; durationMs: number | null; verified: boolean; message: string | null; triggeredBy: { name: string; email: string } };
@@ -53,24 +53,12 @@ export default function SystemOperationsPage() {
     {(backupMutation.error || restoreMutation.error || downloadMutation.error || downloadGlobalsMutation.error || backupsQuery.error) && <div className="system-expansion-notice is-error" role="alert"><ShieldAlert size={16} /><span>{((backupMutation.error ?? restoreMutation.error ?? downloadMutation.error ?? downloadGlobalsMutation.error ?? backupsQuery.error) as Error).message}</span></div>}
     {(backupMutation.data || restoreMutation.data) && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{restoreMutation.data ? '恢复演练成功；数据库核心表校验已通过。' : '备份文件生成成功；恢复可用性仍待隔离恢复演练。'}</span></div>}
 
-    <section className="system-ops-summary" aria-label="运行状态">
-      <article className="system-ops-summary-cell">
-        <span className="system-overview-icon"><ServerCog size={18} /></span>
-        <div className="system-ops-summary-copy"><div className="system-ops-summary-label"><small>应用版本</small></div><strong className="ops-version">{overview.appVersion}</strong><span>Node {overview.nodeVersion} · 运行 {Math.floor(overview.uptimeSeconds / 3600)} 小时</span></div>
-      </article>
-      <article className="system-ops-summary-cell">
-        <span className="system-overview-icon"><Database size={18} /></span>
-        <div className="system-ops-summary-copy"><div className="system-ops-summary-label"><small>数据库连通</small><StatusBadge status={overview.database.status === 'ok' ? 'ACTIVE' : 'FAILED'} /></div><strong>{overview.database.status === 'ok' ? '正常' : '异常'}</strong><span>API readiness 实时探测</span></div>
-      </article>
-      <article className="system-ops-summary-cell">
-        <span className="system-overview-icon"><Activity size={18} /></span>
-        <div className="system-ops-summary-copy"><div className="system-ops-summary-label"><small>后台任务</small></div><strong>{totalJobs}</strong><span>队列、执行中、完成与失败</span></div>
-      </article>
-      <article className="system-ops-summary-cell">
-        <span className="system-overview-icon"><HardDrive size={18} /></span>
-        <div className="system-ops-summary-copy"><div className="system-ops-summary-label"><small>磁盘可用 / 总量</small></div><strong>{overview.backup.disk ? formatBytes(overview.backup.disk.freeBytes) : '未检测'}</strong><span>{overview.backup.disk ? `总量 ${formatBytes(overview.backup.disk.totalBytes)}` : '备份目录或磁盘状态不可用'}</span></div>
-      </article>
-    </section>
+    <Metrics columns={4} ariaLabel="运行状态" items={[
+      { label: '应用版本', value: overview.appVersion, detail: `Node ${overview.nodeVersion} · 运行 ${Math.floor(overview.uptimeSeconds / 3600)} 小时` },
+      { label: <>数据库连通 <StatusBadge status={overview.database.status === 'ok' ? 'ACTIVE' : 'FAILED'} /></>, value: overview.database.status === 'ok' ? '正常' : '异常', detail: 'API readiness 实时探测' },
+      { label: '后台任务', value: totalJobs, detail: '队列、执行中、完成与失败' },
+      { label: '磁盘可用 / 总量', value: overview.backup.disk ? formatBytes(overview.backup.disk.freeBytes) : '未检测', detail: overview.backup.disk ? `总量 ${formatBytes(overview.backup.disk.totalBytes)}` : '备份目录或磁盘状态不可用' },
+    ]} />
 
     <section className="panel system-expansion-section system-ops-backup">
       <div className="panel-heading"><div><h3><Archive size={17} />数据库备份与恢复演练</h3><p>通过 pg_dump 生成业务数据库备份，并用 pg_dumpall 归档 PostgreSQL 全局角色与配置；两份归档均使用 AES-256-GCM 加密并校验 SHA-256。演练恢复到独立数据库后校验核心表并删除临时库。</p></div><span className="system-overview-readiness-tag">保留 {overview.backup.retentionDays} 天</span></div>
