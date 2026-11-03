@@ -125,6 +125,7 @@ Absolutely、delve、deep-think、新暖纸 `new-warm-paper`、青夜·高对比
 - 页面标题：`--font-heading` 27px；默认思源宋体，可切换系统黑体或光谱西文衬线；设置内容标题仍为无衬线 16px。
 - 卡片：`--bg-card` + 1px `--card-border` + 14px 圆角；不加投影，不用卡片套卡片。
 - 分区：**小标题栏在正文卡片之外**。标题 17px/600、字距 0.05em，下方 11px 说明；右侧放排序、筛选和跳转。正文卡片独立从标题下方开始。旧页面由 `use-detached-panel-headers` 测量 `.panel-heading` 高度，用 `::before` 从标题底部绘制卡片，避免重写业务 DOM。
+  台账页与已迁移页改用 `.ldg-section` / `.ldg-section-head` / `.ldg-section-card` 三件套：卡头 `align-items: flex-end`、高 42px（`h2` 14px/600 + 图标 16px 同一行），卡头与卡间距 16px、区块间距 24px；卡内横向内距 18px，表格用 `width: calc(100% - 36px); margin: 0 18px`，业务块自带 18px 内距后不再叠 `panel-detached` 的 16px 兜底。系统治理的组织表这类多列编辑表用 `table-layout: auto`，固定列宽只留给三列授权矩阵。
 - 表格：表头 10px 字距 + 0.5 透明底线；表格左右各内缩 18px，行线不顶到卡片边缘；行 9px/12px 内边距；数字等宽；悬停用 8% accent。
 - 操作链接：`全部项目`、`操作日志`、`查看快照` 等使用 28px 幽灵按钮（透明底、muted 文字、悬停 3% 墨底），不再用强调色胶囊或描边小按钮。
 - 按钮：32px 高、9.2px 圆角（口径见下方“交互半径”）；主按钮实心 accent；危险按钮默认幽灵，悬停才染 8% danger。

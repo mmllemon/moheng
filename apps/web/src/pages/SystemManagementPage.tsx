@@ -65,18 +65,18 @@ export default function SystemManagementPage() {
       <Link className="panel system-overview-workbench" to="/system/operations"><span className="system-overview-icon"><ServerCog size={18} /></span><span className="system-overview-workbench-copy"><strong>运行维护与备份恢复</strong><small>备份任务、恢复演练与环境检查</small></span><ArrowRight size={15} /></Link>
     </section>
 
-    <section className="system-overview-two-column">
-      <section className="panel system-overview-events">
-        <div className="panel-heading"><div><h3><Activity size={17} />需要关注的安全事件</h3><p>优先显示失败、阻断、会话撤销和高风险认证事件。</p></div><Link className="panel-header-action" to="/system/security">完整安全中心 <ArrowRight size={14} /></Link></div>
-        {!recentRiskEvents.length ? <div className="system-overview-empty"><ShieldCheck size={18} /><span><strong>当前展示范围内没有需要关注的事件</strong><small>这不代表系统已经通过公网安全验收，只说明最近 200 条事件中未发现匹配项。</small></span></div> : <div className="system-overview-event-list">{recentRiskEvents.map((event) => <div className="system-overview-event-row" key={event.id}>
+    <section className="ldg-section system-overview-events">
+      <div className="ldg-section-head"><div><h2><Activity size={16} />需要关注的安全事件</h2><p>优先显示失败、阻断、会话撤销和高风险认证事件。</p></div><Link className="ldg-section-link" to="/system/security">完整安全中心 <ArrowRight size={14} /></Link></div>
+      <div className="ldg-section-card">{!recentRiskEvents.length ? <div className="system-overview-empty"><ShieldCheck size={18} /><span><strong>当前展示范围内没有需要关注的事件</strong><small>这不代表系统已经通过公网安全验收，只说明最近 200 条事件中未发现匹配项。</small></span></div> : <div className="system-overview-event-list">{recentRiskEvents.map((event) => <div className="system-overview-event-row" key={event.id}>
           <span className={`system-event-mark ${['DENIED', 'BLOCKED'].includes(event.outcome) ? 'is-risk' : ''}`}><ShieldAlert size={15} /></span>
           <div className="system-overview-event-copy"><strong>{eventLabels[event.action] ?? event.action}</strong><span>{event.accountEmail ?? event.user?.name ?? '未关联账号'} · {event.ipAddress ?? '来源未记录'}</span></div>
           <time>{displayDate(event.createdAt)}</time>
-        </div>)}</div>}
-      </section>
+        </div>)}</div>}</div>
+    </section>
 
-      <section className="panel system-overview-readiness">
-        <div className="panel-heading"><div><h3><ServerCog size={17} />当前治理能力</h3><p>区分源码已落地、需部署配置与仍需环境验收的事项。</p></div><span className="system-overview-readiness-tag">RC 候选</span></div>
+    <section className="ldg-section system-overview-readiness">
+      <div className="ldg-section-head"><div><h2><ServerCog size={16} />当前治理能力</h2><p>区分源码已落地、需部署配置与仍需环境验收的事项。</p></div><span className="system-overview-readiness-tag">RC 候选</span></div>
+      <div className="ldg-section-card">
         <div className="system-readiness-line"><span><ShieldCheck size={15} />账号、会话与安全事件</span><StatusBadge status="ACTIVE" /></div>
         <div className="system-readiness-line"><span><ShieldCheck size={15} />管理员 TOTP MFA</span><StatusBadge status="ACTIVE" /></div>
         <div className="system-readiness-line"><span><ShieldCheck size={15} />组织与版本化审批规则</span><StatusBadge status="ACTIVE" /></div>
@@ -85,7 +85,7 @@ export default function SystemManagementPage() {
         <div className="system-readiness-line"><span><Database size={15} />备份恢复验证工作台</span><StatusBadge status="ACTIVE" /></div>
         <div className="system-readiness-line"><span><RefreshCw size={15} />真实公网 TLS 与端到端验收</span><StatusBadge status="PENDING" /></div>
         <p className="system-readiness-note">公网访问需由部署人员完成真实域名、证书、防火墙、数据库迁移与浏览器端到端测试。这里的“已实现”表示源码已有对应机制，不代表当前部署已对公网开放。</p>
-      </section>
+      </div>
     </section>
 
     <PageNote>当前首页为管理概览，不替代“系统账号管理”“登录安全中心”“操作追溯”等专门页面。MFA、TLS 与项目授权等状态在开发环境或未完成部署时仍需结合实际环境复核。</PageNote>

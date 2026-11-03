@@ -479,7 +479,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .system-overview-icon{display:none}
 .system-overview-metric strong{font-family:var(--num);font-size:24px;color:var(--ink);font-weight:600}
 .system-overview-metric span,.system-overview-metric small{font-size:var(--fs-hint);color:var(--meta)}
-.system-overview-two-column{gap:34px}
 
 /* context select is text, not a field */
 .project-context-select .select-control-trigger{min-height:26px;padding:0 20px 0 0;border:0;background:transparent;font-size:var(--fs-hint);font-weight:500;color:var(--ink)}

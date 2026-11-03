@@ -2,6 +2,18 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-03 系统管理概览与系统治理：换真卡、去掉叠加内距
+
+系统设置窗里这两页还在用 `.panel.panel-detached`：卡面靠 `::before` 从标题底下画，标题与卡之间隔着 16px 兜底 margin，卡内各业务块又自带 18px 内距，两者一叠加就是 32~34px，和台账页放在一起像缩进对不齐的草稿。现按台账页统一。
+
+- **概览页**：`需要关注的安全事件`、`当前治理能力` 两块改成 `ldg-section` + `ldg-section-head` + `ldg-section-card`，删掉 `.system-overview-two-column` 这层两列包裹（它在这个窗口里只剩一列宽，却还留着 grid 的最小列宽与 24px 间距）；新增 `.ldg-section-link` 承载卡头右侧「完整安全中心 →」，图标 17 → 16 与标题同高。
+- **治理页**：5 个 `section.panel.system-expansion-section` 全换成 `ldg-section` 三件套，计数改用 `.ldg-section-count`；页签容器与首块之间补 24px，首块补 16px 上边距。页面级加了修饰类 `system-governance-page`，只把这一页的 `.page-wrap` 从 grid 改回 block 流，共享的 `.system-expansion-page` 没动（授权、字典、运维、参数页还在用它，未在本轮验收范围内）。
+- **卡内一律 18px**：业务块（部门表单、规则历史、集成列表、质量摘要）自带内距，去掉 `panel-detached` 的 16px 兜底后正好回到 18px；表格走 `.ldg-section-card > .table-scroll` 的 `calc(100% - 36px)` + 18px，实测表宽 632、左边 588（卡左 570 + 18）。
+- **修两个真缺陷**：其一，`.settings-content .system-expansion-table` 的 200/190/250 固定列宽是为三列授权矩阵写的，5 列组织表被压到 0 宽再被 `overflow: hidden` 裁掉，现给这几条规则加 `:not(.system-governance-table)`，治理表改回 `table-layout: auto`；其二，数据质量页在首次巡检前渲染的是一张 2px 高的空卡（内容整体包在 `quality &&` 里），现补「尚未运行巡检」空态，卡高 56px。
+- 质量表列宽收成 60 / 210 / 165 / 197，检查码不再在词中间断开；卡头右侧计数加 `white-space: nowrap`，「0 个启用集成」不再折两行。
+- 清掉已无引用的 `.system-overview-two-column` 4 条规则（hana.css 两处、legacy.css、v6.css）。
+- 复核（1600 视口）：概览页两区块间距 24、卡头 42、卡头到卡 16、卡宽 670 圆角 14.7272；治理页四个页签卡宽均 670、表格 632、无横向滚动，页面横向溢出 0。组织表 5 列中仅隐藏的 `.select-control-proxy` 报 scrollWidth 溢出（1px 定位的 a11y 代理，视觉无溢出）。
+
 ### 2026-11-03 往来单位详情：五块内容换真卡，指标区并入 Metrics
 
 这页的五个区块还是 `.panel.panel-detached` 那套：元素自己的背景、边框、圆角全是空，卡面靠 `::before` 在标题下方画，再靠子元素的 margin/padding 凑内距。现按台账页重写。

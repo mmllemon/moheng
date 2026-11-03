@@ -2980,10 +2980,12 @@ html .filter-bar input[type="search"] {
 
 /* 底部说明：12.5px 比正文（10px）还大，层级倒置。
    改成 --fs-hint（11.2px），小于正文；
-   顶部补 6px 间距（原来 0，说明区紧贴最后一行）。 */
+   顶部补 6px 间距（原来 0，说明区紧贴最后一行）。
+   2026-11-03：卡片换成 ldg-section-card 后，panel-detached 的 16px 兜底 margin 不再生效，
+   左右内距改由这条规则自己给，数值与卡内其它块统一为 18px。 */
 .settings-content .system-readiness-note {
   margin: 0;
-  padding: var(--space-6) 0 var(--space-16);
+  padding: var(--space-6) 18px var(--space-16);
   color: var(--text-muted);
   font-size: var(--fs-hint);
   line-height: 1.6;
@@ -2996,6 +2998,53 @@ html .filter-bar input[type="search"] {
   width: auto;
   box-sizing: border-box;
 }
+
+/* =============================================================
+   系统管理概览与系统治理：区块改用台账的卡头 + 真卡（2026-11-03）
+   -------------------------------------------------------------
+   两页原来都是 .panel.panel-detached：卡面由 ::before 从卡头底部画起，
+   设置窗里再把卡头收进卡内。实测三个问题：
+     · 卡间距 = .system-expansion-page 的 grid gap 16 + margin 24 + 24 = 64px
+     · 卡内各块自带 18px 内距，又叠上 panel-detached 的 16px 兜底 margin，
+       实测 32~34px，卡头、表单、列表、表格四条左线都对不齐
+     · 卡内固定的 200/190/250 列宽是为 3 列的授权矩阵写的，
+       5 列的组织表被挤爆，超出部分又被 .system-expansion-section 的
+       overflow: hidden 裁掉（看不到横滚条）
+   改成 ldg-section 后：间距统一 24px，卡内一律 18px，表格允许横滚。 */
+
+/* 系统治理：卡间距交给页面节奏（.page-wrap > * 的 24px），不再叠加 grid gap。 */
+html .page-wrap.system-governance-page { display: block; }
+.settings-content .system-governance-page .sys-tabs { margin-bottom: var(--space-24); }
+
+/* 首块贴着卡顶时补上内边距（表格除外：表头行高自带留白）。 */
+.system-governance-page .ldg-section-card > .system-expansion-form:first-child,
+.system-governance-page .ldg-section-card > .system-effective-rule:first-child,
+.system-governance-page .ldg-section-card > .system-quality-summary:first-child { margin-top: var(--space-16); }
+
+/* 巡检卡头右侧是 31px 的按钮，与左侧标题块改成底对齐（legacy 里这条是 center）。 */
+.system-governance-page .ldg-section-head.system-quality-panel-heading { align-items: flex-end; gap: var(--space-14); }
+
+/* 卡头右侧的计数、徽标、按钮不参与压缩：
+   670px 内容区里，长说明会把「0 个启用集成」挤成两行（实测）。 */
+.system-management-page .ldg-section-head > :not(:first-child),
+.system-governance-page .ldg-section-head > :not(:first-child) { flex: 0 0 auto; white-space: nowrap; }
+
+/* 表格是卡片最后一块时留 6px 底距：没有数据行时表头会紧贴卡片下边框，
+   看起来像卡片被切掉（实测组织表 0 个部门时卡底就在表头基线上）。 */
+.system-governance-page .ldg-section-card > .table-scroll:last-child { padding-bottom: var(--space-6); }
+
+/* 质量巡检表：检查项的检查码是长标识符，被挤到 187px 时会从中间断开。
+   列宽改为 60 / 210 / 165 / 余下，检查码能整段显示。 */
+.settings-content .system-expansion-table.system-quality-table th:nth-child(1),
+.settings-content .system-expansion-table.system-quality-table td:nth-child(1) { width: 60px; }
+.settings-content .system-expansion-table.system-quality-table th:nth-child(2),
+.settings-content .system-expansion-table.system-quality-table td:nth-child(2) { width: 210px; }
+.settings-content .system-expansion-table.system-quality-table th:nth-child(3),
+.settings-content .system-expansion-table.system-quality-table td:nth-child(3) { width: 165px; }
+
+/* 治理页表格列多（组织表 5 列，含 260px 的操作组），固定列宽会把第 4、5 列压成 0 宽。
+   改回自动布局：列宽按内容分配，窗口不够时由 .table-scroll 横向滚动。 */
+.settings-content .system-expansion-table.system-governance-table { table-layout: auto; min-width: 0; width: 100%; }
 
 .settings-content .settings-row-control {
   display: flex;
@@ -4368,17 +4417,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .settings-content .system-overview-metric { padding: var(--space-14) var(--space-16); gap: var(--space-8); }
 .settings-content .system-overview-icon { width: 26px; height: 26px; flex-basis: 26px; }
 .settings-content .system-overview-metric strong { font-size: 20px; }
-.settings-content .system-overview-two-column {
-  grid-template-columns: 1fr;
-  /* 设置窗内是单列（上下堆叠）。
-     grid 里 margin 不塌陷，所以 panel-detached 的 margin 24px
-     与 gap 会叠加：24 + gap + 24。实测 gap 12px → 间距 60px。
-     统一由容器 gap 控制，子项 margin 归零。 */
-  gap: var(--space-24);
-}
-.settings-content .system-overview-two-column > .panel.panel-detached {
-  margin-block: 0;
-}
 .settings-content .sys-split { display: flex; flex-direction: column; gap: var(--space-14); }
 .settings-content .sys-split-side, .settings-content .sys-split-main { width: 100%; min-width: 0; }
 /* sticky 在 flex column 里会让侧栏脱离流，
@@ -4441,7 +4479,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .system-overview-workbench-copy { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .system-overview-workbench-copy strong { color: var(--text); font-size: var(--fs-ui); font-weight: 600; line-height: 1.35; }
 .system-overview-workbench-copy small { color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.5; }
-.system-overview-two-column { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr); gap: var(--space-12); }
 /* 网格里的卡片靠 gap 排间距，不能叠加 .panel + .panel 的 16px 上边距：
    网格会把它算进行高，第一张卡被拉高、其余卡整体下移，
    同一行的两张卡就会一高一低（实测 /system 行高 79.6、左卡 80、右卡 64 且低 16px）。 */
@@ -4705,7 +4742,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
   .overview-page .v6-stats > div { padding: var(--space-10) var(--space-16); }  .project-overview-page .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }  .app-main { margin-left: calc(var(--sidebar-width) + var(--panel-edge-gap)); }
   .page-wrap { padding: 18px 20px 36px; }
   .system-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .system-overview-two-column { grid-template-columns: 1fr; }
   .v6-hero-main { grid-template-columns: 1fr; grid-template-areas: "label" "number" "note" "ruler"; row-gap: 0; }
   .v6-hero-main > .v6-ruler { margin-top: 18px; }
   .v6-hero .v6-stats > div { flex: 1 1 50%; border-bottom: 1px solid var(--border); }
@@ -5919,6 +5955,9 @@ select { corner-shape: squircle !important; }
 }
 .ldg-section-head p { margin: var(--space-4) 0 0; color: var(--text-muted); font-size: var(--fs-hint, 11.2px); line-height: 1.55; }
 .ldg-section-count { color: var(--text-muted); font-size: var(--fs-hint, 11.2px); }
+/* 卡头右侧的轻量动作（文字 + 箭头）：与 .ldg-section-count 同字号、同样底对齐。 */
+.ldg-section-link { display: inline-flex; align-items: center; gap: var(--space-4); flex: 0 0 auto; color: var(--text-muted); font-size: var(--fs-hint, 11.2px); line-height: 1.5; }
+.ldg-section-link:hover { color: var(--accent); }
 /* 注意：不能用 overflow: hidden。表格有 min-width: 980px，窄视口下需要
    .ldg-table-wrap 的 overflow-x: auto 生效；父级 hidden 会把滚动条裁掉，
    导致右侧列直接消失。圆角由内部元素各自处理。 */

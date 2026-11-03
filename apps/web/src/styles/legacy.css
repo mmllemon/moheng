@@ -1768,14 +1768,12 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .system-overview-metric > div span { color: var(--text-muted); font-size: var(--text-2xs); line-height: 1.5; }
 .system-overview-metric > a { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; border-radius: var(--radius-xs); color: var(--text-muted); }
 .system-overview-metric > a:hover { color: var(--accent-700); background: var(--surface-muted); }
-.system-overview-two-column { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: var(--space-16); margin-bottom: 20px; align-items: start; }
-.system-overview-two-column > .panel { min-width: 0; }
-.system-overview-empty { display: flex; align-items: flex-start; gap: var(--space-10); margin: var(--space-4) 18px 18px; padding: var(--space-14); border: 1px dashed var(--line); border-radius: var(--radius-xs); color: var(--text-secondary); background: var(--surface-muted); }
+.system-overview-empty { display: flex; align-items: flex-start; gap: var(--space-10); margin: var(--space-16) 18px 18px; padding: var(--space-14); border: 1px dashed var(--line); border-radius: var(--radius-xs); color: var(--text-secondary); background: var(--surface-muted); }
 .system-overview-empty > svg { flex: 0 0 auto; color: var(--accent-600); }
 .system-overview-empty > span { display: grid; gap: var(--space-6); }
 .system-overview-empty strong { color: var(--text-primary); font-size: var(--fs-hint); }
 .system-overview-empty small { color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.65; }
-.system-overview-event-list { padding: 0 17px 8px; }
+.system-overview-event-list { padding: 0 18px 8px; }
 .system-overview-event-row { display: flex; align-items: center; gap: var(--space-10); min-width: 0; padding: var(--space-12) 0; border-top: 1px solid var(--line); }
 .system-event-mark { display: grid; place-items: center; flex: 0 0 31px; width: 31px; height: 31px; border: 1px solid var(--line); border-radius: 2px; color: var(--text-secondary); background: var(--surface-muted); }
 .system-event-mark.is-risk { color: #b24a45; border-color: color-mix(in srgb, #b24a45 25%, var(--line)); background: color-mix(in srgb, #b24a45 7%, var(--surface)); }
@@ -1799,7 +1797,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 .account-session-note > div:last-child { display: grid; gap: var(--space-6); }
 .account-session-note strong { color: var(--text-primary); font-size: var(--fs-hint); }
 .account-session-note p { margin: 0; color: var(--text-secondary); font-size: var(--fs-hint); line-height: 1.75; }
-@media (max-width: 1100px) { .system-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .system-overview-two-column { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1100px) { .system-overview-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) { .system-overview-metrics, .system-roadmap-grid { grid-template-columns: minmax(0, 1fr); } .system-overview-event-row { align-items: flex-start; } .system-overview-event-row time { max-width: 86px; text-align: right; line-height: 1.5; } .account-security-role { display: none; } .system-overview-metric { padding: var(--space-14); } }
 
 /* System management expansion — dense admin tables with real responsive controls. */
@@ -1887,7 +1885,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 @media (max-width: 1050px) { .system-integration-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } .system-ops-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .system-ops-lower-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 720px) { .system-expansion-form { align-items: stretch; } .system-expansion-form label { flex: 1 1 100%; } .system-integration-form { grid-template-columns: minmax(0, 1fr); } .system-integration-form .system-form-wide { grid-column: auto; } .system-integration-row { flex-direction: column; gap: var(--space-10); } .system-secret-controls { grid-template-columns: minmax(0, 1fr) auto; width: 100%; flex-basis: auto; } .system-secret-controls input { grid-column: 1 / -1; } .system-quality-summary, .system-ops-config-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .system-ops-actions { flex-direction: column; } .system-rule-row { align-items: flex-start; flex-wrap: wrap; } .system-rule-row > div { flex-basis: 100%; } .system-expansion-page .panel-heading { align-items: flex-start; } .system-ops-metrics .system-overview-metric > .status-badge { display: none; } }
 
-.system-department-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-6); min-width: 260px; }
+.system-department-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-6); min-width: 208px; }
 .system-department-actions input { flex: 1 1 120px; max-width: 200px; min-width: 100px; min-height: 30px; padding: var(--space-6) var(--space-8); border: 1px solid var(--line); border-radius: var(--radius-xs); color: var(--text-primary); background: var(--surface); font: inherit; font-size: var(--fs-hint); }
 .system-department-actions button { min-height: 30px; padding: var(--space-6) var(--space-8); border: 1px solid var(--line); border-radius: var(--radius-xs); color: var(--text-secondary); background: var(--surface); font: inherit; font-size: var(--fs-hint); cursor: pointer; white-space: nowrap; }
 .system-department-actions button:disabled { opacity: .5; cursor: not-allowed; }
@@ -1983,17 +1981,17 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
    ——「约束说明」占 59%，前两列被压缩，
    模块/动作的文字被挤成多行。
    改成 200 / 190 / 250，三列均衡。 */
-.settings-content .system-expansion-table:not(.system-authorization-matrix) {
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) {
   table-layout: fixed;
   min-width: 0;
   width: 100%;
 }
-.settings-content .system-expansion-table:not(.system-authorization-matrix) th:nth-child(1),
-.settings-content .system-expansion-table:not(.system-authorization-matrix) td:nth-child(1) { width: 200px; }
-.settings-content .system-expansion-table:not(.system-authorization-matrix) th:nth-child(2),
-.settings-content .system-expansion-table:not(.system-authorization-matrix) td:nth-child(2) { width: 190px; }
-.settings-content .system-expansion-table:not(.system-authorization-matrix) th:nth-child(3),
-.settings-content .system-expansion-table:not(.system-authorization-matrix) td:nth-child(3) { width: 250px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) th:nth-child(1),
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) td:nth-child(1) { width: 200px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) th:nth-child(2),
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) td:nth-child(2) { width: 190px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) th:nth-child(3),
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) td:nth-child(3) { width: 250px; }
 .settings-content .system-expansion-table:not(.system-authorization-matrix) td {
   white-space: normal;
   overflow-wrap: anywhere;
