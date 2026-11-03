@@ -6929,6 +6929,20 @@ html .select-control-trigger {
   min-height: var(--control-height) !important;
 }
 
+/* 应收台账工具栏的「范围」筛选：
+   label 是 inline-flex，里面放了一个 width:100% 的 .select-control，
+   百分比在收缩宽度里解不开循环，双向互挤：标签被压到 18px、「范围」断成两行，
+   下拉框也被压到 100px（换成更长的选项就会被省略号吃掉）。
+   给标签禁折行、给选择器一个确定的最小宽度，宽度不再随当前选项变。 */
+.owner-finance-filters label {
+  white-space: nowrap;
+}
+.owner-finance-filters label .select-control {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 132px;
+}
+
 /* 搜索壳内部是真正的输入，不应再画第二层边框和圆角 */
 #root .settings-search input,
 #root .audit-search-input input,
