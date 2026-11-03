@@ -6,7 +6,7 @@ import { AlertCircle, Banknote, CheckCircle2, ClipboardCheck, FileCheck2, Plus, 
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton, ProjectSummaryReportButton } from '../components/ReportLaunchButton';
-import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, PageHeader, StatusBadge } from '../components/Ui';
 import { currentDateInputValue, dateInputToIso } from '../components/Ui';
 import { confirmAction, promptAction } from '../components/ConfirmDialog';
 
@@ -188,14 +188,16 @@ export default function OwnerFinancePage() {
     {notice && <div className="success-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><Button variant="ghost" size="icon" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></Button></div>}
     {error && <div className="form-alert" role="alert"><AlertCircle size={15} /><span>{error}</span><Button variant="ghost" size="icon" onClick={() => setError('')} aria-label="关闭错误"><X size={14} /></Button></div>}
 
-    <section className="owner-finance-metrics" aria-label="业主侧资金指标">
-      <article className="owner-metric owner-metric-primary"><span>累计核定与过账金额</span><strong>{formatMoney(summary?.approvedAndPostedGrossAmount ?? 0)}</strong><small>进度款核定与已过账结算增量</small></article>
-      <article className="owner-metric"><span>应收未收余额</span><strong>{formatMoney(summary?.openReceivableAmount ?? 0)}</strong><small>正向应收单的未收合计</small></article>
-      <article className={`owner-metric ${(summary?.contractNetOpenAmount ?? 0) < 0 ? 'is-warning' : ''}`}><span>主合同净应收敞口</span><strong>{formatMoney(summary?.contractNetOpenAmount ?? 0)}</strong><small>已考虑负向调整和到账核销</small></article>
-      <article className={`owner-metric ${(summary?.overdueReceivableAmount ?? 0) > 0 ? 'is-danger' : ''}`}><span>逾期应收</span><strong>{formatMoney(summary?.overdueReceivableAmount ?? 0)}</strong><small>存在未收余额且超过到期日</small></article>
-      <article className="owner-metric"><span>累计净到账</span><strong>{formatMoney(summary?.cashReceiptNetAmount ?? 0)}</strong><small>实际到账减已登记退款</small></article>
-      <article className="owner-metric owner-metric-dual"><span>专项资金余额</span><div><small>预付款</small><strong>{formatMoney(summary?.advanceBalanceAmount ?? 0)}</strong></div><div><small>质保金</small><strong>{formatMoney(summary?.retentionBalanceAmount ?? 0)}</strong></div></article>
-    </section>
+    <Metrics columns={6} className="owner-finance-metrics" ariaLabel="业主侧资金指标" items={[
+      { label: '累计核定与过账金额', value: formatMoney(summary?.approvedAndPostedGrossAmount ?? 0), detail: '进度款核定与已过账结算增量' },
+      { label: '应收未收余额', value: formatMoney(summary?.openReceivableAmount ?? 0), detail: '正向应收单的未收合计' },
+      { label: '主合同净应收敞口', value: formatMoney(summary?.contractNetOpenAmount ?? 0), detail: '已考虑负向调整和到账核销', emphasis: true, tone: (summary?.contractNetOpenAmount ?? 0) < 0 ? 'danger' : 'default' },
+      { label: '逾期应收', value: formatMoney(summary?.overdueReceivableAmount ?? 0), detail: '存在未收余额且超过到期日', tone: (summary?.overdueReceivableAmount ?? 0) > 0 ? 'danger' : 'default' },
+      { label: '累计净到账', value: formatMoney(summary?.cashReceiptNetAmount ?? 0), detail: '实际到账减已登记退款' },
+      /* 专项资金余额原来是「预付款/质保金」双值格：两个金额左右排布，字号只能压到
+         14px，与同排其他格不同级。改成合计值 + 括号式拆分说明，语义仍是这两块余额之和。 */
+      { label: '专项资金余额', value: formatMoney((summary?.advanceBalanceAmount ?? 0) + (summary?.retentionBalanceAmount ?? 0)), detail: `预付款 ${formatMoney(summary?.advanceBalanceAmount ?? 0)} · 质保金 ${formatMoney(summary?.retentionBalanceAmount ?? 0)}` },
+    ]} />
 
     <nav className="owner-finance-tabs" role="tablist" aria-label="业主财务分区">
       {tabs.map((tab) => {

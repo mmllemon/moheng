@@ -11,7 +11,7 @@ import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { ChangeRecord, ChangeStatus, EvidenceClass, ExternalConfirmationStatus } from '../types';
-import { Button, CardHead, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, PageNote, StatusBadge } from '../components/Ui';
+import { Button, CardHead, currentDateInputValue, currentDateTimeLocalInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, PageHeader, PageNote, StatusBadge } from '../components/Ui';
 import { confirmThen } from '../components/ConfirmDialog';
 import DateTimeField from '../components/DateTimeField';
 
@@ -265,12 +265,12 @@ export default function ChangesPage() {
     {!mainContractQuery.data && <div className="inline-notice"><FileCheck2 size={17} /><span>当前项目尚未建立主合同，不能新建业主侧变更签证。请先完成主合同建档。</span><Button variant="secondary" onClick={() => navigate('/contracts')}>前往主合同管理</Button></div>}
     {mainContractQuery.data && <div className="inline-notice"><FileCheck2 size={17} /><span>当前变更台账归属主合同：<strong>{mainContractQuery.data.contractNo}</strong> · {mainContractQuery.data.name}</span></div>}
     {notice && <div className="success-notice"><BadgeCheck size={16} />{notice}</div>}{error && <div className="form-alert">{error}</div>}
-    <div className="change-summary-grid">
-      <div className="change-summary"><span className="change-summary-label">变更/签证总数</span><strong>{changes.length.toString().padStart(2, '0')}</strong><small>包含所有状态</small></div>
-      <div className="change-summary"><span className="change-summary-label">内部待审核</span><strong>{pending.toString().padStart(2, '0')}</strong><small>已提交或审核中</small></div>
-      <div className="change-summary"><span className="change-summary-label">待核验 C 类凭证</span><strong>{pendingEvidence.toString().padStart(2, '0')}</strong><small>核验通过前不计入合同额</small></div>
-      <div className="change-summary change-summary-emphasis"><span className="change-summary-label">有效变更净额</span><strong>{formatMoney(effectiveNet, 0)}</strong><small>按外部确认金额和增减方向汇总</small></div>
-    </div>
+    <Metrics columns={4} items={[
+      { label: '变更/签证总数', value: changes.length.toString().padStart(2, '0'), detail: '包含所有状态' },
+      { label: '内部待审核', value: pending.toString().padStart(2, '0'), detail: '已提交或审核中' },
+      { label: '待核验 C 类凭证', value: pendingEvidence.toString().padStart(2, '0'), detail: '核验通过前不计入合同额' },
+      { label: '有效变更净额', value: formatMoney(effectiveNet, 0), detail: '按外部确认金额和增减方向汇总', emphasis: true },
+    ]} />
     {projectQuery.data && <div className="inline-notice"><FileCheck2 size={17} /><span>当前有效合同额：<strong>{formatMoney(projectQuery.data.contractAmount)}</strong>；原始合同金额：{formatMoney(projectQuery.data.originalContractAmount)}。内部审批通过本身不会改变当前有效合同额。</span></div>}
     <section className="panel change-table-panel"><CardHead title="变更签证台账" description="提交人不能审批本人业务；C 类凭证核验人必须与业务提交人不同。" aside={<span className="panel-icon"><FileCheck2 size={19} /></span>} />
       {!changes.length ? <EmptyState title="还没有变更或签证" description="新增记录后，可分别跟踪内部审批和外部确认凭证。" action={() => setCreating(true)} /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>编号</th><th>名称 / 方向</th><th>发生日期</th><th className="align-right">内部送审</th><th className="align-right">内部核定</th><th>内部流程</th><th>外部凭证 / 状态</th><th>金额差异复核</th><th>操作</th></tr></thead><tbody>{changes.map((record) => <tr key={record.id}>

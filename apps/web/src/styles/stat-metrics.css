@@ -21,7 +21,6 @@ html .projects-ledger-page .projects-kpi-strip,
 html .analysis-page .an-stats,
 html .change-summary-grid,
 html .bill-summary-grid,
-html .owner-finance-metrics,
 html .downstream-summary-grid,
 html .system-overview-metrics,
 html .notice-summary-grid,
@@ -54,35 +53,6 @@ html .change-summary-grid,
 html .bill-summary-grid,
 html .ldg-stats,
 html .an-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-
-html .owner-finance-metrics {
-  /* 6 项指标：用 3 列，刚好 2 行满格（每列 ~220px）。
-     auto-fit 在 664px 下会得 4 列（165.5px），6 项就排成 4+2，右侧空两格。
-     3 列能让标签和数值都单行。 */
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  /* 两行时需行分隔线（单行容器的 gap:0 会让两行紧贴）。 */
-  row-gap: 0;
-}
-/* 行分隔线用 ::before 画在单元格内部，不用 border-top。
-   border-top 画在 padding 外沿，会让第 2 行看起来被框住；
-   hana 的 _divider_cdbf9 也是用细线而不是边框。 */
-html .owner-finance-metrics > :nth-child(n + 4) {
-  /* 必须 relative：上面 html .owner-finance-metrics > div 规则
-     设了 position: static，特异性更高，会盖掉这里的 relative。
-     没有定位父级时，::before 的 absolute 会落到 grid 容器上。 */
-  position: relative !important;
-  border-top: 0;
-}
-html .owner-finance-metrics > :nth-child(n + 4)::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: var(--space-16);
-  right: var(--space-16);
-  height: 1px;
-  background: color-mix(in srgb, var(--border) 62%, transparent);
-  pointer-events: none;
-}
 
 html .downstream-summary-grid,
 html .owner-contract-detail-grid {
@@ -143,7 +113,6 @@ html .analysis-page .an-stats > div,
 html .ldg-stats > div,
 html .change-summary-grid > div,
 html .bill-summary-grid > div,
-html .owner-finance-metrics > div,
 html .business-party-summary-strip > div,
 html .settings-content .security-metrics > * {
   position: static;
@@ -158,7 +127,6 @@ html .settings-content .security-metrics > * {
 /* 指标项之间的竖线（业务页信息量大，需要分隔；首项无线无内缩） */
 html .change-summary-grid > div + div,
 html .bill-summary-grid > div + div,
-html .owner-finance-metrics > div + div,
 html .downstream-summary-grid > div + div {
   border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
   padding-left: var(--space-16);
@@ -166,7 +134,6 @@ html .downstream-summary-grid > div + div {
 /* 首项：无左内缩（容器已无内边距，首项应贴左缘） */
 html .change-summary-grid > div:first-child,
 html .bill-summary-grid > div:first-child,
-html .owner-finance-metrics > div:first-child,
 html .downstream-summary-grid > div:first-child,
 html .ldg-stats > div:first-child,
 html .projects-kpi-strip > div:first-child,
@@ -179,8 +146,7 @@ html .business-party-summary-strip > div:first-child {
    上下用 1px 极淡线分隔卡内段——对齐 hana 的 ._divider_cdbf9。 */
 html .ds-section-card .downstream-summary-grid,
 html .ds-section-card .change-summary-grid,
-html .ds-section-card .bill-summary-grid,
-html .ds-section-card .owner-finance-metrics {
+html .ds-section-card .bill-summary-grid {
   /* 始终单行等分：项数 3～5 都成立，且不会因宽度不足折行（折行会露出栅格背景的空档）。
      列宽过窄时文字自己换行，不横向溢出。 */
   grid-template-columns: none;
@@ -267,7 +233,7 @@ html .assistant-check-item {
 
 /* 首项不画左线。
    注：不再清零左内边距——容器现在是有边框的卡片，清零会贴到边框上。 */
-html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
+html :is(.change-summary-grid, .bill-summary-grid,
     .downstream-summary-grid, .security-metrics, .system-overview-metrics,
     .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip, .ldg-stats,
     .an-stats, .business-party-summary-strip, .report-studio-entry-grid,
@@ -408,7 +374,6 @@ html .business-party-summary-strip > * > small,
 html .owner-contract-detail-grid > * > small,
 html .assistant-check-item > small,
 html .system-ops-summary-cell > small,
-html .owner-finance-metrics > * > small,
 html .downstream-summary-grid > * > small,
 html .change-summary-grid > * > small,
 html .bill-summary-grid > * > small {
@@ -523,7 +488,6 @@ html .business-party-summary-strip > * > span,
 html .owner-contract-detail-grid > * > span,
 html .system-ops-summary-cell > span,
 html .assistant-check-item > span,
-html .owner-finance-metrics > * > span,
 html .downstream-summary-grid > * > span,
 html .change-summary-grid > * > span,
 html .bill-summary-grid > * > span {
@@ -1104,7 +1068,7 @@ html .toolbar-view-button:focus-visible {
    而且 row-gap 里的竖线物理高度不覆盖行间距，看起来就是「多根细线」。
    现在改成保持单行 + 横向滚动。 ------------------------------------------------------------- */
 @media (max-width: 1080px) {
-  html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
+  html :is(.change-summary-grid, .bill-summary-grid,
       .downstream-summary-grid, .security-metrics, .system-overview-metrics,
       .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
       .ldg-stats, .an-stats, .business-party-summary-strip,
@@ -1117,7 +1081,7 @@ html .toolbar-view-button:focus-visible {
   /* 窄屏时仍保持单行：列宽不再等分，改由内容决定，总宽超过容器就横向滚动。
      切忌折行——一折行 row-gap 里的竖线高度就不覆盖行间距，
      看起来就是"第二行多根细线"。 */
-  html :is(.change-summary-grid, .bill-summary-grid, .owner-finance-metrics,
+  html :is(.change-summary-grid, .bill-summary-grid,
       .downstream-summary-grid, .security-metrics, .system-overview-metrics,
       .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
       .ldg-stats, .an-stats, .business-party-summary-strip,
@@ -1175,10 +1139,14 @@ html .projects-kpi-strip > div:first-child {
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-16);
+  gap: var(--space-14);
   margin: 0 0 var(--space-24);
   padding: 0;
   border: 0;
+  /* v6.css 的“全仓归一”规则 [class*="metric"]{border-radius:var(--radius-xs)}
+     会给容器和子项都套 5.52px 圆角：子项只有左侧 2px 竖线，圆角一上就把
+     竖线的上下两端啃成圆头，看起来像胶囊而不是直线。这里显式归零。 */
+  border-radius: 0;
   background: transparent;
 }
 .metrics[data-cols="1"] { grid-template-columns: minmax(0, 1fr); }
@@ -1187,26 +1155,67 @@ html .projects-kpi-strip > div:first-child {
 .metrics[data-cols="5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .metrics[data-cols="6"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 
+/* 列数跟随容器宽度，不跟视口。
+   正文列有 640/720/800 三档用户设置，视口 1600 时容器也可能只有 664px：
+   六格均分成 99px/格，19px 的金额（“¥8,000,000.00” 宽 163px）必被截成省略号。
+   每格的 2px 竖线画在 .metric 本体上，换行不会出现旧方案那种
+   “第二行多根线 / 行首缺线”的错位，所以这里可以放心降列。
+   阀值按单格 ≥190px 倒算：n 列需 n*190 + (n-1)*14。 */
+@container (max-width: 1200px) {
+  .metrics[data-cols="6"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (max-width: 1000px) {
+  .metrics[data-cols="5"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (max-width: 800px) {
+  .metrics[data-cols="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 700px) {
+  .metrics[data-cols="5"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 620px) {
+  .metrics[data-cols="6"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 520px) {
+  .metrics[data-cols="3"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 420px) {
+  .metrics[data-cols="2"],
+  .metrics[data-cols="3"],
+  .metrics[data-cols="4"],
+  .metrics[data-cols="5"],
+  .metrics[data-cols="6"] { grid-template-columns: minmax(0, 1fr); }
+}
+
 .metric {
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
   min-width: 0;
-  padding-left: 0;
+  padding-left: var(--space-10);
+  /* 这是经营总览资金计划摘要的实测规格：每格都带 2px 竖线，含首格。
+     首格不画线会让条状指标在最左侧失去左边界，看上去像脱离版心。 */
+  border-left: 2px solid var(--line-2);
+  /* 同上：圆角会把 2px 竖线两端裁圆。直线就是直线。 */
+  border-radius: 0;
 }
 .metric > span {
   display: block;
   color: var(--text-muted);
   font-size: var(--fs-hint);
-  line-height: 1.4;
+  /* 1.55 是参照块的实测行高（11.52 × 1.55 = 17.86）；
+     写到 1.4 会让整格矮 1.73px，与新页面对不齐。 */
+  line-height: 1.55;
 }
 .metric > strong {
   display: block;
-  margin-top: var(--space-4);
+  margin-top: 0;
   overflow: hidden;
   color: var(--text);
-  font-size: var(--fs-title);
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: -.01em;
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1215,19 +1224,20 @@ html .projects-kpi-strip > div:first-child {
 .metric > strong.text-success { color: var(--success); }
 .metric > small {
   display: block;
-  margin-top: var(--space-2);
+  margin-top: 0;
   color: var(--text-muted);
-  font-size: var(--fs-hint);
-  line-height: 1.4;
+  font-size: var(--text-2xs);
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-/* 子项之间的竖线（首项无线、无左内缩） */
-.metric + .metric {
-  /* 直接读 --border（18% 暖棕），比 66% 混合（约 12%）更可见。
-     4 列各 311px 时间距很大，竖线太淡会显得散。 */
-  border-left: 1px solid var(--border);
-  padding-left: var(--space-16);
+/* 子项之间的竖线：已并入 .metric 本体（每格都画），此处只保留强调色变体。 */
+
+/* 强调格：需要先被看到的那一项（应付、有效变更净额、未付应付余额）。
+   只染竖线颜色，不动底色也不动数值色：参照块里三格的数值同色同重，
+   强调靠竖线区分，不靠字色抢注意力。 */
+.metric.is-emphasis {
+  border-left-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 /* 卡片内的指标区不需要下间距（卡片自身已有 padding） */
@@ -1238,17 +1248,9 @@ html .projects-kpi-strip > div:first-child {
   margin-bottom: 0;
 }
 
-/* 竖线：每行首项不加（按列数判断）。
-   只用 .metric + .metric 会给所有非首项加线，
-   2 列 2 行时第 3 项（第二行第一列）也会被加，导致该行首列右移 16px。 */
-.metrics[data-cols="2"] > .metric:nth-child(2n + 1),
-.metrics[data-cols="3"] > .metric:nth-child(3n + 1),
-.metrics[data-cols="4"] > .metric:nth-child(4n + 1),
-.metrics[data-cols="5"] > .metric:nth-child(5n + 1),
-.metrics[data-cols="6"] > .metric:nth-child(6n + 1) {
-  border-left: 0;
-  padding-left: 0;
-}
+/* 竖线已统一到 .metric 本体（每格都画）。
+   原先的“每行首项去线”规则会让 2 列、3 列布局的第二行首列比第一行左移 10px，
+   与经营总览的参照块也不一致，所以整段移除。 */
 
 /* 数值内的单位后缀（「0 期」这种）。
    原来靠 .bill-summary strong em 命中，迁移到 .metric 后要补一条。 */
@@ -1276,7 +1278,7 @@ html .projects-kpi-strip > div:first-child {
   行首竖线仍由上面的 nth-child 规则处理。
 ------------------------------------------------------------- */
 html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
-  .owner-finance-metrics, .security-metrics,
+  .security-metrics,
   .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
   .ldg-stats, .an-stats) {
   border: 0;
@@ -1287,7 +1289,7 @@ html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid
   box-shadow: none;
 }
 html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
-  .owner-finance-metrics, .security-metrics,
+  .security-metrics,
   .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
   .ldg-stats, .an-stats) > * {
   padding: var(--space-16);
@@ -1299,7 +1301,7 @@ html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid
   box-sizing: border-box;
 }
 html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
-  .owner-finance-metrics, .security-metrics,
+  .security-metrics,
   .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
   .ldg-stats, .an-stats) > :first-child {
   /* 首格贴齐内容列左缘（容器已无内边距，再留 16px 会整体缩进一格）。 */
@@ -1336,7 +1338,7 @@ html body .system-ops-summary > .system-ops-summary-cell {
 /* 首格贴齐内容列左缘：各条的容器都已无内边距，
    首格若再留 16px，整条会相对标题缩进一格。 */
 html body :is(.change-summary-grid, .bill-summary-grid, .downstream-summary-grid,
-  .owner-finance-metrics, .security-metrics,
+  .security-metrics,
   .notice-summary-grid, .audit-summary-grid, .projects-kpi-strip,
   .ldg-stats, .an-stats) > :first-child,
 html body .system-overview-metrics > article.panel.system-overview-metric:first-child,
@@ -1353,7 +1355,6 @@ html body .system-ops-summary > :first-child {
    这里用 0,4,1 压回去，保证与其它指标条一样贴齐内容列。 */
 html body .ds-section-card .downstream-summary-grid > .change-summary:first-child,
 html body .ds-section-card .change-summary-grid > .change-summary:first-child,
-html body .ds-section-card .bill-summary-grid > :first-child,
-html body .ds-section-card .owner-finance-metrics > :first-child {
+html body .ds-section-card .bill-summary-grid > :first-child {
   padding-left: 0;
 }

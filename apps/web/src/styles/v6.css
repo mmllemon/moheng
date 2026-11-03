@@ -702,12 +702,9 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .an-defs dd{margin:0;color:var(--ink-2);line-height:1.7}
 .an-basis-note{margin-top:var(--space-10);padding-top:var(--space-10);border-top:1px dashed var(--line-2);font-size:var(--fs-hint);line-height:1.8;color:var(--meta)}
 .an-grid>.is-full{grid-column:1/-1}
-.cf-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-14);margin-bottom:var(--space-16)}
-.cf-summary>div{display:flex;flex-direction:column;gap:var(--space-4);min-width:0;padding-left:var(--space-10);border-left:2px solid var(--line-2)}
-.cf-summary>div:nth-child(2){border-left-color:rgba(var(--accent-rgb),.45)}
-.cf-summary span{font-size:var(--fs-hint);color:var(--meta)}
-.cf-summary strong{font-size:19px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
-.cf-summary small{font-size:var(--text-2xs);color:var(--meta);line-height:1.5}
+/* 资金计划的摘要行直接用通用 Metrics（三格）；这里只补它在大卡片里的边距。
+   用双类名压过 stat-metrics.css 里 .metrics 的默认下间距（那个文件在本文件之后加载）。 */
+.metrics.cf-metrics{margin-bottom:var(--space-16)}
 .cf-chart{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--space-8);margin-top:var(--space-6)}
 /* 月份列是按钮：去掉原生外观，保留列布局，加上可点区与选中态。 */
 .cf-month{display:flex;flex-direction:column;gap:var(--space-4);min-width:0;appearance:none;margin:0;padding:var(--space-6) 2px var(--space-2);background:none;border:0;border-radius:var(--radius-sm);color:inherit;font:inherit;cursor:pointer;transition:background .15s ease}
@@ -722,8 +719,8 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .cf-month small{text-align:center;font:9.5px/1.5 var(--mono);color:var(--meta)}
 .cf-month em{text-align:center;font:9px/1.6 var(--mono);font-style:normal;color:var(--meta);font-variant-numeric:tabular-nums}
 /* 公司级资金计划块（经营总览）：图形复用项目级 .cf-*，只补卡片内边距。 */
-.dash-cashflow .cf-summary,.dash-cashflow .cf-chart,.dash-cashflow .cf-detail,.dash-cashflow .an-basis-note,.dash-cashflow .an-empty{margin-left:var(--space-16);margin-right:var(--space-16)}
-.dash-cashflow .cf-summary{margin-top:var(--space-4)}
+.dash-cashflow .cf-metrics,.dash-cashflow .cf-chart,.dash-cashflow .cf-detail,.dash-cashflow .an-basis-note,.dash-cashflow .an-empty{margin-left:var(--space-16);margin-right:var(--space-16)}
+.dash-cashflow .metrics.cf-metrics{margin-top:var(--space-4);margin-bottom:var(--space-16)}
 .dash-cashflow .an-basis-note{margin-top:var(--space-12)}
 .dash-cashflow .table-scroll{margin-top:var(--space-12);border-top:1px solid var(--line-2)}
 .dash-cashflow-table tbody td{padding-top:var(--space-8);padding-bottom:var(--space-8)}
@@ -831,12 +828,8 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 
 /* list pagination */
 .load-more-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-12);padding:var(--space-10) 0 var(--space-2);border-top:1px solid var(--line);font-size:var(--fs-hint);color:var(--meta)}
-.owner-finance-metrics{display:grid;gap:0;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line)}
-.owner-metric{border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;min-height:auto;padding:var(--space-14) 18px}
-.owner-metric:first-child{border-left:0;padding-left:0}
-.owner-metric::before{display:none}
-.owner-metric>strong{color:var(--ink);font-family:var(--num);font-size:22px}
-.owner-metric>span,.owner-metric>small{color:var(--meta)}
+/* 业主财务六格指标已并入通用 .metrics（见 stat-metrics.css）。
+   这里不再重写网格/边框，避免与通用规格顶着来。 */
 
 /* targeted fixes from visual review */
 .system-workspace-tab.active,.cost-workspace-tab.active{background:transparent;border-color:transparent;box-shadow:none}

@@ -192,11 +192,11 @@ function CashflowPanel({ projectId }: { projectId: string }) {
       <div><h2>资金计划</h2><p>未来 {plan.months} 个月 · 只算已经确定到期日的金额 · 点月份看明细</p></div>
       <span className="an-legend"><i className="is-inflow" />应收<i className="is-outflow" />应付</span>
     </div>
-    <div className="cf-summary">
-      <div><span>未来 {plan.months} 个月应收</span><strong>{formatMoney(plan.window.inflow, 0)}</strong><small>已到期与未到期的应收单，按分期到期日</small></div>
-      <div><span>未来 {plan.months} 个月应付</span><strong>{formatMoney(plan.window.outflow, 0)}</strong><small>已过账应付与付款计划，另含已开票的销项税额</small></div>
-      <div><span>净额</span><strong className={plan.window.net < 0 ? 'text-danger' : plan.window.net > 0 ? 'text-success' : undefined}>{signed(plan.window.net)}</strong><small>负数表示这个区间要垫钱</small></div>
-    </div>
+    <Metrics columns={3} className="cf-metrics" items={[
+      { label: `未来 ${plan.months} 个月应收`, value: formatMoney(plan.window.inflow, 0), detail: '已到期与未到期的应收单，按分期到期日' },
+      { label: `未来 ${plan.months} 个月应付`, value: formatMoney(plan.window.outflow, 0), detail: '已过账应付与付款计划，另含已开票的销项税额', emphasis: true },
+      { label: '净额', value: signed(plan.window.net), detail: '负数表示这个区间要垫钱' },
+    ]} />
     {hasCurve ? <div className="cf-chart">
       {plan.buckets.map((bucket) => <button
         type="button"

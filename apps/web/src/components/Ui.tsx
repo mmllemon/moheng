@@ -188,6 +188,8 @@ export type MetricItem = {
   detail?: ReactNode;
   /** danger / success 会把数值标色（成本余量为负、调整净额为负这类） */
   tone?: 'default' | 'danger' | 'success';
+  /** 强调格：竖线用强调色，用于「这一项先看」的指标（应付、净额、未付余额） */
+  emphasis?: boolean;
 };
 
 export function Metrics({ items, columns = 4, ariaLabel, className = '' }: {
@@ -199,7 +201,7 @@ export function Metrics({ items, columns = 4, ariaLabel, className = '' }: {
 }) {
   return <div className={`metrics ${className}`.trim()} data-cols={columns} role="group" aria-label={ariaLabel}>
     {items.map((m, i) => (
-      <div className="metric" key={i}>
+      <div className={`metric${m.emphasis ? ' is-emphasis' : ''}`} key={i}>
         <span>{m.label}</span>
         <strong className={m.tone === 'danger' ? 'text-danger' : m.tone === 'success' ? 'text-success' : undefined}>{m.value}</strong>
         {m.detail != null && <small>{m.detail}</small>}

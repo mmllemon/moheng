@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
-import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, PageHeader, StatusBadge } from '../components/Ui';
 import { confirmThen, promptAction } from '../components/ConfirmDialog';
 
 type SettlementType = 'PROGRESS' | 'FINAL' | 'ADJUSTMENT';
@@ -170,14 +170,14 @@ export default function DownstreamFinancePage() {
   return <div className="page-wrap downstream-finance-page">
     <PageHeader title="结算与应付账款" eyebrow="分供合同财务台账" subtitle="管理双方结算确认、应付过账、付款核销、预付款扣回、质保金和发票核对。清单明细不是必要条件。" actions={<><Button variant="secondary" onClick={() => navigate('/cost/downstream')}>合同台账与付款<ArrowRight size={14} /></Button><ProjectLedgerReportButton reportKey="downstream-payables" label="预览 / 导出应付台账" /></>} />
     {notice && <div className="inline-notice"><CheckCircle2 size={16} /><span>{notice}</span><Button variant="ghost" size="icon" onClick={() => setNotice('')} aria-label="关闭提示"><X size={14} /></Button></div>}
-    <div className="change-summary-grid downstream-summary-grid finance-summary-grid">
-      <div className="change-summary"><span className="change-summary-label">累计过账结算净增减</span><strong>{formatMoney(summary?.postedSettlementAmount ?? 0, 0)}</strong><small>阶段结算增量与最终结算差额累计</small></div>
-      <div className="change-summary change-summary-emphasis"><span className="change-summary-label">未付应付余额</span><strong>{formatMoney(summary?.openPayableAmount ?? 0, 0)}</strong><small>基于应付过账额减去有效付款核销</small></div>
-      <div className="change-summary"><span className="change-summary-label">未扣回预付款</span><strong>{formatMoney(summary?.advanceBalanceAmount ?? 0, 0)}</strong><small>已支付预付款减退款及已过账扣回</small></div>
-      <div className="change-summary"><span className="change-summary-label">质保金留置余额</span><strong>{formatMoney(summary?.retentionBalanceAmount ?? 0, 0)}</strong><small>计提留置减释放、核销金额</small></div>
-      <div className="change-summary"><span className="change-summary-label">已核验发票</span><strong>{formatMoney(summary?.verifiedInvoiceAmount ?? 0, 0)}</strong><small>发票总登记额 {formatMoney(summary?.invoiceAmount ?? 0, 0)}</small></div>
-      <div className="change-summary"><span className="change-summary-label">待处理结算单</span><strong>{summary?.pendingSettlementCount ?? 0}</strong><small>草稿、审批、外部确认或待过账</small></div>
-    </div>
+    <Metrics columns={6} items={[
+      { label: '累计过账结算净增减', value: formatMoney(summary?.postedSettlementAmount ?? 0, 0), detail: '阶段结算增量与最终结算差额累计' },
+      { label: '未付应付余额', value: formatMoney(summary?.openPayableAmount ?? 0, 0), detail: '基于应付过账额减去有效付款核销', emphasis: true },
+      { label: '未扣回预付款', value: formatMoney(summary?.advanceBalanceAmount ?? 0, 0), detail: '已支付预付款减退款及已过账扣回' },
+      { label: '质保金留置余额', value: formatMoney(summary?.retentionBalanceAmount ?? 0, 0), detail: '计提留置减释放、核销金额' },
+      { label: '已核验发票', value: formatMoney(summary?.verifiedInvoiceAmount ?? 0, 0), detail: `发票总登记额 ${formatMoney(summary?.invoiceAmount ?? 0, 0)}` },
+      { label: '待处理结算单', value: summary?.pendingSettlementCount ?? 0, detail: '草稿、审批、外部确认或待过账' },
+    ]} />
     <div className="inline-notice"><ShieldAlert size={16} /><span>应付账款从已确认并过账的结算或质保金释放产生；付款需核销到应付来源。预付款单独形成余额，发票核验不等于应付已付款。发票、结算和付款都不会自动重复计入实际成本。</span></div>
     <div className="filter-toolbar"><div className="field search-field"><label>搜索合同</label><input value={queryText} onChange={(event) => setQueryText(event.target.value)} placeholder="合同编号、名称或供应商" /></div><div className="field"><label>合同状态</label><SelectField value={filter} onChange={(event) => setFilter(event.target.value)}><option value="ALL">全部状态</option>{Object.entries(contractStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</SelectField></div></div>
     {!contracts.length ? <EmptyState title="当前项目还没有分供合同" description="请先到“分供合同与付款”建立并激活合同，再登记结算与应付账款。" /> : filteredContracts.map((contract) => <section className="panel downstream-finance-contract" key={contract.id}>

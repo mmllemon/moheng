@@ -6,7 +6,7 @@ import { ArrowRight, ChevronRight, CircleAlert, ClipboardCheck, Download, Folder
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuthStore, useUiStore } from '../auth-store';
-import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, StatusBadge } from '../components/Ui';
 import { CashflowDetail } from '../components/CashflowDetail';
 import type { PortfolioCashflow, Project } from '../types';
 
@@ -70,11 +70,11 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
       <div><h2>未来六个月现金缺口</h2><span>覆盖 {data.scope.projectCount} 个可访问项目 · 只算已经确定到期日的金额 · 点月份看明细</span></div>
       <span className="an-legend"><i className="is-inflow" />应收<i className="is-outflow" />应付</span>
     </div>
-    <div className="cf-summary">
-      <div><span>未来 {data.months} 个月应收</span><strong>{formatMoney(data.window.inflow, 0)}</strong><small>各项目应收未收，按分期到期日</small></div>
-      <div><span>未来 {data.months} 个月应付</span><strong>{formatMoney(data.window.outflow, 0)}</strong><small>已过账应付与付款计划，另含已开票销项税</small></div>
-      <div><span>净额</span><strong className={data.window.net < 0 ? 'text-danger' : data.window.net > 0 ? 'text-success' : undefined}>{data.window.net === 0 ? '—' : `${data.window.net > 0 ? '+' : '−'}${formatMoney(Math.abs(data.window.net), 0)}`}</strong><small>负数表示这个区间要集中调度资金</small></div>
-    </div>
+    <Metrics columns={3} className="cf-metrics" items={[
+      { label: `未来 ${data.months} 个月应收`, value: formatMoney(data.window.inflow, 0), detail: '各项目应收未收，按分期到期日' },
+      { label: `未来 ${data.months} 个月应付`, value: formatMoney(data.window.outflow, 0), detail: '已过账应付与付款计划，另含已开票销项税', emphasis: true },
+      { label: '净额', value: data.window.net === 0 ? '—' : `${data.window.net > 0 ? '+' : '−'}${formatMoney(Math.abs(data.window.net), 0)}`, detail: '负数表示这个区间要集中调度资金' },
+    ]} />
     {hasCurve ? <div className="cf-chart">
       {data.buckets.map((bucket) => <button
         type="button"

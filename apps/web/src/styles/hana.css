@@ -5488,25 +5488,17 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 
 /* 多列指标：同一张卡内分栏，分隔线内缩 */
 .bill-summary-grid,
-.change-summary-grid,
-.owner-finance-metrics,
-.bill-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .change-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.owner-finance-metrics { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.change-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .owner-contract-amount-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }.bill-summary small,
 .change-summary-label,
-.owner-metric > span,
 .owner-contract-amount-card span { color: var(--text-muted); font-size: var(--fs-hint); }
 .bill-summary strong,
 .change-summary strong,
-.owner-metric > strong,
 .owner-contract-amount-card strong { color: var(--text); font-family: var(--font-num, var(--num)); font-weight: 600; }.change-summary strong { margin: var(--space-6) 0 var(--space-4); font-size: 20px; }
-.owner-metric { min-height: 96px; }
-.owner-metric::before { display: none; }
-.owner-metric > strong { font-size: 20px; }.change-summary-emphasis { background: transparent; }
+.change-summary-emphasis { background: transparent; }
 .change-summary-emphasis strong { font-size: 20px; }
 .change-summary small,
-.owner-metric > small,
 .owner-contract-amount-card small { color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.5; }
 
 .owner-contract-hero { border-radius: var(--radius-card); border-top: 1px solid var(--card-border); border-bottom: 1px solid var(--card-border); background: var(--bg-card); }
@@ -5595,26 +5587,21 @@ html .table-count {
 }
 
 @media (max-width: 1100px) {
-  .owner-finance-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .bill-summary-grid,
   .change-summary-grid,
   .owner-contract-amount-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .owner-metric + .owner-metric::after,
   .bill-summary + .bill-summary::before,
   .change-summary + .change-summary::before,
   .owner-contract-amount-card + .owner-contract-amount-card::before { display: none; }
-  .owner-finance-metrics,
   .bill-summary-grid,
   .change-summary-grid,
   .owner-contract-amount-grid { gap: var(--space-8); border: 0; background: transparent; overflow: visible; }
   /* 子项也不画卡：对齐 hana 的 ._metric_53489（纯文本，无 border/bg）。 */
-  .owner-metric,
   .bill-summary,
   .change-summary,
   .owner-contract-amount-card { border: 0; border-radius: 0; background: transparent; }
 }
 @media (max-width: 720px) {
-  .owner-finance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bill-summary-grid,
   .change-summary-grid,
   .owner-contract-amount-grid { grid-template-columns: 1fr; }
@@ -5626,7 +5613,6 @@ html .table-count {
 .cost-type-card + .cost-type-card::before,
 .bill-summary + .bill-summary::before,
 .change-summary + .change-summary::before,
-.owner-metric + .owner-metric::after,
 .owner-contract-amount-card + .owner-contract-amount-card::before,
 .projects-ledger-page .projects-kpi-strip > div + div::before,
 .downstream-summary-grid .change-summary + .change-summary::before {
@@ -5799,7 +5785,6 @@ html .table-count {
 .change-summary-grid,
 .cost-type-cards,
 .ldg-stats,
-.owner-finance-metrics,
 .owner-contract-amount-grid,
 .owner-contract-hero { corner-shape: squircle; }
 
