@@ -16,7 +16,7 @@
 - 删掉这层已经无引用的 CSS：147 条规则、385 个失效选择器分支（`change-summary` / `bill-summary` / `owner-metric` / `system-ops-summary` / `projects-kpi-strip` / `downstream-summary-grid` / `audit-summary-*` / `notice-summary-*` / `business-party-summary-strip` / `an-stats` / `ldg-stats`）。纯删除不换写法，保住原文件换行符；清理前后对 17 条路由 × 2 档视口做了计算样式快照（色、边框、圆角、内外距、字号行高、grid 列、阴影等 31 项 + 元素位置），唯一差异是设置页一条 tab 的 0.5px 宽度抖动，同配置重复跑同样出现，与清理无关。
 - 新增 [指标区清单](docs/指标区清单.md)：规格数值、17 处用 `Metrics` 的汇总（含列数与强调格）、5 处保留磁贴/卡片的理由与判据，以及新增指标区时的四条规则。
 
-### 2026-10-29 对话框结构收进共享组件，补控件与状态清单
+### 2026-11-03 对话框结构收进共享组件，补控件与状态清单
 
 `.modal-backdrop + .dialog + .dialog-header` 这套外壳此前在 17 个文件里手写，每处的分类小字、关闭图标尺寸（17/18）、宽窄档各写一遍。
 
