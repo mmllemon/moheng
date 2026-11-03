@@ -925,6 +925,37 @@ html body .report-studio-entry-grid > :first-child {
   border-left: 0;
 }
 
+/* 但 /system 概览的四格已经改成独立卡片（有边框、有底色），
+   首格清零左内距会让它的图标紧贴在卡片左边框上，
+   与右侧三格差 17px（实测 contentLeft 36 vs 53）。
+   卡片形态下首格也要四边等宽；贴齐内容列只适用于无卡条。 */
+html body .settings-content .system-overview-metrics > article.panel.system-overview-metric:first-child,
+html body .settings-content .system-authorization-scope-grid > :first-child {
+  padding-left: var(--space-16);
+  border-left: 1px solid var(--card-border);
+}
+
+/* /system 概览的四格读数按全站指标区规格排：
+   标签 11.52 / 数值 19px·600 / 说明 11.52。
+   原来是标签 13.6、数值 16/500 —— 数字只比标签大 2.4px，
+   和经营总览的五格数字并排能看出小一号，读数不成为主角。 */
+html body .settings-content .system-overview-metrics .system-overview-metric > div > small {
+  font-size: var(--text-2xs);
+  line-height: 1.5;
+}
+html body .settings-content .system-overview-metrics .system-overview-metric > div > strong {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+}
+html body .settings-content .system-overview-metrics .system-overview-metric > div > span {
+  font-size: var(--fs-hint);
+  line-height: 1.5;
+}
+
 /* 区块卡里的四种条：首格左内距被 hana 的
    .downstream-summary-grid .change-summary:first-child（0,3,0）占着，
    这里用 0,4,1 压回去，保证与其它指标条一样贴齐内容列。 */
