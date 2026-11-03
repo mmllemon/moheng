@@ -6951,6 +6951,22 @@ html .select-control-trigger {
 #root .owner-finance-toolbar {
   margin: 0;
   padding: 16px 26px 14px;
+  /* 工具栏与卡片同底，不再自己铺一层浅色背景（否则卡内出现一条色带） */
+  background: transparent;
+  border-bottom: 1px solid var(--card-border);
+}
+
+/* 这页五个页签里，有表格的需要台账宽度，没表格的（空态）会掉回正文宽度，
+   切页签时整页从 1240 缩到 720，方向感很强。宽定在表格档。 */
+.page-wrap.owner-finance-page {
+  max-width: max(var(--page-column-measure), var(--table-page-measure));
+}
+
+/* 卡头标题带图标：SVG 是块级，不这样写会单独占一行，标题被顶到第二行。 */
+.owner-finance-tab-panel .ldg-section-head h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
 }
 
 /* 搜索框用台账共用的 .ldg-search（图标与输入框同一层，输入框不画框），

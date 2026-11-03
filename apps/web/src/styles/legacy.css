@@ -727,7 +727,10 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 .owner-finance-tab-panel .panel-heading p { max-width: 820px; line-height: 1.6; }
 .owner-finance-tab-panel .table-count { padding: var(--space-6) var(--space-8); border: 1px solid var(--line); border-radius: var(--radius-xs); color: var(--accent); background: #fafbfe; font-size: var(--fs-hint); white-space: nowrap; }
 .owner-finance-table-wrap { max-height: min(58vh, 660px); overflow: auto; overscroll-behavior: contain; }
-.owner-finance-table { min-width: 1160px; }
+/* 1160 是旧版页面宽度下的硬下限：窗口 1440 时卡片内只剩 1130，
+   多出的 30px 把「操作」列挤出可视区，登记到账按钮看不全。
+   实测这张表九列的最小内容宽是 984px（再窄才需要横滚），改到 980。 */
+.owner-finance-table { min-width: 980px; }
 .owner-finance-table thead th { position: sticky; top: 0; z-index: 2; padding-top: var(--space-12); padding-bottom: var(--space-12); background: #f8f9fc; }
 .owner-finance-table tbody td { padding-top: var(--space-12); padding-bottom: var(--space-12); line-height: 1.55; }
 .owner-finance-table tbody tr { transition: background-color .14s ease; }
