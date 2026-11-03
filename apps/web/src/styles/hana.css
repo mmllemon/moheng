@@ -6943,11 +6943,44 @@ html .select-control-trigger {
   min-width: 132px;
 }
 
+/* 应收台账工具栏：占满卡片宽度（横线也跟表头一样通长），
+   左右 26px 让搜索框左缘与表首列文字对齐（16px 卡片内距 + 10px 单元格内距）。
+   原来它自带 16px 外边距 + 17px 内边距，搜索框比表格文字缩进 7px，
+   上下两端又只有 12px，卡片里看着上紧下松。 */
+/* #root 是为了压过 .panel.panel-detached > :not(.panel-heading) 的 16px 左右外边距 */
+#root .owner-finance-toolbar {
+  margin: 0;
+  padding: 16px 26px 14px;
+}
+
+/* 搜索壳里图标是 flex 兄弟节点，不是绝对定位在输入框上方：
+   输入框不该再带 31px/30px 的图标内边距，也不该自己画边框、圆角和底色。
+   否则壳里会套出第三个框（实测输入框 347×32、圆角 11px、右侧留 30px 空档）。 */
+#root .owner-finance-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 !important;
+  border: 0;
+  /* 全站输入框的圆角是 !important 写死的，这里必须一起抬掉，
+     否则聚焦时的 3px 光晕会沿着输入框的圆角在壳里再画一个圆角矩形。 */
+  border-radius: 0 !important;
+  background: transparent;
+  color: var(--text);
+  font-size: var(--fs-hint);
+  box-shadow: none;
+}
+#root .owner-finance-search input:focus-visible {
+  box-shadow: none;
+}
+#root .owner-finance-search {
+  height: var(--control-height);
+}
+
 /* 搜索壳内部是真正的输入，不应再画第二层边框和圆角 */
 #root .settings-search input,
 #root .audit-search-input input,
 #root .business-party-input-wrap input,
-#root .owner-finance-search input,
 #root .quick-search-wrap input,
 #root .settings-nav .settings-search input { padding: 0 30px 0 31px !important; }
 
