@@ -616,30 +616,26 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 .business-party-profile-title { display: flex; align-items: center; gap: var(--space-10); flex-wrap: wrap; }
 .business-party-profile-title h2 { margin: 0; color: var(--neutral-800); font-size: 20px; letter-spacing: -.025em; overflow-wrap: anywhere; }
 .business-party-profile-identifiers { display: flex; flex-wrap: wrap; gap: var(--space-6) 20px; margin: var(--space-8) 0 var(--space-12); color: var(--text-muted); font-size: var(--fs-hint); }
-.business-party-metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-10); }
-.business-party-metric { display: grid; gap: var(--space-8); min-width: 0; padding: var(--space-14); border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--card-bg); }
-.business-party-metric span { color: var(--text-secondary); font-size: var(--fs-hint); }
-.business-party-metric strong { color: var(--neutral-800); font-size: clamp(14px, 1.35vw, 20px); line-height: 1.25; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.business-party-metric small { color: var(--text-muted); font-size: var(--text-2xs); line-height: 1.45; }
-.business-party-info-panel .panel-heading, .business-party-projects-panel .panel-heading, .business-party-contracts-panel .panel-heading { align-items: center; }
-.business-party-info-panel .panel-heading h3, .business-party-projects-panel .panel-heading h3, .business-party-contracts-panel .panel-heading h3 { gap: var(--space-8); }
 .business-party-info-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 0; padding: 0 18px 15px; }
-.business-party-info-grid > div { display: grid; gap: var(--space-6); padding: var(--space-12) var(--space-8); border-bottom: 1px solid var(--border-light, var(--card-border)); min-width: 0; }
+.business-party-info-grid > div { display: grid; gap: var(--space-6); padding: var(--space-12) var(--space-8); border-top: 1px solid var(--border-light, var(--card-border)); min-width: 0; }
+/* 分隔线画在上边而不是下边：最后一行（备注）只有一格，画下边会在卡底多出一条半截线。
+   第一行不要上边框，贴着卡头上边。 */
+.business-party-info-grid > div:nth-child(-n+3) { border-top: 0; }
+/* 备注是最后一行且只有一格：跨满整行，上面那道分隔线才不变成半截线。 */
+.business-party-info-grid > .business-party-info-wide { grid-column: 1 / -1; }
 .business-party-info-grid span { color: var(--text-muted); font-size: var(--fs-hint); }
 .business-party-info-grid strong { color: var(--text-secondary); font-size: var(--fs-hint); font-weight: 600; overflow-wrap: anywhere; }
 .business-party-empty-state { padding: 22px 18px; color: var(--text-muted); font-size: var(--fs-hint); }
-.business-party-projects-panel, .business-party-contracts-panel { min-width: 0; overflow: hidden; }
+.business-party-projects-panel, .business-party-contracts-panel { min-width: 0; }
 .business-party-projects-panel .data-table, .business-party-contracts-panel .data-table { min-width: 980px; }
-@media (max-width: 1100px) {
-  .business-party-metrics-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
-}
 @media (max-width: 620px) {
-  .business-party-metrics-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: var(--space-8); }
-  .business-party-metric { padding: var(--space-12); }
   .business-party-profile-hero { padding: var(--space-14); gap: var(--space-12); }
   .business-party-profile-icon { width: 42px; height: 42px; }
   .business-party-profile-title h2 { font-size: 17px; }
   .business-party-info-grid { grid-template-columns: repeat(2, minmax(0,1fr)); padding: 0 10px 10px; }
+  /* 两列时首行只有两格，上面的“首行无上边框”要改成前两格 */
+  .business-party-info-grid > div:nth-child(-n+3) { border-top: 1px solid var(--border-light, var(--card-border)); }
+  .business-party-info-grid > div:nth-child(-n+2) { border-top: 0; }
   .business-party-backline { align-items: flex-start; flex-direction: column; }
 }
 

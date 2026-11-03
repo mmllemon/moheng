@@ -5902,6 +5902,11 @@ select { corner-shape: squircle !important; }
   border: 0;
 }
 .ldg-section-head h2 {
+  /* 带图标时标题不能被图标顶到第二行：SVG 是块级元素，h2 不是 flex 就会叠行。
+     预算清单的卡头没有图标，旧规则只写在业主页的页签作用域里，其他页一加图标就露出来。 */
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
   margin: 0;
   color: var(--text);
   font-family: var(--font-ui);
@@ -5918,6 +5923,10 @@ select { corner-shape: squircle !important; }
    .ldg-table-wrap 的 overflow-x: auto 生效；父级 hidden 会把滚动条裁掉，
    导致右侧列直接消失。圆角由内部元素各自处理。 */
 .ldg-section-card { overflow: visible; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
+/* 卡内表格统一退到卡片内距 18px：与 .ldg-table、.ds-section-card 的表同一个数。
+   卡片自身 padding 为 0，不写这条表格会从圆角边缘起笔，视觉上像被卡片切开。 */
+.ldg-section-card > .table-scroll { overflow-x: auto; }
+.ldg-section-card > .table-scroll .data-table { width: calc(100% - 36px); margin: 0 18px; }
 
 .ldg-tree-toggle { width: 18px; height: 18px; flex: 0 0 18px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-sm); background: var(--overlay-subtle); color: var(--text-muted); font-size: var(--fs-caption); line-height: 1; }
 .ldg-tree-toggle:hover { background: var(--accent-light); color: var(--accent); }
@@ -6950,21 +6959,14 @@ html .select-control-trigger {
   margin-left: auto;
 }
 
-/* 卡内表格跟其他台账页同一缩进（16px + 单元格 10px），不再贴到卡片圆角上。
-   对应关系：工具栏内容 18px，表首列文字 26px，与预算清单等页一致。 */
-.ldg-section-card .owner-finance-table {
-  width: calc(100% - 32px);
-  margin: 0 var(--space-16);
-}
-
 /* 质保金页的三格条排在卡内首位：它自带的 border-top 会与卡片上边框叠成两道，
    而且那道线一直顶到圆角上。卡片的边就是它的上边。 */
 .ldg-section-card .owner-special-balances {
   border-top: 0;
   /* 它原本是通长条：格内文字直接贴在卡片左边框（实测 x=329，卡内原点），
-     下边框又比表头线多出 16px。现在跟表格同一个缩进档，三条线左端齐在 345，
-     格内文字落在 355，与表首列文字同一条线。 */
-  margin: 0 var(--space-16);
+     下边框又比表头线多出 16px。现在跟表格同一个缩进档（卡内边 18px），
+     格内文字再缩 10px，与表首列文字同一条线。 */
+  margin: 0 18px;
 }
 .ldg-section-card .owner-special-balances article,
 .ldg-section-card .owner-special-balances article:first-child {
@@ -6993,12 +6995,8 @@ html .select-control-trigger {
   max-width: max(var(--page-column-measure), var(--table-page-measure));
 }
 
-/* 卡头标题带图标：SVG 是块级，不这样写会单独占一行，标题被顶到第二行。 */
-.owner-finance-tab-panel .ldg-section-head h2 {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-}
+/* 卡头标题与图标同行：规则已提到 `.ldg-section-head h2` 本体（h2 改 flex），
+   不再只在业主页的页签作用域里生效。 */
 
 /* 搜索框用台账共用的 .ldg-search（图标与输入框同一层，输入框不画框），
    原来自写一套 .owner-finance-search：图标是 flex 兄弟，输入框却带着给绝对定位图标的
