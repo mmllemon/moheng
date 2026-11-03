@@ -6953,29 +6953,9 @@ html .select-control-trigger {
   padding: 16px 26px 14px;
 }
 
-/* 搜索壳里图标是 flex 兄弟节点，不是绝对定位在输入框上方：
-   输入框不该再带 31px/30px 的图标内边距，也不该自己画边框、圆角和底色。
-   否则壳里会套出第三个框（实测输入框 347×32、圆角 11px、右侧留 30px 空档）。 */
-#root .owner-finance-search input {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 100%;
-  padding: 0 !important;
-  border: 0;
-  /* 全站输入框的圆角是 !important 写死的，这里必须一起抬掉，
-     否则聚焦时的 3px 光晕会沿着输入框的圆角在壳里再画一个圆角矩形。 */
-  border-radius: 0 !important;
-  background: transparent;
-  color: var(--text);
-  font-size: var(--fs-hint);
-  box-shadow: none;
-}
-#root .owner-finance-search input:focus-visible {
-  box-shadow: none;
-}
-#root .owner-finance-search {
-  height: var(--control-height);
-}
+/* 搜索框用台账共用的 .ldg-search（图标与输入框同一层，输入框不画框），
+   原来自写一套 .owner-finance-search：图标是 flex 兄弟，输入框却带着给绝对定位图标的
+   31px/30px 内边距，加上全站输入框规则自带的边框/圆角/底色，壳里套出三层框。 */
 
 /* 搜索壳内部是真正的输入，不应再画第二层边框和圆角 */
 #root .settings-search input,
