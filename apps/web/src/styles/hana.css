@@ -6943,17 +6943,48 @@ html .select-control-trigger {
   min-width: 132px;
 }
 
-/* 应收台账工具栏：占满卡片宽度（横线也跟表头一样通长），
-   左右 26px 让搜索框左缘与表首列文字对齐（16px 卡片内距 + 10px 单元格内距）。
-   原来它自带 16px 外边距 + 17px 内边距，搜索框比表格文字缩进 7px，
-   上下两端又只有 12px，卡片里看着上紧下松。 */
-/* #root 是为了压过 .panel.panel-detached > :not(.panel-heading) 的 16px 左右外边距 */
-#root .owner-finance-toolbar {
-  margin: 0;
-  padding: 16px 26px 14px;
-  /* 工具栏与卡片同底，不再自己铺一层浅色背景（否则卡内出现一条色带） */
-  background: transparent;
-  border-bottom: 1px solid var(--card-border);
+/* 工具栏改用台账共用的 .ldg-toolbar：内距 12/18、分界线两边内缩 18px、不画通长边框。
+   原先自写一套：16/26/14 内距 + 通长 1px 下边框，卡里那条线直接顶到圆角上，
+   和其他台账页对不上。筛选靠右用 margin-left:auto（原来的 space-between 没了）。 */
+.owner-finance-filters {
+  margin-left: auto;
+}
+
+/* 卡内表格跟其他台账页同一缩进（16px + 单元格 10px），不再贴到卡片圆角上。
+   对应关系：工具栏内容 18px，表首列文字 26px，与预算清单等页一致。 */
+.ldg-section-card .owner-finance-table {
+  width: calc(100% - 32px);
+  margin: 0 var(--space-16);
+}
+
+/* 质保金页的三格条排在卡内首位：它自带的 border-top 会与卡片上边框叠成两道，
+   而且那道线一直顶到圆角上。卡片的边就是它的上边。 */
+.ldg-section-card .owner-special-balances {
+  border-top: 0;
+  /* 它原本是通长条：格内文字直接贴在卡片左边框（实测 x=329，卡内原点），
+     下边框又比表头线多出 16px。现在跟表格同一个缩进档，三条线左端齐在 345，
+     格内文字落在 355，与表首列文字同一条线。 */
+  margin: 0 var(--space-16);
+}
+.ldg-section-card .owner-special-balances article,
+.ldg-section-card .owner-special-balances article:first-child {
+  padding-left: var(--space-10);
+  padding-right: var(--space-10);
+}
+/* 格间竖线改成上下各缩进 12px 的伪元素：border-left 会从卡片上边框起笔，
+   又变成一条“顶到边”的线，和刚拆掉的通长分界线一个毛病。 */
+.ldg-section-card .owner-special-balances article {
+  position: relative;
+  border-left: 0;
+}
+.ldg-section-card .owner-special-balances article + article::before {
+  content: '';
+  position: absolute;
+  top: var(--space-12);
+  bottom: var(--space-12);
+  left: 0;
+  width: 1px;
+  background: var(--line);
 }
 
 /* 这页五个页签里，有表格的需要台账宽度，没表格的（空态）会掉回正文宽度，
