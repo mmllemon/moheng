@@ -1,12 +1,12 @@
 import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Banknote, CheckCircle2, ClipboardCheck, FileCheck2, Plus, ReceiptText, RefreshCw, ShieldCheck, Wallet, X } from 'lucide-react';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton, ProjectSummaryReportButton } from '../components/ReportLaunchButton';
-import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, Modal as BaseModal, PageHeader, StatusBadge } from '../components/Ui';
 import { currentDateInputValue, dateInputToIso } from '../components/Ui';
 import { confirmAction, promptAction } from '../components/ConfirmDialog';
 
@@ -24,8 +24,10 @@ const settlementTypeLabels: Record<string, string> = { FINAL: '竣工结算', AD
 const receivableTypeLabels: Record<string, string> = { PROGRESS_BILL: '进度款', FINAL_SETTLEMENT: '竣工结算', ADJUSTMENT: '结算调整', RETENTION_RELEASE: '质保金释放', MANUAL_ADJUSTMENT: '手工调整' };
 const receiptTypeLabels: Record<string, string> = { RECEIPT: '业主到账', REFUND: '退款/退回', ADVANCE: '业主预付款到账', ADVANCE_REFUND: '退回预付款' };
 
-function Modal({ title, subtitle, onClose, children, wide = false }: { title: string; subtitle: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}><div className={`dialog ${wide ? 'dialog-wide' : ''}`} role="dialog" aria-modal="true"><div className="dialog-header"><div><span className="eyebrow">OWNER SETTLEMENT / RECEIVABLES</span><h2>{title}</h2><p>{subtitle}</p></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭"><X size={17} /></Button></div>{children}</div></div>;
+function Modal(props: Omit<ComponentProps<typeof BaseModal>, 'eyebrow'>) {
+  /* 结构、遮罩点击、aria 与关按钮全在共享的 Ui.Modal 里；这里只固定本页的分类小字，
+     避免 8 处调用点各自重写一遍 .modal-backdrop + .dialog 模板。 */
+  return <BaseModal eyebrow="OWNER SETTLEMENT / RECEIVABLES" {...props} />;
 }
 function ErrorMessage({ value }: { value: string }) { return value ? <div className="form-alert">{value}</div> : null; }
 

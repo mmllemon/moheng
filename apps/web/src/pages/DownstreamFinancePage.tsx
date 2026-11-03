@@ -1,13 +1,13 @@
 import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, type ComponentProps, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Banknote, CheckCircle2, ClipboardCheck, FileCheck2, Plus, ReceiptText, ShieldAlert, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
-import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, PageHeader, StatusBadge } from '../components/Ui';
+import { Button, currentDateInputValue, dateInputToIso, EmptyState, ErrorBlock, formatDate, formatMoney, LoadingBlock, Metrics, Modal as BaseModal, PageHeader, StatusBadge } from '../components/Ui';
 import { confirmThen, promptAction } from '../components/ConfirmDialog';
 
 type SettlementType = 'PROGRESS' | 'FINAL' | 'ADJUSTMENT';
@@ -38,8 +38,8 @@ function invalidateFinance(queryClient: ReturnType<typeof useQueryClient>, proje
 }
 function amountInputValue(value: string) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 
-function DialogShell({ title, subtitle, children, onClose }: { title: string; subtitle: string; children: ReactNode; onClose: () => void }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="dialog dialog-wide"><div className="dialog-header"><div><span className="eyebrow">SETTLEMENT & PAYABLE</span><h2>{title}</h2><p>{subtitle}</p></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭"><X size={18} /></Button></div>{children}</div></div>;
+function DialogShell(props: Omit<ComponentProps<typeof BaseModal>, 'eyebrow' | 'wide'>) {
+  return <BaseModal eyebrow="SETTLEMENT & PAYABLE" wide {...props} />;
 }
 
 function SettlementDialog({ projectId, contract, existing, onClose, onNotice }: { projectId: string; contract: FinanceContract; existing?: Settlement; onClose: () => void; onNotice: (message: string) => void }) {

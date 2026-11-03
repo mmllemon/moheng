@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDownRight, ArrowUpRight, Plus, Search, type LucideIcon } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Plus, Search, X, type LucideIcon } from 'lucide-react';
 import { describeError } from '../lib/errors';
 
 export function Section({ title, subtitle, actions, icon: Icon, children, className = '' }: {
@@ -170,6 +170,37 @@ export function Button({
     onClick={onClick}
     disabled={disabled}
   >{children}</button>;
+}
+
+/* Modal：对话框外壳。
+
+   背景：.modal-backdrop + .dialog + .dialog-header 这套结构在 17 个文件里手写了 30 处，
+   每处的 eyebrow 文案、关闭图标尺寸（17/18）、宽窄档各写一遍。
+   这里收成一个组件：结构、遮罩点击关闭、aria-modal、标题关联都只写一次。 */
+export function Modal({ title, subtitle, eyebrow, wide = false, onClose, children, className = '' }: {
+  title: string;
+  subtitle?: string;
+  /** 标题上方的小字分类（如 OWNER SETTLEMENT / RECEIVABLES） */
+  eyebrow?: string;
+  wide?: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const titleId = useId();
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <div className={`dialog${wide ? ' dialog-wide' : ''}${className ? ` ${className}` : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div className="dialog-header">
+        <div>
+          {eyebrow && <span className="eyebrow">{eyebrow}</span>}
+          <h2 id={titleId}>{title}</h2>
+          {subtitle && <p>{subtitle}</p>}
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label="关闭"><X size={17} /></Button>
+      </div>
+      {children}
+    </div>
+  </div>;
 }
 
 /* Metrics：指标区。把「标签 + 数值 + 说明」的三段式收成一个数据驱动的组件。
