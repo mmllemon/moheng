@@ -4442,6 +4442,13 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .system-overview-workbench-copy strong { color: var(--text); font-size: var(--fs-ui); font-weight: 600; line-height: 1.35; }
 .system-overview-workbench-copy small { color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.5; }
 .system-overview-two-column { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr); gap: var(--space-12); }
+/* 网格里的卡片靠 gap 排间距，不能叠加 .panel + .panel 的 16px 上边距：
+   网格会把它算进行高，第一张卡被拉高、其余卡整体下移，
+   同一行的两张卡就会一高一低（实测 /system 行高 79.6、左卡 80、右卡 64 且低 16px）。 */
+.system-overview-metrics > .panel + .panel,
+.system-overview-workbenches > .panel + .panel { margin-top: 0; }
+/* 工作台入口是 5 个，两列排必然剩半格；最后一张铺满整行收口 */
+.system-overview-workbenches > a:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .system-management-roadmap { margin-top: var(--space-12); }
 .system-roadmap-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--border); border-radius: var(--radius-action); overflow: hidden; background: var(--border); }
 .system-roadmap-grid article { padding: var(--space-12); background: var(--bg-card); }

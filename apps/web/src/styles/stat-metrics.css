@@ -520,18 +520,40 @@ html article.panel.report-studio-entry-card:last-child {
 html .system-overview-metrics > article {
   position: relative;
 }
-html .system-overview-metrics > article > a {
+/* 箭头是这个卡片唯一的链接（卡片本身是 article，不是链接），
+   原来只有 22×22 的图标区可点，卡面看起来像整卡可点，实际点上去没反应。
+   改成让链接铺满整张卡，图标用 flex 推到右上角，位置与原来一致。 */
+/* 设置窗内的卡片是 grid（icon | 文字 | 箭头），箭头那一格只有 min-content 宽，
+   所以这里把选择器写到 .settings-content 一级，特异能压过
+   “html .settings-content article.panel.system-overview-metric > a” 的 grid-column:3。 */
+html .settings-content .system-overview-metrics > article.panel.system-overview-metric > a.system-overview-go,
+html .system-overview-metrics > article > a.system-overview-go {
   position: absolute;
-  top: 0;
-  right: var(--space-16);
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
+  inset: 0;
+  /* 绝对定位子元素在 grid 里的包含块是它所在的网格区域，
+     不跨满整行就只能拿到第三列（min-content）那么宽，铺不满卡片。 */
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  /* 旧的 `> a { align-self: start }` 会让绝对定位的网格子项缩到内容高，
+     即使 inset 已经四边归零；这里显式拉满。 */
+  align-self: stretch;
+  justify-self: stretch;
+  width: auto;
+  height: auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 0 var(--space-16);
+  border-radius: inherit;
+  color: var(--text-muted);
   opacity: 0.55;
 }
-html .system-overview-metrics > article > a:hover {
+html .system-overview-metrics > article > a.system-overview-go:hover {
+  color: var(--accent);
   opacity: 1;
+}
+html .system-overview-metrics > article:has(> a.system-overview-go:hover) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
 }
 
 /* /reports 与 /system/assistant 不是指标区（一个是按钮入口，一个是检查清单），
