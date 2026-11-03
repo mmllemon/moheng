@@ -3000,38 +3000,46 @@ html .filter-bar input[type="search"] {
 }
 
 /* =============================================================
-   系统管理概览与系统治理：区块改用台账的卡头 + 真卡（2026-11-03）
+   系统管理各页：区块改用台账的卡头 + 真卡（2026-11-03）
    -------------------------------------------------------------
-   两页原来都是 .panel.panel-detached：卡面由 ::before 从卡头底部画起，
+   概览、组织治理、授权复核、基础字典、参数配置、运维备份原来都是
+   .panel.panel-detached（或 .settings-section）：卡面由 ::before 从卡头底部画起，
    设置窗里再把卡头收进卡内。实测三个问题：
      · 卡间距 = .system-expansion-page 的 grid gap 16 + margin 24 + 24 = 64px
      · 卡内各块自带 18px 内距，又叠上 panel-detached 的 16px 兜底 margin，
        实测 32~34px，卡头、表单、列表、表格四条左线都对不齐
      · 卡内固定的 200/190/250 列宽是为 3 列的授权矩阵写的，
-       5 列的组织表被挤爆，超出部分又被 .system-expansion-section 的
+       5 列以上的表被挤爆，超出部分又被 .system-expansion-section 的
        overflow: hidden 裁掉（看不到横滚条）
-   改成 ldg-section 后：间距统一 24px，卡内一律 18px，表格允许横滚。 */
+   改成 ldg-section 后：间距统一 24px，卡内一律 18px，多列表格允许横滚。 */
 
-/* 系统治理：卡间距交给页面节奏（.page-wrap > * 的 24px），不再叠加 grid gap。 */
-html .page-wrap.system-governance-page { display: block; }
-.settings-content .system-governance-page .sys-tabs { margin-bottom: var(--space-24); }
+/* 卡间距交给 .ldg-section 自己的 24px，不再叠加 grid gap。 */
+html .page-wrap.system-expansion-page { display: block; }
+.system-expansion-page > .system-expansion-notice { margin: 0 0 var(--space-24); }
+.settings-content .system-expansion-page .sys-tabs { margin-bottom: var(--space-24); }
+
+/* 卡头右侧的计数、徽标、按钮不参与压缩：670px 内容区里，
+   长说明会把「0 个启用集成」挤成两行（实测）。 */
+.system-expansion-page .ldg-section-head > :not(:first-child) { flex: 0 0 auto; white-space: nowrap; }
+
+/* 卡内一律 18px：这些页的 settings-row 原本按 16px 写，与卡头、表格的 18px 差 2px。 */
+.system-expansion-page .settings-row { padding-left: 18px; padding-right: 18px; }
+.system-expansion-page .settings-row + .settings-row::before,
+.system-expansion-page .settings-row-actions::before { left: 18px; right: 18px; }
+.system-expansion-page .ldg-section-card > *:first-child > .settings-row:first-child { padding-top: var(--space-16); }
 
 /* 首块贴着卡顶时补上内边距（表格除外：表头行高自带留白）。 */
-.system-governance-page .ldg-section-card > .system-expansion-form:first-child,
-.system-governance-page .ldg-section-card > .system-effective-rule:first-child,
-.system-governance-page .ldg-section-card > .system-quality-summary:first-child { margin-top: var(--space-16); }
+.system-expansion-page .ldg-section-card > .system-expansion-form:first-child,
+.system-expansion-page .ldg-section-card > .system-effective-rule:first-child,
+.system-expansion-page .ldg-section-card > .system-quality-summary:first-child,
+.system-expansion-page .ldg-section-card > .system-parameter-rows:first-child { margin-top: var(--space-16); }
 
 /* 巡检卡头右侧是 31px 的按钮，与左侧标题块改成底对齐（legacy 里这条是 center）。 */
-.system-governance-page .ldg-section-head.system-quality-panel-heading { align-items: flex-end; gap: var(--space-14); }
-
-/* 卡头右侧的计数、徽标、按钮不参与压缩：
-   670px 内容区里，长说明会把「0 个启用集成」挤成两行（实测）。 */
-.system-management-page .ldg-section-head > :not(:first-child),
-.system-governance-page .ldg-section-head > :not(:first-child) { flex: 0 0 auto; white-space: nowrap; }
+.system-expansion-page .ldg-section-head.system-quality-panel-heading { align-items: flex-end; gap: var(--space-14); }
 
 /* 表格是卡片最后一块时留 6px 底距：没有数据行时表头会紧贴卡片下边框，
    看起来像卡片被切掉（实测组织表 0 个部门时卡底就在表头基线上）。 */
-.system-governance-page .ldg-section-card > .table-scroll:last-child { padding-bottom: var(--space-6); }
+.system-expansion-page .ldg-section-card > .table-scroll:last-child { padding-bottom: var(--space-6); }
 
 /* 质量巡检表：检查项的检查码是长标识符，被挤到 187px 时会从中间断开。
    列宽改为 60 / 210 / 165 / 余下，检查码能整段显示。 */
@@ -3042,9 +3050,52 @@ html .page-wrap.system-governance-page { display: block; }
 .settings-content .system-expansion-table.system-quality-table th:nth-child(3),
 .settings-content .system-expansion-table.system-quality-table td:nth-child(3) { width: 165px; }
 
-/* 治理页表格列多（组织表 5 列，含 260px 的操作组），固定列宽会把第 4、5 列压成 0 宽。
-   改回自动布局：列宽按内容分配，窗口不够时由 .table-scroll 横向滚动。 */
-.settings-content .system-expansion-table.system-governance-table { table-layout: auto; min-width: 0; width: 100%; }
+/* 多列表格改回自动布局：固定 200/190/250 只适用于 3 列，5 列以上的表会被
+   压成 0 宽再被裁掉。列宽按内容分配，装不下时由 .table-scroll 横向滚动。 */
+.settings-content .system-expansion-table.system-fluid-table { table-layout: auto; min-width: 0; width: 100%; }
+
+/* 授权复核页：这页原来是 .settings-section 壳，卡内各块按 16px 写。 */
+html .system-authorization-page .ldg-section-card:has(> .system-authorization-scope-grid) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+.system-authorization-page .ldg-section-card > .system-authorization-company-roles {
+  padding: 0;
+  border-top: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent);
+}
+.system-authorization-page .system-authorization-company-roles article,
+.system-authorization-page .system-authorization-company-roles article:first-child {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+/* 这块是卡片首块，纵向内距按 16px 起（v6 里写的是 12px）。 */
+.system-authorization-page .ldg-section-card > .system-authorization-company-roles:first-child article { padding-top: var(--space-16); }
+.system-authorization-page .ldg-section-card > .settings-subhead { border-top: 0; padding-left: 18px; padding-right: 18px; }
+/* 四格统计条是卡片首块时不能加 16px 外边距：条本身贴卡顶，留白由单元格给。 */
+.system-authorization-page .ldg-section-card > .system-quality-summary:first-child { margin-top: 0; }
+.system-authorization-page .system-authorization-stats > div { padding: var(--space-16) 18px 14px; }
+.system-authorization-page .system-authorization-review-form { padding-left: 18px; padding-right: 18px; }
+.system-authorization-page .system-authorization-reviewed-note { padding-left: 18px; padding-right: 18px; }
+/* 复核记录外面包了一层 .system-authorization-review-history，表格的 18px 缩进需单独给。 */
+.system-authorization-page .ldg-section-card > .system-authorization-review-history { padding: 0; }
+.system-authorization-page .system-authorization-review-history .data-table { width: calc(100% - 36px); margin: 0 18px; }
+.system-authorization-page .ldg-section-card > .inline-notice { margin: var(--space-12) 18px var(--space-16); }
+.system-authorization-page .ldg-section-card > .loading-block,
+.system-authorization-page .ldg-section-card > .error-block { margin: var(--space-16) 18px; }
+.system-authorization-page .settings-inset-block { margin-left: 18px; margin-right: 18px; }
+
+/* 基础字典页：目录行、字典项行、空态原来按 16px 写。 */
+.system-config-page .system-dictionary-item-list { padding: 12px 18px 16px; }
+.system-config-page .system-dictionary-empty { padding: 18px; }
+.system-config-page .system-config-empty { margin: 0 18px 16px; }
+
+/* 运维备份页：设置行、提示条、记录区原来按 16px 写。 */
+.system-ops-page .system-ops-guidance { margin: var(--space-12) 18px; }
+.system-ops-page .system-ops-run-section { padding: var(--space-8) 18px 16px; }
 
 .settings-content .settings-row-control {
   display: flex;
@@ -5119,7 +5170,7 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .security-panel .table-scroll .button-danger:hover { background: color-mix(in srgb, var(--danger) 8%, transparent); border-color: transparent; color: var(--danger); }
 
 /* 字典目录：单列列表，选中项才展开编辑 */
-.settings-content .system-dictionary-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.settings-content .system-dictionary-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
 .system-dictionary-card-list { display: flex; flex-direction: column; gap: 0; padding: 0 16px 8px; }
 .system-dictionary-card {
   display: flex;
@@ -7703,7 +7754,7 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .system-dictionary-editor-rows { border-top: 0; }
 .system-dictionary-editor .settings-row-control input { width: 340px; }
 .system-dictionary-editor .settings-row-actions { margin-top: 0; }
-.system-dictionary-create { margin-top: var(--space-24); }
+.system-dictionary-create { margin-top: 0; }
 
 /* 字典项：用行卡替代六列表格，窄窗口不再横向滚动 */
 .system-dictionary-item-list { display: flex; flex-direction: column; gap: var(--space-8); padding: var(--space-12) var(--space-16) var(--space-4); }
@@ -7776,7 +7827,7 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .system-ops-empty > div { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
 .system-ops-empty strong { color: var(--text-light); font-size: var(--fs-hint); font-weight: 600; }
 .system-ops-empty span { font-size: var(--fs-hint); line-height: 1.45; }
-.settings-content .system-ops-lower-grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-24); }
+.settings-content .system-ops-lower-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
 .system-ops-page .system-job-counts { gap: 0; border: 1px solid var(--card-border); border-radius: var(--radius-action); overflow: hidden; background: var(--bg); }
 .system-ops-page .system-job-counts > div { border-left: 0; position: relative; padding: var(--space-10) var(--space-12); }
 .system-ops-page .system-job-counts > div + div::before { content: ''; position: absolute; top: 10px; bottom: 10px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 62%, transparent); }

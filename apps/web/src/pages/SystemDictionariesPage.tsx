@@ -30,8 +30,9 @@ function DictionaryEditor({ dictionary, onPatch, saving }: {
   const [description, setDescription] = useState(dictionary.description ?? '');
   useEffect(() => { setName(dictionary.name); setDescription(dictionary.description ?? ''); }, [dictionary.name, dictionary.description]);
   const dirty = name.trim() !== dictionary.name || description !== (dictionary.description ?? '');
-  return <section className="panel system-expansion-section system-dictionary-editor">
-    <div className="panel-heading"><div><h3><BookOpen size={17} />分类资料</h3><p>{dictionary.code} · {dictionary.isSystem ? '系统内置分类' : '自定义分类'}；修改只影响名称和用途说明，不改写稳定编码。</p></div><span className="system-overview-readiness-tag">{dictionary.items.length} 个字典项</span></div>
+  return <section className="ldg-section system-dictionary-editor">
+    <div className="ldg-section-head"><div><h2><BookOpen size={16} />分类资料</h2><p>{dictionary.code} · {dictionary.isSystem ? '系统内置分类' : '自定义分类'}；修改只影响名称和用途说明，不改写稳定编码。</p></div><span className="ldg-section-count">{dictionary.items.length} 个字典项</span></div>
+    <div className="ldg-section-card">
     <div className="system-dictionary-editor-rows">
       <label className="settings-row">
         <span className="settings-row-copy"><span className="settings-row-label">显示名称</span><span className="settings-row-hint">用于界面展示和引用选择，编码仍保持 {dictionary.code} 不变。</span></span>
@@ -48,6 +49,7 @@ function DictionaryEditor({ dictionary, onPatch, saving }: {
         <button type="button" className="button-secondary" disabled={saving || !dirty || !name.trim()} onClick={() => onPatch({ id: dictionary.id, name: name.trim(), description: description.trim() || null })}><Save size={13} />保存资料</button>
         <button type="button" className="button-secondary" disabled={saving || (dictionary.isSystem && dictionary.isActive)} onClick={() => onPatch({ id: dictionary.id, isActive: !dictionary.isActive })}>{dictionary.isActive ? <CircleOff size={13} /> : <CheckCircle2 size={13} />}{dictionary.isActive ? '停用分类' : '重新启用'}</button>
       </span>
+    </div>
     </div>
   </section>;
 }
@@ -116,22 +118,25 @@ export default function SystemDictionariesPage() {
     {notice && <div className="system-expansion-notice" role="status"><CheckCircle2 size={16} /><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="关闭提示">×</button></div>}
 
     <div className="system-dictionary-layout">
-      <section className="panel system-expansion-section system-dictionary-catalog">
-        <div className="panel-heading">
-          <div><h3><BookOpen size={17} />字典目录</h3><p>选择分类维护其资料与可用选项。</p></div>
+      <section className="ldg-section system-dictionary-catalog">
+        <div className="ldg-section-head">
+          <div><h2><BookOpen size={16} />字典目录</h2><p>选择分类维护其资料与可用选项。</p></div>
           <div className="system-dictionary-heading-actions">
-            <span className="system-overview-readiness-tag">{dictionaries.length} 个分类 · {activeDictionaries.length} 个启用</span>
+            <span className="ldg-section-count">{dictionaries.length} 个分类 · {activeDictionaries.length} 个启用</span>
             <button type="button" className="button-secondary" onClick={focusCreate}><Plus size={13} />新建分类</button>
           </div>
         </div>
+        <div className="ldg-section-card">
         {dictionaries.length ? <div className="system-dictionary-card-list">{dictionaries.map((dictionary) => <DictionaryCard key={dictionary.id} dictionary={dictionary} selected={selected?.id === dictionary.id} onSelect={() => setSelectedId(dictionary.id)} />)}</div> : <div className="system-dictionary-empty"><span>尚无字典分类。</span><button type="button" className="button-secondary" onClick={focusCreate}><Plus size={13} />新建第一个分类</button></div>}
+        </div>
       </section>
 
       {selected && <DictionaryEditor key={selected.id} dictionary={selected} onPatch={(input) => patchDictionary.mutate(input)} saving={patchDictionary.isPending} />}
 
-      <section className="panel system-expansion-section system-dictionary-detail">
+      <section className="ldg-section system-dictionary-detail">
         {selected ? <>
-          <div className="panel-heading"><div><h3>字典项</h3><p>{selected.name} · {selected.code}；维护该分类在业务表单中的可选值。</p></div><span className="system-overview-readiness-tag">{selected.items.length} 个字典项</span></div>
+          <div className="ldg-section-head"><div><h2>字典项</h2><p>{selected.name} · {selected.code}；维护该分类在业务表单中的可选值。</p></div><span className="ldg-section-count">{selected.items.length} 个字典项</span></div>
+          <div className="ldg-section-card">
           <form className="system-expansion-form system-dictionary-item-create" onSubmit={(event) => { event.preventDefault(); createItem.mutate(); }}>
             <label><span>显示名称</span><input value={itemName} onChange={(event) => { const next = event.target.value; setItemName(next); if (!itemCodeTouched) setItemCode(suggestCodeFromName(next, 80)); }} required maxLength={120} placeholder="如 其他" /></label>
             <label><span>选项编码（自动推荐）</span><input value={itemCode} onChange={(event) => { setItemCode(event.target.value.toUpperCase()); setItemCodeTouched(true); }} required maxLength={80} pattern="[A-Z][A-Z0-9_]{1,79}" placeholder="根据显示名称自动推荐" /></label>
@@ -141,12 +146,14 @@ export default function SystemDictionariesPage() {
           </form>
           {!selected.isActive && <div className="system-config-callout">此分类已停用，暂时不能新增字典项。重新启用后可继续维护。</div>}
           {selected.items.length ? <div className="system-dictionary-item-list">{selected.items.map((item) => <DictionaryItemRow key={item.id} item={item} onPatch={(input) => patchItem.mutate(input)} saving={patchItem.isPending} />)}</div> : <div className="system-config-empty">此分类暂无字典项，可使用上方表单添加。</div>}
+          </div>
         </> : <div className="system-config-empty">请先选择或创建一个字典分类。</div>}
       </section>
     </div>
 
-    <section ref={createSectionRef} id="new-dictionary" className="panel system-expansion-section system-dictionary-create">
-      <div className="panel-heading"><div><h3><Plus size={17} />新建字典分类</h3><p>编码用于程序和数据关联，建议使用稳定的大写英文编码；名称用于界面显示。</p></div></div>
+    <section ref={createSectionRef} id="new-dictionary" className="ldg-section system-dictionary-create">
+      <div className="ldg-section-head"><div><h2><Plus size={16} />新建字典分类</h2><p>编码用于程序和数据关联，建议使用稳定的大写英文编码；名称用于界面显示。</p></div></div>
+      <div className="ldg-section-card">
       <form className="system-dictionary-create-rows" onSubmit={(event) => { event.preventDefault(); createDictionary.mutate(); }}>
         <div className="settings-row">
           <div className="settings-row-copy"><div className="settings-row-label">分类名称</div><div className="settings-row-hint">用于界面展示；编码会按名称自动推荐。</div></div>
@@ -162,6 +169,7 @@ export default function SystemDictionariesPage() {
         </div>
         <div className="settings-row-actions"><span className="settings-row-actions-note">分类停用只影响后续选择，不删除历史记录。</span><div className="settings-row-actions-buttons"><button type="submit" className="button-primary" disabled={createDictionary.isPending}><Plus size={14} />创建分类</button></div></div>
       </form>
+      </div>
     </section>
     <PageNote>系统通过软停用保留历史编码。字典项的创建、名称/排序调整和启停均写入操作审计。现有财务状态机及类型化字段不会因维护字典而自动变更，业务字段接入字典将按模块单独迁移与验收。</PageNote>
   </div>;

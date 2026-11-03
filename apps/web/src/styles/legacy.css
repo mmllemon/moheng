@@ -1980,18 +1980,20 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 /* 「业务模块权限边界」表：3 列，实测 108 / 154 / 378
    ——「约束说明」占 59%，前两列被压缩，
    模块/动作的文字被挤成多行。
-   改成 200 / 190 / 250，三列均衡。 */
-.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) {
+   改成 200 / 190 / 250，三列均衡。
+   2026-11-03：5 列以上的表（组织表、参数历史、授权复核）改用
+   .system-fluid-table 自动布局，不再吃这组固定列宽。 */
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-fluid-table) {
   table-layout: fixed;
   min-width: 0;
   width: 100%;
 }
-.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) th:nth-child(1),
-.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) td:nth-child(1) { width: 200px; }
-.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) th:nth-child(2),
-.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) td:nth-child(2) { width: 190px; }
-.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) th:nth-child(3),
-.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-governance-table) td:nth-child(3) { width: 250px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-fluid-table) th:nth-child(1),
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-fluid-table) td:nth-child(1) { width: 200px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-fluid-table) th:nth-child(2),
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-fluid-table) td:nth-child(2) { width: 190px; }
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-fluid-table) th:nth-child(3),
+.settings-content .system-expansion-table:not(.system-authorization-matrix):not(.system-fluid-table) td:nth-child(3) { width: 250px; }
 .settings-content .system-expansion-table:not(.system-authorization-matrix) td {
   white-space: normal;
   overflow-wrap: anywhere;

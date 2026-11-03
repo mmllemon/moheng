@@ -60,8 +60,9 @@ export default function SystemOperationsPage() {
       { label: '磁盘可用 / 总量', value: overview.backup.disk ? formatBytes(overview.backup.disk.freeBytes) : '未检测', detail: overview.backup.disk ? `总量 ${formatBytes(overview.backup.disk.totalBytes)}` : '备份目录或磁盘状态不可用' },
     ]} />
 
-    <section className="panel system-expansion-section system-ops-backup">
-      <div className="panel-heading"><div><h3><Archive size={17} />数据库备份与恢复演练</h3><p>通过 pg_dump 生成业务数据库备份，并用 pg_dumpall 归档 PostgreSQL 全局角色与配置；两份归档均使用 AES-256-GCM 加密并校验 SHA-256。演练恢复到独立数据库后校验核心表并删除临时库。</p></div><span className="system-overview-readiness-tag">保留 {overview.backup.retentionDays} 天</span></div>
+    <section className="ldg-section system-ops-backup">
+      <div className="ldg-section-head"><div><h2><Archive size={16} />数据库备份与恢复演练</h2><p>通过 pg_dump 生成业务数据库备份，并用 pg_dumpall 归档 PostgreSQL 全局角色与配置；两份归档均使用 AES-256-GCM 加密并校验 SHA-256。演练恢复到独立数据库后校验核心表并删除临时库。</p></div><span className="ldg-section-count">保留 {overview.backup.retentionDays} 天</span></div>
+      <div className="ldg-section-card">
       <div className="system-ops-settings">
         <div className="settings-row">
           <div className="settings-row-copy"><div className="settings-row-label">加密业务数据库 + 全局角色归档</div><div className="settings-row-hint">{overview.backup.configured && overview.backupEncryptionConfigured && overview.globalsBackupConfigured ? 'BACKUP_DIR、全局归档连接、密钥环与活动密钥 ID 均已配置。' : '需配置 BACKUP_DIR、BACKUP_GLOBALS_DATABASE_URL、密钥环与活动密钥 ID。'}</div></div>
@@ -97,11 +98,22 @@ export default function SystemOperationsPage() {
         </article>)}</div> : <div className="system-ops-empty"><span className="system-ops-empty-icon"><Archive size={18} /></span><div><strong>暂无备份或恢复演练记录</strong><span>配置完成后执行首次备份，记录会按时间显示在这里。</span></div></div>}
       </div>
       <PageNote>目标数据库需提前创建并允许应用数据库账号写入。程序会拒绝与生产数据库解析到相同地址的目标；执行前仍需由运维人员确认测试目标可被覆盖。此工作台不自动清理审计记录，不把应用运行环境变量完整展示给管理员。</PageNote>
+      </div>
     </section>
 
     <section className="system-ops-lower-grid">
-      <section className="panel system-expansion-section"><div className="panel-heading"><div><h3><Activity size={17} />后台任务健康</h3><p>当前实例可见的任务状态分布。</p></div></div><div className="system-job-counts">{Object.entries(overview.backgroundJobs.counts).map(([status, count]) => <div key={status}><span>{status}</span><strong>{count}</strong></div>)}</div><div className="system-job-list">{overview.backgroundJobs.recent.map((job) => <article key={job.id}><div><strong>{job.type}</strong><small>{dateTime(job.createdAt)} · 尝试 {job.attempts}/{job.maxAttempts}</small>{job.lastError && <small className="quality-error">失败详情已隐藏，请查受控服务日志。</small>}</div><StatusBadge status={job.status} /></article>)}{!overview.backgroundJobs.recent.length && <p className="system-quality-empty">当前没有后台任务记录。</p>}</div></section>
-      <section className="panel system-expansion-section"><div className="panel-heading"><div><h3><ShieldAlert size={17} />部署与安全检查</h3><p>只显示运行时检查结果，不回显敏感配置值。</p></div></div><div className="system-readiness-line"><span>数据库连接</span><StatusBadge status={overview.database.status === 'ok' ? 'ACTIVE' : 'FAILED'} /></div><div className="system-readiness-line"><span>备份目录 / 连接配置</span><StatusBadge status={overview.backup.configured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>恢复演练目标</span><StatusBadge status={overview.backup.restoreDrillConfigured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>pg_dump / pg_dumpall / pg_restore / psql</span><StatusBadge status={overview.postgresClientTools.pgDump && overview.postgresClientTools.pgDumpAll && overview.postgresClientTools.pgRestore && overview.postgresClientTools.psql ? 'ACTIVE' : 'FAILED'} /><small>{overview.postgresClientTools.pgDump ? 'pg_dump 可用' : 'pg_dump 不可用'} · {overview.postgresClientTools.pgDumpAll ? 'pg_dumpall 可用' : 'pg_dumpall 不可用'} · {overview.postgresClientTools.pgRestore ? 'pg_restore 可用' : 'pg_restore 不可用'} · {overview.postgresClientTools.psql ? 'psql 可用' : 'psql 不可用'}</small></div><div className="system-readiness-line"><span>集成主加密密钥</span><StatusBadge status={overview.integrationVaultConfigured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>备份加密密钥环 / 全局归档连接</span><StatusBadge status={overview.backupEncryptionConfigured && overview.globalsBackupConfigured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>集成凭据总量（启用）</span><strong>{overview.integrations.active}</strong></div><p className="system-readiness-note">此页面不代表公网 TLS、反向代理、数据库备份异地副本、主机补丁或外部接口连通已完成验收；这些仍需部署环境级验证。</p></section>
+      <section className="ldg-section">
+        <div className="ldg-section-head"><div><h2><Activity size={16} />后台任务健康</h2><p>当前实例可见的任务状态分布。</p></div></div>
+        <div className="ldg-section-card">
+        <div className="system-job-counts">{Object.entries(overview.backgroundJobs.counts).map(([status, count]) => <div key={status}><span>{status}</span><strong>{count}</strong></div>)}</div><div className="system-job-list">{overview.backgroundJobs.recent.map((job) => <article key={job.id}><div><strong>{job.type}</strong><small>{dateTime(job.createdAt)} · 尝试 {job.attempts}/{job.maxAttempts}</small>{job.lastError && <small className="quality-error">失败详情已隐藏，请查受控服务日志。</small>}</div><StatusBadge status={job.status} /></article>)}{!overview.backgroundJobs.recent.length && <p className="system-quality-empty">当前没有后台任务记录。</p>}</div>
+        </div>
+      </section>
+      <section className="ldg-section">
+        <div className="ldg-section-head"><div><h2><ShieldAlert size={16} />部署与安全检查</h2><p>只显示运行时检查结果，不回显敏感配置值。</p></div></div>
+        <div className="ldg-section-card">
+        <div className="system-readiness-line"><span>数据库连接</span><StatusBadge status={overview.database.status === 'ok' ? 'ACTIVE' : 'FAILED'} /></div><div className="system-readiness-line"><span>备份目录 / 连接配置</span><StatusBadge status={overview.backup.configured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>恢复演练目标</span><StatusBadge status={overview.backup.restoreDrillConfigured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>pg_dump / pg_dumpall / pg_restore / psql</span><StatusBadge status={overview.postgresClientTools.pgDump && overview.postgresClientTools.pgDumpAll && overview.postgresClientTools.pgRestore && overview.postgresClientTools.psql ? 'ACTIVE' : 'FAILED'} /><small>{overview.postgresClientTools.pgDump ? 'pg_dump 可用' : 'pg_dump 不可用'} · {overview.postgresClientTools.pgDumpAll ? 'pg_dumpall 可用' : 'pg_dumpall 不可用'} · {overview.postgresClientTools.pgRestore ? 'pg_restore 可用' : 'pg_restore 不可用'} · {overview.postgresClientTools.psql ? 'psql 可用' : 'psql 不可用'}</small></div><div className="system-readiness-line"><span>集成主加密密钥</span><StatusBadge status={overview.integrationVaultConfigured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>备份加密密钥环 / 全局归档连接</span><StatusBadge status={overview.backupEncryptionConfigured && overview.globalsBackupConfigured ? 'ACTIVE' : 'PENDING'} /></div><div className="system-readiness-line"><span>集成凭据总量（启用）</span><strong>{overview.integrations.active}</strong></div><p className="system-readiness-note">此页面不代表公网 TLS、反向代理、数据库备份异地副本、主机补丁或外部接口连通已完成验收；这些仍需部署环境级验证。</p>
+        </div>
+      </section>
     </section>
   </div>;
 }

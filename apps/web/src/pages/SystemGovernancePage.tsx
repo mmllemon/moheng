@@ -84,14 +84,14 @@ export default function SystemGovernancePage() {
         <label><span>上级部门</span><SelectField value={parentId} onChange={(event) => setParentId(event.currentTarget.value)} aria-label="上级部门"><option value="">无（一级部门）</option>{departmentOptions.map((item) => <option value={item.id} key={item.id}>{item.code} · {item.name}</option>)}</SelectField></label>
         <button type="submit" className="button-primary" disabled={createDepartment.isPending}><Plus size={15} />创建部门</button>
       </form>
-      <div className="table-scroll"><table className="data-table system-expansion-table system-governance-table"><thead><tr><th>部门</th><th>上级</th><th>账号</th><th>子部门</th><th>状态</th></tr></thead><tbody>{departments.map((item) => <DepartmentRow key={item.id} department={item} saving={patchDepartment.isPending} onPatch={(input) => patchDepartment.mutate(input)} />)}</tbody></table></div>
+      <div className="table-scroll"><table className="data-table system-expansion-table system-fluid-table"><thead><tr><th>部门</th><th>上级</th><th>账号</th><th>子部门</th><th>状态</th></tr></thead><tbody>{departments.map((item) => <DepartmentRow key={item.id} department={item} saving={patchDepartment.isPending} onPatch={(input) => patchDepartment.mutate(input)} />)}</tbody></table></div>
       </div>
     </section>
 
     <section className="ldg-section" hidden={tab !== 'org'}>
       <div className="ldg-section-head"><div><h2><Users size={16} />账号部门与岗位归属</h2><p>只修改组织字段，不提升公司角色、不授予项目角色。</p></div><span className="ldg-section-count">{users.length} 个账号</span></div>
       <div className="ldg-section-card">
-        <div className="table-scroll"><table className="data-table system-expansion-table system-governance-table"><thead><tr><th>账号</th><th>公司角色</th><th>部门</th><th>岗位</th><th>操作</th></tr></thead><tbody>{users.map((item) => <OrgUserRow key={item.id} user={item} departments={departmentOptions} saving={saveOrganization.isPending} onSave={(input) => saveOrganization.mutate(input)} />)}</tbody></table></div>
+        <div className="table-scroll"><table className="data-table system-expansion-table system-fluid-table"><thead><tr><th>账号</th><th>公司角色</th><th>部门</th><th>岗位</th><th>操作</th></tr></thead><tbody>{users.map((item) => <OrgUserRow key={item.id} user={item} departments={departmentOptions} saving={saveOrganization.isPending} onSave={(input) => saveOrganization.mutate(input)} />)}</tbody></table></div>
       </div>
     </section>
 
@@ -136,7 +136,7 @@ export default function SystemGovernancePage() {
       {!quality && <div className="system-quality-empty"><ClipboardCheck size={18} />尚未运行巡检；点击右上角「运行巡检」生成只读检查结果。</div>}
       {quality && <><div className="system-quality-summary"><div><small>发现总数</small><strong>{quality.summary.total}</strong></div><div><small>错误</small><strong className="quality-error">{quality.summary.errors}</strong></div><div><small>警告</small><strong className="quality-warning">{quality.summary.warnings}</strong></div><div><small>提示</small><strong>{quality.summary.info}</strong></div></div>
         {quality.summary.truncated && <p className="system-quality-truncated">单类结果达到 200 条上限，列表可能不完整；请结合数据库统计或后续分页扫描。</p>}
-        {quality.findings.length ? <div className="table-scroll"><table className="data-table system-expansion-table system-governance-table system-quality-table"><thead><tr><th>级别</th><th>检查项</th><th>对象</th><th>说明</th></tr></thead><tbody>{quality.findings.map((item, index) => <tr key={`${item.code}-${item.entityId}-${index}`}><td><span className={`quality-pill quality-${item.severity.toLowerCase()}`}>{severityNames[item.severity]}</span></td><td><strong>{item.title}</strong><small>{item.code}</small></td><td>{item.entity} · {item.entityId}</td><td>{item.detail}</td></tr>)}</tbody></table></div> : <div className="system-quality-empty"><CheckCircle2 size={18} />当前检查项未发现问题。</div>}
+        {quality.findings.length ? <div className="table-scroll"><table className="data-table system-expansion-table system-fluid-table system-quality-table"><thead><tr><th>级别</th><th>检查项</th><th>对象</th><th>说明</th></tr></thead><tbody>{quality.findings.map((item, index) => <tr key={`${item.code}-${item.entityId}-${index}`}><td><span className={`quality-pill quality-${item.severity.toLowerCase()}`}>{severityNames[item.severity]}</span></td><td><strong>{item.title}</strong><small>{item.code}</small></td><td>{item.entity} · {item.entityId}</td><td>{item.detail}</td></tr>)}</tbody></table></div> : <div className="system-quality-empty"><CheckCircle2 size={18} />当前检查项未发现问题。</div>}
       </>}
       </div>
     </section>

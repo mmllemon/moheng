@@ -66,8 +66,9 @@ export default function SystemParametersPage() {
 
     <SystemTabs ariaLabel="参数配置分区" value={tab} onChange={(id) => setTab(id as 'create' | 'effective' | 'history')} items={[{ id: 'create', label: '新建版本' }, { id: 'effective', label: '当前有效' }, { id: 'history', label: '版本历史' }]} />
 
-    <section className="panel system-expansion-section" hidden={tab !== 'create'}>
-      <div className="panel-heading"><div><h3><Plus size={17} />新建参数版本</h3><p>同一个参数键可以保留多次修改记录；每次提交都会产生新版本，而不是覆盖历史值。</p></div><span className="system-overview-readiness-tag">{revisions.length} 个版本{revisionsQuery.data?.truncated ? ' · 展示最近 250 条' : ''}</span></div>
+    <section className="ldg-section" hidden={tab !== 'create'}>
+      <div className="ldg-section-head"><div><h2><Plus size={16} />新建参数版本</h2><p>同一个参数键可以保留多次修改记录；每次提交都会产生新版本，而不是覆盖历史值。</p></div><span className="ldg-section-count">{revisions.length} 个版本{revisionsQuery.data?.truncated ? ' · 展示最近 250 条' : ''}</span></div>
+      <div className="ldg-section-card">
       <form className="system-parameter-rows" onSubmit={(event) => { event.preventDefault(); try { parseValue(valueType, rawValue); createDraft.mutate(); } catch (error) { setNotice((error as Error).message); } }}>
         <div className="settings-row">
           <div className="settings-row-copy"><div className="settings-row-label">显示名称</div><div className="settings-row-hint">用于参数列表展示；编码会按名称自动推荐。</div></div>
@@ -112,19 +113,24 @@ export default function SystemParametersPage() {
           <div className="settings-row-actions-buttons"><button type="submit" className="button-primary" disabled={createDraft.isPending || !key.trim() || !name.trim() || !changeNote.trim() || Boolean(valueError) || (scope === 'PROJECT' && !projectId)}><Plus size={14} />创建草稿</button></div>
         </div>
       </form>
+      </div>
     </section>
 
-    <section className="panel system-expansion-section" hidden={tab !== 'effective'}>
-      <div className="panel-heading"><div><h3><SlidersHorizontal size={17} />当前有效参数</h3><p>项目值优先于同键的全局默认值。这里只展示已发布版本；草稿不参与计算。普通业务模块只读取被显式标记为“业务可读”的参数。</p></div><span className="system-overview-readiness-tag">{effective.length} 个有效参数</span></div>
+    <section className="ldg-section" hidden={tab !== 'effective'}>
+      <div className="ldg-section-head"><div><h2><SlidersHorizontal size={16} />当前有效参数</h2><p>项目值优先于同键的全局默认值。这里只展示已发布版本；草稿不参与计算。普通业务模块只读取被显式标记为“业务可读”的参数。</p></div><span className="ldg-section-count">{effective.length} 个有效参数</span></div>
+      <div className="ldg-section-card">
       <div className="system-effective-scope"><label><span>查看生效范围</span><SelectField value={effectiveProjectId} onChange={(event) => setEffectiveProjectId(event.currentTarget.value)} aria-label="当前有效参数项目"><option value="">仅查看全局默认</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.code} · {project.name}</option>)}</SelectField></label><small>{effectiveProjectId ? '全局参数作为缺省值，项目同键参数覆盖全局值。' : '切换到具体项目可查看该项目覆盖后的最终取值。'}</small></div>
-      <div className="table-scroll"><table className="data-table system-expansion-table"><thead><tr><th>参数键 / 名称</th><th>有效值</th><th>类型 / 读取范围</th><th>来源</th><th>版本</th><th>发布时间</th></tr></thead><tbody>{effective.map((item) => <tr key={`${item.key}-${item.scopeKey}`}><td><strong>{item.key}</strong><small>{item.name}</small></td><td><code className="system-parameter-value">{formatValue(item.value)}</code></td><td>{valueTypeNames[item.valueType]}<small>{item.visibility === 'BUSINESS_READABLE' ? '业务可读' : '仅管理员'}</small></td><td>{item.sourceScope === 'PROJECT' ? `项目覆盖${item.project ? ` · ${item.project.name}` : ''}` : '全局默认'}</td><td>v{item.version}</td><td>{item.publishedAt ? new Date(item.publishedAt).toLocaleString('zh-CN') : '—'}</td></tr>)}</tbody></table></div>
+      <div className="table-scroll"><table className="data-table system-expansion-table system-fluid-table system-parameter-effective-table"><thead><tr><th>参数键 / 名称</th><th>有效值</th><th>类型 / 读取范围</th><th>来源</th><th>版本</th><th>发布时间</th></tr></thead><tbody>{effective.map((item) => <tr key={`${item.key}-${item.scopeKey}`}><td><strong>{item.key}</strong><small>{item.name}</small></td><td><code className="system-parameter-value">{formatValue(item.value)}</code></td><td>{valueTypeNames[item.valueType]}<small>{item.visibility === 'BUSINESS_READABLE' ? '业务可读' : '仅管理员'}</small></td><td>{item.sourceScope === 'PROJECT' ? `项目覆盖${item.project ? ` · ${item.project.name}` : ''}` : '全局默认'}</td><td>v{item.version}</td><td>{item.publishedAt ? new Date(item.publishedAt).toLocaleString('zh-CN') : '—'}</td></tr>)}</tbody></table></div>
       {!effective.length && <div className="system-config-empty">暂无已发布参数。创建草稿并显式发布后，才会显示在这里。</div>}
+      </div>
     </section>
 
-    <section className="panel system-expansion-section" hidden={tab !== 'history'}>
-      <div className="panel-heading"><div><h3><History size={17} />参数版本历史</h3><p>发布会归档原生效版本；回滚将复制历史值生成一个新草稿，不会改写既有版本。</p></div></div>
-      <div className="table-scroll"><table className="data-table system-expansion-table system-parameter-history-table"><thead><tr><th>参数</th><th>范围</th><th>业务读取</th><th>版本 / 状态</th><th>值快照</th><th>变更说明 / 操作者</th><th>操作</th></tr></thead><tbody>{histories.map((item) => <tr key={item.id}><td><strong>{item.key}</strong><small>{item.name}</small></td><td>{item.scope === 'PROJECT' ? `项目 · ${item.project?.name ?? item.projectId}` : '全局'}</td><td>{item.visibility === 'BUSINESS_READABLE' ? '业务可读' : '仅管理员'}</td><td><strong>v{item.version}</strong><small><StatusBadge status={item.status} /></small></td><td><code className="system-parameter-value">{formatValue(item.value)}</code><small>{valueTypeNames[item.valueType]}</small></td><td><span>{item.changeNote || '无说明'}</span><small>创建：{item.createdBy.name}{item.publishedBy ? ` · 发布：${item.publishedBy.name}` : ''}</small></td><td><div className="system-config-row-actions">{item.status === 'DRAFT' && <button type="button" className="button-primary" onClick={() => publishDraft.mutate(item.id)} disabled={publishDraft.isPending}><Send size={13} />发布</button>}{item.status === 'RETIRED' && <button type="button" className="button-secondary" onClick={() => rollback.mutate(item.id)} disabled={rollback.isPending}><RotateCcw size={13} />创建回滚草稿</button>}</div></td></tr>)}</tbody></table></div>
+    <section className="ldg-section" hidden={tab !== 'history'}>
+      <div className="ldg-section-head"><div><h2><History size={16} />参数版本历史</h2><p>发布会归档原生效版本；回滚将复制历史值生成一个新草稿，不会改写既有版本。</p></div></div>
+      <div className="ldg-section-card">
+      <div className="table-scroll"><table className="data-table system-expansion-table system-fluid-table system-parameter-history-table"><thead><tr><th>参数</th><th>范围</th><th>业务读取</th><th>版本 / 状态</th><th>值快照</th><th>变更说明 / 操作者</th><th>操作</th></tr></thead><tbody>{histories.map((item) => <tr key={item.id}><td><strong>{item.key}</strong><small>{item.name}</small></td><td>{item.scope === 'PROJECT' ? `项目 · ${item.project?.name ?? item.projectId}` : '全局'}</td><td>{item.visibility === 'BUSINESS_READABLE' ? '业务可读' : '仅管理员'}</td><td><strong>v{item.version}</strong><small><StatusBadge status={item.status} /></small></td><td><code className="system-parameter-value">{formatValue(item.value)}</code><small>{valueTypeNames[item.valueType]}</small></td><td><span>{item.changeNote || '无说明'}</span><small>创建：{item.createdBy.name}{item.publishedBy ? ` · 发布：${item.publishedBy.name}` : ''}</small></td><td><div className="system-config-row-actions">{item.status === 'DRAFT' && <button type="button" className="button-primary" onClick={() => publishDraft.mutate(item.id)} disabled={publishDraft.isPending}><Send size={13} />发布</button>}{item.status === 'RETIRED' && <button type="button" className="button-secondary" onClick={() => rollback.mutate(item.id)} disabled={rollback.isPending}><RotateCcw size={13} />创建回滚草稿</button>}</div></td></tr>)}</tbody></table></div>
       {!histories.length && <div className="system-config-empty">尚无参数版本记录。</div>}
+      </div>
     </section>
     <PageNote>版本化参数为统一配置基础设施。本阶段不会隐式替换现有合同金额生效规则、结算算法或业务状态机；业务模块必须显式读取对应参数，并增加规则级测试后才可以声明其已受参数控制。密钥、密码和 Token 不允许通过本页面保存。</PageNote>
   </div>;
