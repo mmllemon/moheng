@@ -5,7 +5,6 @@ import { api } from '../api';
 import type { Project } from '../types';
 import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
-import SettingsSection from '../components/SettingsSection';
 import { Button, EmptyState, ErrorBlock, LoadingBlock, Metrics, PageHeader } from '../components/Ui';
 
 type AuditEntry = {
@@ -28,6 +27,7 @@ const entityLabels: Record<string, string> = {
   DownstreamContractPayment: '分供付款/退款', DownstreamContractSettlement: '分供结算', DownstreamPayable: '应付账款',
   DownstreamSupplierInvoice: '供应商发票', OwnerContractSettlement: '业主竣工结算', OwnerReceivable: '业主应收',
   OwnerReceipt: '业主到账/退款', OwnerRetentionMovement: '业主质保金', OwnerAdvanceMovement: '业主预付款', BusinessParty: '往来单位', User: '用户账号',
+  SystemAuthorizationReview: '授权复核',
 };
 const actionLabels: Record<string, string> = {
   CREATE: '新建记录', UPDATE: '更新资料', UPSERT: '保存合同资料', ARCHIVE: '归档记录', IMPORT_CSV: '导入清单',
@@ -38,6 +38,7 @@ const actionLabels: Record<string, string> = {
   DOWNSTREAM_SETTLEMENT_POSTED: '分供结算入账', LINK_DOWNSTREAM_CONTRACT: '关联合同', UPDATE_DRAFT: '修改草稿', CREATE_DRAFT: '新建草稿',
   PROJECT_MEMBER_ADDED: '添加项目成员', PROJECT_MEMBER_ROLE_UPDATED: '调整成员权限', USER_CREATED: '创建用户',
   SUPPLIER_INVOICE_VERIFIED: '核验供应商发票', EVIDENCE_FILE_DOWNLOADED: '下载变更凭证',
+  AUTHORIZATION_REVIEW_CREATED: '保存复核快照', AUTHORIZATION_REVIEW_COMPLETED: '完成授权复核',
 };
 const fieldLabels: Record<string, string> = {
   name: '名称', code: '编号', amount: '金额', contractAmount: '合同金额', effectiveContractAmount: '有效合同额', originalContractAmount: '原合同额',
@@ -106,7 +107,7 @@ export default function AuditLogsPage() {
     } finally { setExportPending(false); }
   }
 
-  return <div className="page-wrap audit-log-page">
+  return <div className="page-wrap system-expansion-page audit-log-page">
     <PageHeader eyebrow="AUDIT / TRACEABILITY" title="操作追溯" subtitle="集中查看当前账号可访问范围内的业务操作记录。此页面只读，不改变合同、成本、结算或审批状态。" actions={<Button variant="secondary" onClick={() => void exportCsv()} disabled={exportPending || !result || result.total === 0}><Download size={15} />{exportPending ? '正在导出…' : '导出 CSV'}</Button>} />
 
     <Metrics columns={3} ariaLabel="操作追溯概览" items={[
@@ -115,8 +116,9 @@ export default function AuditLogsPage() {
       { label: '当前页', value: result ? `${result.page} / ${Math.max(1, result.pageCount)}` : '—', detail: '每页 20 条，按时间倒序' },
     ]} />
 
-    <form className="panel audit-filter-panel" onSubmit={submitFilters}>
-      <div className="audit-filter-heading"><div><h3><Filter size={16} />筛选操作记录</h3><p>可按项目、业务对象、操作者/动作/记录编号和日期范围筛选。</p></div><span>只读审计视图</span></div>
+    <section className="ldg-section">
+      <div className="ldg-section-head"><div><h2><Filter size={16} />筛选操作记录</h2><p>可按项目、业务对象、操作者/动作/记录编号和日期范围筛选。</p></div><span className="ldg-section-count">只读审计视图</span></div>
+      <form className="ldg-section-card audit-filter-panel" onSubmit={submitFilters}>
       <div className="audit-filter-rows">
         <div className="settings-row">
           <div className="settings-row-copy"><div className="settings-row-label">项目范围</div><div className="settings-row-hint">在全部可访问项目或单一项目内检索。</div></div>
@@ -141,14 +143,12 @@ export default function AuditLogsPage() {
       </div>
       <div className="settings-row-actions"><span className="settings-row-actions-note">导出采用 UTF-8 BOM，支持用 Excel 打开；单次最多导出最新 5,000 条。</span><div className="settings-row-actions-buttons"><Button type="button" variant="ghost" onClick={resetFilters}>重置</Button><Button type="submit"><Search size={14} />应用筛选</Button></div></div>
       {exportMessage && <div className={`audit-inline-message ${exportMessage.startsWith('导出失败') ? 'is-error' : ''}`} role="status">{exportMessage}</div>}
-    </form>
+      </form>
+    </section>
 
-    <SettingsSection
-      title={<><Activity size={17} />操作流水</>}
-      description="展开任意记录可查看该操作保存的变更快照。"
-      context={<Button variant="ghost" onClick={() => void logsQuery.refetch()} disabled={logsQuery.isFetching}><RefreshCw size={14} className={logsQuery.isFetching ? 'audit-refreshing' : ''} />刷新</Button>}
-    >
-      <SettingsSection.Card density="padded" className="audit-table-panel">
+    <section className="ldg-section">
+      <div className="ldg-section-head"><div><h2><Activity size={16} />操作流水</h2><p>展开任意记录可查看该操作保存的变更快照。</p></div><Button variant="ghost" onClick={() => void logsQuery.refetch()} disabled={logsQuery.isFetching}><RefreshCw size={14} className={logsQuery.isFetching ? 'audit-refreshing' : ''} />刷新</Button></div>
+      <div className="ldg-section-card audit-table-panel">
       {logsQuery.isLoading ? <LoadingBlock label="正在加载操作记录…" /> : logsQuery.error ? <ErrorBlock error={logsQuery.error} retry={() => void logsQuery.refetch()} /> : !result?.items.length ? <EmptyState title="没有匹配的操作记录" description="可以调整项目、业务对象或日期范围，或者重置筛选条件。" action={resetFilters} /> : <>
         <div className="table-scroll"><table className="data-table audit-log-table"><thead><tr><th>操作时间</th><th>操作人</th><th>项目</th><th>业务对象</th><th>操作类型</th><th>变更摘要</th><th>详情</th></tr></thead><tbody>{result.items.map((item) => <Fragment key={item.id}>
           <tr key={item.id} className={`audit-log-row ${expandedId === item.id ? 'is-expanded' : ''}`}>
@@ -164,7 +164,7 @@ export default function AuditLogsPage() {
         </Fragment>)}</tbody></table></div>
         <div className="audit-pagination"><span>共 {result.total.toLocaleString('zh-CN')} 条记录</span><div><Button variant="secondary" disabled={page <= 1 || logsQuery.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}><ChevronLeft size={14} />上一页</Button><span>第 <strong>{result.page}</strong> / {Math.max(1, result.pageCount)} 页</span><Button variant="secondary" disabled={page >= result.pageCount || logsQuery.isFetching} onClick={() => setPage((value) => value + 1)}>下一页<ChevronRight size={14} /></Button></div></div>
       </>}
-      </SettingsSection.Card>
-    </SettingsSection>
+      </div>
+    </section>
   </div>;
 }

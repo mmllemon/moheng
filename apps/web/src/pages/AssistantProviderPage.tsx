@@ -158,7 +158,7 @@ export default function AssistantProviderPage() {
     { label: '模型选择', hint: configuration?.modelConfigured ? (config?.provider.modelId || '已选择') : '拉取模型后选择。', ok: Boolean(configuration?.modelConfigured), pass: '已选择', wait: '待选择' },
     { label: 'LangGraph 检查点', hint: configuration?.checkpointSchemaReady ? 'moheng_assistant schema 已初始化。' : configuration?.checkpointConfigured ? '连接串已配置；请运行 assistant:checkpoint:setup 初始化 schema。' : '未配置检查点数据库。', ok: Boolean(configuration?.checkpointSchemaReady), pass: '已就绪', wait: '待初始化' },
   ];
-  return <div className="page-wrap assistant-provider-page">
+  return <div className="page-wrap system-expansion-page assistant-provider-page">
     <PageHeader
       title="AI 助手配置"
       subtitle="配置 OpenAI 兼容的模型供应商、加密保存密钥；保存并启用后，成本工作台会出现只读成本助手入口。"
@@ -168,7 +168,9 @@ export default function AssistantProviderPage() {
     {notice && <div className="success-notice"><CheckCircle2 size={15} />{notice}</div>}
     {error && <div className="form-alert">{error}</div>}
 
-    <section className="assistant-provider-shell" aria-label="AI 助手供应商设置">
+    <section className="ldg-section">
+      <div className="ldg-section-head"><div><h2><Bot size={16} />模型供应商</h2><p>配置 OpenAI 兼容接口、密钥与对话模型；保存并启用后，成本工作台会出现只读成本助手入口。</p></div><span className="ldg-section-count">已注册 1 个供应商</span></div>
+      <div className="assistant-provider-shell" aria-label="AI 助手供应商设置">
       <aside className="assistant-provider-rail" aria-label="供应商目录">
         <div className="assistant-rail-head"><span>已注册的供应商</span><b>1</b></div>
         <div className="assistant-rail-group">API</div>
@@ -215,13 +217,15 @@ export default function AssistantProviderPage() {
           <div className="assistant-detail-actions"><Button variant="secondary" onClick={() => void testConnection()} disabled={testing || !config?.provider.baseUrl || !config?.provider.apiKeyConfigured}><Server size={15} />{testing ? '测试中…' : '测试连接'}</Button><Button onClick={() => void save()} disabled={saving || !baseUrl.trim() || !modelId.trim()}><Save size={15} />{saving ? '保存中…' : '保存配置'}</Button></div>
         </div>
       </div>
+      </div>
     </section>
 
-    <details className="assistant-check-panel">
-      <summary className="assistant-check-summary"><span>接入检查</span><span className={'assistant-check-pill ' + (ready ? 'is-ok' : 'is-wait')}>{ready ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{ready ? '可启用' : '待完善'}</span></summary>
-      <div className="assistant-check-head"><p>保存前逐项确认；密钥不会回显，连接测试只验证 /models 可达。</p></div>
+    <details className="ldg-section assistant-check-section">
+      <summary className="ldg-section-head"><div><h2>接入检查</h2><p>保存前逐项确认；密钥不会回显，连接测试只验证 /models 可达。</p></div><span className={'assistant-check-pill ' + (ready ? 'is-ok' : 'is-wait')}>{ready ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{ready ? '可启用' : '待完善'}</span></summary>
+      <div className="ldg-section-card assistant-check-panel">
       <div className="assistant-check-grid">{checks.map((check) => <div className="assistant-check-item" key={check.label}><div><strong>{check.label}</strong><p>{check.hint}</p></div><span className={'assistant-check-pill ' + (check.ok ? 'is-ok' : 'is-wait')}>{check.ok ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{check.ok ? check.pass : check.wait}</span></div>)}</div>
       <div className="inline-notice"><Bot size={16} /><span>连接测试只验证 /models 可达，不代表模型已经通过工具调用、金额口径和越权拒绝验收。第一次启用建议只用测试项目。</span></div>
+      </div>
     </details>
   </div>;
 }

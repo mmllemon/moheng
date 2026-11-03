@@ -1,6 +1,5 @@
 import { RotateCcw } from 'lucide-react';
 import AppIcon from '../components/AppIcon';
-import SettingsSection, { SettingsSectionCard } from '../components/SettingsSection';
 import { StepSlider } from '../components/StepSlider';
 import { PageHeader } from '../components/Ui';
 import { APP_ICON_IDS, APP_ICON_PALETTES } from '../lib/app-icon';
@@ -63,8 +62,9 @@ export default function AppearanceSettingsPage() {
 
   return <div className="page-wrap appearance-settings-page">
     <PageHeader title="界面" subtitle="调整主题、纸张质感与工作区显示。设置只影响当前浏览器。" />
-    <SettingsSection title="主题与外观">
-      <SettingsSectionCard>
+    <section className="ldg-section">
+      <div className="ldg-section-head"><div><h2>主题与外观</h2></div></div>
+      <div className="ldg-section-card appearance-card">
         <div className="settings-row">
           <div className="settings-row-copy"><strong>主题</strong><span>选择纸张底色与侧栏墨色；只影响当前浏览器。</span></div>
           <div className="settings-segment appearance-theme-segment" role="radiogroup" aria-label="主题">
@@ -85,11 +85,12 @@ export default function AppearanceSettingsPage() {
           </div>
         </div>
         <div className="appearance-font-sample settings-font-sample" style={{ fontFamily: headingFontFamily }} aria-hidden="true">账目有据，经营有度。 <span>MOHENG 2026</span></div>
-      </SettingsSectionCard>
-    </SettingsSection>
+      </div>
+    </section>
 
-    <SettingsSection title="外观">
-      <SettingsSectionCard>
+    <section className="ldg-section">
+      <div className="ldg-section-head"><div><h2>外观</h2></div></div>
+      <div className="ldg-section-card appearance-card">
         <div className="settings-row">
           <div className="settings-row-copy"><strong>纸质纹理</strong><span>为页面、侧栏和设置页加上纸张质感。</span></div>
           <div className="settings-segment" role="radiogroup" aria-label="纸质纹理">
@@ -147,11 +148,12 @@ export default function AppearanceSettingsPage() {
           <div className="settings-row-copy"><strong>适配 Windows 圆角</strong><span>在 Windows 上使用较小的卡片圆角；关闭则使用网页版的圆角尺寸。</span></div>
           <button type="button" className={`settings-toggle ${windowsCardRadius ? 'is-on' : ''}`} role="switch" aria-checked={windowsCardRadius} aria-label="适配 Windows 圆角" onClick={toggleWindowsCardRadius}><i /></button>
         </div>
-      </SettingsSectionCard>
-    </SettingsSection>
+      </div>
+    </section>
 
-    <SettingsSection title="工作区">
-      <SettingsSectionCard>
+    <section className="ldg-section">
+      <div className="ldg-section-head"><div><h2>工作区</h2></div></div>
+      <div className="ldg-section-card appearance-card">
         <div className="settings-row">
           <div className="settings-row-copy"><strong>信息密度</strong><span>调整表格和表单的行距。</span></div>
           <div className="settings-segment" role="radiogroup" aria-label="信息密度">
@@ -175,8 +177,8 @@ export default function AppearanceSettingsPage() {
             ))}
           </div>
         </div>
-      </SettingsSectionCard>
-    </SettingsSection>
+      </div>
+    </section>
 
     <div className="settings-page-foot">
       <span>纸纹取自 Hana 1.1.35 原版素材。</span>

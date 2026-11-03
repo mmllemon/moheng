@@ -9887,3 +9887,129 @@ textarea {
 
 /* 台账金额格里的一行小字：含税税率与税额 */
 .cost-tax-note { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 400; line-height: 1.45; color: var(--text-muted); }
+
+/* ===========================================================================
+   2026-11-04 设置窗余下六页：账号 / 登录安全 / 权限与流程 / AI 助手 / 操作追溯 / 界面
+   ===========================================================================
+   这六页原先三套外壳混用：
+     · .panel + .panel-heading（账号、登录安全、权限与流程）
+     · SettingsSection（操作追溯、界面）
+     · 自定义 grid shell（AI 助手）
+   卡头都在卡内，卡内缩进 16px，与台账三件套（卡头 14px、卡头到卡 16px、
+   卡内 18px、卡间距 24px）差一档。统一成 ldg-section 后，这里只保留
+   「这批页面自己才有的几何」的补偿规则。
+
+   两处必须保留的旧结构（validate-ui-polish 断言）：
+     · 账号页的 .sys-split / .sys-split-main
+     · AI 助手页的 .assistant-provider-shell 190px 轨道
+   =========================================================================== */
+
+/* 卡头右侧的图标按钮（重置密码卡的取消）：卡头整体 flex-end 对齐，28px 图标
+   会沉到说明行下面。图标按钮改按卡头居中，与同高卡头里的文字按钮视觉齐平。 */
+.settings-content .ldg-section-head > .button-icon { align-self: center; }
+
+/* --- 账号管理 ------------------------------------------------------------ */
+
+/* 设置窗里 .sys-split 本来就是单列，gap 归零让 .ldg-section 的 24px 成为唯一间距。 */
+.settings-content .system-accounts-page .sys-split { display: flex; flex-direction: column; gap: 0; }
+.settings-content .system-accounts-page .sys-split > * { width: 100%; min-width: 0; }
+
+/* 6 列要塞进 634px 的卡宽。固定列宽 + 管理列 min-width 170 会把表撑到 745，
+   管理列的「停用 / 重置 MFA」被挤出可视区（实测 scrollOv 107）。
+   改自动布局并放开折行，按钮在列内换行而不是整表横向滚动。 */
+.settings-content .system-accounts-page .user-account-table { table-layout: auto; min-width: 0; }
+.settings-content .system-accounts-page .user-account-table th,
+.settings-content .system-accounts-page .user-account-table td { padding-inline: var(--space-8); white-space: normal; }
+.settings-content .system-accounts-page .user-row-actions { min-width: 0; }
+.settings-content .system-accounts-page .user-account-table .select-control { width: 100%; min-width: 0; }
+/* 表单是卡内首块：与其它设置页一样补 16px，行线才不会贴着卡顶。 */
+.settings-content .system-accounts-page .ldg-section-card > .account-rows:first-child > .settings-row:first-child { padding-top: var(--space-16); }
+/* 重置密码卡带强调边框（原 .user-reset-panel 的写法），换成卡片后单独给。 */
+.settings-content .system-accounts-page .ldg-section-card.user-reset-card { border-color: color-mix(in srgb, var(--accent-500) 38%, var(--line)); }
+/* 姓名列折行会断在括号中间（「商务经理（演 / 示）」）。单行后表格列宽会重新分配，
+   实测总宽仍在 632 以内，不产生横滚。 */
+.settings-content .system-accounts-page .user-account-table tbody td:first-child strong { white-space: nowrap; }
+
+/* --- 登录安全 ------------------------------------------------------------ */
+
+/* .security-panel 原来自己带 18px 上边距（卡头在卡内时用来拉开）。
+   卡头移到卡外后，这条会把 16px 顶成 34px。 */
+.settings-content .system-security-page .ldg-section-card.security-panel { margin-top: 0; }
+/* 6 列表格在卡内被 .settings-content .data-table 的 640px 下界挤出 2px（实测 scrollOv 2）。
+   自动布局后 min-content 仍有 635（高日期行不折行），所以再把单元格左右内距收到 8px：
+   6 列共省 24px，表格回到 632 以内，不再出现卡内横滚条。 */
+.settings-content .system-security-page .security-panel > .table-scroll .data-table { min-width: 0; table-layout: auto; }
+.settings-content .system-security-page .security-panel > .table-scroll .data-table th,
+.settings-content .system-security-page .security-panel > .table-scroll .data-table td { padding-inline: var(--space-8); }
+/* 「显示更多」行是卡内最后一块，补 16px 底距。 */
+.settings-content .system-security-page .security-panel > .load-more-row { padding: var(--space-12) 18px var(--space-16); }
+
+/* --- 权限与流程 ---------------------------------------------------------- */
+
+/* 5 列表格：min-width 780 是给通栏页面的，卡内只剩 634。 */
+.settings-content .system-policies-page .system-policy-table.system-fluid-table { min-width: 0; }
+/* 警示条是卡内首块，上边距补到 16px。 */
+.settings-content .system-policies-page .system-policy-section > .system-policy-warning:first-child { margin-top: var(--space-16); }
+/* 权限策略表单与工作流编辑器：第一块不是警示条时（无策略告警），同样补 16px。 */
+.settings-content .system-policies-page .system-policy-section > .system-policy-form:first-child,
+.settings-content .system-policies-page .system-policy-section > .system-workflow-editor:first-child { padding-top: var(--space-16); }
+/* 发布审计卡里只有一条说明。 */
+.settings-content .system-policies-page .ldg-section-card > .data-note { margin: var(--space-16) 18px; }
+
+/* --- 操作追溯 ------------------------------------------------------------ */
+
+/* 筛选面板换成卡：内距交给 settings-row 自己的 18px，卡不再加 padding。
+   原 .audit-filter-panel 的 18px padding 会让行线缩到 18+18=36px。 */
+.settings-content .audit-log-page .ldg-section-card.audit-filter-panel { margin: 0; padding: 0; }
+.settings-content .audit-log-page .audit-filter-rows > .settings-row:first-child { padding-top: var(--space-16); }
+.settings-content .audit-log-page .audit-filter-panel .settings-row-actions { padding-top: var(--space-12); }
+.settings-content .audit-log-page .audit-inline-message { margin: 0 18px var(--space-12); }
+/* 流水表：7 列里第 6 列（变更摘要）按设计 display: none，固定列宽合计 636，
+   又叠上 640px 的 min-width，实测比卡内可用宽多 8px。下界归零后由固定布局
+   按比例压缩到卡宽。 */
+.settings-content .audit-log-page .audit-table-panel .audit-log-table { min-width: 0; }
+/* 业务对象 / 操作类型两列只有 108px，枚举名（SystemAuthorizationReview）
+   会溢出单元格叠到邻列上（截图实测）。切到截断。 */
+.settings-content .audit-log-page .audit-log-table .audit-entity-label { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.settings-content .audit-log-page .audit-log-table .audit-entity-id { max-width: 100%; }
+/* 流水卡：原先靠 .audit-table-panel 的 16/18/12 padding，
+   现在表格、分页、空态各自内缩。 */
+.settings-content .audit-log-page .ldg-section-card.audit-table-panel { padding: 0; }
+.settings-content .audit-log-page .audit-table-panel > .audit-pagination { padding: var(--space-12) 18px var(--space-16); }
+.settings-content .audit-log-page .audit-table-panel > .loading-block,
+.settings-content .audit-log-page .audit-table-panel > .error-block,
+.settings-content .audit-log-page .audit-table-panel > .empty-state { margin: var(--space-16) 18px; }
+
+/* --- 界面 ---------------------------------------------------------------- */
+
+/* 三个分区的 .settings-row 原点在 16px，与卡头（2px）和表格（18px）不齐。 */
+.settings-content .appearance-settings-page .appearance-card > .settings-row { padding-left: 18px; padding-right: 18px; }
+.settings-content .appearance-settings-page .appearance-card > .settings-row:first-child { padding-top: var(--space-16); }
+.settings-content .appearance-settings-page .appearance-card > .settings-row + .settings-row::before { left: 18px; right: 18px; }
+.settings-content .appearance-settings-page .appearance-card > .settings-row:last-child { padding-bottom: var(--space-16); }
+/* 两块示例（字体样张 / 对比度样张）跟着退到 18px。 */
+.settings-content .appearance-settings-page .appearance-font-sample.settings-font-sample { margin: 0 18px var(--space-16); }
+.settings-content .appearance-settings-page .appearance-contrast-sample { margin: var(--space-4) 18px var(--space-16); }
+
+/* --- AI 助手 ------------------------------------------------------------- */
+
+/* 轨道收窄到 168px：这张卡在设置窗里只有 670，190px 的轨道让详情区只剩 480。 */
+.settings-content .assistant-provider-shell { grid-template-columns: 168px minmax(0, 1fr); }
+.settings-content .assistant-provider-detail { padding: 18px; gap: var(--space-14); }
+.settings-content .assistant-provider-rail { padding: var(--space-10) var(--space-8); }
+/* 轨道项标题允许折两行：168px 轨道里「OpenAI 兼容供应商」放不下一行，
+   单行截断会只剩「OpenAI 兼…」。 */
+.settings-content .assistant-rail-copy strong { white-space: normal; line-height: 1.3; }
+/* 接入检查：卡头就是 <summary>，点标题展开。 */
+.settings-content .assistant-check-section { margin: 0 0 var(--space-24); }
+.settings-content .assistant-check-section > .ldg-section-head { cursor: pointer; list-style: none; }
+.settings-content .assistant-check-section > .ldg-section-head::-webkit-details-marker { display: none; }
+.settings-content .assistant-check-section > .ldg-section-head::marker { content: ''; }
+.settings-content .assistant-check-section > .assistant-check-panel { padding: var(--space-16) 18px; }
+/* 第一项不画分隔线，上内距交给卡体：卡顶再叠一条线会和卡边撞在一起。 */
+.settings-content .assistant-check-grid > .assistant-check-item:first-child { padding-top: 0; border-top: 0; }
+/* 折叠时只留卡头（<details> 的默认行为被卡头 flex 覆盖，显式关掉卡体）。 */
+.settings-content .assistant-check-section:not([open]) > .assistant-check-panel { display: none; }
+/* 五项检查在 486px 内容区里排两列，每列 234px，「缺少 ASSISTANT_ENCRYPTION_KEY」之类会折四行。 */
+.settings-content .assistant-check-grid { grid-template-columns: minmax(0, 1fr); }
+.settings-content .assistant-provider-page .page-header { margin-bottom: var(--space-24); }

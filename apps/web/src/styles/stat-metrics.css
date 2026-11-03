@@ -19,8 +19,7 @@
    指标区一旦画卡，就变成「一张卡装 N 项」，与 hana 的空间语言相反。 */
 html .system-overview-metrics,
 html .report-studio-entry-grid,
-html .system-authorization-scope-grid,
-html .assistant-check-grid {
+html .system-authorization-scope-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-16);
@@ -73,7 +72,11 @@ html .report-studio-entry-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-html .assistant-check-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* 2026-11-04：.assistant-check-* 的指标区规则全部移除。
+   接入检查已从「五列指标条」改成设置窗卡片里的纵向检查清单，
+   排版由 assistant-provider.css 自己负责。保留这些 html 前缀规则会继续
+   给检查项塞 16px 四边内距、竖线、flex column 和 16px 数值字，
+   把清单行撑成 111px 高、胶囊被 display:block 打散。 */
 
 /* /parties 只有 2 个真指标 + 1 段跨列说明。
    2 项时用 1fr 让它们平分整行（之前限 320px 会让右侧空 651px）。 */
@@ -116,8 +119,7 @@ html .ds-section-card .owner-finance-metrics > :first-child {
 html .security-metric,
 html .system-overview-metric,
 html .report-studio-entry-card,
-html .system-authorization-scope-card,
-html .assistant-check-item {
+html .system-authorization-scope-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -167,14 +169,6 @@ html .system-overview-metrics > article.system-overview-metric:nth-child(even) {
 /* 三列布局（/system/security 等）：3n+1 行首，3n 行末 */
 /* /system/operations 是四列 */
 
-/* 五列布局（/cost/contracts 是 3 项 + 2 项跨列，非标准 5 列） */
-html .assistant-check-grid > :nth-child(5n + 1) {
-  padding-left: var(--space-16);
-  border-left: 0;
-}
-html .assistant-check-grid > :nth-child(5n) {
-  padding-right: var(--space-16);
-}
 
 /* /cost/contracts 的 span-detail-wide 是跨列项，
    它们自己占满一行，不应吃竖线与右内边距。 */
@@ -202,8 +196,7 @@ html .owner-contract-detail-grid > :nth-child(3) {
 html .security-metric-icon,
 html .system-authorization-scope-icon,
 html .report-studio-entry-icon,
-html .owner-contract-detail-grid > * > svg,
-html .assistant-check-item > svg {
+html .owner-contract-detail-grid > * > svg {
   /* !important：这些图标类在别处被设了 display: block/flex，
      单靠特异性压不住（实测 bill-summary-icon 仍是 30×30）。 */
   display: none !important;
@@ -229,8 +222,7 @@ html .system-overview-metric small:first-child {
 }
 
 /* 通用：指标项里第一个 small 或 span 当标签 */
-html .owner-contract-detail-grid > * > small,
-html .assistant-check-item > small {
+html .owner-contract-detail-grid > * > small {
   display: block;
   margin: 0;
   color: var(--text-muted);
@@ -250,7 +242,6 @@ html .assistant-check-item > small {
 html .report-studio-entry-card strong,
 html .system-authorization-scope-card strong,
 html .owner-contract-detail-grid > * > strong,
-html .assistant-check-item strong,
 html .cost-type-card strong {
   display: block;
   margin: var(--space-6) 0 0;
@@ -287,8 +278,7 @@ html .system-overview-metric > div > strong {
 /* 说明文字：9.5px / muted */
 html .security-metric > div > span,
 html .system-overview-metric > div > small,
-html .owner-contract-detail-grid > * > span,
-html .assistant-check-item > span {
+html .owner-contract-detail-grid > * > span {
   display: block;
   margin: 0;
   color: var(--text-muted);
@@ -556,10 +546,9 @@ html .system-overview-metrics > article:has(> a.system-overview-go:hover) {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
 }
 
-/* /reports 与 /system/assistant 不是指标区（一个是按钮入口，一个是检查清单），
-   不套指标模板；只保证容器边框与指标区一致，视觉连贯。 */
-html .report-studio-entry-grid,
-html .assistant-check-grid {
+/* /reports 不是指标区（按钮入口），不套指标模板；
+   只保证容器边框与指标区一致，视觉连贯。 */
+html .report-studio-entry-grid {
   padding: var(--space-16) 0;
   margin: var(--space-16) 0;
   border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);

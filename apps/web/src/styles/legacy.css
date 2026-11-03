@@ -1219,7 +1219,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 }
 .audit-log-table th:nth-child(1), .audit-log-table td:nth-child(1) { width: 84px; }
 .audit-log-table th:nth-child(2), .audit-log-table td:nth-child(2) { width: 108px; }
-.audit-log-table th:nth-child(3), .audit-log-table td:nth-child(3) { width: 152px; }
+.audit-log-table th:nth-child(3), .audit-log-table td:nth-child(3) { width: 148px; }
 .audit-log-table th:nth-child(4), .audit-log-table td:nth-child(4) { width: 108px; }
 /* 操作类型列：原 84px 装不下「DEPARTMENT_CREATED」这种 18 字符枚举，
    折成 4 行（实测 w 65 / h 53）。加到 108px，折 2 行。

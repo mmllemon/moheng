@@ -2,6 +2,19 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 系统设置窗六页：账号、登录安全、权限与流程、AI 助手、操作追溯、界面
+
+设置窗内上一批四页换到 `ldg-section` 三件套后，剩下六页还在用三套不同的卡壳：账号、登录安全、权限与流程用 `.panel` + `.panel-heading`（卡头在卡内、卡内缩进 16px），操作追溯与界面用 `SettingsSection`，AI 助手是自定义 grid 外壳。切页签时卡头高度与表格左边线能看到跳动。本轮把这六页也收到与台账页同一套几何。
+
+- **六页全部改用 `ldg-section` + `ldg-section-head` + `ldg-section-card`**：账号页 3 块（创建、重置、列表）、安全页 2 块、策略页 3 块、助手页 2 块（供应商、接入检查）、审计页 2 块（筛选、流水）、界面页 3 块；页面根统一加 `system-expansion-page` 压掉旧页级 `display: grid`。计数一律 `.ldg-section-count`。`SettingsSection` 组件本身保留（往来单位详情、AccountSecurity 仍在用）。
+- **两处旧结构必须留住**（`validate-ui-polish` 断言）：账号页的 `.sys-split` / `.sys-split-main`（设置窗内把 gap 归零，让 `.ldg-section` 的 24px 成为唯一间距），AI 助手页的 `.assistant-provider-shell`（轨道 190 → 168px，详情区 480 → 502px；`assistant-provider.css` 里那两条 `:has(.assistant-provider-page)` 的左右 24px 补丁一并删掉，`page-wrap` 回到 670）。
+- **七张多列表格改自动布局**：`.settings-content .data-table` 的 640px 下界与固定列宽在 632px 卡内必溢出。账号表挂 `system-fluid-table` 后 745 → 632（管理列按钮不再被挤出可视区）；安全页 6 列表 640 → 632，另补单元格内距 8px（6 列共省 24px，min-content 落到 632 以内）；策略页权限矩阵 `min-width: 780` → 632；审计流水表保留 `table-layout: fixed`（列宽有设计意图），只把 `min-width` 归零，640 → 632。所有表 `scrollWidth - clientWidth` 实测 0。
+- **审计页两处真缺陷**：业务对象列 108px，枚举名 `SystemAuthorizationReview` 会溢出单元格叠到操作类型列上，切到单行省略；同时补 `SystemAuthorizationReview` 与 `AUTHORIZATION_REVIEW_CREATED/COMPLETED` 的中文标签（原本显示裸枚举名与 `AUTHORIZA…`），现在是「授权复核 · 保存复核快照」。
+- **AI 助手接入检查改成「summary 当卡头」**：原来是 `<details>` 套一层自带卡头的面板，卡头在卡内，与上方供应商卡错开 18px。现在 `summary` 直接做成 `ldg-section-head`（h2 + 可启用/待完善胶囊），卡体是 `ldg-section-card`，折叠时显式 `display: none`（实测不写这条会溢出 177px）；五项检查从两列换单列，避免 234px 一列里「缺少 ASSISTANT_ENCRYPTION_KEY」折四行。
+- **卡内一律 18px / 首块 16px**：审计筛选卡、流水卡改 `padding: 0` 交给行与分页自缩；界面页三卡的行与两块样张退到 18px；账号页重置卡保留原来的 accent 38% 强调边框（实测 `border-color` 与普通卡不同），姓名列不再折行（「商务经理（演示）」原会断在括号中间），表格仍 632 无横滚。
+- 卡头右侧的图标按钮（重置密码卡的取消）在设置窗内改 `align-self: center`，flex-end 会把 28px 图标沉到说明行下面。
+- 复核（1600 视口）：六页 `.page-wrap` 均 670、页面横向溢出 0；卡头到卡 16、圆角 14.7272、区块间距 24。账号两卡 670×263 / 670×177、表 632 六列；安全卡 670×1253、事件页签 670×802；策略卡 670×1419（权限矩阵 5 列 632）、流程页签 670×679；助手卡 670×548、轨道 168 + 详情 502、接入检查展开 670×775；审计筛选卡 670×364、流水卡 670×1324、表 632 七列（变更摘要列按设计隐藏）；界面三卡 670×311 / 419 / 223。`run-gates --tier blocking` 33/33。
+
 ### 2026-11-04 系统设置余下四页：换真卡、多列表格改自动布局
 
 授权复核、基础字典、运维备份、参数配置这四页还在用旧的卡壳（其中授权页是 `.settings-section`）。上一轮把概览与治理页换到 `ldg-section` 三件套后，同组五页里就剩它们是另一种卡头和内外距，切换页签就能看出卡头高度、表格左边线在两处不一致。本轮收尾。

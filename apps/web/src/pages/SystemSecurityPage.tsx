@@ -53,7 +53,7 @@ export default function SystemSecurityPage() {
   const events = eventsQuery.data ?? [];
   const activeSessions = sessions.filter((session) => session.isValid).length;
   const deniedEvents = events.filter((event) => event.outcome === 'DENIED' || event.outcome === 'BLOCKED' || event.outcome === 'SESSION_REVOKED').length;
-  return <div className="page-wrap system-security-page">
+  return <div className="page-wrap system-expansion-page system-security-page">
     <PageHeader eyebrow="SYSTEM / SECURITY CENTER" title="登录安全中心" subtitle="查看近期登录安全事件、检查活跃会话，并在发现异常时撤销远程访问。IP 地址与设备信息属于受限安全数据。" />
 
     {/* 刷新按钮：注入到设置窗标题栏的 actions 插槽
@@ -77,9 +77,10 @@ export default function SystemSecurityPage() {
     <SystemTabs ariaLabel="登录安全分区" value={tab} onChange={(id) => setTab(id as 'sessions' | 'events')} items={[{ id: 'sessions', label: '登录会话', count: activeSessions }, { id: 'events', label: '安全事件', count: events.length }]} />
 
     {revokeMutation.error && <div className="form-alert">{revokeMutation.error instanceof ApiError ? revokeMutation.error.message : '撤销会话失败'}</div>}
-    <section className="panel security-panel" hidden={tab !== 'sessions'}>
-      <div className="panel-heading"><div><h3>登录会话</h3><p>撤销会话会立即阻止该会话后续 API 请求和刷新令牌。当前登录会话不能从这里撤销。</p></div><span className="table-count">{activeSessions} 个有效</span></div>
-      {!sessions.length ? <EmptyState title="暂无会话记录" description="成功登录后，设备会话将显示在这里。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>用户 / 设备</th><th>来源 IP</th><th>最近活动</th><th>创建 / 到期</th><th>状态</th><th>操作</th></tr></thead><tbody>{sessions.slice(0, visibleSessions).map((session) => <tr key={session.id}>
+    <section className="ldg-section" hidden={tab !== 'sessions'}>
+      <div className="ldg-section-head"><div><h2>登录会话</h2><p>撤销会话会立即阻止该会话后续 API 请求和刷新令牌。当前登录会话不能从这里撤销。</p></div><span className="ldg-section-count">{activeSessions} 个有效</span></div>
+      <div className="ldg-section-card security-panel">
+      {!sessions.length ? <EmptyState title="暂无会话记录" description="成功登录后，设备会话将显示在这里。" /> : <div className="table-scroll"><table className="data-table system-fluid-table"><thead><tr><th>用户 / 设备</th><th>来源 IP</th><th>最近活动</th><th>创建 / 到期</th><th>状态</th><th>操作</th></tr></thead><tbody>{sessions.slice(0, visibleSessions).map((session) => <tr key={session.id}>
         <td><strong className="table-primary-text">{session.user?.name ?? '未知账号'}</strong><small className="table-subtext">{session.user?.email ?? '账号关联不可用'}</small><small className="table-subtext"><Smartphone size={12} /> {userAgentLabel(session.userAgent)}{session.isCurrent ? ' · 当前会话' : ''}</small></td>
         <td><span className="security-ip"><Globe size={13} />{session.ipAddress || '未识别'}</span></td>
         <td>{displayDate(session.lastSeenAt)}</td>
@@ -87,11 +88,13 @@ export default function SystemSecurityPage() {
         <td>{session.isValid ? <StatusBadge status="ACTIVE" /> : <span className="status-badge status-gray"><span className="status-dot" />{session.revokeReason ? '已撤销' : '已过期'}</span>}</td>
         <td>{session.isValid ? <Button size="sm" variant="danger" disabled={session.isCurrent || revokeMutation.isPending} onClick={() => { confirmThen(`确定撤销 ${session.user?.name ?? '该用户'} 的这个登录会话吗？`, () => revokeMutation.mutate(session.id), { title: '撤销登录会话', tone: 'danger', confirmText: '撤销会话' }); }}><UserRoundX size={13} />撤销</Button> : <span className="table-subtext">—</span>}</td>
       </tr>)}</tbody></table></div>}{sessions.length > visibleSessions && <div className="load-more-row"><span>已显示 {Math.min(visibleSessions, sessions.length)} / {sessions.length} 条</span><button type="button" className="button button-secondary button-small" onClick={() => setVisibleSessions((count) => count + 20)}>显示更多会话</button></div>}
+      </div>
     </section>
 
-    <section className="panel security-panel" hidden={tab !== 'events'}>
-      <div className="panel-heading"><div><h3>安全事件</h3><p>记录登录成败、MFA、密码修改、账号状态变化、令牌重放和管理员会话撤销。</p></div><span className="table-count">最近 {events.length} 条</span></div>
-      {!events.length ? <EmptyState title="暂无安全事件" description="登录和安全管理操作将在此记录。" /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>时间</th><th>事件</th><th>账号</th><th>来源 IP</th><th>结果</th><th>详情</th></tr></thead><tbody>{events.slice(0, visibleEvents).map((event) => <tr key={event.id}>
+    <section className="ldg-section" hidden={tab !== 'events'}>
+      <div className="ldg-section-head"><div><h2>安全事件</h2><p>记录登录成败、MFA、密码修改、账号状态变化、令牌重放和管理员会话撤销。</p></div><span className="ldg-section-count">最近 {events.length} 条</span></div>
+      <div className="ldg-section-card security-panel">
+      {!events.length ? <EmptyState title="暂无安全事件" description="登录和安全管理操作将在此记录。" /> : <div className="table-scroll"><table className="data-table system-fluid-table"><thead><tr><th>时间</th><th>事件</th><th>账号</th><th>来源 IP</th><th>结果</th><th>详情</th></tr></thead><tbody>{events.slice(0, visibleEvents).map((event) => <tr key={event.id}>
         <td>{displayDate(event.createdAt)}</td>
         <td><strong className="table-primary-text">{actionLabels[event.action] ?? event.action}</strong><small className="table-subtext">{event.user?.name ?? '未知/未关联账号'}</small></td>
         <td>{event.accountEmail ?? '—'}</td>
@@ -99,6 +102,7 @@ export default function SystemSecurityPage() {
         <td><StatusBadge status={event.outcome === 'ALLOWED' ? 'ACTIVE' : event.outcome === 'DENIED' || event.outcome === 'BLOCKED' ? 'REJECTED' : 'UNDER_REVIEW'} /></td>
         <td><details className="security-event-details"><summary><Clock3 size={13} />查看</summary><pre>{JSON.stringify(event.details ?? {}, null, 2)}</pre>{event.sessionId && <small>会话：{event.sessionId}</small>}{event.userAgent && <small>{event.userAgent}</small>}</details></td>
       </tr>)}</tbody></table></div>}{events.length > visibleEvents && <div className="load-more-row"><span>已显示 {Math.min(visibleEvents, events.length)} / {events.length} 条</span><button type="button" className="button button-secondary button-small" onClick={() => setVisibleEvents((count) => count + 20)}>显示更多事件</button></div>}
+      </div>
     </section>
     <PageNote icon={AlertTriangle}>安全事件最多保留 180 天，登录尝试计数按策略清理。此页面不是地理定位工具；IP 地址可能因代理、运营商网络或移动网络而变化，不能单独作为认定真实位置或身份的证据。</PageNote>
   </div>;

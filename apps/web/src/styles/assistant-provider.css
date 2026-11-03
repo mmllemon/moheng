@@ -1,10 +1,4 @@
 .assistant-provider-page { max-width: 100%; }
-.settings-content:has(.assistant-provider-page) { padding-left: var(--space-24); padding-right: var(--space-24); }
-.settings-content:has(.assistant-provider-page) .page-header { margin-left: calc(var(--space-24) * -1); margin-right: calc(var(--space-24) * -1); padding-left: var(--space-24); }
-@media (max-width: 720px) {
-  .settings-content:has(.assistant-provider-page) { padding-left: var(--space-16); padding-right: var(--space-16); }
-  .settings-content:has(.assistant-provider-page) .page-header { margin-left: calc(var(--space-16) * -1); margin-right: calc(var(--space-16) * -1); padding-left: var(--space-16); }
-}
 .assistant-provider-loading { padding: var(--space-40) 0; color: var(--text-muted); font-size: var(--fs-hint); }
 .assistant-check-pill { display: inline-flex; align-items: center; gap: var(--space-4); height: 22px; padding: 0 7px; border-radius: var(--radius-sm); font-size: var(--fs-hint); font-weight: 500; white-space: nowrap; }
 .assistant-check-pill.is-ok { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
@@ -209,22 +203,13 @@
 .assistant-detail-actions { display: flex; align-items: center; gap: var(--space-6); flex: 0 0 auto; }
 .assistant-detail-actions .button { height: 32px; min-height: 32px; padding: 0 9px; border-radius: var(--radius-control); font-size: var(--fs-hint); }
 
-.assistant-check-panel { margin-top: var(--space-16); padding: var(--space-16); border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
-.assistant-check-summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-12); cursor: pointer; list-style: none; }
-.assistant-check-summary::-webkit-details-marker { display: none; }
-.assistant-check-summary > span:first-child { color: var(--text); font-size: var(--fs-ui); font-weight: 600; }
-.assistant-check-panel[open] .assistant-check-summary { padding-bottom: var(--space-10); border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
-.assistant-check-head { margin: var(--space-10) 0; }
-.assistant-check-head p { margin: 0; color: var(--text-muted); font-size: var(--fs-caption); line-height: 1.55; }
+/* 接入检查：卡头是 <summary>（几何写在 hana.css「设置窗余下六页」块），
+   卡体只剩检查网格、提示和折叠行为。 */
+.assistant-check-panel { margin: 0; padding: var(--space-16); border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
 .assistant-check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
-/* <details> 折叠时，浏览器默认只显示 summary。
-   但上面那条 display: grid 会覆盖浏览器默认的隐藏行为，
-   导致折叠状态下内容仍然占位（实测：panelOpen false、panelH 56，
-   但内部 grid 仍高 177px，内容溢出卡片）。
-   显式把非 summary 子元素在折叠时隐藏。 */
-.assistant-check-panel:not([open]) > *:not(summary) {
-  display: none;
-}
+/* <details> 折叠时浏览器只显示 summary，但卡头是 flex 的 summary，
+   卡体必须显式隐藏（实测不写这条会溢出 177px）。 */
+.assistant-check-section:not([open]) > .assistant-check-panel { display: none; }
 .assistant-check-item { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-10); min-width: 0; padding: var(--space-10) 0; border-top: 1px solid color-mix(in srgb, var(--border) 52%, transparent); }
 .assistant-check-item strong { display: block; color: var(--text); font-size: var(--fs-ui); font-weight: 500; }
 .assistant-check-item p { margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.5; }
