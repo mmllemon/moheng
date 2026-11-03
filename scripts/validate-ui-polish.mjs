@@ -314,7 +314,10 @@ check('dictionary items are wrapping rows instead of a wide table',
 check('operations backup history is a list, not a table with a scrollbar',
   operationsPage.includes('system-ops-run-list') && operationsPage.includes('system-ops-empty')
   && !operationsPage.includes('system-expansion-table') && !operationsPage.includes('table-scroll')
-  && hana.includes('.system-ops-run {') && hana.includes('.system-ops-summary {'));
+  /* 运行状态四格已并入共享的 Metrics 组件（与全站指标区同一套排版），
+     不再由页面自己拼 .system-ops-summary。 */
+  && hana.includes('.system-ops-run {') && operationsPage.includes('<Metrics')
+  && operationsPage.includes('ariaLabel="运行状态"'));
 check('interaction states and card inset use shared tokens',
   hana.includes('--card-inset: var(--space-16)') && hana.includes('--state-hover-bg:') && hana.includes('--state-selected-bg:') && hana.includes('--state-focus-ring:'));
 check('report catalog has a single inset divider per row',

@@ -2,10 +2,10 @@ import SelectField from '../components/SelectField';
 import SettingsSection from '../components/SettingsSection';
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, FilePlus2, Search, Users, X } from 'lucide-react';
+import { Building2, FilePlus2, Search, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
-import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, LoadingBlock, Metrics, PageHeader } from '../components/Ui';
 import type { BusinessPartyOption, BusinessPartyRole } from '../components/BusinessPartyPicker';
 import { useAuthStore } from '../auth-store';
 
@@ -39,7 +39,11 @@ export default function BusinessPartiesPage() {
   if (query.error) return <div className="page-wrap"><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
   return <div className="page-wrap business-parties-page">
     <PageHeader eyebrow="BUSINESS PARTIES / MASTER DATA" title="往来单位库" subtitle="统一维护建设单位、材料供应商、分包、租赁与服务单位；合同相对方通过统一单位 ID 关联。主体身份未核验前，跨项目汇总仅作初步查询。" actions={<Button onClick={() => { setCreateOpen(true); setError(''); }}><FilePlus2 size={15} />新建单位档案</Button>} />
-    <section className="business-party-summary-strip"><div><Building2 size={18} /><span><strong>{query.data?.length ?? 0}</strong><small>搜索匹配单位</small></span></div><div><Users size={18} /><span><strong>{new Set((query.data ?? []).flatMap((p) => p.roles)).size}</strong><small>已使用角色类型</small></span></div><p>单位档案是公司级主数据；单位经营档案的项目金额只统计当前账号有权限访问的项目。</p></section>
+    <Metrics columns={2} ariaLabel="往来单位概览" items={[
+      { label: '搜索匹配单位', value: query.data?.length ?? 0, detail: '按当前筛选与关键字统计' },
+      { label: '已使用角色类型', value: new Set((query.data ?? []).flatMap((p) => p.roles)).size, detail: '建设单位、供应商、分包、租赁与服务', emphasis: true },
+    ]} />
+    <p className="an-basis-note">单位档案是公司级主数据；单位经营档案的项目金额只统计当前账号有权限访问的项目。</p>
     <SettingsSection
       title="往来单位台账"
       description="统一维护建设单位、材料供应商、分包与租赁服务单位；合同相对方通过统一单位 ID 关联。"

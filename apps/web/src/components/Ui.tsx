@@ -203,7 +203,12 @@ export function Metrics({ items, columns = 4, ariaLabel, className = '' }: {
     {items.map((m, i) => (
       <div className={`metric${m.emphasis ? ' is-emphasis' : ''}`} key={i}>
         <span>{m.label}</span>
-        <strong className={m.tone === 'danger' ? 'text-danger' : m.tone === 'success' ? 'text-success' : undefined}>{m.value}</strong>
+        {/* 数值是 nowrap + ellipsis：金额真长到装不下时会被截，
+            title 让鼠标悬停仍能读到完整值，不靠“数字看上去差不多”去猜。 */}
+        <strong
+          className={m.tone === 'danger' ? 'text-danger' : m.tone === 'success' ? 'text-success' : undefined}
+          title={typeof m.value === 'string' || typeof m.value === 'number' ? String(m.value) : undefined}
+        >{m.value}</strong>
         {m.detail != null && <small>{m.detail}</small>}
       </div>
     ))}

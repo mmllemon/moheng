@@ -1,12 +1,12 @@
 import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Activity, CalendarClock, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, History, RefreshCw, Search, ShieldCheck } from 'lucide-react';
+import { Activity, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, RefreshCw, Search } from 'lucide-react';
 import { api } from '../api';
 import type { Project } from '../types';
 import DatePicker from '../components/DatePicker';
 import SelectField from '../components/SelectField';
 import SettingsSection from '../components/SettingsSection';
-import { Button, EmptyState, ErrorBlock, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, EmptyState, ErrorBlock, LoadingBlock, Metrics, PageHeader } from '../components/Ui';
 
 type AuditEntry = {
   id: string;
@@ -109,11 +109,11 @@ export default function AuditLogsPage() {
   return <div className="page-wrap audit-log-page">
     <PageHeader eyebrow="AUDIT / TRACEABILITY" title="操作追溯" subtitle="集中查看当前账号可访问范围内的业务操作记录。此页面只读，不改变合同、成本、结算或审批状态。" actions={<Button variant="secondary" onClick={() => void exportCsv()} disabled={exportPending || !result || result.total === 0}><Download size={15} />{exportPending ? '正在导出…' : '导出 CSV'}</Button>} />
 
-    <section className="audit-summary-grid">
-      <article className="panel audit-summary-card"><span className="audit-summary-icon"><History size={17} /></span><div><small>匹配操作记录</small><strong>{(result?.total ?? 0).toLocaleString('zh-CN')}</strong><span>按当前筛选条件统计</span></div></article>
-      <article className="panel audit-summary-card"><span className="audit-summary-icon"><ShieldCheck size={17} /></span><div><small>数据访问范围</small><strong>权限内</strong><span>仅查询有权访问的项目记录</span></div></article>
-      <article className="panel audit-summary-card"><span className="audit-summary-icon"><CalendarClock size={17} /></span><div><small>当前页</small><strong>{result ? `${result.page} / ${Math.max(1, result.pageCount)}` : '—'}</strong><span>每页 20 条，按时间倒序</span></div></article>
-    </section>
+    <Metrics columns={3} ariaLabel="操作追溯概览" items={[
+      { label: '匹配操作记录', value: (result?.total ?? 0).toLocaleString('zh-CN'), detail: '按当前筛选条件统计' },
+      { label: '数据访问范围', value: '权限内', detail: '仅查询有权访问的项目记录', emphasis: true },
+      { label: '当前页', value: result ? `${result.page} / ${Math.max(1, result.pageCount)}` : '—', detail: '每页 20 条，按时间倒序' },
+    ]} />
 
     <form className="panel audit-filter-panel" onSubmit={submitFilters}>
       <div className="audit-filter-heading"><div><h3><Filter size={16} />筛选操作记录</h3><p>可按项目、业务对象、操作者/动作/记录编号和日期范围筛选。</p></div><span>只读审计视图</span></div>

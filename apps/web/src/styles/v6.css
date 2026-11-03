@@ -160,21 +160,13 @@ kbd{padding:1px var(--space-6);border:1px solid var(--line);border-radius:var(--
 .metric-bottom{margin-top:var(--space-2);color:var(--meta);font-size:var(--fs-hint);min-height:16px;display:flex;align-items:center;gap:var(--space-4)}
 .trend-up{color:var(--ok)}.trend-down{color:var(--danger)}
 
-.budget-summary-grid,.bill-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
-.budget-summary-item,.bill-summary{display:flex;flex-direction:column;padding:var(--space-14) 18px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
-.budget-summary-item:first-child,.bill-summary:first-child{border-left:0;padding-left:0}
-.budget-summary-item span,.bill-summary small{color:var(--meta);font-size:var(--fs-hint);letter-spacing:.08em}
-.budget-summary-item strong,.bill-summary strong{margin-top:var(--space-4);font-family:var(--num);font-size:24px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-.budget-summary-item strong em,.bill-summary strong em{font-family:var(--font);font-size:var(--fs-hint);color:var(--meta);font-style:normal;font-weight:400}
+.budget-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;margin:0 0 18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
+.budget-summary-item{display:flex;flex-direction:column;padding:var(--space-14) 18px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
+.budget-summary-item:first-child{border-left:0;padding-left:0}
+.budget-summary-item span{color:var(--meta);font-size:var(--fs-hint);letter-spacing:.08em}
+.budget-summary-item strong{margin-top:var(--space-4);font-family:var(--num);font-size:24px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.budget-summary-item strong em{font-family:var(--font);font-size:var(--fs-hint);color:var(--meta);font-style:normal;font-weight:400}
 .budget-summary-item small{font-size:var(--fs-hint);color:var(--meta);margin-top:var(--space-2)}
-.bill-summary-icon{display:none}
-.change-summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 0 18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
-.change-summary{display:flex;flex-direction:column;padding:var(--space-14) 18px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
-.change-summary:first-child{border-left:0;padding-left:0}
-.change-summary-label{color:var(--meta);font-size:var(--fs-hint);letter-spacing:.08em}
-.change-summary strong{margin-top:var(--space-4);font-family:var(--num);font-size:22px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
-.change-summary small{font-size:var(--fs-hint);color:var(--meta)}
-.change-summary-emphasis{background:transparent;border-color:var(--line)}
 .cost-type-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:0 0 18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
 .cost-type-card{display:flex;flex-direction:column;align-items:flex-start;padding:var(--space-12) var(--space-14);border:0;border-left:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none;text-align:left}
 .cost-type-card:first-child{border-left:0;padding-left:0}
@@ -341,10 +333,10 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .assistant-page-error{border:1px solid rgba(162,58,42,.3);border-left:2px solid var(--danger);border-radius:0;background:rgba(162,58,42,.05);color:var(--danger);font-size:var(--fs-hint);padding:var(--space-8) var(--space-10);margin-bottom:var(--space-12)}
 
 /* ---------- 项目/报表/系统卡片 ---------- */
-.project-card,.project-list-card,.project-overview-card,.report-studio-entry-card,.report-report-option,.system-management-card,.system-card,.owner-metric,.owner-special-balances article{background:transparent;border:0;border-top:1px solid var(--line-2);border-radius:0;box-shadow:none}
+.project-card, .project-list-card, .project-overview-card, .report-studio-entry-card, .report-report-option, .system-management-card, .system-card, .owner-special-balances article{background:transparent;border:0;border-top:1px solid var(--line-2);border-radius:0;box-shadow:none}
 .project-card{padding:var(--space-16) 0}
 .project-card-name,.project-list-card h3{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink)}
-.project-card-metric strong,.project-list-details strong,.owner-metric>strong{font-family:var(--num);font-size:22px;font-weight:600;color:var(--ink)}
+.project-card-metric strong, .project-list-details strong{font-family:var(--num);font-size:22px;font-weight:600;color:var(--ink)}
 .project-card-metric span,.project-card-code,.project-list-meta,.project-list-owner{font-size:var(--fs-hint);color:var(--meta)}
 .project-card-actions{padding-top:var(--space-10)}
 .report-standard-layout,.report-workspace{border-top:1px solid var(--line-2)}
@@ -578,8 +570,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .projects-page .project-card-ratios{align-content:start}
 .budget-association,.data-table a,.report-report-option a{color:var(--accent)}
 .data-table a:hover{text-decoration:underline}
-.notice-summary-icon{display:none}
-.notice-summary-card strong{font-family:var(--num);font-size:24px;color:var(--ink);font-weight:600}
 .system-overview-empty{background:transparent;border:1px dashed var(--line-2);border-radius:var(--radius-xs)}
 .system-overview-empty>svg{color:var(--bronze)}
 .system-overview-readiness-tag,.system-readiness-tag{border:1px solid var(--line-2);border-radius:var(--radius-xs);background:var(--paper-2);color:var(--meta);font-size:var(--fs-hint)}
@@ -597,9 +587,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .topbar-notice-link span{display:none}
   .topbar{gap:var(--space-6)}
   .topbar-tools{gap:var(--space-6)}
-  .notice-summary-grid{grid-template-columns:1fr}
-  .notice-summary-card{border-left:0;padding:var(--space-10) 0;border-bottom:1px solid var(--line)}
-  .notice-summary-card:last-child{border-bottom:0}
 }
 
 @media (max-width:940px){
@@ -835,12 +822,7 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .system-workspace-tab.active,.cost-workspace-tab.active{background:transparent;border-color:transparent;box-shadow:none}
 .date-picker-day.is-selected{border:0;outline:0;box-shadow:none}
 .date-picker-day.is-selected:focus-visible{outline:0}
-.change-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .finance-summary-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
-.downstream-summary-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
-.change-summary{min-height:auto;padding:var(--space-12) 18px;border:0;border-left:1px solid var(--line);border-radius:0;background:transparent}
-.change-summary:first-child{border-left:0;padding-left:0}
-.change-summary-emphasis{background:transparent}
 .owner-finance-tabs{display:flex;align-items:center;gap:var(--space-2);margin:0 0 14px;padding:0;border:0;border-bottom:1px solid var(--line-2);border-radius:0;background:transparent;overflow-x:auto}
 .owner-finance-tabs button{height:38px;padding:0 10px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--meta);font-size:var(--fs-hint);white-space:nowrap}
 .owner-finance-tabs button.active{border-bottom-color:var(--ink);background:transparent;color:var(--ink);font-weight:600}
@@ -978,8 +960,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 .ldg-drawer-copy{margin:var(--space-4) 0 22px;font-size:var(--fs-hint);line-height:1.8;color:var(--meta)}
 .ldg-drawer-copy a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
 .ldg-drawer-foot{flex:0 0 auto;display:flex;justify-content:flex-end;gap:var(--space-8);padding:var(--space-12) 18px;border-top:1px solid var(--line);background:var(--paper-2)}
-
-@media (max-width:1180px){}
 @media (max-width:940px){  .ldg-search{width:100%;flex:1 1 100%}
   .ldg-segments{order:3;width:100%}
   .ldg-tools{margin-left:0}
@@ -1112,8 +1092,8 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
 @media (max-width:1180px){
   .page-wrap{padding:22px 22px var(--space-40)}
   .topbar,.project-context-bar,.system-workspace-nav{padding-left:22px;padding-right:22px}
-  .metric-grid,.budget-summary-grid,.bill-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .metric-card:nth-child(3),.budget-summary-item:nth-child(3),.bill-summary:nth-child(3){border-left:0;padding-left:0}
+  .metric-grid, .budget-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric-card:nth-child(3), .budget-summary-item:nth-child(3){border-left:0;padding-left:0}
 }
 @media (max-width:940px){
   :root{--sidebar:0px}
@@ -1130,9 +1110,9 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .page-header{align-items:stretch;flex-direction:column;gap:var(--space-12)}
   .page-header h1{font-size:24px}
   .page-actions{width:100%}
-  .metric-grid,.budget-summary-grid,.bill-summary-grid,.change-summary-grid,.cost-type-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .metric-card,.budget-summary-item,.bill-summary,.change-summary,.cost-type-card{border-left:1px solid var(--line);padding:var(--space-12) var(--space-12)}
-  .metric-card:nth-child(odd),.budget-summary-item:nth-child(odd),.bill-summary:nth-child(odd),.change-summary:nth-child(odd),.cost-type-card:nth-child(odd){border-left:0;padding-left:0}
+  .metric-grid, .budget-summary-grid, .cost-type-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric-card, .budget-summary-item, .cost-type-card{border-left:1px solid var(--line);padding:var(--space-12) var(--space-12)}
+  .metric-card:nth-child(odd), .budget-summary-item:nth-child(odd), .cost-type-card:nth-child(odd){border-left:0;padding-left:0}
   .data-table thead th{font-size:var(--fs-hint);padding:var(--space-8)}
   .data-table tbody td{font-size:var(--fs-hint);padding:var(--space-10) var(--space-8)}
   .assistant-workbench{grid-template-columns:1fr;height:auto;min-height:0}
