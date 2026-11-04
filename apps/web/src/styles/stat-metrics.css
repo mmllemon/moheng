@@ -176,10 +176,11 @@ html .owner-contract-detail-grid > .span-detail-wide {
   padding-right: 0;
   padding-left: 0;
   border-left: 0;
-  /* 跨列项的横线延伸到卡片边缘：grid 有 16px 左右 margin，
-     横线原本只到 632px 处，与卡片边框（664px）不对齐。 */
-  margin-inline: calc(-1 * var(--space-16));
-  padding-inline: var(--space-16);
+  /* 跨列项的横线延伸到卡片边缘：grid 内距 18px，横线原本只到 632px 处，
+     与卡片边框不对齐。2026-11-04：外层从 .panel 换成 ldg-section-card 后
+     卡体自身 padding 为 0，负外边距跟内距一起收到 18px。 */
+  margin-inline: -18px;
+  padding-inline: 18px;
 }
 /* 标准 5 列那里只有前 3 项同行 */
 html .owner-contract-detail-grid > :nth-child(3) {

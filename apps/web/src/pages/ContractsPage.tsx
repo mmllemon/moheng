@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { api, ApiError } from '../api';
 import { useUiStore } from '../auth-store';
 import { ProjectSummaryReportButton } from '../components/ReportLaunchButton';
-import { Button, CardHead, dateInputToIso, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
+import { Button, dateInputToIso, ErrorBlock, formatDate, formatMoney, LoadingBlock, PageHeader } from '../components/Ui';
 import { Link } from 'react-router-dom';
 import BusinessPartyPicker from '../components/BusinessPartyPicker';
 
@@ -66,8 +66,8 @@ export default function ContractsPage() {
   return <div className="page-wrap owner-contract-page">
     <PageHeader eyebrow="OWNER CONTRACT / REGISTER" title="主合同管理" subtitle="默认查看合同台账摘要；新建或编辑合同资料时再打开表单。原始合同金额建档后锁定，价款变化通过已生效的业主变更记录反映。" actions={<><ProjectSummaryReportButton label="预览 / 导出项目综合报表" /><Button onClick={() => { setError(''); setEditorOpen(true); }}>{contract ? <><FileSignature size={15} />编辑合同资料</> : <><FileSignature size={15} />登记主合同</>}</Button></>} />
     {notice && <div className="success-notice"><ShieldCheck size={16} />{notice}</div>}{error && !editorOpen && <div className="form-alert">{error}</div>}
-    {!contract ? <section className="panel owner-contract-empty"><div className="owner-contract-empty-mark"><FileSignature size={24} /></div><h2>当前项目尚未建立业主主合同</h2><p>先登记合同基准与付款条款，再维护进度款申报、变更签证和有效合同额。合同正式建档后，原始金额将锁定。</p><Button onClick={() => setEditorOpen(true)}><FileSignature size={15} />登记主合同</Button></section> : <>
-      <section className="panel owner-contract-hero">
+    {!contract ? <section className="ldg-section-card owner-contract-empty"><div className="owner-contract-empty-mark"><FileSignature size={24} /></div><h2>当前项目尚未建立业主主合同</h2><p>先登记合同基准与付款条款，再维护进度款申报、变更签证和有效合同额。合同正式建档后，原始金额将锁定。</p><Button onClick={() => setEditorOpen(true)}><FileSignature size={15} />登记主合同</Button></section> : <>
+      <section className="ldg-section-card owner-contract-hero">
         <div className="owner-contract-hero-copy"><span className="owner-contract-kicker">OWNER MAIN CONTRACT</span><div className="owner-contract-title-line"><h2>{contract.name}</h2><span className="contract-lock-badge"><LockKeyhole size={13} />基准已锁定</span></div><div className="owner-contract-meta"><span>{contract.contractNo}</span><span>签订日期 {formatDate(contract.signedAt)}</span><span>{projectQuery.data?.ownerPartyId ? <Link to={`/parties/${projectQuery.data.ownerPartyId}`}>{projectQuery.data?.ownerName ?? '建设单位档案'} ↗</Link> : projectQuery.data?.ownerName ?? '业主单位'}</span></div></div>
         <div className="owner-contract-effective"><span>当前有效合同额</span><strong>{formatMoney(effectiveAmount, 0)}</strong><small>原始基准与已生效外部确认变更的汇总</small></div>
         <div className="owner-contract-figures">
@@ -77,14 +77,17 @@ export default function ContractsPage() {
         </div>
       </section>
 
-      <section className="panel owner-contract-detail-panel"><CardHead title="合同关键条款" description="只读展示合同基准、质保与付款约定；修改统一从顶部“编辑合同资料”进入。" /><div className="owner-contract-detail-grid">
+      <section className="ldg-section">
+        <div className="ldg-section-head"><div><h2><FileSignature size={16} />合同关键条款</h2><p>只读展示合同基准、质保与付款约定；修改统一从顶部“编辑合同资料”进入。</p></div></div>
+        <div className="ldg-section-card owner-contract-detail-panel"><div className="owner-contract-detail-grid">
         <div><span>质保金比例</span><strong>{(contract.retentionRate * 100).toFixed(2)}%</strong></div>
         <div><span>预付款回扣比例</span><strong>{(contract.advanceDeductionRate * 100).toFixed(2)}%</strong></div>
         <div><span>质保金到期日</span><strong>{formatDate(contract.guaranteeEndAt)}</strong></div>
         <div><span>约定付款期限</span><strong>{contract.paymentTermDays == null ? '未约定' : `${contract.paymentTermDays} 天`}</strong><small>进度款审批通过后据此推算应收到期日</small></div>
         <div className="span-detail-wide"><span>付款方式及条件</span><p>{contract.paymentTerms || '尚未填写'}</p></div>
         <div className="span-detail-wide"><span>合同备注</span><p>{contract.notes || '无备注'}</p></div>
-      </div></section>
+      </div></div>
+      </section>
 
     </>}
 

@@ -2,6 +2,17 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 业务页起手四页：待办、变更签证、主合同、往来单位详情换台账卡
+
+设置窗与往来单位库收完后，全仓只剩一套「台账卡」和一套 `.panel`（尚未迁的 12 个业务页）。这 12 页的卡壳靠 `use-detached-panel-headers` 在运行时量标题高度、用 `::before` 从标题底下画假卡面，卡头在卡内、内距 16px，与台账页的「卡头在卡外 + 卡内 18px」不是一回事。本轮先迁四页验证口径。
+
+- **待办与预警**：`section.panel.notice-list-panel` 拆成 `ldg-section` + `ldg-section-card notice-list-card`，卡头留在卡外（h2 带 `BellRing`，计数进说明行）；筛选胶囊从卡头旁边挪到 `.ldg-section-head` 右侧，样式按新宿主重写（`.notice-filter-group` 及其 button / button.active / svg 四条），`align-items: flex-end` 下胶囊底边与 h2 对齐。卡体 `padding: 0`，列表自己撑 `16px 18px 10px`。
+- **变更签证台账**：`section.panel.change-table-panel` + `CardHead` 换成三件套，h2 带 `FileCheck2`，右侧 `{changes.length} 条`。空态嵌在卡内，不再画第二层边框。
+- **主合同**：空态与 hero 两张 `section.panel` 改 `ldg-section-card`（各自自带背景与排版，不再叠 `.panel` 的 16px）；「合同关键条款」拆成 `ldg-section` 三件套，字段网格改由 `.ldg-section-card > .owner-contract-detail-grid` 给 18px。
+- **往来单位详情**：`section.panel.business-party-profile-hero` 改 `ldg-section-card`，保留自己的 20px 内距。
+- **补 18px 是必须的**：`.panel` 的 16px 内距和 `.panel.panel-detached > :not(...)` 的 16px 外边距是旧对齐来源。合同条款网格换壳后这两条都不生效，首列文字距卡边只剩 1px，两个 `span-detail-wide` 的横线甚至溢出卡外 15px。现在卡体给 18px，跨列项负边距与内距一起从 16 收到 18（`stat-metrics.css`），行首格清零，实测各行首格文字距卡边统一 19px（原为 33 / 1 / −15 三种）。
+- 复核（1600 视口）：/notifications 卡 664、卡头到卡 16、圆角 14.7272、页内残留 `.panel` 0、横向溢出 0；/changes 同规格，空态卡 664×222；/contracts hero 与条款卡 664，条款网格四行首格 19px 对齐；/parties/:id hero 1184×127（padding 20）、四个区块卡头均 42。控制台无报错。`run-gates --tier blocking` 33/33，`@cms/web` lint（`tsc --noEmit`）exit 0。
+
 ### 2026-11-04 最后一页：个人中心与账号安全、往来单位库改用台账卡，SettingsSection 组件退役
 
 设置窗十二页统一后，设置窗外还剩两页在用 `SettingsSection`（Hana Section 组件的 1:1 复刻）：`/account/security` 与 `/parties`。它们是这套组件的最后两个使用者，卡头 16px、卡内 16px、区块节奏 40px，与台账页的 14.4px / 18px / 24px 不是一回事。本轮把这两页收进台账结构，组件连同它的 CSS 一起删掉。

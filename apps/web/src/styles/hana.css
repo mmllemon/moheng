@@ -9975,3 +9975,50 @@ textarea {
 .business-parties-page .ldg-section-card .ldg-toolbar {
   margin: 0;
 }
+
+/* =============================================================
+   2026-11-04 业务页 .panel 换台账卡（第一批）
+   =============================================================
+   设置窗全部收完（12 页）后，剩下 12 个业务页还在用 .panel +
+   .panel-heading，靠 use-detached-panel-headers 在运行时量高度、
+   用 ::before 从卡头底下画假卡面。逐页换成 ldg-section 三件套。
+
+   卡内一律 18px：与卡头（左 2px）、表格（18px）、设置窗口径对齐。
+   ============================================================= */
+
+/* --- 主合同 ---------------------------------------------------------- */
+/* 字段网格原先靠 .panel.panel-detached > * 的 16px 左右外边距对齐，
+   换卡后这条不生效，单元格会贴到卡边（实测首列文字距卡 1px，
+   两个 span-detail-wide 甚至溢出卡外 15px）。改为卡内 18px 内距。 */
+.ldg-section-card > .owner-contract-detail-grid { padding: 0 18px var(--space-16); }
+/* 每行的首格不能再叠 14px：否则首列文字距卡边 33px，下面几行只有 19px。 */
+.ldg-section-card > .owner-contract-detail-grid > div:nth-child(3n + 1) { padding-left: 0; }
+
+/* --- 待办与预警 ------------------------------------------------------ */
+.notice-list-card { padding: 0; }
+.notice-list-card > .notice-list { padding: var(--space-16) 18px var(--space-10); }
+/* 卡头右侧的筛选胶囊：原规则挂在 .panel.panel-detached > .notice-list-heading 下。 */
+.ldg-section-head .notice-filter-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--overlay-light);
+  border-radius: var(--radius-action);
+  background: var(--overlay-subtle);
+}
+.ldg-section-head .notice-filter-group > svg { margin: 0 var(--space-2) 0 var(--space-4); color: var(--text-muted); }
+.ldg-section-head .notice-filter-group button {
+  min-height: 24px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-action);
+  color: var(--text-muted);
+  font-size: var(--fs-hint);
+  background: transparent;
+}
+.ldg-section-head .notice-filter-group button.active {
+  background: var(--bg-card);
+  color: var(--text);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 10%, transparent);
+}
