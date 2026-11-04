@@ -1113,8 +1113,6 @@ input[type=radio]:checked{border-color:var(--seal);box-shadow:inset 0 0 0 3px #f
   .assistant-conversation-rail,.assistant-evidence-rail{display:none}
   .login-form-panel{width:100%;padding:26px 22px}
 }
-@media print{
-  .sidebar,.topbar,.project-context-bar,.app-footer,.cost-workspace-tabs,.system-workspace-nav{display:none}
-  .main-shell{margin:0}
-  body{background:#fff}
-}
+/* 打印样式已集中到 hana.css 末尾。这里原来的块写的是 .sidebar / .topbar / .main-shell，
+   这几个类名在 2026-08 改版后已经不存在（现在是 .app-sidebar / .app-titlebar / .app-main），
+   块内规则全是空转。 */

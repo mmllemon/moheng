@@ -1501,36 +1501,10 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
 @media (max-width: 1300px) { .report-designer-topbar { grid-template-columns: repeat(2,minmax(0,1fr)); } .report-designer-save-actions { grid-column: 1 / -1; justify-content: flex-end; } .report-designer-workspace { grid-template-columns: minmax(300px, 360px) minmax(0, 1fr); } }
 @media (max-width: 980px) { .report-designer-workspace { grid-template-columns: 1fr; } .report-designer-props { max-height: none; } .report-preview-paper { min-width: 760px; } }
 @media (max-width: 600px) { .report-designer-topbar { grid-template-columns: 1fr; } .report-designer-save-actions { grid-column: auto; flex-wrap: wrap; justify-content: flex-start; } .report-designer-filterbar { align-items: stretch; } .report-designer-filterbar > label { flex: 1 1 130px; } .report-preview-heading { padding: var(--space-14); } .report-preview-viewport { padding: var(--space-10); } .report-preview-paper { padding: var(--space-12); } .report-preview-bottomline { padding: var(--space-10) var(--space-12); } .report-format-actions { width: 100%; } }
-@media print {
-  @page { margin: 10mm; }
-  body * { visibility: hidden ; }
-  .report-preview-print-surface, .report-preview-print-surface * { visibility: visible ; }
-  .report-preview-print-surface { position: absolute ; left: 0 ; top: 0 ; width: 100% ; max-width: none ; min-width: 0 ; margin: 0 ; padding: 0 ; border: 0 ; box-shadow: none ; overflow: visible ; }
-  .report-preview-viewport { padding: 0 ; overflow: visible ; background: #fff ; }
-  .report-preview-table { width: 100% ; min-width: 0 ; font-size: var(--fs-micro); }
-  .report-preview-table thead { display: table-header-group; }
-  .report-preview-table tr { break-inside: avoid; page-break-inside: avoid; }
-  .report-preview-paper { min-height: 0 ; }
-  .report-preview-footer { font-size: var(--fs-micro); }
-}
-
+/* 打印样式已集中到 hana.css 末尾的「打印 / PDF」段落。
+   那两条全局 `body * { visibility: hidden }` 已删除：它们只放行设计器的
+   `.report-preview-print-surface`，而预览页没有这个元素，打印出来是一张白纸。 */
 .report-print-all { display: none; }
-@media print {
-  body * { visibility: hidden ; }
-  .report-preview-print-surface, .report-preview-print-surface * { visibility: visible ; }
-  .report-print-all { display: block ; visibility: visible ; position: absolute ; left: 0 ; top: 0 ; width: 100% ; }
-  .report-print-all, .report-print-all * { visibility: visible ; }
-  .report-preview-print-surface { position: absolute ; left: 0 ; top: 0 ; width: 100% ; max-width: none ; min-width: 0 ; margin: 0 ; padding: 0 ; border: 0 ; box-shadow: none ; overflow: visible ; }
-  .report-print-all .report-preview-paper { min-width: 0 ; max-width: none ; width: 100% ; min-height: 0 ; margin: 0 ; padding: 0 ; border: 0 ; box-shadow: none ; }
-  .report-preview-viewport { padding: 0 ; overflow: visible ; background: #fff ; }
-  .report-preview-table { font-size: var(--fs-micro); }
-  .report-preview-table.print-fit-width { width: 100% ; min-width: 0 ; table-layout: fixed ; }
-  .report-preview-table.print-natural-width { width: max-content ; min-width: 100% ; table-layout: auto ; }
-  .report-preview-table.repeat-header thead { display: table-header-group ; }
-  .report-preview-table.no-repeat-header thead { display: table-row-group ; }
-  .report-preview-table tr { break-inside: avoid; page-break-inside: avoid; }
-  .report-preview-footer { font-size: var(--fs-micro); }
-}
 
 /* v2.4 report studio: common responsive controls and spreadsheet workspace */
 .report-studio-entry-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-12); margin:var(--space-14) 0 18px; }
@@ -1615,22 +1589,7 @@ body { color: var(--neutral-800); background: var(--bg-base); font-family: inher
   .report-studio-entry-card { transition:none; }
   .report-studio-entry-card:hover { transform:none; }
 }
-@media print {
-  body:has(.report-export-preview-page) .app-sidebar, body:has(.report-export-preview-page) .app-header, body:has(.report-export-preview-page) .page-header-actions, body:has(.report-export-preview-page) .success-notice, body:has(.report-export-preview-page) .form-alert { display:none ; }
-  body:has(.report-export-preview-page) .page-wrap { max-width:none; padding:0; margin:0; }
-  .report-preview-workbook-scroll { overflow:visible ; }
-  .report-studio-preview-grid,.report-preview-table { width:100%; min-width:0; font-size:var(--fs-hint); }
-  .report-studio-preview-grid.print-fit-width { width:100% ; min-width:0 ; table-layout:fixed ; }
-  .report-studio-preview-grid.print-natural-width { width:max-content ; min-width:100% ; table-layout:auto ; }
-  .report-preview-table.print-fit-width { width:100% ; min-width:0 ; table-layout:fixed ; }
-  .report-preview-table.print-natural-width { width:max-content ; min-width:100% ; table-layout:auto ; }
-  .report-preview-table.repeat-header thead { display:table-header-group; }
-  .report-preview-table.no-repeat-header thead { display:table-row-group; }
-  .report-preview-sheet,.report-preview-standard-surface { break-inside:auto; box-shadow:none ; border:0 ; }
-  .report-preview-sheet-head { break-after:avoid; }
-  .report-studio-preview-grid thead { display:table-header-group; }
-  .report-studio-preview-grid tr,.report-preview-table tr { break-inside:avoid; }
-}
+/* 预览页打印样式已集中到 hana.css 末尾（旧块在 @layer legacy 里，压不过无层规则）。 */
 
 /* v2.6 report center declutter: one compact catalog + one configuration surface. */
 .report-center-page { gap: var(--space-14); }

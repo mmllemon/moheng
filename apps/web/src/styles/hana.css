@@ -9955,3 +9955,145 @@ html .report-center-page .report-studio-entry-icon {
   .report-studio-workspace > .report-studio-editor-panel { display: block; height: auto; }
   .report-studio-workspace > .report-studio-editor-panel > .report-studio-editor-host { flex: none; height: 620px; min-height: 460px; }
 }
+
+/* =============================================================
+   打印 / PDF（2026-11-04 验收）
+   =============================================================
+   旧打印样式散在 legacy.css（两条全局 `body * { visibility: hidden }`
+   与一段预览页块）和 v6.css，三个问题：
+
+   1) 那两条全局隐藏只放行设计器里的 `.report-preview-print-surface`。
+      预览页没有这个元素，点「打印 / PDF」出来是一张白纸：实测 17 行数据、
+      13 个表头全部 visibility: hidden，PDF 290KB 只有纸纹。
+   2) legacy.css 整体在 `@layer legacy` 里，而 hana.css 无层。层叠里无层
+      规则永远压过任何层，所以预览页那段 `body:has(...) .app-sidebar
+      { display: none }` 从未生效（实测打印时 `.app-sidebar` 仍是 display:flex）。
+   3) v6.css 的块写 `.sidebar / .topbar / .main-shell`，这三个类名在 2026-08
+      改版后已不存在（现在是 `.app-sidebar / .app-titlebar / .app-main`）。
+
+   现在集中到这里（无层，压得住），按页面分三组：通用外壳、预览页纸张、
+   设计器纸张。@page 的尺寸由页面自己注入的 `<style>` 决定（A4 横/纵、A3），
+   这里只给一个 10mm 的默认页边距。
+   ============================================================= */
+@media print {
+  @page { margin: 10mm; }
+
+  /* --- 通用：应用外壳不进纸 --- */
+  .fp-resize-handle,
+  .shell-traffic-strip,
+  .app-sidebar,
+  .paper-layer,
+  .window-controls-island,
+  .mobile-nav-backdrop,
+  .page-header-actions,
+  .success-notice,
+  .form-alert,
+  /* 业务页的交互控件不上纸：标签栏、工具条、行内操作、空态里的新建按钮。 */
+  .cost-workspace-tabs,
+  .system-workspace-nav,
+  .table-toolbar,
+  .ldg-toolbar,
+  .row-actions,
+  .empty-state .button,
+  .ldg-section-head .button,
+  .page-header .button { display: none !important; }
+  html, body { background: #fff !important; }
+  body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  /* 纸纹是 body::before / ::after 上的 fixed 图层，不在打印时关掉会每页都印一层。 */
+  body::before, body::after { display: none !important; }
+  /* 应用外壳是「视口高 + 内部滚动」：高度钉死在 100vh 时，第 2 页起的内容
+     不再参与分页（实测 221 行只印出第一页 10 行，其余 22 页是空白 + 纸纹）。 */
+  .app-shell, .app-main, .app-content, .route-transition, #root {
+    height: auto !important; min-height: 0 !important;
+    margin: 0 !important; padding: 0 !important; background: none !important; overflow: visible !important;
+  }
+  /* 最关键的一条：`.app-content > .route-transition` 上有顶栏渐隐的 mask-image。
+     带 mask 的元素会被合成成单独的绘制层，Chrome 就不再跨页切分它内部的内容：
+     实测 221 行的表只印出首页 10 行，表头不重复、行被拦膜切断，
+     而且把中间那层 div 改成 display: contents 之后就好了 —— 病的不是布局，是合成层。 */
+  .route-transition { -webkit-mask-image: none !important; mask-image: none !important; }
+
+  /* --- 预览页：把「纸」原样印出来 --- */
+  /* 屏上是卡片（边框 + 圆角 + 纸色底 + 18px 内距），纸上是版面本身。 */
+  .report-export-preview-page { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .report-export-preview-page > .page-header { display: none !important; }
+  /* 报表页自带上报头，不再印应用顶栏；业务页保留顶栏（页名写在里面）。 */
+  body:has(.report-export-preview-page) .app-titlebar,
+  body:has(.report-designer-page) .app-titlebar { display: none !important; }
+  .app-titlebar { border: 0 !important; background: none !important; box-shadow: none !important; padding-bottom: 2mm !important; }
+  /* 顶栏只留页名与上下文：项目切换器、搜索/设置图标、移动端汉堡都不上纸。 */
+  .titlebar-island-right,
+  .titlebar-mobile-menu { display: none !important; }
+  .report-export-preview-page .report-preview-meta {
+    border: 0 !important; border-radius: 0 !important; background: #fff !important; box-shadow: none !important;
+    margin: 0 0 4mm !important; padding: 0 !important;
+  }
+  .report-export-preview-page .report-preview-meta span { font-size: 8pt !important; }
+  .report-export-preview-page .report-preview-meta strong { font-size: 9.5pt !important; }
+  .report-export-preview-page .report-preview-sheet,
+  .report-export-preview-page .report-preview-standard-surface {
+    border: 0 !important; border-radius: 0 !important; background: #fff !important; box-shadow: none !important;
+    margin: 0 !important; padding: 0 !important; overflow: visible !important;
+  }
+  .report-export-preview-page .report-preview-standard-title { padding: 0 0 4mm !important; }
+  .report-export-preview-page .report-preview-standard-title h2 { font-size: 15pt !important; }
+  .report-export-preview-page .report-preview-sheet-head { padding: 0 0 3mm !important; border-bottom: 1px solid #d8d2c4 !important; break-after: avoid; }
+  .report-export-preview-page .report-preview-warning { border: 1px solid #d8c9a4 !important; background: #fff8e6 !important; }
+  /* 屏上的滚动容器在纸上必须摊平，否则右侧列被裁掉。 */
+  .report-export-preview-page .report-preview-workbook-scroll { overflow: visible !important; padding: 0 !important; width: 100% !important; }
+  .report-export-preview-page .report-preview-standard-footer {
+    padding: 3mm 0 0 !important; border-top: 1px solid #d8d2c4 !important; font-size: 8pt !important; break-before: avoid;
+  }
+  /* 表格：横向撑满、表头每页重复、行不拆两页、表头后不断页。 */
+  .report-export-preview-page .report-preview-table,
+  .report-export-preview-page .report-studio-preview-grid { font-size: 8.5pt !important; }
+  .report-export-preview-page .print-fit-width { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; }
+  .report-export-preview-page .print-natural-width { width: max-content !important; min-width: 100% !important; table-layout: auto !important; }
+  /* 工作簿预览表的宽高是内联样式（来自模板列宽），必须显式压过。 */
+  .report-export-preview-page .report-studio-preview-grid.print-fit-width { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; }
+  .report-export-preview-page .report-studio-preview-grid.print-natural-width { width: max-content !important; min-width: 100% !important; table-layout: auto !important; }
+  .report-export-preview-page .repeat-header thead { display: table-header-group !important; }
+  .report-export-preview-page .no-repeat-header thead { display: table-row-group !important; }
+  .report-export-preview-page thead { break-after: avoid; }
+  .report-export-preview-page tbody tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+
+  /* --- 设计器：只印纸张面 --- */
+  /* 设计器有两条打印路径：直接打印走屏上的 `.report-preview-print-surface`，
+     点「完整报表 / 打印 PDF」后走 `.report-print-all`（全量行）。两者都只在
+     这一页出现，所以用 `.report-designer-page` 收口，不再污染其它页。
+     注意：不能用 visibility 隐藏（隐藏仍占高度：实测 1 张纸印出 9 页空白）。 */
+  .report-designer-page > .page-header,
+  .report-designer-page > .report-designer-topbar,
+  .report-designer-page > .report-designer-filterbar,
+  .report-designer-page > .report-designer-message,
+  .report-designer-page > .report-designer-footnote,
+  .report-designer-page .report-designer-panel,
+  .report-designer-page .report-preview-heading,
+  .report-designer-page .report-preview-bottomline,
+  .report-designer-page .report-designer-footer-note { display: none !important; }
+  /* 全量行存在时，屏上那块预览让位（它跟 print-all 同在一个 panel 里，
+     不能把 panel 整个藏掉，否则连 print-all 一起没了）。 */
+  .report-designer-page:has(.report-print-all) .report-preview-viewport { display: none !important; }
+  .report-designer-page .report-designer-preview-panel {
+    display: block !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important;
+    background: #fff !important; box-shadow: none !important;
+  }
+  .report-designer-page .report-preview-viewport { padding: 0 !important; overflow: visible !important; background: #fff !important; }
+  .report-designer-page .report-preview-paper {
+    border: 0 !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important;
+    min-width: 0 !important; max-width: none !important; width: 100% !important; min-height: 0 !important;
+  }
+  .report-designer-page .report-print-all { display: block !important; }
+  .report-designer-page .report-print-all .report-preview-paper {
+    min-width: 0 !important; max-width: none !important; width: 100% !important; min-height: 0 !important;
+    margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important;
+  }
+  .report-designer-page .report-preview-viewport { padding: 0 !important; overflow: visible !important; background: #fff !important; }
+  .report-designer-page .report-preview-table { font-size: 8.5pt !important; }
+  .report-designer-page .report-preview-table.print-fit-width { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; }
+  .report-designer-page .report-preview-table.print-natural-width { width: max-content !important; min-width: 100% !important; table-layout: auto !important; }
+  .report-designer-page .report-preview-table.repeat-header thead { display: table-header-group !important; }
+  .report-designer-page .report-preview-table.no-repeat-header thead { display: table-row-group !important; }
+  .report-designer-page .report-preview-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+  .report-designer-page .report-preview-footer { font-size: 8pt !important; }
+}

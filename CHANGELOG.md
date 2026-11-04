@@ -2,6 +2,35 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 打印与 PDF 分页验收
+
+按路线图阶段一「仍需推进」的一项，用真浏览器 + 真 PDF 做了一次验收。结论：**预览页打印出来是一张白纸**，设计器能印但会丢分页。一共 7 个问题，全部修掉。
+
+- **预览页白纸**：legacy.css 里有两条全局 `body * { visibility: hidden }`，只放行设计器的 `.report-preview-print-surface`。预览页没有这个元素，17 行数据、13 个表头全部被隐，PDF 290KB 只有纸纹。已删。
+- **打印样式一直被层压着**：legacy.css 整体在 `@layer legacy` 里，而 hana.css 无层——层叠里无层规则永远优先。预览页那段 `body:has(...) .app-sidebar { display: none }` 从 2026-08 加上就没生效过（实测打印时 `.app-sidebar` 仍是 `display:flex`），外壳是靠上面那条“隐藏一切”顺便没印出来的。
+- **v6 的打印块是空转**：写的是 `.sidebar / .topbar / .main-shell`，这三个类名 2026-08 改版后已不存在（现在是 `.app-sidebar / .app-titlebar / .app-main`）。
+- **第 2 页起不参与分页**：外壳 `.app-shell / .app-main / .app-content / .route-transition` 高度钉在 100vh（内部滚动），221 行的表只印出第一页 10 行，其余 22 页空白。打印时改为 `height: auto`。
+- **表头不重复、行被拦腰切断（关键）**：`.app-content > .route-transition` 上有顶栏渐隐的 `mask-image`。带 mask 的元素会被合成成单独绘制层，Chrome 就不再跨页切分它内部的内容 —— 把所有中间层改成 `display: contents` 就好了，证明病的不是布局而是合成层。打印时去掉 mask 后：221 行 → 23 页，第 2、5 页都有表头，行完整。
+- **设计器 1 张纸印出 9 页空白**：旧方案用 `visibility: hidden` 隐藏界面，元素仍占高度。改成按块 `display: none`（工具条、属性栏、卡头、底注），只留纸张面；「完整报表」路径的 `.report-print-all` 原来被整块藏掉（它和屏上预览同在一个 panel 里），改成只藏 `.report-preview-viewport`。
+- **纸纹每页重复**：纸纹是 `body::before/::after` 的 fixed 图层，打印时必须关掉。
+
+重写后的打印样式集中在 `hana.css`（无层，压得住）分三组：通用外壳（侧栏、顶栏、纸纹、工具条、按钮、标签栏不上纸，业务页保留页名）、预览页纸张（卡片去壳、表格撑满、表头每页重复、行不拆）、设计器纸张。
+
+复核（Chromium headless，`page.pdf({ preferCSSPageSize: true })`，再用内置 PDF 查看器回看）：
+
+| 场景 | 结果 |
+| --- | --- |
+| 预览 目标成本清单（17 行） | A4 横向 842×595pt，2 页，元信息条 + 标题 + 表头 + 表格 + 页脚齐全 |
+| 预览注入 221 行 | 23 页，第 2 / 5 页均有重复表头，行不跨页 |
+| 8 张标准台账（真数据） | 1–2 页不等，均有内容 |
+| 设计器直印（屏上纸） | 1 页，只有纸张面 |
+| 设计器「完整报表」 | 1 页，`.report-print-all` 生效（该项目 0 行） |
+| /changes、/cost/downstream、/parties、/cost/analysis | 1–3 页，外壳/按钮/工具条/纸纹都不上纸，页名保留 |
+
+门禁：`validate-report-studio-v2` 里两条钉字面串的断言（`.report-preview-table.repeat-header thead { display:table-header-group; }`）改成正则，允许作用域前缀与 `!important`。`run-gates --tier blocking` 33/33，`@cms/web` lint exit 0。
+
+未覆盖：报表工作室预览（`studioTemplateId` 路径）需要真实的项目/公司模板，本轮数据库里没有可用模板，规则已写好但未用真模板回看；A3 纵向只验证了 `@page` 取自模板配置（代码路径），没有实际出纸。
+
 ### 2026-11-04 成本分析页收进台账卡，测卡头的 hook 退役
 
 全站最后一块「假卡」在 `/cost/analysis`：卡面是 `::before` 按运行时测出的 `--panel-head-h` 从卡头底部画出来的，靠 `Layout` 里挂的一个 MutationObserver 监听全站 DOM。本轮把它换成真卡，那个 hook 连同它维护的 CSS 家族一起删。

@@ -254,8 +254,8 @@ check('formal preview printing loads full server-bounded standard and studio dat
   //（宽度/最小宽度/table-layout 三项仍在），不再钉 !important 与空格写法。
   /\.report-preview-table\.print-fit-width\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0[^}]*table-layout:\s*fixed/.test(await readPrintCss()) &&
   /\.report-preview-table\.print-natural-width\s*\{[^}]*width:\s*max-content[^}]*min-width:\s*100%[^}]*table-layout:\s*auto/.test(await readPrintCss()) &&
-  (await readPrintCss()).includes('.report-preview-table.repeat-header thead { display:table-header-group; }') &&
-  (await readPrintCss()).includes('.report-preview-table.no-repeat-header thead { display:table-row-group; }') &&
+  /\.report-preview-table\.repeat-header thead\s*\{\s*display:\s*table-header-group/.test(await readPrintCss()) &&
+  /\.report-preview-table\.no-repeat-header thead\s*\{\s*display:\s*table-row-group/.test(await readPrintCss()) &&
   reportPrint.includes("params.set('printAll', 'true')") && reportPrint.includes('printAll: true as const') &&
   reportPrint.includes('export function describeStandardPrintResult') && reportPrintTests.includes('does not describe capped results as complete') &&
   legacyDesigner.includes('setPrintTruncated(result.truncated)') && legacyDesigner.includes('describeStandardPrintResult(result.previewRowCount, result.truncated)') &&
