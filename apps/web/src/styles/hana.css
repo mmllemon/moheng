@@ -1695,7 +1695,7 @@ html .window-controls-island .titlebar-avatar {
    表格页不再整页放宽——收窄后 .table-scroll 会在列内横向滚动，
    这样「内容宽度」四档对绝大多数页面才是一致生效的。 */
 .app-content:has(.projects-ledger-layout),
-.app-content:has(.report-studio-layout),
+.app-content:has(.report-studio-page),
 .app-content:has(.costs-layout) {
   --page-column-measure: 100%;
 }
@@ -10150,3 +10150,28 @@ html .report-center-page .report-studio-entry-icon {
 .downstream-contracts-page .downstream-contracts-card > .detail-notes > .inline-notice,
 .downstream-contracts-page .downstream-contracts-card > .detail-notes > .data-note { margin-inline: 18px; }
 .downstream-contracts-page .downstream-contracts-card .row-actions { flex-wrap: wrap; justify-content: flex-start; }
+
+/* =============================================================
+   2026-11-04 报表工作室：两栏卡等顶等底
+   =============================================================
+   左栏比右栏低 16px，来源是 `.panel + .panel{margin-top:16px}`（全站只剩
+   这一处还有相邻 panel）。底边也对不上：左栏上限 100vh−170 与右栏
+   （画布 min(76vh,900) + 卡头与内距）在 1100 高差 10px，1400 高差 126px。
+   现在两栏读同一个画布高度：右栏定高、画布 flex 填满，左栏不参与行高
+   计算（contain: size）并内部滚动。800 以下两栏上下排列，按单栏还原。
+   ============================================================= */
+.report-studio-workspace { --studio-canvas-h: min(76vh, 900px); }
+.report-studio-workspace > .panel + .panel { margin-top: 0; }
+.report-studio-workspace > .report-studio-binding-panel { contain: size; max-height: none; }
+.report-studio-workspace > .report-studio-editor-panel {
+  display: flex;
+  flex-direction: column;
+  /* 104 = 卡头 70 + 上下内距 32 + 上下边框 2 */
+  height: calc(var(--studio-canvas-h) + 104px);
+}
+.report-studio-workspace > .report-studio-editor-panel > .report-studio-editor-host { flex: 1 1 auto; height: auto; min-height: 0; }
+@media (max-width: 800px) {
+  .report-studio-workspace > .report-studio-binding-panel { contain: none; }
+  .report-studio-workspace > .report-studio-editor-panel { display: block; height: auto; }
+  .report-studio-workspace > .report-studio-editor-panel > .report-studio-editor-host { flex: none; height: 620px; min-height: 460px; }
+}
