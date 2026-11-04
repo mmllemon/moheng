@@ -29,7 +29,7 @@
 
 门禁：`validate-report-studio-v2` 里两条钉字面串的断言（`.report-preview-table.repeat-header thead { display:table-header-group; }`）改成正则，允许作用域前缀与 `!important`。`run-gates --tier blocking` 33/33，`@cms/web` lint exit 0。
 
-未覆盖：报表工作室预览（`studioTemplateId` 路径）需要真实的项目/公司模板，本轮数据库里没有可用模板，规则已写好但未用真模板回看；A3 纵向只验证了 `@page` 取自模板配置（代码路径），没有实际出纸。
+未覆盖：无。工作室预览（`studioTemplateId` 路径）本轮已补验：用工作室页面真实保存一个项目级模板（默认 A4 横向），再通过 `PATCH /reports/studio/templates/:id` 把 `page` 改成 A3 纵向（`pageSchema` 是严格对象，只能写 paper/orientation/fitToWidth/includeMetadata/footerText 五项），注入到 180 行后出 PDF：`@page` 为 `size: a3`、MediaBox 842×1191pt、共 6 页，第 2 页起重复 3 行表头，外壳不印、卡片去了壳。验完把测试模板连同 2 条修订记录删干净。
 
 ### 2026-11-04 成本分析页收进台账卡，测卡头的 hook 退役
 
