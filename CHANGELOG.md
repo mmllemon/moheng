@@ -2,6 +2,15 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 清掉 `.ds-section` 死样式
+
+`Section` / `DataPanel` / `CardHead` 退役后，它们那套壳的 CSS 已无任何元素命中。本轮只删样式，不动渲染。
+
+- **`hana.css`**：删除「Hana 区块节奏」整块（`.ds-section` / `.ds-section-head` / `.ds-section-copy` / `.ds-section-actions` / `.ds-section-card` / `.ds-card-pad`，共 40 行）；三处分组选择器里摸掉 `.ds-section-actions .button`（字号与 32px 同高两条）与 `.ds-section-card` 的成员（空态去边框、卡内表格 18px / 16px / 窄屏 12px 三档）；`.panel.ds-panel .data-table` 两条同样无人命中，一并删除。`.v6-block .data-table` 等同组活选择器保留。
+- **`stat-metrics.css`**：删除 `.ds-section-card .owner-finance-metrics` 的分隔线两条、区块卡去壳的 `:has()` 三条，以及 `.ds-section-card .metrics` 一个成员；原来编号七的段落空了，后续两节遂位改为七、八。
+- 两处文档注释里的旧举例（「它和 ds-section-card 半径相同」、间距清单里的 `.ds-section 30px`）同步改成现存形态。
+- 复核：`/cost/owner-finance`、`/system`、`/reports`、`/` 四页控制台无报错、横向溢出 0；空态仍不在卡内画第二层边框，指标条分隔线与卡内表格 18px 不变。四份样式文件过 postcss 解析无误，`run-gates --tier blocking` 33/33，`@cms/web` lint exit 0。
+
 ### 2026-11-04 成本分析页卡头向台账几何靠齐
 
 `/cost/analysis` 是最后一个用另一套卡壳的业务页：`.an-panel` 靠 `useDetachedPanelHeaders` 在运行量卡头高度、用 `::before` 从卡头底下画卡面。结构本轮不动（页内图表都是自定义绘制），只把壳内几何改到与台账同一档。

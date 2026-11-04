@@ -95,24 +95,6 @@ html .settings-content .security-metrics > * {
   box-shadow: none;
 }
 
-/* 指标项之间的竖线（业务页信息量大，需要分隔；首项无线无内缩） */
-/* 首项：无左内缩（容器已无内边距，首项应贴左缘） */
-/* ds-section-card 里的统计区：它本身嵌在已有的卡内（卡中卡会乱），
-   所以保持透明无边框，但内边距要正常（不是 0）。
-   上下用 1px 极淡线分隔卡内段——对齐 hana 的 ._divider_cdbf9。 */
-html .ds-section-card .owner-finance-metrics > * {
-  border: 0;
-  border-left: 1px solid color-mix(in srgb, var(--border) 66%, transparent);
-  border-radius: 0;
-  background: transparent;
-  /* 旧的两列布局留下的 span 2 会在这里把第 4 项撑成双倍宽，复位。 */
-  grid-column: auto;
-}
-html .ds-section-card .owner-finance-metrics > :first-child {
-  border-left: 0;
-}
-/* downstream 里旧规则的 21px 数值要拉回 26px *//* 干掉旧的分隔线伪元素——它们只画到 12px 高度，与新规范不一致 */
-
 /* -------------------------------------------------------------
    二、指标项 —— 无卡片外观，一律左对齐
    ------------------------------------------------------------- */
@@ -553,32 +535,7 @@ html .report-studio-entry-grid {
 }
 
 /* -------------------------------------------------------------
-   七、区块卡（.ds-section-card）里包着指标区时，去掉外壳
-   -------------------------------------------------------------
-   .ds-section-card 是 Section 组件的固定包装，全站通用，不能一刀切删背景。
-   但 /cost/downstream 的「数据概览」是「区块卡 + 指标区」双保险，
-   结果指标区外面套了一层带背景与 14.73px 圆角的壳。
-   用 :has() 只命中「子元素就是指标区」的区块卡。 */
-/* 2026-10-26 修正：区块卡保留卡片（--bg-card + 圆角 + 边框），
-   指标区作为卡内的一段，不再把整张区块卡清零。
-   之前清零后，整页找不到任何卡片容器，内容全浮在纸纹上。 */
-html .ds-section-card:has(> .owner-finance-metrics),
-html .ds-section-card:has(> .security-metrics),
-html .ds-section-card:has(> .system-overview-metrics) {
-  /* 方案 A：指标区不进卡片。区块卡只承担“承载”角色：
-     去掉边框、圆角、底色与裁切，让指标区直接落在纸面上
-     （本文件开头的规范：容器和子项都不画卡，指标区一律画卡就变成“一张卡装 N 项”）。 */
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-}
-/* 指标区在区块卡里时，上下分隔线已由指标区自己画，不再重复 */
-
-/* -------------------------------------------------------------
-   八、/cost/costs 的「成本类型卡」—— 本质是可点击的指标项
+   七、/cost/costs 的「成本类型卡」—— 本质是可点击的指标项
    -------------------------------------------------------------
    5 个 button 点下去会筛选下方表格，所以不能改成 div；
    外观按 C 方案：独立成卡（--bg-card + radius-card × 1.84 + 1px 边框），
@@ -852,7 +809,6 @@ html .toolbar-view-button:focus-visible {
 /* 卡片内的指标区不需要下间距（卡片自身已有 padding） */
 .projects-dossier .metrics,
 .panel .metrics,
-.ds-section-card .metrics,
 .ldg-section-card .metrics {
   margin-bottom: 0;
 }
@@ -872,7 +828,7 @@ html .toolbar-view-button:focus-visible {
 }
 
 /* -------------------------------------------------------------
-  九、指标区统一（2026-10-29）
+  八、指标区统一（2026-10-29）
   -------------------------------------------------------------
   全站指标条一律：纸面上分组，不画卡；上下各一条极淡分隔线；
   每格四边 16px。单行条额外给项间 1px 竖线（首项无线）。

@@ -1883,7 +1883,6 @@ html .table-action.button {
 html .page-actions .button-small,
 html .page-actions .button-secondary,
 html .table-heading-actions .button,
-html .ds-section-actions .button,
 html .dialog-actions .button,
 /* 这两个容器原来是 11px / 10px，同一行里与其他按钮不一致 */
 html .report-config-actions .button,
@@ -2134,16 +2133,14 @@ html .ldg-more > svg {
    同一行里出现 26px 与 32px 混排时，视觉上就是“没对齐”。 */
 html .page-actions .button,
 html .page-actions .button-small,
-html .table-heading-actions .button,
-html .ds-section-actions .button {
+html .table-heading-actions .button {
   height: 32px;
   min-height: 32px;
   padding: 0 var(--space-12);
   font-size: var(--btn-font-lg);
 }
 html .page-actions .button svg,
-html .table-heading-actions .button svg,
-html .ds-section-actions .button svg {
+html .table-heading-actions .button svg {
   width: 14px;
   height: 14px;
 }
@@ -3909,8 +3906,7 @@ html[data-paper-texture] .dialog::after {
 /* 空状态嵌在已有卡内时，不再画第二层边框和底色（双层边框很难看）。 */
 .panel .empty-state,
 .ldg-section-card .empty-state,
-.data-table-panel .empty-state,
-.ds-section-card .empty-state {
+.data-table-panel .empty-state {
   border: 0;
   background: transparent;
 }
@@ -5603,7 +5599,6 @@ html .table-count {
 .panel.data-table-panel.panel-detached > .table-toolbar::after,
 .table-toolbar::after { left: var(--card-divider-inset); right: var(--card-divider-inset); }
 
-.ds-section-card .data-table,
 .panel.panel-detached > .table-scroll .data-table,
 .panel.data-table-panel.panel-detached > .table-scroll .data-table,
 .ldg-table,
@@ -5728,7 +5723,6 @@ html .table-count {
 .v6-split-table,
 .v6-log-split { margin-top: var(--space-24); }
 
-.ds-section-card,
 .v6-block,
 .v6-block > .table-scroll,
 .v6-block > .v6-log-list,
@@ -5761,7 +5755,6 @@ html .table-count {
 .panel.data-table-panel.panel-detached > .table-toolbar { padding-left: var(--space-16); padding-right: var(--space-16); }
 .ldg-table,
 .projects-table,
-.ds-section-card .data-table,
 .panel.panel-detached > .table-scroll .data-table,
 .panel.data-table-panel.panel-detached > .table-scroll .data-table { width: calc(100% - 32px); margin-left: var(--space-16); margin-right: var(--space-16); }
 
@@ -5983,7 +5976,7 @@ select { corner-shape: squircle !important; }
    .ldg-table-wrap 的 overflow-x: auto 生效；父级 hidden 会把滚动条裁掉，
    导致右侧列直接消失。圆角由内部元素各自处理。 */
 .ldg-section-card { overflow: visible; border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
-/* 卡内表格统一退到卡片内距 18px：与 .ldg-table、.ds-section-card 的表同一个数。
+/* 卡内表格统一退到卡片内距 18px：与 .ldg-table 的表同一个数。
    卡片自身 padding 为 0，不写这条表格会从圆角边缘起笔，视觉上像被卡片切开。 */
 .ldg-section-card > .table-scroll { overflow-x: auto; }
 .ldg-section-card > .table-scroll .data-table { width: calc(100% - 36px); margin: 0 18px; }
@@ -6412,53 +6405,8 @@ select { corner-shape: squircle !important; }
   .security-metric { min-height: 120px; }
 }
 
-/* =============================================================
-   Hana 区块节奏（2026-10 复审）
-   Section 标题在卡片外；正文卡片独立；表格线内缩。
-   ============================================================= */
-.ds-section { min-width: 0; margin: 0 0 30px; }
-.ds-section:last-child { margin-bottom: 0; }
-.ds-section-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-16);
-  margin: 0 var(--space-2) var(--space-10);
-}
-.ds-section-copy { min-width: 0; }
-.ds-section-copy h2 {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  margin: 0;
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: 0.05em;
-}
-.ds-section-copy h2 svg { width: 16px; height: 16px; color: var(--text-muted); stroke-width: 1.6; }
-.ds-section-copy p { max-width: 760px; margin: var(--space-4) 0 0; color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.55; }
-.ds-section-actions { display: flex; align-items: center; gap: var(--space-6); flex-shrink: 0; }
-.ds-section-card {
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  corner-shape: squircle;
-  background: var(--bg-card);
-  box-shadow: none;
-}
-.ds-section-card > .table-scroll { overflow-x: auto; }
-.ds-section-card .data-table { width: calc(100% - 36px); margin: 0 18px; }
-.ds-section-card > .ds-card-pad { padding: var(--space-16) 18px; }
-.ds-section-card .data-table thead th { border-top: 0; }
-
 /* 表格行线内缩：表体本身不贴卡片边缘，表头与行线自然留白 */
-.v6-block .data-table,
-.panel.ds-panel .data-table { width: calc(100% - 36px); margin: 0 18px; }
+.v6-block .data-table { width: calc(100% - 36px); margin: 0 18px; }
 
 /* 经营总览：标题栏移出卡片 */
 .overview-page .v6-block {
@@ -6749,10 +6697,7 @@ select { corner-shape: squircle !important; }
   .system-authorization-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .system-authorization-stats > div:nth-child(odd) { border-left: 0; }
   .settings-content .audit-filter-grid { grid-template-columns: minmax(0, 1fr); }
-  .ds-section-card .data-table,
-  .v6-block .data-table,
-  .panel.ds-panel .data-table { width: calc(100% - 24px); margin: 0 12px; }
-  .ds-section-head { align-items: flex-start; flex-direction: column; gap: var(--space-8); }
+  .v6-block .data-table { width: calc(100% - 24px); margin: 0 12px; }
   .overview-page .v6-block > .table-scroll,
   .overview-page .v6-block > .v6-log-list,
   .overview-page .v6-block > .v6-todo { border-radius: var(--radius-lg); }
@@ -9506,7 +9451,6 @@ html .button-ghost.button-toolbar.is-active {
    ===========================================================================
    问题：各容器自带 margin-bottom，值各不相同：
      .ldg-section    margin: 0 0 24px
-     .ds-section     margin: 0 0 30px
      .v6-split       margin: 0 0 28px
      .ldg-note       margin: 14px 0 0
    而有些元素同时有上下 margin，相邻时叠加成 30 / 33 / 57 这类怪值。
@@ -9603,7 +9547,7 @@ html .page-wrap.business-party-detail-page {
    有的角像苹果图标（squircle），有的是标准圆弧。
 
    最容易被看出来的是主卡片 ldg-section-card（14.73px）：
-   它和 ds-section-card 半径相同，但曲率不同。
+   同样的半径在别的容器上常是标准圆弧。
 
    不能写全局 * 规则：border-radius: 50% 的头像/圆点配 squircle
    会变成超椭圆，不再是正圆。

@@ -154,7 +154,7 @@ Absolutely、delve、deep-think、新暖纸 `new-warm-paper`、青夜·高对比
   > 2026-10-23 订正：旧版此条写「10px 圆角」。实际实现已统一为 `var(--radius-control)` + `corner-shape: squircle`，在支持 squircle 的浏览器下解析为 ≈11.05px，不支持时回退 6px。用 token 比硬编码 10px 更正确（能随 squircle 能力自动切换），故以实现为准。
 - 设置式业务页：页面标题 + `.ldg-section` 小标题 + `.ldg-section-card` + `.settings-row`（左侧标签/说明、右侧控件）。系统设置窗内十二页与设置窗外的 `/account/security`（个人中心与账号安全）、`/parties`（往来单位库）已全部用台账三件套；`.settings-row` 仍保留给卡内表单。
   > 2026-11-04：`SettingsSection` 组件（Hana Section 的 1:1 复刻）已删除。它最后的两个使用者就是上面这两页；连同 `SettingsSection.module.css`、`Ui.tsx` 里同名的死导出、`hana.css` 的 `.settings-section*` 规则族和 `.page-wrap > [class*="_section_"]` 兜底一起退役。
-  > 同日第二批：`Ui.tsx` 的 `Section`（`ds-section` 三件套）、`DataPanel`、`CardHead` 也退役，业务页的 `.panel` 壳全部换完。现在全仓只有一套卡壳（`ldg-section-card`）；剩下的 `.panel` 只在报表工作室（/reports/studio）外壳上，内部是第三方 Univer 表格，按 `docs/组件不变量.md` 故意豁免。字典目录改为“目录单列行 + 独立分类资料卡 + 字典项行卡”，目录只负责选择，字段编辑不塞进列表行中，也不再使用 6 列宽表。
+  > 同日第二批：`Ui.tsx` 的 `Section`（`ds-section` 三件套）、`DataPanel`、`CardHead` 也退役，业务页的 `.panel` 壳全部换完。现在全仓只有一套卡壳（`ldg-section-card`）；剩下的 `.panel` 只在报表工作室（/reports/studio）外壳上，内部是第三方 Univer 表格，按 `docs/组件不变量.md` 故意豁免。同日第三批：`.ds-section*` / `.ds-card-pad` / `.panel.ds-panel` 规则族（`hana.css` 主块与两处响应式、`stat-metrics.css` 四组）一并删除，那套壳已无元素命中。字典目录改为“目录单列行 + 独立分类资料卡 + 字典项行卡”，目录只负责选择，字段编辑不塞进列表行中，也不再使用 6 列宽表。
 - 运维页：四项运行状态合并为一张 2×2 状态卡；备份配置用设置行；备份与恢复记录改为可换行行卡，不再使用 6 列宽表，因此 733px 窗口下也没有表头线、空表行和横向滚动条。
 - 设置内分段切换：28px 轨道 + 2px 内边距 + 26px 白色滑块，计数是纯文字；不使用整排胶囊按钮。`.sys-tabs` 已按此实现，宽度跟随内容。
   > 2026-10-23 订正：`hana.css` 曾并存三套 `.sys-tabs` 定义（单行胶囊式、下划线 tab 式、轨道滑块式）。因后写者生效，实际渲染一直是轨道滑块形态，但前两套死代码会误导维护者，现已删除，只保留一套。
