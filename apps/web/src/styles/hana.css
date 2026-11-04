@@ -9986,6 +9986,9 @@ textarea {
    卡内一律 18px：与卡头（左 2px）、表格（18px）、设置窗口径对齐。
    ============================================================= */
 
+/* 卡内空态：左右内距与表格对齐到 18px。 */
+.ldg-section-card > .empty-state { padding-left: 18px; padding-right: 18px; }
+
 /* --- 主合同 ---------------------------------------------------------- */
 /* 字段网格原先靠 .panel.panel-detached > * 的 16px 左右外边距对齐，
    换卡后这条不生效，单元格会贴到卡边（实测首列文字距卡 1px，
@@ -10022,3 +10025,53 @@ textarea {
   color: var(--text);
   box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 10%, transparent);
 }
+
+/* --- 实际成本 -------------------------------------------------------- */
+/* 原规则挂在 .panel.panel-detached.data-table-panel > .table-toolbar 下，
+   换卡后选择器失效：不补就是 17px 内距 + 一条通长底线。 */
+.cost-table-card { padding: 0; }
+.cost-table-card > .table-toolbar { position: relative; padding: var(--space-12) 18px; border-bottom: 0; }
+.cost-table-card > .table-toolbar::after {
+  content: '';
+  position: absolute;
+  right: 18px;
+  bottom: 0;
+  left: 18px;
+  height: 1px;
+  background: color-mix(in srgb, var(--border) 60%, transparent);
+  pointer-events: none;
+}
+
+/* --- 分供合同与付款 -------------------------------------------------- */
+/* 每份合同一张卡。卡体 0 内距，指标条与四个展开区自己退18px，
+   否则原来 .panel 的 16px 会连带把指标条挤成 16px、展开区 17px。 */
+.ldg-section-card.downstream-finance-contract { padding: 0; }
+.ldg-section-card.downstream-finance-contract > .finance-contract-metrics { margin: var(--space-16) 18px 0; }
+.ldg-section-card.downstream-finance-contract > .finance-section { padding-left: 18px; padding-right: 18px; }
+.ldg-section-card.downstream-finance-contract > .finance-section:last-child { padding-bottom: var(--space-6); }
+
+/* --- 进度款申报 ------------------------------------------------------ */
+.progress-bill-table-card { padding: 0; }
+
+/* --- 报表中心 -------------------------------------------------------- */
+/* 两张入口卡原本是「指标条」写法：html .report-studio-entry-card 把边框、
+   圆角和底色全清了，只留 1px 左边线；html body ... > :first-child 又单独把首格
+   的 border-left 和 padding-left 清零。换卡后需要 c=3 的选择器才能压过它们。 */
+.report-center-page .report-studio-entry-grid > .report-studio-entry-card {
+  padding: 16px 18px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  corner-shape: squircle;
+  background: var(--bg-card);
+}
+/* 容器自身原来带上下通长线 + 16px 上下内距，现在卡头在卡外，这两项都多余。 */
+.report-center-page .report-studio-entry-grid { padding: 0; margin: 0; border: 0; }
+/* legacy 给 .report-standard-workspace 写了 16px 内距（旧 panel 靠
+   panel-detached 的 !important 压住），现在直接落在 ldg-section 上，必须归零。 */
+.ldg-section.report-standard-workspace { padding: 0; }
+.report-standard-card { padding: 0; }
+/* 原内距写在 .panel.panel-detached > .report-standard-layout 下（14/16/16），
+   卡体自己 0 内距后必须补回来，否则两列直接顶到卡边。 */
+.report-standard-workspace .report-standard-layout { margin: 0; padding: 16px 18px 18px; }
+/* 卡头是 flex-end，旧规则的 flex-start 会把胶囊顶到卡头上边。 */
+.report-standard-workspace .report-format-pill { align-self: flex-end; }

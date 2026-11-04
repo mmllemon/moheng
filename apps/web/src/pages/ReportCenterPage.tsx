@@ -97,22 +97,23 @@ export default function ReportCenterPage() {
   return <div className="page-wrap report-center-page">
     <PageHeader eyebrow="REPORTS / BUSINESS OUTPUTS" title="报表中心" subtitle="标准台账快速核对，综合经营报告统一编排；先预览，再导出。" actions={<Button variant="secondary" onClick={() => { void projectsQuery.refetch(); void catalogQuery.refetch(); }} disabled={projectsQuery.isFetching || catalogQuery.isFetching}><RefreshCw size={14} />刷新</Button>} />
     {projectsQuery.isLoading || catalogQuery.isLoading ? <LoadingBlock label="正在加载可用报表…" /> : projectsQuery.error || catalogQuery.error ? <ErrorBlock message={String(projectsQuery.error ?? catalogQuery.error ?? '报表信息加载失败')} retry={() => { void projectsQuery.refetch(); void catalogQuery.refetch(); }} /> : <>
-      <section className="report-workspace-section" aria-labelledby="report-studio-heading">
-        <div className="report-workspace-heading"><div><h2 id="report-studio-heading">综合经营报告</h2><p>跨业务组合数据、自由排版并保存为可复用模板。</p></div></div>
+      <section className="ldg-section" aria-labelledby="report-studio-heading">
+        <div className="ldg-section-head"><div><h2 id="report-studio-heading">综合经营报告</h2><p>跨业务组合数据、自由排版并保存为可复用模板。</p></div></div>
         <div className="report-studio-entry-grid" aria-label="综合报表设计入口">
-          <button type="button" className="panel report-studio-entry-card" onClick={() => openStudio('PROJECT')}>
+          <button type="button" className="ldg-section-card report-studio-entry-card" onClick={() => openStudio('PROJECT')}>
             <span className="report-studio-entry-icon"><FolderKanban size={19}/></span>
             <span className="report-studio-entry-copy"><strong>项目综合经营报告</strong><small>项目摘要、主合同、分供合同、收款、应收与成本整合到一份报告。</small><em>打开项目级工作室 <ArrowRight size={14}/></em></span>
           </button>
-          <button type="button" className="panel report-studio-entry-card" onClick={() => openStudio('COMPANY')}>
+          <button type="button" className="ldg-section-card report-studio-entry-card" onClick={() => openStudio('COMPANY')}>
             <span className="report-studio-entry-icon"><Building2 size={19}/></span>
             <span className="report-studio-entry-copy"><strong>公司级经营报表</strong><small>按权限汇总项目经营指标，支持跨项目对比与明细追溯。</small><em>打开公司级工作室 <ArrowRight size={14}/></em></span>
           </button>
         </div>
       </section>
 
-      <section className="panel report-standard-workspace" aria-labelledby="standard-report-heading">
-        <div className="report-standard-heading"><div><h2 id="standard-report-heading"><FileSpreadsheet size={17}/>标准台账</h2><p>选中左侧台账后，在右侧设置范围并预览或导出。</p></div><span className="report-format-pill">{catalog.length} 类 · CSV / XLSX</span></div>
+      <section className="ldg-section report-standard-workspace" aria-labelledby="standard-report-heading">
+        <div className="ldg-section-head"><div><h2 id="standard-report-heading"><FileSpreadsheet size={16}/>标准台账</h2><p>选中左侧台账后，在右侧设置范围并预览或导出。</p></div><span className="report-format-pill">{catalog.length} 类 · CSV / XLSX</span></div>
+        <div className="ldg-section-card report-standard-card">
         <div className="report-standard-layout">
           <section className="report-picker-panel" aria-label="标准台账目录">
             <div className="report-category-tabs" role="group" aria-label="报表类别">
@@ -141,6 +142,7 @@ export default function ReportCenterPage() {
             {notice && <div className="success-notice"><CheckCircle2 size={16}/>{notice}</div>}{error && <div className="form-alert">{error}</div>}
             <div className="report-config-footer"><span><FolderKanban size={14}/>{projectId ? `当前项目：${projectsQuery.data?.find((p) => p.id === projectId)?.name ?? '所选项目'}` : '范围：全部有权限项目'}</span><div className="report-config-actions"><Button variant="ghost" onClick={() => { setFrom(''); setTo(''); }} disabled={!from && !to}>清除日期</Button><Button variant="secondary" onClick={() => void downloadCsv()} disabled={busy || !catalog.some((item) => item.key === reportKey) || Boolean(from && to && from > to)}><ArrowDownToLine size={14}/>{busy ? '正在生成…' : '导出 CSV'}</Button><Button variant="secondary" onClick={() => { const params = new URLSearchParams({ reportKey, projectId, from, to }); navigate(`/reports/designer?${params.toString()}`); }}><Settings2 size={14}/>设计报表模板</Button><Button onClick={previewStandardReport} disabled={busy || !catalog.some((item) => item.key === reportKey) || Boolean(from && to && from > to)}><Eye size={14}/>预览并导出 XLSX</Button></div></div>
           </section>
+        </div>
         </div>
       </section>
       <PageNote>所有报表由服务端按项目权限读取只读数据；模板不能访问白名单以外的字段，也不会回写业务台账。</PageNote>

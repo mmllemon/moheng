@@ -2,6 +2,17 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 业务页第二批：实际成本、分供合同财务、进度款、报表中心
+
+第二批四个页面的 `.panel` 壳换台账卡。这四页的旧壳分三类：`.panel.data-table-panel` + `.panel-heading`（成本、进度款）、每份合同一张 `.panel` + `.panel-heading`（分供财务）、`.panel` 当按钮/工作区壳（报表中心）。
+
+- **实际成本**：`div.panel.data-table-panel` 拆成 `ldg-section` + `ldg-section-card cost-table-card`，h2 带 `Receipt`，筛选计数进说明行，右侧留「清除类型筛选」。工具条原本靠 `.panel.data-table-panel.panel-detached > .table-toolbar` 给 12/18 内距与 18px 缩进的分界线，换壳后这两条不命中（回落成 `.table-toolbar` 的 17px 内距 + 通长底线），页面作用域补回。
+- **分供合同与付款**：每份合同一个 `ldg-section`，合同编号与名称进 `ldg-section-head`，右侧三个按钮留在卡头；卡体 `padding: 0`，指标条退 18px、四个 `details.finance-section` 从 17px 收到 18px，末块补 6px 底距。`legacy.css` 里 `.downstream-finance-contract > .panel-heading` 四条与窄屏反向规则同步改到新宿主。
+- **进度款**：申报记录与到账明细两张卡，表 1146 / 左 347（卡 1184 + 18px）。`.payments-panel` 的 16px 上边距保留，与 `.ldg-section` 的 24px 相邻回落成 24。
+- **报表中心**：两个 `button.panel.report-studio-entry-card` 换成 `ldg-section-card`，但这两张卡本来是指标条写法（`html .report-studio-entry-card` 把边框、圆角、底色全清掉只留 1px 左边线，`html body ... > :first-child` 又把首格左边线与左内距清零），必须用 c=3 的选择器才能压过；入口容器自身那两条上下通长线与 16px 内距一并归零。`section.panel.report-standard-workspace` 拆成 `ldg-section` + `ldg-section-head`（h2 带 `FileSpreadsheet`、右侧胶囊）+ `ldg-section-card`，`report-standard-layout` 的内距从 `.panel.panel-detached > …` 的 14/16/16 改到卡内 16/18/18，两列变 250 + 34 + 342。`report-workspace-section` 这层 flex 壳删掉，否则 `gap: 8` 会顶掉卡头到卡的 16px。
+- **卡内空态统一 18px**：新增 `.ldg-section-card > .empty-state { padding-left/right: 18px }`，与表格同宽。
+- 复核（1600 视口）：/cost/costs 卡 664×278（空态）、卡头 42、卡头到卡 16、工具条 12/18；/cost/progress-bills 两卡 1184×83 与 1184×68、表 1146 无横滚；/cost/downstream?view=finance 卡 664×397、指标条与展开区均自 18px 起；/reports 两张入口卡 324×121.6（gap 16）、标准台账卡 664×516（两列 250 / 34 / 342，胶囊与卡头底边对齐）。四页 `leftoverPanel` 均为 0、页面横向溢出 0、控制台无报错。`run-gates --tier blocking` 33/33，`@cms/web` lint（`tsc --noEmit`）exit 0。
+
 ### 2026-11-04 业务页起手四页：待办、变更签证、主合同、往来单位详情换台账卡
 
 设置窗与往来单位库收完后，全仓只剩一套「台账卡」和一套 `.panel`（尚未迁的 12 个业务页）。这 12 页的卡壳靠 `use-detached-panel-headers` 在运行时量标题高度、用 `::before` 从标题底下画假卡面，卡头在卡内、内距 16px，与台账页的「卡头在卡外 + 卡内 18px」不是一回事。本轮先迁四页验证口径。

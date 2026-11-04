@@ -520,11 +520,9 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 .downstream-finance-page .page-header { margin-bottom: var(--space-2); }
 .finance-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 0; }
 .downstream-finance-contract { overflow: hidden; }
-.downstream-finance-contract > .panel-heading { align-items: flex-start; }
-.downstream-finance-contract .panel-heading > div:first-child { min-width: 0; }
-.downstream-finance-contract .panel-heading h3 { overflow-wrap: anywhere; font-size: var(--fs-ui); }
-.downstream-finance-contract .panel-heading p { flex-wrap: wrap; line-height: 1.6; }
-.downstream-finance-contract .panel-heading .row-actions { justify-content: flex-end; flex-wrap: wrap; }
+/* 2026-11-04：卡头换到 ldg-section-head（卡外），这四条 panel-heading 规则已无命中。 */
+.downstream-finance-contract .ldg-section-head p { line-height: 1.6; }
+.downstream-finance-page .ldg-section-head .row-actions { justify-content: flex-end; flex-wrap: wrap; }
 .finance-contract-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; }
 .finance-contract-metrics > div { display: flex; flex-direction: column; gap: var(--space-8); min-width: 0; padding: var(--space-14) var(--space-16); background: #fbfcfe; }
 .finance-contract-metrics span { color: var(--meta); font-size: var(--text-2xs); }
@@ -554,8 +552,7 @@ kbd { padding: 1px var(--space-6); border: 1px solid var(--line); border-radius:
 @media (max-width: 1000px) {
   .finance-contract-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .finance-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .downstream-finance-contract > .panel-heading { flex-direction: column; }
-  .downstream-finance-contract .panel-heading .row-actions { justify-content: flex-start; }
+  .downstream-finance-contract .row-actions { justify-content: flex-start; }
 }
 @media (max-width: 600px) {
   .finance-summary-grid, .finance-contract-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
