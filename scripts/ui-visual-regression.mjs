@@ -48,6 +48,11 @@ async function runTarget(kind) {
     const major = chromiumMajor(env.ua);
     env.chromiumMajor = major;
     env.cornerShapeSupported = major !== null && major >= CORNER_SHAPE_MIN_CHROMIUM;
+    // 2026-11-04：结果文件要能自己说明“比的是哪个引擎”。
+    // `launchTarget` 目前对 web / electron 都启动同一个 Chrome（仓库里还没有桌面壳），
+    // 所以两个 target 的 signature 会完全相同；validate-ui-parity 据此拒绝把
+    // “同一引擎对同一引擎”当成桌面端一致性证据。
+    env.engine = target.engine;
 
     if (!env.cornerShapeSupported) {
       failures.push({
@@ -227,6 +232,7 @@ function summarize(result) {
     target: result.target,
     chromiumMajor: result.env?.chromiumMajor ?? null,
     cornerShapeSupported: result.env?.cornerShapeSupported ?? false,
+    engine: result.env?.engine ?? null,
     innerWidth: result.env?.innerWidth ?? null,
     innerHeight: result.env?.innerHeight ?? null,
     dpr: result.env?.dpr ?? null,

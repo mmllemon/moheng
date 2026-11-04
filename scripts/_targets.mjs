@@ -65,8 +65,7 @@ export async function launchTarget(kind) {
     executablePath: CHROME_PATH,
     headless: true,
     args: ['--window-size=1500,950'],
-  });
-  const context = await browser.newContext({
+  });  const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     locale: 'zh-CN',
     deviceScaleFactor: 1,
@@ -168,6 +167,19 @@ export async function launchTarget(kind) {
 
   return {
     kind,
+    /**
+     * 2026-11-04：引擎指纹。得把“到底启动了哪个容器”写进结果，否则没人看得出
+     * electron 那一份是不是真桌面壳。当前仓库没有 Electron 壳（无依赖、无 main 进程），
+     * 下面两个分支启动的是同一个 Chrome，于是 desktopShell 恒为 false、signature 相同。
+     * validate-ui-parity 会拿这两个字段判定“这份比对算不算桌面端验收”。
+     */
+    engine: {
+      requested: kind,
+      runtime: 'chrome',
+      executable: CHROME_PATH,
+      signature: `chrome:${CHROME_PATH}`,
+      desktopShell: false,
+    },
     page,
     pageErrors,
     open,

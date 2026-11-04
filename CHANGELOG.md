@@ -2,6 +2,28 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 UI 双 target 门禁：查清它为什么永远无法变绿，并加引擎守卫
+
+本来要清这条 advisory 债务，结果是：**它清不掉，而且原因比文档里写得更硬。**
+
+`docs/gates/ui-parity/web.json` 在，`electron.json` 一直缺。原记录归因为“缺基线产物”，实际是
+`scripts/_targets.mjs` 的 `launchTarget(kind)` **根本没有按 kind 分支**，web 与 electron 启动的是同一个
+`CHROME_PATH`；仓库里没有 electron 依赖、没有 main 进程，现有文档也零提及桌面壳。也就是说把
+`electron.json` 生成出来，就是拿 Chrome 跟自己比：26 条路由必然逐项相等，门禁变绿，桌面端一行没验。
+这正是本仓库反复警告的“把没测读成通过”。
+
+**加的是守卫，不是放宽**：结果文件现在写入 `env.engine`（requested / runtime / signature / desktopShell）；
+`validate-ui-parity.mjs` 在逐项比对前先验引擎 —— electron 侧必须 `desktopShell: true`，两侧 signature 必须不同，
+否则直接 exit 1 并终止比对，不打印任何“逐项相等”的结论。三种输入实测：老结果（无 engine 字段）exit 1；
+两份同一 Chrome exit 1（sameSignature: true）；声明真桌面壳且签名不同 exit 0（13 项全过）。
+`selftest-ui-parity` 加了第 7 个案子“stub 冒充桌面端”，必须被拦下，7/7 行为正确。
+
+**债务仍在**，但形状变了：从“没人跑过”变成“前置条件缺失，且伪造产物会被拒”。解除需 owner 二选一：
+引入桌面壳（真 electron 依赖 + main 进程），或把第二 target 改成旧版 Chromium（真降级路径是 squircle
+在 Chromium <139 静默退化）并接受门禁语义变更。两种都写进了 `docs/门禁债务清单.md`。
+
+门禁 blocking 33/33；advisory 仍是 `source-bundle` 与 `gate-ui-parity` 两条，与之前数量一致。
+
 ### 2026-11-04 AI 助手边界状态与体验验收（含窄屏弹窗遮挡修复）
 
 把「用户遇到问题时看到什么」这层逐项造出来验了一遍，顺手修掉一个窄屏缺陷。

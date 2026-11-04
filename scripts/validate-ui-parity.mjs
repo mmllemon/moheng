@@ -75,6 +75,35 @@ if (!existsSync(WEB) || !existsSync(ELECTRON)) {
   const webRaw = web.raw.web;
   const electronRaw = electron.raw.electron;
 
+  // ---- 1.5 引擎真实性 ----
+  // 2026-11-04 新增：两份结果必须来自不同的容器，且 electron 侧必须声明“真的跑了桌面壳”。
+  // 背景：`scripts/_targets.mjs` 的 launchTarget 目前对 web / electron 都启同一个 Chrome
+  // （仓库里没有 electron 依赖，也没有 main 进程）。那样生成的 electron.json 与自己比，
+  // 26 条路由的数字必然逐项相等 —— 看起来全绿，实际什么都没验。这里直接拦死：
+  // 宁可让门禁红着，也不让“没测”被读成“通过”。
+  const webEngine = webRaw.env?.engine ?? null;
+  const electronEngine = electronRaw.env?.engine ?? null;
+  const sameSignature = (webEngine?.signature ?? 'missing') === (electronEngine?.signature ?? 'missing-other');
+  const electronIsDesktopShell = electronEngine?.desktopShell === true;
+
+  if (!electronIsDesktopShell || sameSignature) {
+    console.log('FAIL electron 结果来自真实桌面壳 :: ' + JSON.stringify({ webEngine, electronEngine }));
+    console.log('FAIL 两个 target 引擎签名不同 :: ' + JSON.stringify({ sameSignature }));
+    console.log('');
+    console.log('两份结果来自同一个 Chrome，这组数字必然相等，但**桌面端未经任何验证**。');
+    console.log('对比已提前终止，后续逐项相等不再判定，避免把空比对读成通过。');
+    console.log('');
+    console.log('真的想比：先引入桌面壳（electron 依赖 + main 进程），让 launchTarget 的 electron 分支');
+    console.log('启动真壳并报 desktopShell=true、给出不同 engine.signature。');
+    console.log('如果暂时只能本地跑，请在发布说明里写明“桌面端一致性未验证”，不要生成假的 electron.json。');
+    console.log('');
+    console.log('2 项双 target 一致性检查失败。');
+    process.exit(1);
+  }
+
+  check('electron 结果来自真实桌面壳', electronIsDesktopShell, { engine: electronEngine });
+  check('两个 target 引擎签名不同', !sameSignature, { web: webEngine?.signature ?? null, electron: electronEngine?.signature ?? null });
+
   // ---- 2. 两个 target 自身都必须全绿 ----
   check('web target 自身无失败项', web.summarize.web.failureCount === 0, web.summarize.web.failures);
   check('electron target 自身无失败项', electron.summarize.electron.failureCount === 0, electron.summarize.electron.failures);

@@ -7,6 +7,8 @@ import { execFileSync } from 'node:child_process';
 
 const WEB = 'docs/gates/ui-parity/web.json';
 const base = JSON.parse(readFileSync(WEB, 'utf8'));
+// web 侧也声明引擎，当作“真 Chrome 跑出来的结果”；与 electron 侧 signature 必须不同。
+base.raw.web.env.engine = { requested: 'web', runtime: 'chrome', signature: 'chrome:156.0-selftest', desktopShell: false };
 
 const tmp = mkdtempSync(join(tmpdir(), 'uiparity-'));
 const cases = [];
@@ -26,6 +28,12 @@ function perfectElectron() {
   delete clone.raw.web;
   delete clone.summarize.web;
   clone.target = 'electron';
+  // 2026-11-04：validate-ui-parity 现在先验引擎指纹（electron 侧必须声明真实桌面壳、
+  // 两侧 signature 必须不同），否则“同一个 Chrome 跟自己比”会被直接拦下。
+  // 这里的样本代表“真壳跑出来的结果”，后续差异注入的才是被测的逐项比对。
+  const electronEngine = { requested: 'electron', runtime: 'electron', signature: 'electron:43.0.0-selftest', desktopShell: true };
+  clone.raw.electron.env.engine = electronEngine;
+  clone.summarize.electron.engine = electronEngine;
   return clone;
 }
 
@@ -67,6 +75,15 @@ writeCase('identical', perfectElectron());
   const e = perfectElectron();
   e.raw.electron.dialog.trapped = false;
   writeCase('focus-trap-differs', e);
+}
+
+// 差异6：electron 侧其实仍是同一个浏览器（无桌面壳）→ 现在必须被引擎守卫拦下。
+// 这是 2026-11-04 新增的防线：以前会把“同一引擎对同一引擎”当成逐项相等而放行。
+{
+  const e = perfectElectron();
+  e.raw.electron.env.engine = { requested: 'electron', runtime: 'chrome', signature: 'chrome:156.0-selftest', desktopShell: false };
+  e.summarize.electron.engine = e.raw.electron.env.engine;
+  writeCase('stub-not-really-desktop', e);
 }
 
 console.log('逐案验证门禁是否会失败：\n');
