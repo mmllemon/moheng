@@ -2693,9 +2693,9 @@ html .filter-bar input[type="search"] {
 }.project-overview-page .project-attention-panel .panel-heading { border-bottom: 0; }
 .project-identity-facts > div { border-left: 0; position: relative; }
 .project-identity-facts > div + div::before { content: ''; position: absolute; top: var(--card-divider-inset); bottom: var(--card-divider-inset); left: -8px; width: var(--card-divider-width); background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
-.project-overview-page .project-attention-row { position: relative; border-top: 0; padding: var(--space-14) var(--space-16); }
-.project-overview-page .project-attention-row + .project-attention-row::before { content: ''; position: absolute; top: 0; right: var(--space-16); left: var(--space-16); height: var(--card-divider-width); background: color-mix(in srgb, var(--card-border) 62%, transparent); pointer-events: none; }
-.project-overview-page .project-attention-note { margin: var(--space-10) var(--space-16) var(--space-14); padding: var(--space-10) var(--space-12); border-top: 0; border: 1px solid color-mix(in srgb, var(--text-muted) 16%, transparent); border-radius: var(--radius-action); background: color-mix(in srgb, var(--text-muted) 4%, transparent); }
+.project-overview-page .project-attention-row { position: relative; border-top: 0; padding: var(--space-14) 18px; }
+.project-overview-page .project-attention-row + .project-attention-row::before { content: ''; position: absolute; top: 0; right: 18px; left: 18px; height: var(--card-divider-width); background: color-mix(in srgb, var(--card-border) 62%, transparent); pointer-events: none; }
+.project-overview-page .project-attention-note { margin: var(--space-10) 18px var(--space-14); padding: var(--space-10) var(--space-12); border-top: 0; border: 1px solid color-mix(in srgb, var(--text-muted) 16%, transparent); border-radius: var(--radius-action); background: color-mix(in srgb, var(--text-muted) 4%, transparent); }
 .project-overview-page .project-attention-note { border-top: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
 .project-overview-page .project-identity-mark { border-color: var(--border); border-radius: var(--radius-control); background: var(--overlay-subtle); }
 .project-overview-page .project-shortcut-grid { gap: var(--space-10); border: 0; }
@@ -7537,7 +7537,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   margin-top: calc(4px + 6px + 4px);
 }
 .project-cockpit-main { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(270px, .8fr); gap: var(--space-24); margin-bottom: var(--space-24); align-items: start; }
-.project-cockpit-chart .panel-heading { margin-bottom: var(--space-6); }
 .project-cockpit-chart-empty { min-height: 260px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: var(--space-6); color: var(--text-muted); text-align: center; border: 1px dashed color-mix(in srgb, var(--card-border) 88%, transparent); border-radius: var(--radius-action); background: var(--overlay-subtle); }
 .project-cockpit-chart-empty svg { color: var(--text-muted); opacity: .7; }
 .project-cockpit-chart-empty strong { color: var(--text-light); font-size: var(--fs-hint); font-weight: 600; }
@@ -7558,11 +7557,9 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 @media (max-width: 1280px) {
   .project-entry-note { display: none; }
 }
-.project-cockpit-downstream { margin-top: var(--space-24); padding: 0; }
-.project-cockpit-downstream > .panel-heading { padding: 16px var(--card-inset) 12px; margin: 0; }
-.project-cockpit-downstream-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
-.project-cockpit-downstream-facts > div { position: relative; min-width: 0; padding: 14px var(--card-inset) 16px; }
-.project-cockpit-downstream-facts > div + div::before { content: ''; position: absolute; top: 14px; bottom: 14px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 62%, transparent); }
+.project-cockpit-downstream-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 0; }
+.project-cockpit-downstream-facts > div { position: relative; min-width: 0; padding: 16px 18px 18px; }
+.project-cockpit-downstream-facts > div + div::before { content: ''; position: absolute; top: 16px; bottom: 16px; left: 0; width: 1px; background: color-mix(in srgb, var(--card-border) 62%, transparent); }
 .project-cockpit-downstream-facts span { display: block; color: var(--text-muted); font-size: var(--fs-hint); }
 .project-cockpit-downstream-facts strong { display: block; margin-top: var(--space-4); color: var(--text); font-family: var(--font-num, var(--num)); font-size: 18px; font-weight: 600; }
 @media (max-width: 1120px) {
@@ -7583,7 +7580,7 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
   .project-cockpit-money { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .project-entry-strip { grid-template-columns: minmax(0, 1fr); margin-top: var(--space-12); }
   .project-cockpit-downstream-facts { grid-template-columns: minmax(0, 1fr); }
-  .project-cockpit-downstream-facts > div + div::before { top: 0; right: var(--card-inset); bottom: auto; left: var(--card-inset); width: auto; height: 1px; }
+  .project-cockpit-downstream-facts > div + div::before { top: 0; right: 18px; bottom: auto; left: 18px; width: auto; height: 1px; }
 }
 
 /* 统一卡片内缩与轻量状态：先修提示条、列表行、空态 */
@@ -10075,3 +10072,18 @@ textarea {
 .report-standard-workspace .report-standard-layout { margin: 0; padding: 16px 18px 18px; }
 /* 卡头是 flex-end，旧规则的 flex-start 会把胶囊顶到卡头上边。 */
 .report-standard-workspace .report-format-pill { align-self: flex-end; }
+
+/* --- 项目驾驶舱 ------------------------------------------------------ */
+/* 两列工作区里的 ldg-section 不能带 24px 底距，否则两张卡顶不平。 */
+.project-cockpit-main > .ldg-section { margin: 0; }
+/* 图表与底部指标原来靠 panel-detached 的 16px 外边距内缩，换卡后补 18px。 */
+.ldg-section-card.project-cockpit-chart { padding: 16px 18px 18px; }
+.ldg-section-card.project-cockpit-downstream-card { padding: 0; }
+
+/* --- 项目成员与权限 -------------------------------------------------- */
+.members-two-column > .ldg-section { margin: 0; }
+.ldg-section-card.members-project-banner { padding: 14px 18px; }
+/* legacy 的 .members-two-column > .panel{padding:17px} 换壳后不命中，卡内自己给 17/18。 */
+.ldg-section-card.members-invite-panel { padding: 17px 18px 18px; }
+.ldg-section-card.members-role-guide { padding: 17px 18px 18px; }
+.ldg-section-card.members-table-panel { padding: 0; }

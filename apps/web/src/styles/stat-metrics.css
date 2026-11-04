@@ -153,9 +153,9 @@ html .system-authorization-scope-card {
    这里按列数逐行纠正。 */
 
 /* 两列布局：奇数位是行首，偶数位是行末
-   注意：/system 的卡片同时带 .panel，旧规则
-   `article.panel.system-overview-metric:first-child`（特异度 32）会压过单类写法。
-   用 .panel 同时挂名，直接把特异度拉到 32+。 */
+   注意：/system 的卡片同时带 .ldg-section-card，旧规则
+   `article.system-overview-metric:first-child`（特异度 32）会压过单类写法。
+   用 .ldg-section-card 同时挂名，直接把特异度拉到 32+。 */
 html .system-overview-metrics > article.system-overview-metric:nth-child(odd) {
   padding-left: var(--space-16);
   border-left: 0;
@@ -345,10 +345,10 @@ html .system-overview-metric > a.system-overview-icon svg {
   height: 13px;
 }
 
-/* .panel 同时是指标卡时，必须显式清掉 panel 的背景与边框 */
-html article.panel.security-metric,
-html article.panel.system-overview-metric,
-html article.panel.report-studio-entry-card {
+/* 指标卡不带卡壳时，必须显式清掉卡片的背景与边框 */
+html article.security-metric,
+html article.system-overview-metric,
+html article.report-studio-entry-card {
   padding: 0 var(--space-16);
   border: 0;
   border-left: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
@@ -422,9 +422,9 @@ html .settings-content .system-authorization-scope-card {
 .settings-content .assistant-rail-copy span {
   font-size: var(--fs-hint, 11.2px);
 }
-html .settings-content article.panel.security-metric,
-html .settings-content article.panel.system-overview-metric,
-html .settings-content article.panel.report-studio-entry-card {
+html .settings-content article.security-metric,
+html .settings-content article.system-overview-metric,
+html .settings-content article.report-studio-entry-card {
   padding: 14px var(--space-16);
   border: 1px solid var(--card-border);
   border-left: 1px solid var(--card-border);
@@ -434,15 +434,15 @@ html .settings-content article.panel.report-studio-entry-card {
 }
 /* 首末项不再清零左右内边距（原规则为「指标条」设计，
    现在每格都是独立卡片，左右都要对称）。 */
-html .settings-content article.panel.security-metric:first-child,
-html .settings-content article.panel.system-overview-metric:first-child,
-html .settings-content article.panel.report-studio-entry-card:first-child {
+html .settings-content article.security-metric:first-child,
+html .settings-content article.system-overview-metric:first-child,
+html .settings-content article.report-studio-entry-card:first-child {
   padding-left: var(--space-16);
   border-left: 1px solid var(--card-border);
 }
-html .settings-content article.panel.security-metric:last-child,
-html .settings-content article.panel.system-overview-metric:last-child,
-html .settings-content article.panel.report-studio-entry-card:last-child {
+html .settings-content article.security-metric:last-child,
+html .settings-content article.system-overview-metric:last-child,
+html .settings-content article.report-studio-entry-card:last-child {
   padding-right: var(--space-16);
 }
 /* 设置窗内的指标卡是「独立卡片」（有 border + bg + radius），
@@ -456,7 +456,7 @@ html .settings-content article.panel.report-studio-entry-card:last-child {
    文字会贴到卡片上下边框（实测 /system 的 2×2 指标卡 padding: 0px 16px）。
    特异度：这条 html .settings-content ... 是 0,3,2，能压过上面 0,3,3？
    不能，所以用 :where() 不提升特异度不行——改为直接把选择器写到更高。 */
-html .settings-content article.panel.system-overview-metric,
+html .settings-content article.system-overview-metric,
 html .settings-content .system-overview-metrics > article.system-overview-metric {
   padding: 14px var(--space-16);
   border: 1px solid var(--card-border);
@@ -476,23 +476,23 @@ html .settings-content .system-overview-metrics > article.system-overview-metric
   row-gap: var(--space-2);
 }
 /* 图标占第一列，文字块第二列，箭头第三列 */
-html .settings-content article.panel.system-overview-metric > .system-overview-icon { grid-column: 1; grid-row: 1; }
-html .settings-content article.panel.system-overview-metric > div { grid-column: 2; grid-row: 1; min-width: 0; }
-html .settings-content article.panel.system-overview-metric > a { grid-column: 3; grid-row: 1; align-self: start; }
+html .settings-content article.system-overview-metric > .system-overview-icon { grid-column: 1; grid-row: 1; }
+html .settings-content article.system-overview-metric > div { grid-column: 2; grid-row: 1; min-width: 0; }
+html .settings-content article.system-overview-metric > a { grid-column: 3; grid-row: 1; align-self: start; }
 /* 说明文字 9px 低于 hana 最小 token（--fs-hint 11.2px），改成 hint。 */
-html .settings-content article.panel.system-overview-metric > div > span {
+html .settings-content article.system-overview-metric > div > span {
   font-size: var(--fs-hint);
   line-height: 1.45;
 }
-html article.panel.security-metric:first-child,
-html article.panel.system-overview-metric:first-child,
-html article.panel.report-studio-entry-card:first-child {
+html article.security-metric:first-child,
+html article.system-overview-metric:first-child,
+html article.report-studio-entry-card:first-child {
   padding-left: var(--space-16);
   border-left: 0;
 }
-html article.panel.security-metric:last-child,
-html article.panel.system-overview-metric:last-child,
-html article.panel.report-studio-entry-card:last-child {
+html article.security-metric:last-child,
+html article.system-overview-metric:last-child,
+html article.report-studio-entry-card:last-child {
   padding-right: 0;
 }
 
@@ -510,8 +510,8 @@ html .system-overview-metrics > article {
    改成让链接铺满整张卡，图标用 flex 推到右上角，位置与原来一致。 */
 /* 设置窗内的卡片是 grid（icon | 文字 | 箭头），箭头那一格只有 min-content 宽，
    所以这里把选择器写到 .settings-content 一级，特异能压过
-   “html .settings-content article.panel.system-overview-metric > a” 的 grid-column:3。 */
-html .settings-content .system-overview-metrics > article.panel.system-overview-metric > a.system-overview-go,
+   “html .settings-content article.system-overview-metric > a” 的 grid-column:3。 */
+html .settings-content .system-overview-metrics > article.system-overview-metric > a.system-overview-go,
 html .system-overview-metrics > article > a.system-overview-go {
   position: absolute;
   inset: 0;
@@ -887,10 +887,10 @@ html .toolbar-view-button:focus-visible {
   行首竖线仍由上面的 nth-child 规则处理。
 ------------------------------------------------------------- */
 /* 两列 / 多行条的单元格：各自的旧规则特异度较高（例如
-   article.panel.system-overview-metric 与 v6 的 :nth-child(odd)），
+   article.system-overview-metric 与 v6 的 :nth-child(odd)），
    所以这里按实际元素名逐个抬特异度，把四边内距拉齐到 16px。
    行首竖线仍交给上面的 nth-child 规则，不在这里重置 border-left。 */
-html body .system-overview-metrics > article.panel.system-overview-metric,
+html body .system-overview-metrics > article.system-overview-metric,
 html body .system-authorization-scope-grid > *,
 html body .report-studio-entry-grid > * {
   padding: var(--space-16);
@@ -902,7 +902,7 @@ html body .report-studio-entry-grid > * {
 
 /* 首格贴齐内容列左缘：各条的容器都已无内边距，
    首格若再留 16px，整条会相对标题缩进一格。 */
-html body .system-overview-metrics > article.panel.system-overview-metric:first-child,
+html body .system-overview-metrics > article.system-overview-metric:first-child,
 html body .system-authorization-scope-grid > :first-child,
 html body .report-studio-entry-grid > :first-child {
   padding-left: 0;
@@ -913,7 +913,7 @@ html body .report-studio-entry-grid > :first-child {
    首格清零左内距会让它的图标紧贴在卡片左边框上，
    与右侧三格差 17px（实测 contentLeft 36 vs 53）。
    卡片形态下首格也要四边等宽；贴齐内容列只适用于无卡条。 */
-html body .settings-content .system-overview-metrics > article.panel.system-overview-metric:first-child,
+html body .settings-content .system-overview-metrics > article.system-overview-metric:first-child,
 html body .settings-content .system-authorization-scope-grid > :first-child {
   padding-left: var(--space-16);
   border-left: 1px solid var(--card-border);

@@ -79,7 +79,7 @@ export default function ProjectOverviewPage() {
 
   return <div className="page-wrap project-overview-page project-cockpit-page">
     <PageHeader eyebrow="PROJECT WORKSPACE / PROJECT BRIEF" title="项目驾驶舱" subtitle="围绕当前项目查看收入合同、目标成本、已发生成本、回款与分供合同概况。" actions={<><ProjectSummaryReportButton /><Button variant="secondary" onClick={() => navigate('/cost/analysis')}><Activity size={15} />查看成本分析</Button></>} />
-    <section className="panel project-cockpit-hero">
+    <section className="ldg-section-card project-cockpit-hero">
       <div className="project-cockpit-identity">
         <div className="project-cockpit-mark">{project.name.slice(0, 1)}</div>
         <div className="project-cockpit-copy">
@@ -118,16 +118,16 @@ export default function ProjectOverviewPage() {
     </section>
 
     <section className="project-cockpit-main">
-      <article className="panel project-cockpit-chart"><div className="panel-heading"><div><h3>月度实际成本</h3><p>最近六个月 · 仅统计已录入且未归档的成本</p></div><span className="chart-mini-label">金额：元</span></div>{hasMonthlyCost ? <ReactECharts key={themeName} option={monthlyOption} style={{ height: 260 }} notMerge lazyUpdate /> : <div className="project-cockpit-chart-empty"><Activity size={18} /><strong>近六个月还没有实际成本记录</strong><span>录入成本后，这里会显示月度发生额。</span></div>}<div className="project-chart-bottom"><span>预计利润率</span><strong className={analysis.eac.margin ? (analysis.eac.margin.likely >= 0 ? 'text-success' : 'text-danger') : undefined}>{percentage(analysis.eac.margin?.likely ?? null)}</strong><small>{eacCaption(analysis.eac)}</small></div></article>
-      <article className="panel project-attention-panel"><div className="panel-heading"><div><h3>待跟进业务</h3><p>本项目尚需推进的业务记录</p></div><CircleAlert size={18} className="heading-muted-icon" /></div>
+      <section className="ldg-section project-cockpit-chart-section"><div className="ldg-section-head"><div><h2><Activity size={16} />月度实际成本</h2><p>最近六个月 · 仅统计已录入且未归档的成本</p></div><span className="chart-mini-label">金额：元</span></div><div className="ldg-section-card project-cockpit-chart">{hasMonthlyCost ? <ReactECharts key={themeName} option={monthlyOption} style={{ height: 260 }} notMerge lazyUpdate /> : <div className="project-cockpit-chart-empty"><Activity size={18} /><strong>近六个月还没有实际成本记录</strong><span>录入成本后，这里会显示月度发生额。</span></div>}<div className="project-chart-bottom"><span>预计利润率</span><strong className={analysis.eac.margin ? (analysis.eac.margin.likely >= 0 ? 'text-success' : 'text-danger') : undefined}>{percentage(analysis.eac.margin?.likely ?? null)}</strong><small>{eacCaption(analysis.eac)}</small></div></div></section>
+      <section className="ldg-section project-attention-section"><div className="ldg-section-head"><div><h2><CircleAlert size={16} />待跟进业务</h2><p>本项目尚需推进的业务记录</p></div></div><div className="ldg-section-card project-attention-panel">
         <button className="project-attention-row" onClick={() => navigate('/cost/progress-bills')}><span className="attention-icon"><CalendarClock size={16} /></span><span><strong>进度款待跟进</strong><small>未到账或仍处于流转中的申报</small></span><b>{pendingBills.length}</b><ArrowRight size={14} /></button>
         <button className="project-attention-row" onClick={() => navigate('/cost/changes')}><span className="attention-icon"><AlertTriangle size={16} /></span><span><strong>变更签证待跟进</strong><small>已提交或审核中的变更</small></span><b>{pendingChanges.length}</b><ArrowRight size={14} /></button>
         <button className="project-attention-row" onClick={() => navigate('/cost/downstream')}><span className="attention-icon"><Banknote size={16} /></span><span><strong>分供合同台账</strong><small>合同 {downstream?.summary.contractCount ?? 0} 份 · 执行中 {downstream?.summary.activeContractCount ?? 0} 份</small></span><ArrowRight size={14} /></button>
         <div className="project-attention-note"><CheckCircle2 size={15} /><span>单项目视图，不与全局经营总览的跨项目指标混用。</span></div>
-      </article>
+      </div></section>
     </section>
 
-    {downstream?.summary && <section className="panel project-cockpit-downstream"><div className="panel-heading"><div><h3>分供合同与付款概览</h3><p>合同额、关联成本和现金支付采用独立口径。</p></div><Button variant="secondary" onClick={() => navigate('/cost/downstream')}>查看台账 <ArrowRight size={14} /></Button></div><div className="project-cockpit-downstream-facts"><div><span>执行中合同额</span><strong>{formatMoney(downstream.summary.activeAndPendingSettlementContractAmount, 0)}</strong></div><div><span>关联实际成本</span><strong>{formatMoney(downstream.summary.linkedActualCost, 0)}</strong></div><div><span>累计净付款</span><strong>{formatMoney(downstream.summary.paidAmount, 0)}</strong></div></div></section>}
+    {downstream?.summary && <section className="ldg-section project-cockpit-downstream"><div className="ldg-section-head"><div><h2><Banknote size={16} />分供合同与付款概览</h2><p>合同额、关联成本和现金支付采用独立口径。</p></div><Button variant="secondary" onClick={() => navigate('/cost/downstream')}>查看台账 <ArrowRight size={14} /></Button></div><div className="ldg-section-card project-cockpit-downstream-card"><div className="project-cockpit-downstream-facts"><div><span>执行中合同额</span><strong>{formatMoney(downstream.summary.activeAndPendingSettlementContractAmount, 0)}</strong></div><div><span>关联实际成本</span><strong>{formatMoney(downstream.summary.linkedActualCost, 0)}</strong></div><div><span>累计净付款</span><strong>{formatMoney(downstream.summary.paidAmount, 0)}</strong></div></div></div></section>}
 
     <section className="project-entry-strip" aria-label="业务台账快捷入口">
       <span className="project-entry-label">进入业务台账</span>
