@@ -133,6 +133,7 @@ Absolutely、delve、deep-think、新暖纸 `new-warm-paper`、青夜·高对比
 - 选择器：触发器 32px 高、11.05px 圆角、纸白底 + 1px 边框，悬停/展开转 accent；弹层 14.7px 圆角、4px 内边距，选项 30px/7.36px 圆角，悬停 accent-light，选中 accent 文字。日期选择器使用同一半径与边框。
 - 设置行：左侧 13px/600 标签 + 10.5px muted 说明，右侧 220–340px 控件；行高至少 56px，分隔线左右各内缩 16px（系统管理各页随卡内 18px 口径）。审计筛选、运维备份、AI 助手、账号创建均改用这一结构，不再用 3–5 列表单硬塞进 670px。
   > 2026-11-04 订正：卡内设置行的左右内距统一 18px、首行上边距 16px，与卡头（左 2px）和表（左 18px）同一条缩进线；账号管理、操作追溯、界面三页实测 `padding-left: 18px`。AI 助手页在设置窗内的供应商轨道也从 190px 收到 168px，详情区 480 → 502px。
+  > 2026-11-04 补充：设置窗外的 `/account/security` 与 `/parties` 不经过 `.settings-content`，同样的 18px / 首行 16px 由页面作用域规则（`.account-security-page`）补齐；`/parties` 的工具条改走台账共用的 `.ldg-toolbar`（内距 12/18 + 18px 缩进分界线）。
 - 设置搜索：32px 高、11.05px 圆角、5% 墨色底 + 1px 透明边界；10px 左侧搜索图标，右侧 20px 圆形清空按钮；输入后切换为两行搜索结果（标题 + 分组路径），并按 Hana 的搜索索引方式补充语义别名：输入“主题”命中界面，“备份”命中运维备份，“模型”命中 AI 助手，“字典”命中基础字典，不再只匹配导航标题。
 - 交互半径：统一为三级 token，禁止页面写死 2/3/5/7/8/10/12px：控件 `--radius-control`（6×1.8409≈11.05），按钮/导航 `--radius-action`（5×1.8409≈9.20），行内小操作 `--radius-compact`（4×1.8409≈7.36）。卡片使用 `--radius-card`（8×1.8409≈14.73）。输入框、下拉、搜索壳、按钮和分段按钮一律 `corner-shape: round`，不再混用 squircle。
 
@@ -151,7 +152,8 @@ Absolutely、delve、deep-think、新暖纸 `new-warm-paper`、青夜·高对比
 - 对话框：20px 纸卡 + 纸纹；标题 17px，头部不再拉满宽底线，底部操作区透明，只用 45% hairline 和 16px 间距。输入框 10px 圆角，底部按钮 32px/9px 圆角；所有标准 `.dialog` 共用。
 - 提示 / 口径 / 注释：统一为 `--radius-control`（squircle 下 ≈11.05px）的轻透底卡片。信息用 6% accent + 15% accent 边框，成功用 7% green，错误用 7% danger，中性说明用 5% 墨色 + 16% 墨色边框；不再使用左侧竖线或全宽灰条。
   > 2026-10-23 订正：旧版此条写「10px 圆角」。实际实现已统一为 `var(--radius-control)` + `corner-shape: squircle`，在支持 squircle 的浏览器下解析为 ≈11.05px，不支持时回退 6px。用 token 比硬编码 10px 更正确（能随 squircle 能力自动切换），故以实现为准。
-- 设置式业务页：页面标题 + `.settings-section` 小标题 + `.settings-card` + `.settings-row`（左侧标签/说明、右侧控件）。往来单位详情等页仍用 `.settings-section` 外壳；系统设置窗内十二页已全部迁到 `ldg-section` 三件套（见上），`.settings-row` 仍保留给卡内表单。字典目录改为“目录单列行 + 独立分类资料卡 + 字典项行卡”，目录只负责选择，字段编辑不塞进列表行中，也不再使用 6 列宽表。
+- 设置式业务页：页面标题 + `.ldg-section` 小标题 + `.ldg-section-card` + `.settings-row`（左侧标签/说明、右侧控件）。系统设置窗内十二页与设置窗外的 `/account/security`（个人中心与账号安全）、`/parties`（往来单位库）已全部用台账三件套；`.settings-row` 仍保留给卡内表单。
+  > 2026-11-04：`SettingsSection` 组件（Hana Section 的 1:1 复刻）已删除。它最后的两个使用者就是上面这两页；连同 `SettingsSection.module.css`、`Ui.tsx` 里同名的死导出、`hana.css` 的 `.settings-section*` 规则族和 `.page-wrap > [class*="_section_"]` 兜底一起退役。现在全仓只有一套卡壳（`ldg-section-card`）与两类业务壳（`.panel` 系列、`.ds-section-card`），不再有第三套。字典目录改为“目录单列行 + 独立分类资料卡 + 字典项行卡”，目录只负责选择，字段编辑不塞进列表行中，也不再使用 6 列宽表。
 - 运维页：四项运行状态合并为一张 2×2 状态卡；备份配置用设置行；备份与恢复记录改为可换行行卡，不再使用 6 列宽表，因此 733px 窗口下也没有表头线、空表行和横向滚动条。
 - 设置内分段切换：28px 轨道 + 2px 内边距 + 26px 白色滑块，计数是纯文字；不使用整排胶囊按钮。`.sys-tabs` 已按此实现，宽度跟随内容。
   > 2026-10-23 订正：`hana.css` 曾并存三套 `.sys-tabs` 定义（单行胶囊式、下划线 tab 式、轨道滑块式）。因后写者生效，实际渲染一直是轨道滑块形态，但前两套死代码会误导维护者，现已删除，只保留一套。

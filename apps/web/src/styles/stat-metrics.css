@@ -397,16 +397,10 @@ html .settings-content .system-authorization-scope-card {
   corner-shape: squircle;
   background: var(--bg-card);
 }
-/* 外层 settings-section-card 也要去卡片：
-   三张 scope-card 已经各自有 border + bg + radius，
-   外层再画一层就是「卡片套卡片」，两层边框相隔 16px 重叠。 */
-html .settings-content .settings-section-card:has(> .system-authorization-scope-grid) {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  border-radius: 0;
-  overflow: visible;
-}
+/* 2026-11-04：原来这里有一条 .settings-section-card 的去卡片规则。
+   授权复核页已改用 ldg-section-card，对应的去壳规则写在 hana.css
+   （html .system-authorization-page .ldg-section-card:has(...)），
+   这条选择器已匹配不到 DOM，删除。 */
 /* ① 主题色名称（外观设置里的「墨夜/宣纸/远山/朱印」）。
    实测真实类名：appearance-icon-choice > span，8px。 */
 .settings-content .appearance-icon-choice,

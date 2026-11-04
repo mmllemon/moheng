@@ -173,9 +173,14 @@ check('Hana capability-style quick panel is wired', (layout + windowControls).in
 /* 断言意图：账号安全页使用设置式结构（分区 + 卡片 + 行）。
 
    2026-10-23 更新：结构已从 .settings-section 平铺改为 SettingsSection 组件
-   （对齐 Hana 的 Section / Section.Card 组件结构）。断言改为验证新结构。 */
+   （对齐 Hana 的 Section / Section.Card 组件结构）。
+
+   2026-11-04 更新：SettingsSection 组件已退役（全仓最后一个使用者就是本页），
+   页面改用台账三件套 ldg-section / ldg-section-head / ldg-section-card。
+   断言改为验证新结构，“分区 + 卡片 + 行”的意图不变。 */
 check('settings-style business page is applied to account security',
-  accountSecurity.includes('SettingsSection') && accountSecurity.includes('account-security-summary') && accountSecurity.includes('settings-row'));
+  accountSecurity.includes('ldg-section-card') && accountSecurity.includes('ldg-section-head')
+  && accountSecurity.includes('account-security-summary') && accountSecurity.includes('settings-row'));
 check('business dialogs share trigger-level paper morph', paperDialogMorphExists && layout.includes('PaperDialogMorph') && windowControls.includes('data-focus-trap={quickActionsOpen ? \'popover\' : undefined}'));
 check('Hana paper morph follows a real trigger', paperMorphExists && layout.includes('takePaperOrigin') && hana.includes('--duration-paper-unfold'));
 /* 2026-10-23 更新（第四轮，最终）：滚动条按 hana 的真实写法。

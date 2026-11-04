@@ -61,18 +61,6 @@ export function CardHead({ title, icon: Icon, iconSize = 16, description, aside,
   </div>;
 }
 
-export function SettingsSection({ title, description, actions, children, hidden = false, className = '' }: {
-  title: ReactNode; description?: ReactNode; actions?: ReactNode; children: ReactNode; hidden?: boolean; className?: string;
-}) {
-  return <section className={`settings-section ${className}`.trim()} hidden={hidden}>
-    <div className="settings-section-head">
-      <div><h2>{title}</h2>{description && <p>{description}</p>}</div>
-      {actions && <div className="settings-section-actions">{actions}</div>}
-    </div>
-    <div className="settings-section-card">{children}</div>
-  </section>;
-}
-
 export function PageHeader({ title: _title, subtitle, context, actions }: { title: string; subtitle?: string; context?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
   /* 对齐 hana 的页面骨架：会话窗口没有页面级大标题，
      当前上下文由顶栏的会话标题层承担（对应 moheng 顶栏的页面名）。

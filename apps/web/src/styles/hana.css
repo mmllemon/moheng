@@ -1885,7 +1885,6 @@ html .page-actions .button-secondary,
 html .table-heading-actions .button,
 html .ds-section-actions .button,
 html .dialog-actions .button,
-html .settings-section-actions .button,
 /* 这两个容器原来是 11px / 10px，同一行里与其他按钮不一致 */
 html .report-config-actions .button,
 html .assistant-detail-actions .button,
@@ -2136,8 +2135,7 @@ html .ldg-more > svg {
 html .page-actions .button,
 html .page-actions .button-small,
 html .table-heading-actions .button,
-html .ds-section-actions .button,
-html .settings-section-actions .button {
+html .ds-section-actions .button {
   height: 32px;
   min-height: 32px;
   padding: 0 var(--space-12);
@@ -3720,7 +3718,6 @@ html .system-authorization-page .ldg-section-card:has(> .system-authorization-sc
    设置式业务页：账号安全
    ============================================================= */
 .account-security-page { max-width: 760px; }
-.account-security-page .settings-section { margin-bottom: var(--space-24); }
 .account-security-page .account-security-summary { margin: 0; padding: var(--space-16); }
 .account-security-page .account-security-summary .account-security-avatar { width: 40px; height: 40px; flex-basis: 40px; border-color: var(--border); border-radius: var(--radius-lg); background: var(--overlay-subtle); color: var(--accent); }
 .account-security-page .account-security-identity { gap: var(--space-4); }
@@ -3913,8 +3910,7 @@ html[data-paper-texture] .dialog::after {
 .panel .empty-state,
 .ldg-section-card .empty-state,
 .data-table-panel .empty-state,
-.ds-section-card .empty-state,
-.settings-section-card .empty-state {
+.ds-section-card .empty-state {
   border: 0;
   background: transparent;
 }
@@ -4555,16 +4551,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
 .appearance-settings-page .page-header { margin-bottom: 18px; }
 .appearance-settings-page .page-header p { max-width: 560px; }
 
-.settings-section { margin: 0 0 var(--space-24); }
-.settings-section > h2 {
-  margin: 0 0 var(--space-8);
-  padding-left: var(--space-4);
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 14.4px;
-  font-weight: 600;
-  line-height: 1.4;
-}
 .settings-theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-8); }.settings-theme-swatch { position: absolute; inset: 0; z-index: 0; background: var(--theme-bg); }
 .settings-theme-copy { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); min-width: 0; }
 .settings-theme-copy strong { font-size: var(--fs-ui); font-weight: 500; line-height: 1.35; }
@@ -5046,8 +5032,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .settings-row-control .assistant-key-input { width: 300px; }
 .settings-row-control .assistant-key-input input { width: 100%; border: 0; box-shadow: none; background: transparent; padding: 0; height: 30px; }
 .settings-row-control .text-input { width: 300px; }
-.settings-section-card > .success-notice,
-.settings-section-card > .form-alert { margin: var(--space-12) var(--space-16); }
 .settings-row-actions {
   display: flex;
   align-items: center;
@@ -5422,12 +5406,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .calculated-total strong { color: var(--text); font-size: var(--fs-ui); font-weight: 600; }
 
 /* 系统授权：设置式 section 内部结构 */
-.settings-section-card > .system-authorization-scope-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
-}
 .system-authorization-scope-card {
   display: flex;
   align-items: flex-start;
@@ -5454,11 +5432,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 }
 .system-authorization-scope-card strong { display: block; color: var(--text); font-size: var(--fs-caption); font-weight: 600; }
 .system-authorization-scope-card p { margin: var(--space-4) 0 0; color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.6; }
-.settings-section-card > .system-authorization-company-roles {
-  padding: 0;
-  border-top: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent);
-}
 .system-authorization-company-roles article { padding: var(--space-14) var(--space-16); border-left-color: color-mix(in srgb, var(--card-border) 62%, transparent); }
 .system-authorization-company-roles article:first-child { padding-left: var(--space-16); }
 .system-authorization-stats {
@@ -5482,8 +5455,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .system-authorization-stats strong { color: var(--text); font-family: var(--font-num, var(--num)); font-size: 21px; font-weight: 600; }
 .system-authorization-review-form { padding: var(--space-16); }
 .system-authorization-reviewed-note { margin: 0; padding: var(--space-14) var(--space-16); border-top: 1px solid color-mix(in srgb, var(--card-border) 62%, transparent); }
-.system-authorization-detail .settings-section-card > .loading-block,
-.system-authorization-detail .settings-section-card > .error-block { margin: var(--space-16); }
 .settings-inset-block { margin: var(--space-12) var(--space-16) 0; }
 
 /* 分供合同台账：概览卡与明细卡 */
@@ -5616,7 +5587,6 @@ html .table-count {
 
 .settings-row + .settings-row::before,
 .settings-row-actions::before,
-.settings-section-card .panel-heading::after,
 .report-report-option + .report-report-option::before,
 .system-overview-event-row + .system-overview-event-row::before,
 .system-readiness-line + .system-readiness-line::before,
@@ -5708,7 +5678,6 @@ html .table-count {
 .v6-block .v6-todo { border-top: 0; border-bottom: 0; }
 .security-panel .load-more-row { border-top: 0; }
 .system-authorization-company-roles { border-bottom: 0 !important; }
-.settings-section-card .settings-subhead { border-top: 0; }
 
 /* v6 概览卡内部同样内缩，不留贴边表格/日志线 */
 .v6-block .data-table { width: calc(100% - 32px); margin-left: var(--space-16); margin-right: var(--space-16); }
@@ -5758,7 +5727,6 @@ html .table-count {
 .v6-log-split { margin-top: var(--space-24); }
 
 .ds-section-card,
-.settings-section-card,
 .v6-block,
 .v6-block > .table-scroll,
 .v6-block > .v6-log-list,
@@ -6759,49 +6727,15 @@ select { corner-shape: squircle !important; }
 .settings-content .eyebrow { display: none; }
 .settings-content .sys-tabs { margin-top: var(--space-2); margin-bottom: 18px; }
 
-/* 设置内容里的 section：外置标题 + 独立卡片 */
-.settings-section { min-width: 0; margin: 0 0 var(--space-24); }
-.settings-section:last-child { margin-bottom: 0; }
-.settings-section-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-14);
-  /* 原来 margin: 0 2px 9px，标题几乎贴到卡片左缘。
-     对齐卡片自身的左缘（卡片无外 margin），给 0 即可；
-     下边距 9px → 12px，与 hana ._sectionHeader margin-bottom 12px 一致。 */
-  margin: 0 0 var(--space-12);
-}
-.settings-section-head h2 { margin: 0; color: var(--text); font-family: var(--font-ui); font-size: 16px; font-weight: 600; line-height: 1.4; letter-spacing: 0.04em; }
-.settings-section-head p { max-width: 680px; margin: var(--space-4) 0 0; color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.55; }
-.settings-section-head .settings-section-actions { display: flex; align-items: center; gap: var(--space-6); flex-shrink: 0; }
-.settings-section-card {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  corner-shape: squircle;
-  background: var(--bg-card);
-  /* 卡片自己有 border + bg，但内部无内边距，
-     内容（如 system-authorization-scope-grid）直接贴到边框上。
-     对齐 hana 的 ._profileCard_7d1fe padding: var(--space-16)。 */
-  padding: var(--space-16);
-}
-/* 表格类内容不需要卡片内边距（自己负责通栅与滚动）。 */
-.settings-section-card:has(> .table-scroll) {
-  padding: 0;
-}
-.settings-section-card > .table-scroll { overflow-x: auto; }
-.settings-section-card .data-table { width: calc(100% - 32px); margin: 0 16px; }
-.settings-section-card .panel-heading { padding: var(--space-14) var(--space-16) var(--space-10); border-bottom: 0; position: relative; }
-.settings-section-card .panel-heading::after { content: ''; position: absolute; right: 16px; bottom: 0; left: 16px; height: 1px; background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
-.settings-section-card .panel-heading h3 { color: var(--text); font-size: var(--fs-ui); font-weight: 600; }
-.settings-section-card .panel-heading p { margin-top: var(--space-4); font-size: var(--fs-hint); }
+/* 设置内容里的 section：外置标题 + 独立卡片
+   ---------------------------------------------------------
+   2026-11-04：这套 .settings-section / -head / -card 规则随 Ui.tsx 的
+   SettingsSection 导出一起退役。该导出已无调用方（最后两个使用页
+   /account/security 与 /parties 已迁到 ldg-section 三件套），
+   这些选择器已匹配不到任何 DOM，留着只会让人误以为还有第三套卡壳。 */
 .settings-subhead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-12); padding: var(--space-16) var(--space-16) var(--space-10); border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
 .settings-subhead h3 { display: flex; align-items: center; gap: var(--space-6); margin: 0; color: var(--text); font-size: var(--fs-ui); font-weight: 600; }
 .settings-subhead p { margin: var(--space-4) 0 0; color: var(--text-muted); font-size: var(--fs-hint); }
-.settings-section-card > .inline-notice,
-.settings-section-card > .data-note { margin: var(--space-12) var(--space-16); }
 
 @media (max-width: 760px) {
   .settings-content .security-metrics { grid-template-columns: minmax(0, 1fr); }
@@ -6816,8 +6750,7 @@ select { corner-shape: squircle !important; }
   .ds-section-card .data-table,
   .v6-block .data-table,
   .panel.ds-panel .data-table { width: calc(100% - 24px); margin: 0 12px; }
-  .settings-section-card .data-table { width: calc(100% - 24px); margin: 0 12px; }
-  .ds-section-head, .settings-section-head { align-items: flex-start; flex-direction: column; gap: var(--space-8); }
+  .ds-section-head { align-items: flex-start; flex-direction: column; gap: var(--space-8); }
   .overview-page .v6-block > .table-scroll,
   .overview-page .v6-block > .v6-log-list,
   .overview-page .v6-block > .v6-todo { border-radius: var(--radius-lg); }
@@ -9619,17 +9552,9 @@ html .button-ghost.button-toolbar.is-active {
 
 /* 卡片（panel-detached）已有自己的 24px margin，这里不动 */
 
-/* SettingsSection（CSS Modules）在业务页里的间距
-   ---------------------------------------------------------
-   .module.css 的 .section 是 margin-bottom: --space-40（40px），
-   那是 hana「设置窗内」的分区节奏。
-   但 SettingsSection 也被业务页使用（/parties），
-   40px 与页面级 24px 节奏冲突，实测相邻间距 41px。
-
-   业务页（.page-wrap 内）统一到 --space-24；设置窗内保持 40px。 */
-.page-wrap > [class*="_section_"] {
-  margin-bottom: var(--space-24);
-}
+/* 2026-11-04：原来这里有一条 .page-wrap > [class*="_section_"] 的 24px 兼底，
+   专为 SettingsSection 的 CSS Modules 分区而设。该组件已退役（最后一个使用者
+   /parties 已迁到 ldg-section），这条已有实例都命中不到的规则一并删除。 */
 
 /* business-parties 页被 legacy 改成了 grid
    ---------------------------------------------------------
@@ -10013,3 +9938,40 @@ textarea {
 /* 五项检查在 486px 内容区里排两列，每列 234px，「缺少 ASSISTANT_ENCRYPTION_KEY」之类会折四行。 */
 .settings-content .assistant-check-grid { grid-template-columns: minmax(0, 1fr); }
 .settings-content .assistant-provider-page .page-header { margin-bottom: var(--space-24); }
+
+/* =============================================================
+   2026-11-04 最后两个 SettingsSection 页面换台账卡
+   =============================================================
+   /account/security（个人中心与账号安全）与 /parties（往来单位库）
+   是 SettingsSection 组件的最后两个使用者。迁到 ldg-section 三件套后
+   组件连同它的 module.css 一起删除。
+
+   两页都在设置窗之外，.settings-content 那套 18px 内距用不上，
+   所以按页面作用域补一遍：
+     · 卡内 .settings-row 左右 18px，分隔线同宽
+     · 卡内首行上内距 16px（否则 .settings-row 的 12px 贴着卡边）
+   ============================================================= */
+
+.account-security-page .ldg-section-card .settings-row {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+.account-security-page .ldg-section-card .settings-row + .settings-row::before {
+  left: 18px;
+  right: 18px;
+}
+.account-security-page .ldg-section-card > .account-security-form > .settings-row:first-child,
+.account-security-page .ldg-section-card > .settings-row:first-child {
+  padding-top: var(--space-16);
+}
+/* 账号摘要块自身就是卡体：左右退到 18px，与下方表单行对齐。 */
+.account-security-page .ldg-section-card > .account-security-summary {
+  margin: 0;
+  padding: var(--space-16) 18px;
+}
+
+/* 往来单位台账：工具条改用台账共用的 .ldg-toolbar
+   （内距 12/18、分界线两边内缩 18px、不画通长边框）。 */
+.business-parties-page .ldg-section-card .ldg-toolbar {
+  margin: 0;
+}

@@ -2,11 +2,22 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 最后一页：个人中心与账号安全、往来单位库改用台账卡，SettingsSection 组件退役
+
+设置窗十二页统一后，设置窗外还剩两页在用 `SettingsSection`（Hana Section 组件的 1:1 复刻）：`/account/security` 与 `/parties`。它们是这套组件的最后两个使用者，卡头 16px、卡内 16px、区块节奏 40px，与台账页的 14.4px / 18px / 24px 不是一回事。本轮把这两页收进台账结构，组件连同它的 CSS 一起删掉。
+
+- **两页改用 `ldg-section` + `ldg-section-head` + `ldg-section-card`**：账号安全页 3 块（当前账号、登录凭据、会话与恢复）、往来单位库 1 块（台账）。计数、说明改走 `.ldg-section-count` 与卡头 `<p>`。
+- **`SettingsSection` 彻底退役**：删除 `components/SettingsSection.tsx` 与 `SettingsSection.module.css`（168 行）；`Ui.tsx` 里同名但无调用方的死导出一并删；`hana.css` 的 `.settings-section*` 规则族（含 `.settings-section-card` 的 padding / 圆角 / 表格内距、`.settings-section-head` 的卡头几何、`.settings-section-actions .button` 的两处合并选择器）共 20 余条规则、`stat-metrics.css` 里那一条去壳规则一并删除，`.page-wrap > [class*="_section_"]` 兜底也没人再命中。保留下来的只有仍在用的 `.settings-subhead`。
+- **设置窗外补 18px**：这两页不经过 `.settings-content`，卡内 `.settings-row` 原本 16px。页面作用域规则把行左右退到 18px、分隔线同宽、首行上内距 16px，与设置窗内口径一致（实测 `padding-left: 18px`、首行 `padding-top: 16px`）。
+- **往来单位台账工具条换 `.ldg-toolbar`**：原是 `.table-toolbar`（内距 12/17、6% 通长底线），换成台账共用件（12/18、分界线两边内缩 18px）；搜索框从 `.toolbar-search` 换 `.ldg-search`（285 × 32，图标与输入框同层）。表格 `width: calc(100% - 36px)` → 1146，`scrollWidth - clientWidth` 实测 0；空态嵌在卡内不画第二层边框。
+- 迁完后全仓只剩一套卡壳（`ldg-section-card`）与 `.panel` / `.ds-section-card` 两类业务壳，不再有三套并存。
+- 复核（1600 视口）：账号安全页卡宽 704、卡头 42（h2 14.4/600）、卡头到卡 16、圆角 14.7272、区块间距 24、页面横向溢出 0；往来单位库卡 1184×659、工具条 12/18、表 1146 八列、空态 220、区块间距 24、控制台无报错。授权复核页（同类选择器被删）复查：三张 scope 卡仍一行三列（183/269/193，gap 12）、公司角色两列 334、页面横向溢出 0。`run-gates --tier blocking` 33/33，`@cms/web` lint（`tsc --noEmit`）exit 0。
+
 ### 2026-11-04 系统设置窗六页：账号、登录安全、权限与流程、AI 助手、操作追溯、界面
 
 设置窗内上一批四页换到 `ldg-section` 三件套后，剩下六页还在用三套不同的卡壳：账号、登录安全、权限与流程用 `.panel` + `.panel-heading`（卡头在卡内、卡内缩进 16px），操作追溯与界面用 `SettingsSection`，AI 助手是自定义 grid 外壳。切页签时卡头高度与表格左边线能看到跳动。本轮把这六页也收到与台账页同一套几何。
 
-- **六页全部改用 `ldg-section` + `ldg-section-head` + `ldg-section-card`**：账号页 3 块（创建、重置、列表）、安全页 2 块、策略页 3 块、助手页 2 块（供应商、接入检查）、审计页 2 块（筛选、流水）、界面页 3 块；页面根统一加 `system-expansion-page` 压掉旧页级 `display: grid`。计数一律 `.ldg-section-count`。`SettingsSection` 组件本身保留（往来单位详情、AccountSecurity 仍在用）。
+- **六页全部改用 `ldg-section` + `ldg-section-head` + `ldg-section-card`**：账号页 3 块（创建、重置、列表）、安全页 2 块、策略页 3 块、助手页 2 块（供应商、接入检查）、审计页 2 块（筛选、流水）、界面页 3 块；页面根统一加 `system-expansion-page` 压掉旧页级 `display: grid`。计数一律 `.ldg-section-count`。`SettingsSection` 组件本轮未动（当时往来单位库、AccountSecurity 仍在用），同日下一条已将它退役。
 - **两处旧结构必须留住**（`validate-ui-polish` 断言）：账号页的 `.sys-split` / `.sys-split-main`（设置窗内把 gap 归零，让 `.ldg-section` 的 24px 成为唯一间距），AI 助手页的 `.assistant-provider-shell`（轨道 190 → 168px，详情区 480 → 502px；`assistant-provider.css` 里那两条 `:has(.assistant-provider-page)` 的左右 24px 补丁一并删掉，`page-wrap` 回到 670）。
 - **七张多列表格改自动布局**：`.settings-content .data-table` 的 640px 下界与固定列宽在 632px 卡内必溢出。账号表挂 `system-fluid-table` 后 745 → 632（管理列按钮不再被挤出可视区）；安全页 6 列表 640 → 632，另补单元格内距 8px（6 列共省 24px，min-content 落到 632 以内）；策略页权限矩阵 `min-width: 780` → 632；审计流水表保留 `table-layout: fixed`（列宽有设计意图），只把 `min-width` 归零，640 → 632。所有表 `scrollWidth - clientWidth` 实测 0。
 - **审计页两处真缺陷**：业务对象列 108px，枚举名 `SystemAuthorizationReview` 会溢出单元格叠到操作类型列上，切到单行省略；同时补 `SystemAuthorizationReview` 与 `AUTHORIZATION_REVIEW_CREATED/COMPLETED` 的中文标签（原本显示裸枚举名与 `AUTHORIZA…`），现在是「授权复核 · 保存复核快照」。

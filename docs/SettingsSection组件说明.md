@@ -1,5 +1,11 @@
 # SettingsSection 组件（Hana 源码级复刻）
 
+> **已退役（2026-11-04）。** 本组件与 `SettingsSection.module.css` 已删除，最后两个使用者
+> `/account/security` 与 `/parties` 已改用 `ldg-section` 三件套（见
+> [设计系统](设计系统-hana.md) §6 与 CHANGELOG 2026-11-04）。本文保留作为历史记录：
+> 它记的是 Hana Section 的真实规格（分区标题 14.4px、卡头行高等），这些数值后来并入了
+> `ldg-section-head` 的口径，文档不再描述现行代码。
+
 > 首个从 Hana 源码级对齐的组件。建立日期：2026-10-23。
 
 ## 1. 为什么这个文档重要
