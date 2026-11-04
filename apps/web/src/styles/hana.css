@@ -2702,7 +2702,7 @@ html .filter-bar input[type="search"] {
 .project-overview-page .project-shortcut-card { padding: var(--space-14); border: 1px solid var(--card-border); border-radius: var(--radius-card); background: var(--bg-card); }
 .project-overview-page .project-shortcut-card:first-child { padding-left: var(--space-14); }
 .settings-content .panel, .settings-content .v6-block, .settings-content .system-overview-metric { border-radius: var(--radius-control); }
-.settings-content .system-overview-icon { border-radius: var(--radius-md); }.analysis-page .an-grid { gap: 20px; }
+.settings-content .system-overview-icon { border-radius: var(--radius-md); }.analysis-page .an-grid { gap: var(--space-24); }
 .analysis-page .an-panel {
   padding: var(--space-16);
   border: 1px solid var(--card-border);
@@ -5339,6 +5339,8 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .panel.panel-detached.audit-filter-panel > :not(.audit-filter-heading):last-child { margin-bottom: var(--space-14); }
 
 /* 分析页与报表中心：同样把标题移到卡片外 */
+/* 2026-11-04：壳内几何向台账卡靠齐——卡头 14.4/600、卡头到卡 16、卡内 18、
+   区块间距 24。原来是 h2 16 / 间距 10 / 卡内 16，比台账页重一档。 */
 .analysis-page .an-panel.panel-detached {
   position: relative;
   padding: 0;
@@ -5362,12 +5364,12 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
   corner-shape: squircle;
 }
 .analysis-page .an-panel.panel-detached > * { position: relative; z-index: 1; }
-.analysis-page .an-panel.panel-detached > .an-panel-head { padding: 0 2px 10px; align-items: flex-end; }
-.analysis-page .an-panel.panel-detached > .an-panel-head h2 { font-size: 16px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
+.analysis-page .an-panel.panel-detached > .an-panel-head { margin: 0; padding: 0 2px var(--space-16); align-items: flex-end; }
+.analysis-page .an-panel.panel-detached > .an-panel-head h2 { font-size: var(--fs-body, 14px); font-weight: 600; letter-spacing: 0; color: var(--text); }
 .analysis-page .an-panel.panel-detached > .an-panel-head p { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); }
-.analysis-page .an-panel.panel-detached > :not(.an-panel-head) { margin-left: var(--space-16); margin-right: var(--space-16); }
-.analysis-page .an-panel.panel-detached > :nth-child(2) { margin-top: var(--space-10); }
-.analysis-page .an-panel.panel-detached > :last-child { margin-bottom: var(--space-16); }
+.analysis-page .an-panel.panel-detached > :not(.an-panel-head) { margin-left: 18px; margin-right: 18px; }
+.analysis-page .an-panel.panel-detached > :nth-child(2) { margin-top: var(--space-16); }
+.analysis-page .an-panel.panel-detached > :last-child { margin-bottom: 18px; }
 
 .panel.panel-detached > .report-standard-heading { padding: 0 2px 10px; border: 0; align-items: flex-end; }
 .panel.panel-detached > .report-standard-heading h2 { font-size: 16px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
