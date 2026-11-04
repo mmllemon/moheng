@@ -68,6 +68,9 @@ moheng-cleanup-stale-branches.ps1
 msg.tmp
 # 临时诊断脚本与截图，跑完即删；漏删时不该进提交
 .tmp-*
+# Hana 代理的会话运行时产物（worktree 副本 + 媒体临时目录），不属于仓库交付物。
+# 2026-11-04 实测这一目录会让 `git status` 永远多一条未跟踪项，且体积近 900MB（worktree 里的 node_modules）。
+.hana/
 scripts/_mig_*.mjs
 *.bak2
 *.bak3
