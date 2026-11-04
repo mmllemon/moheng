@@ -4,18 +4,6 @@ import { createPortal } from 'react-dom';
 import { ArrowDownRight, ArrowUpRight, Plus, Search, X, type LucideIcon } from 'lucide-react';
 import { describeError } from '../lib/errors';
 
-export function Section({ title, subtitle, actions, icon: Icon, children, className = '' }: {
-  title: string; subtitle?: string; actions?: ReactNode; icon?: LucideIcon; children: ReactNode; className?: string;
-}) {
-  return <section className={`ds-section ${className}`.trim()}>
-    <div className="ds-section-head">
-      <div className="ds-section-copy"><h2>{Icon && <Icon size={16} strokeWidth={1.6} />}{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
-      {actions && <div className="ds-section-actions">{actions}</div>}
-    </div>
-    <div className="ds-section-card">{children}</div>
-  </section>;
-}
-
 /* PageNote：页面底注。
 
    原来 27 处底注分 13 套类名（data-note / ldg-note / *-note），
@@ -30,34 +18,6 @@ export function PageNote({ icon: Icon, children, className = '' }: {
   return <div className={`data-note ${className}`.trim()}>
     <span className="note-mark">{Icon ? <Icon size={14} /> : 'i'}</span>
     <span>{children}</span>
-  </div>;
-}
-
-/* CardHead：卡片标题区（在卡片外，卡片只装内容）。
-
-   原来 45 处手写了同一个模板：
-     <div className="panel-heading">
-       <div><h3>[图标]标题</h3><p>说明</p></div>
-       [右侧：徽标 / 图标 / 按钮]
-     </div>
-   右侧内容差异大（none 60 / icon 35 / button 1），所以做成 aside 槽位。
-
-   图标尺寸按现有用法默认 16（少数用 17 的可显式传 iconSize）。 */
-export function CardHead({ title, icon: Icon, iconSize = 16, description, aside, className = '' }: {
-  title: ReactNode;
-  icon?: LucideIcon;
-  iconSize?: number;
-  description?: ReactNode;
-  /** 右侧内容：计数徽标 / 装饰图标 / 操作按钮 */
-  aside?: ReactNode;
-  className?: string;
-}) {
-  return <div className={`panel-heading ${className}`.trim()}>
-    <div>
-      <h3>{Icon && <Icon size={iconSize} />}{title}</h3>
-      {description != null && <p>{description}</p>}
-    </div>
-    {aside}
   </div>;
 }
 
@@ -264,58 +224,6 @@ export function ErrorBlock({ message, error, retry }: { message?: string; error?
     {view.code && <small className="error-block-code">错误码 {view.code}</small>}
     {retry && <Button variant="secondary" onClick={retry}>重试</Button>}
   </div>;
-}
-
-/* DataPanel：卡头 + 状态分支 + 内容。
-
-   11 个页面、30 处都在手写同一个模式：
-     <section className="panel">
-       <div className="panel-heading">…</div>
-       {loading ? <LoadingBlock/> : error ? <ErrorBlock/> : !rows.length ? <EmptyState/> : <内容/>}
-     </section>
-
-   四个分支的顺序、空态文案位置、以及“有数据才包 table-scroll”的写法，
-   每个页面都略有差别，所以 loading/empty/error 的观感不统一。
-
-   这里只收敛“卡头 + 四个状态”这一层，children 原样透传，
-   不碰表格/列表的内部实现，也不碰 panel 变体类（走 className）。 */
-export function DataPanel({
-  title, description, icon, iconSize, actions,
-  loading = false, error = null, empty = false,
-  emptyTitle = '暂无数据', emptyDescription = '', emptyAction,
-  onRetry,
-  children, className = '',
-}: {
-  title: ReactNode;
-  description?: ReactNode;
-  icon?: LucideIcon;
-  iconSize?: number;
-  /** 卡头右侧：计数徽标 / 操作按钮 */
-  actions?: ReactNode;
-  /** 加载中（优先于 error 和 empty） */
-  loading?: boolean;
-  /** 错误文案（优先于 empty） */
-  error?: string | null;
-  /** 无数据 */
-  empty?: boolean;
-  emptyTitle?: string;
-  emptyDescription?: string;
-  emptyAction?: () => void;
-  onRetry?: () => void;
-  /** 有数据时渲染 */
-  children: ReactNode;
-  className?: string;
-}) {
-  let body: ReactNode;
-  if (loading) body = <LoadingBlock />;
-  else if (error) body = <ErrorBlock message={error} retry={onRetry} />;
-  else if (empty) body = <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />;
-  else body = children;
-
-  return <section className={`panel ${className}`.trim()}>
-    <CardHead title={title} icon={icon} iconSize={iconSize} description={description} aside={actions} />
-    {body}
-  </section>;
 }
 
 export function formatMoney(value: number | null | undefined, digits = 2) {

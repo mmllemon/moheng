@@ -10122,3 +10122,85 @@ html .report-studio-univer-root select {
 .ldg-section-card.members-invite-panel { padding: 17px 18px 18px; }
 .ldg-section-card.members-role-guide { padding: 17px 18px 18px; }
 .ldg-section-card.members-table-panel { padding: 0; }
+/* =============================================================
+   2026-11-04 报表链路：页宽与卡壳
+   =============================================================
+   报表中心与报表设计器都是「目录 + 设置」「属性 + 预览」的双栏工作区，
+   按 720 的正文宽度排，右栏只剩 300 出头：项目下拉截断、四个导出口
+   折成两行、设计器的预览纸被压到 160px。跟 costs / report-studio 一样铺满。
+   预览页单独按台账宽度档走（默认 1240），九列台账才不用把项目名折三行。
+   ============================================================= */
+.app-content:has(.report-center-page),
+.app-content:has(.report-designer-page) {
+  --page-column-measure: 100%;
+}
+/* 预览表格自带滚动容器（.report-preview-workbook-scroll），不在 .table-scroll 名单里，
+   这里把同样的宽度逻辑挂上去。 */
+.page-wrap:has(.report-preview-workbook-scroll) {
+  max-width: max(var(--page-column-measure), var(--table-page-measure));
+}
+
+/* --- 报表中心：两张入口卡 -------------------------------------------- */
+/* 指标条时代图标被 display:none，卡里只剩两行字；现在是可点入口，
+   36px 图标框回到行首。容器上下通长线在卡头外已经没有意义。 */
+.report-center-page .report-studio-entry-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-12);
+}
+.report-center-page .report-studio-entry-grid > .report-studio-entry-card {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+html .report-center-page .report-studio-entry-icon {
+  display: grid !important;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9.2px;
+  background: var(--overlay-subtle);
+  color: var(--accent);
+}
+
+/* --- 报表中心：目录列表 ---------------------------------------------- */
+/* 列表本来就躺在 .report-standard-card 里，再套一圈边框就是卡中卡。 */
+.report-standard-workspace .report-report-list {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+/* 口径提示块原来靠 accent 描边抢视线，改成卡内的浅底块。 */
+.report-standard-workspace .report-description-box {
+  border-color: var(--card-border);
+  background: var(--overlay-subtle);
+}
+
+/* --- 报表设计器 ------------------------------------------------------ */
+/* .panel 的 16px 内距没了，两条工具条各自补回；两块工作区则归零，
+   让卡内分区线拉通到卡边（原来 16+16 双内距，分隔线是缩进的）。 */
+.report-designer-page .report-designer-topbar { padding: var(--space-16); }
+.report-designer-page .report-designer-filterbar { padding: var(--space-16); }
+.report-designer-page .report-designer-panel,
+.report-designer-page .report-designer-preview-panel { padding: 0; }
+
+/* --- 报表预览 -------------------------------------------------------- */
+/* 元信息条仍是一张完整的卡，左右 18 与台账一致。 */
+.report-export-preview-page .report-preview-meta { padding: var(--space-16) 18px; }
+/* 表格页是「纸」，卡体不再额外留 16px 边，标题块与表格各自管自己的内距。 */
+.report-export-preview-page .report-preview-sheet,
+.report-export-preview-page .report-preview-standard-surface { padding: 0; }
+/* 纸面表格原来靠 .panel 的 16px 内距缩进，卡体归零后表头会贴着卡边。
+   左右退到 18px，与台账卡内表格同一个数；页脚那行跟着对齐（分隔线仍通长）。 */
+.report-export-preview-page .report-preview-sheet > .report-preview-workbook-scroll,
+.report-export-preview-page .report-preview-standard-surface > .report-preview-workbook-scroll { padding: 0 18px; }
+.report-export-preview-page .report-preview-standard-surface > .report-preview-standard-footer { padding-inline: 18px; }
+
+/* --- 分供合同台账（/cost/downstream）-------------------------------- */
+/* 卡体归零后表与底部说明各自补 18px。操作列原本六个按钮一行，
+   min-content 推到 1229，比卡内可用宽度多 81px；允许换行后收回卡内。 */
+.downstream-contracts-page .downstream-contracts-card { padding: 0; }
+.downstream-contracts-page .downstream-contracts-card > .detail-notes { padding: 0 0 var(--space-14); }
+.downstream-contracts-page .downstream-contracts-card > .detail-notes > .inline-notice,
+.downstream-contracts-page .downstream-contracts-card > .detail-notes > .data-note { margin-inline: 18px; }
+.downstream-contracts-page .downstream-contracts-card .row-actions { flex-wrap: wrap; justify-content: flex-start; }

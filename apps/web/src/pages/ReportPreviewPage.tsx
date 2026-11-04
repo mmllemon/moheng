@@ -326,7 +326,7 @@ export default function ReportPreviewPage() {
     {errorQuery && <ErrorBlock message={String(errorQuery)} retry={() => { void (isStudio ? studioTemplateQuery.refetch() : standardPreviewQuery.refetch()); }} />}
     {notice && <div className="success-notice"><CheckCircle2 size={16}/>{notice}{jobId && <Button variant="secondary" size="sm" onClick={() => void downloadJob(jobId)}>查询任务 / 下载结果</Button>}</div>}{error && <div className="form-alert">{error}</div>}
     {!loading && !errorQuery && <>
-      <section className="report-preview-meta panel">
+      <section className="ldg-section-card report-preview-meta">
         <div><span>报表名称</span><strong>{title}</strong></div>
         <div><span>报表范围</span><strong>{isStudio ? domain === 'PROJECT' ? `项目 · ${studioProjectId || '未选择'}` : domain === 'PARTY' ? `往来单位 · ${studioPartyId || '未选择'}` : '公司 · 当前账号可访问项目' : standardPreview?.projectScope ?? '—'}</strong></div>
         <div><span>模板版本</span><strong>{isStudio ? `v${studioTemplateQuery.data?.version ?? '—'}` : `v${standardPreview?.template.version ?? 1}`}</strong></div>
@@ -353,7 +353,7 @@ export default function ReportPreviewPage() {
               })}
             </tr>
           );
-          return <article className="report-preview-sheet panel" key={sheet.id}>
+          return <article className="ldg-section-card report-preview-sheet" key={sheet.id}>
             <div className="report-preview-sheet-head"><div><strong>{sheet.name}</strong><small>{sheet.previewRowCount.toLocaleString('zh-CN')} / {sheet.rowCount.toLocaleString('zh-CN')} 行</small></div>{sheet.truncated && <span className="report-preview-truncated">预览已截断</span>}</div>
             {frozenRowsCrossMerge && <div className="report-preview-warning">冻结区与跨行合并区域相交，打印时不重复冻结行以保留合并布局。</div>}
             <div className="report-preview-workbook-scroll"><table className={`report-studio-preview-grid ${studioTemplateQuery.data?.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'}`} style={{ width: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px`, minWidth: `${36 + Array.from({length:colCount}, (_, col) => Math.min(420, Math.max(56, sheet.columnWidths[col] ?? 140))).reduce((total, width) => total + width, 0)}px` }}><colgroup>{<col key="row-number" style={{ width: '36px' }} />}{Array.from({length:colCount},(_,col)=><col key={col} style={{width:`${Math.min(420,Math.max(56,sheet.columnWidths[col] ?? 140))}px`}} />)}</colgroup>
@@ -363,7 +363,7 @@ export default function ReportPreviewPage() {
           </article>;
         })}
       </section>}
-      {!isStudio && standardPreview && <section className="report-preview-standard-surface panel">
+      {!isStudio && standardPreview && <section className="ldg-section-card report-preview-standard-surface">
         <div className="report-preview-standard-title"><h2>{standardPreview.template.definition.title}</h2>{standardPreview.template.definition.subtitle && <p>{standardPreview.template.definition.subtitle.replaceAll('{project}',standardPreview.projectScope).replaceAll('{generatedAt}',new Date(standardPreview.generatedAt).toLocaleString('zh-CN')).replaceAll('{rowCount}',String(standardPreview.rowCount))}</p>}</div>
         <div className="report-preview-workbook-scroll">
           {standardPreview.template.definition.customRows.length > 0 && <table className={`report-preview-table report-preview-custom-rows ${standardPreview.template.definition.page.fitToWidth ? 'print-fit-width' : 'print-natural-width'}`} style={{ width: 'max-content', minWidth: 0, tableLayout: 'fixed' }}>

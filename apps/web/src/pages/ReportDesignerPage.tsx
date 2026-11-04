@@ -436,13 +436,13 @@ export default function ReportDesignerPage() {
 
   return <div className="page-wrap report-designer-page"><style>{`@media print { @page { size: ${model.page.paper} ${model.page.orientation}; margin: 10mm; } }`}</style>
     <PageHeader eyebrow="REPORTS / TEMPLATE STUDIO" title="报表设计器" subtitle="设计可复用的报表版式；数据仍由墨衡按当前账号与项目权限生成，模板修改不会写入业务台账。" actions={<><Button variant="secondary" onClick={() => navigate('/reports')}><X size={15} />返回报表中心</Button><Button variant="secondary" onClick={() => void outputXlsx()} disabled={busy || Boolean(from && to && from > to)}><FileSpreadsheet size={15} />预览并导出 XLSX</Button><Button onClick={() => void outputPrint()} disabled={!preview || busy || Boolean(from && to && from > to)}><Printer size={15} />完整报表 / 打印 PDF</Button></>} />
-    <section className="report-designer-topbar panel">
+    <section className="ldg-section-card report-designer-topbar">
       <label className="report-designer-compact-field"><span>报表类型</span><SelectField value={reportKey} onChange={(event) => setReportKey(event.currentTarget.value)} aria-label="报表类型">{catalog.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}</SelectField></label>
       <label className="report-designer-compact-field"><span>选择模板</span><SelectField value={templateId} onChange={(event) => void chooseTemplate(event.currentTarget.value)} aria-label="选择报表模板"><option value="">系统默认版式（只读基线）</option>{(templatesQuery.data ?? []).map((template) => <option key={template.id} value={template.id}>{template.scope === 'SYSTEM' ? '系统' : template.scope === 'PROJECT' ? '项目' : '个人'} · {template.name} · v{template.version}{template.status === 'DRAFT' || template.publishedVersion !== template.version ? '（含未发布修改）' : ''}</option>)}</SelectField></label>
       <label className="report-designer-compact-field"><span>模板名称</span><input value={templateName} maxLength={100} onChange={(event) => { setTemplateName(event.target.value); setDirty(true); }} /></label>
       <div className="report-designer-save-actions"><Button variant="secondary" onClick={() => void saveTemplate(true)} disabled={busy}><Copy size={14} />另存为个人模板</Button><Button onClick={() => void saveTemplate()} disabled={busy || !templateName.trim()}><Save size={14} />{busy ? '处理中…' : '保存草稿'}</Button><Button variant="secondary" onClick={() => void publishTemplate()} disabled={busy || !(templateId || createScope)}><Check size={14} />发布版本</Button>{templateId && templateEditable && <Button variant="ghost" onClick={() => void archiveTemplate()} disabled={busy || dirty}><Trash2 size={14} />归档模板</Button>}</div>
     </section>
-    <div className="report-designer-filterbar panel">
+    <div className="ldg-section-card report-designer-filterbar">
       <div className="report-designer-filter-note"><ShieldCheck size={16} /><span>预览数据范围：{filterProjectId ? '所选项目' : '全部有权限项目'}；预览最多显示 80 行，导出按现有 10,000 行上限执行。</span></div>
       <label><span>项目范围</span><SelectField value={filterProjectId} onChange={(event) => setFilterProjectId(event.currentTarget.value)} aria-label="项目范围"><option value="">全部可访问项目</option>{(projectsQuery.data ?? []).map((project) => <option key={project.id} value={project.id}>{project.name} · {project.code}</option>)}</SelectField></label>
       <label><span>开始日期</span><DatePicker value={from} max={to || undefined} onChange={(event) => setFrom(event.target.value)} aria-label="开始日期" placeholder="不限制开始日期" /></label>
@@ -454,7 +454,7 @@ export default function ReportDesignerPage() {
     {(error || notice) && <div className={error ? 'report-designer-message is-error' : 'report-designer-message is-success'}>{error || notice}<button type="button" aria-label="关闭提示" onClick={() => { setError(''); setNotice(''); }}><X size={14} /></button></div>}
 
     <div className="report-designer-workspace">
-      <aside className="report-designer-panel panel">
+      <aside className="ldg-section-card report-designer-panel">
         <div className="report-designer-panel-head"><div><span className="eyebrow">TEMPLATE LAYOUT</span><h2>模板属性</h2></div><span className={dirty ? 'report-dirty-indicator is-dirty' : 'report-dirty-indicator'}>{dirty ? '未保存' : `v${templateVersion}`}</span></div>
         <div className="report-designer-tabs" role="tablist">
           <button type="button" className={tab === 'columns' ? 'is-active' : ''} onClick={() => setTab('columns')}><Columns3 size={15} />字段</button>
@@ -520,7 +520,7 @@ export default function ReportDesignerPage() {
         {templateId && <details className="report-template-history"><summary><History size={15} />版本历史与恢复</summary><div className="report-template-history-list">{revisionsQuery.isLoading ? <small>正在读取历史版本…</small> : !(revisionsQuery.data ?? []).length ? <small>暂无历史记录。</small> : (revisionsQuery.data ?? []).map((revision) => <div key={revision.id}><span><strong>v{revision.version}</strong><small>{revision.action} · {new Date(revision.createdAt).toLocaleString('zh-CN')}</small></span><button type="button" disabled={busy || !templateEditable} onClick={() => void restoreRevision(revision.id)}>恢复为草稿</button></div>)}</div></details>}
       </aside>
 
-      <section className="report-designer-preview-panel panel">
+      <section className="ldg-section-card report-designer-preview-panel">
         <div className="report-preview-heading"><div><span className="eyebrow">LIVE PREVIEW</span><h2><WandSparkles size={18} />{model.title || currentReport.label}</h2><p>预览使用真实权限范围数据；表格显示前 80 条记录，导出文件采用相同模板定义。</p></div><div className="report-preview-count"><strong>{preview ? `${preview.truncated ? '≥' : ''}${preview.rowCount.toLocaleString('zh-CN')}` : '—'}</strong><span>{preview?.truncated ? '条记录（已达展示/导出上限）' : '条已查询记录'}</span></div></div>
         {previewQuery.isLoading ? <LoadingBlock label="正在生成报表预览…" /> : previewQuery.error ? <ErrorBlock message={String(previewQuery.error)} retry={() => void previewQuery.refetch()} /> : !preview ? <ErrorBlock message="预览数据暂不可用，请重试" retry={() => void previewQuery.refetch()} /> : <>
           <div className={`report-preview-viewport ${model.page.orientation === 'portrait' ? 'is-portrait' : ''}`}>
