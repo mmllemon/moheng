@@ -82,7 +82,7 @@ checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKP
 - [x] 只读业务工具、服务端项目权限复核、事件/日志敏感信息契约。
 - [x] 供应商报告 token 的 COMPLETE/PARTIAL/UNAVAILABLE 分类；未知值不按字符估算。
 - [x] 项目范围近 30 天用量摘要：按当前认证用户及授权项目读取；展示活动/终态任务数和完整/部分/未知用量，不计算或虚构费用。
-- [x] 隔离 PostgreSQL + 注入 fake provider 的端到端回归（`npm run test:assistant-recovery:postgres -w @cms/api`，CI 见 `assistant-runtime-gates.yml`）：成功路径、取消、失败重试、陈旧 run 收敛，并在整段场景结束后断言 `MainContract`、`Change`、`CostEntry`、`DownstreamContract`、`ProgressBill`、`OwnerReceivable` 六张业务表零变化（2026-11-04 补）。
+- [x] 隔离 PostgreSQL + 注入 fake provider 的端到端回归（`npm run test:assistant-recovery:postgres -w @cms/api`，CI 见 `assistant-runtime-gates.yml`）：成功路径、取消、失败重试、陈旧 run 收敛，并在整段场景结束后断言 `MainContract`、`Change`、`CostEntry`、`DownstreamContract`、`ProgressBill`、`OwnerReceivable` 六张业务表零变化（业务表无写入的运行态回归，2026-11-04 补）。
 - [x] 浏览器级验收（2026-11-04，Chromium + 已配置供应商）：会话创建、流式回答、工具卡与来源面板、单轮用量与 30 天用量摘要、项目越权 404、`requestId` 幂等重放、单会话运行互斥 409、刷新后会话与运行状态恢复、提示注入被拒绝且不泄露系统提示与其它项目数据。
 - [x] SSE `Last-Event-ID` 断点续传：断开后带 last id 重连只收到后续事件，事件 id 单调、无重复，终态 `run.completed` 必达。
 - [x] `project_operating_overview` 每次调用失败的缺陷已修：它的分供付款/退款来源用了一句白名单外的 scope，写 `tool.completed` 时抛 `ASSISTANT_EVENT_SOURCE_SCOPE_INVALID`；已补白名单，并新增用例把工具实现里的 scope 字面量与白名单对齐。
