@@ -32,7 +32,6 @@ const AssistantModal = lazy(() => import('./assistant/AssistantModal'));
 import { useAnimatedPresence } from './useAnimatedPresence';
 import PaperTextureLayer from './PaperTextureLayer';
 import { animatePaperIn, animatePaperOut, rememberPaperOrigin, takePaperOrigin } from '../lib/paper-morph';
-import { useDetachedPanelHeaders } from '../lib/use-detached-panel-headers';
 
 import {
   navigation, systemNavigation, appearanceSettingsItem, systemGroups, primaryGroups,
@@ -88,7 +87,6 @@ export default function Layout() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [settingsNavOpen, setSettingsNavOpen] = useState(false);
   const quickActionsPresence = useAnimatedPresence(quickActionsOpen, 180);
-  useDetachedPanelHeaders();
   const commandInputRef = useRef<HTMLInputElement>(null);
   const settingsWindowRef = useRef<HTMLElement>(null);
   /** 卡片元素（.app-content）：用于测量顶栏让位量 */

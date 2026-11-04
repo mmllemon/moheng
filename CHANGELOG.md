@@ -2,6 +2,17 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 成本分析页收进台账卡，测卡头的 hook 退役
+
+全站最后一块「假卡」在 `/cost/analysis`：卡面是 `::before` 按运行时测出的 `--panel-head-h` 从卡头底部画出来的，靠 `Layout` 里挂的一个 MutationObserver 监听全站 DOM。本轮把它换成真卡，那个 hook 连同它维护的 CSS 家族一起删。
+
+- **五个面板改三件套**：卡头提到卡外（`ldg-section-head`，h2 14.4/600），图表与明细放进 `ldg-section-card.an-panel`。`an-panel` 保留为卡体类，内容选择器（`.analysis-page .an-panel X`）不用改；它自己的边框/圆角/底色去掉，改由 `.ldg-section-card` 提供，内距 16/18。
+- **同行卡顶底对齐**：清单偏差的说明原本折两行（卡头 60），与右侧成本构成（42）错开 17px。说明改为「按实际发生额取前 N 项」，细框/实条由右侧图例表达；卡头统一 42 后两卡顶对齐。月度成本卡比完工估算矮 211px，区块改 flex 列、卡体 `flex: 1` 填满，两卡底边也对齐。
+- **删 hook**：`lib/use-detached-panel-headers.ts`（54 行）删除，`Layout.tsx` 的 import 与调用一并去掉。以后新增区块不用担心被一个全局 observer 改写类名。
+- **删样式**：`.panel-detached` 与 `.an-panel-head` 相关规则从 `hana.css` 删 59 条、摘掉 70 个选择器（含 `.settings-content` 下两条卡头对齐、卡内 `--panel-head-h` 画布、各页 `> :not(...)` 外边距）；`v6.css` 的 `.an-panel`（1px 上边线 + 12px 上内距）与 `.an-panel-head*` 四条基础皮肤删除；两处失效注释同步清理。
+- **门禁**：`validate-ui-polish` 的「section headers sit outside body cards」改为断言 `.ldg-section-head` / `.ldg-section-card` 存在且 `Layout` 不再引用该 hook。
+- 复核（1600 视口）：五个区块卡头均 42、h2 14.4、卡头到卡 16、卡内 16/18、圆角 14.7272；第一行两卡 273→409、第二行两卡 515→950，顶底均对齐；资金计划 664 通栏。扫 12 条路由（含报表、设置窗、台账页）无控制台错误、无残留 `.an-panel-head` / `.panel-detached`、横向溢出 0。`run-gates --tier blocking` 33/33，`@cms/web` lint exit 0。
+
 ### 2026-11-04 报表工作室两栏卡对齐
 
 `/reports/studio` 左栏（数据绑定）与右栏（工作簿编辑器）顶边差 16px、底边差 10–126px，卡片看起来永远错位。原因两条，都在壳上，没碰编辑器内部。

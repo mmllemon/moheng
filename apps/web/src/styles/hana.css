@@ -2700,14 +2700,16 @@ html .filter-bar input[type="search"] {
 .project-overview-page .project-shortcut-card:first-child { padding-left: var(--space-14); }
 .settings-content .panel, .settings-content .v6-block, .settings-content .system-overview-metric { border-radius: var(--radius-control); }
 .settings-content .system-overview-icon { border-radius: var(--radius-md); }.analysis-page .an-grid { gap: var(--space-24); }
+/* 2026-11-04：卡头移到卡外（ldg-section 三件套），.an-panel 退回卡体：
+   只留内距，边框/圆角/底色由 .ldg-section-card 提供，不再自画卡面。 */
 .analysis-page .an-panel {
-  padding: var(--space-16);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  background: var(--bg-card);
+  padding: var(--space-16) 18px;
   corner-shape: squircle;
 }
-.analysis-page .an-panel-head h2::before { display: none; content: none; }
+/* 同一行的两张卡顶对齐（卡头高度一致）之后，底边也要平：
+   区块拉成列后卡体自己填满，否则矮卡在行尾留一大块空白。 */
+.analysis-page .an-grid > .ldg-section { display: flex; flex-direction: column; }
+.analysis-page .an-grid > .ldg-section > .ldg-section-card { flex: 1 1 auto; }
 .projects-ledger-page .projects-dossier-facts { border-bottom-color: color-mix(in srgb, var(--card-border) 72%, transparent); }
 .projects-ledger-page .projects-dossier-facts > div,
 .projects-ledger-page .projects-dossier-finance > div,
@@ -2935,22 +2937,6 @@ html .filter-bar input[type="search"] {
   gap: var(--space-4);
   white-space: nowrap;
 }
-/* 设置窗内的卡头：标题与右侧标签对齐到首行
-   ---------------------------------------------------------
-   panel-heading 是 align-items: flex-end，标签会对齐到
-   整个标题块（h3 + p）的底部。设置窗宽度窄，说明文字折行后
-   标题块高 57px，标签 top 45，与 h3（top 14）差 31px，
-   截图里看起来像「标签浮在右下角」。
-   改成 flex-start，并给标签加 margin-top 与 h3 首行对齐。 */
-.settings-content .panel.panel-detached > .panel-heading {
-  align-items: flex-start;
-}
-.settings-content .panel.panel-detached > .panel-heading > .system-overview-readiness-tag,
-.settings-content .panel.panel-detached > .panel-heading > span:last-child {
-  flex: 0 0 auto;
-  margin-top: var(--space-4);
-}
-
 /* 治理能力卡：字号与圆角对齐 hana token
    ---------------------------------------------------------
    legacy.css:2432 的 tag 是 --text-2xs（10px）+ radius 2px 硬编码，
@@ -2984,14 +2970,6 @@ html .filter-bar input[type="search"] {
   color: var(--text-muted);
   font-size: var(--fs-hint);
   line-height: 1.6;
-}
-
-/* 行宽修正：panel 666px，margin 0 16px 后应为 634px。
-   实测 638px（右溢 4px），因为 legacy 的 padding 10px 18px
-   与 margin 一起算时，box-sizing 取 content-box 造成 4px 溢出。 */
-.settings-content .panel.panel-detached > .system-readiness-line {
-  width: auto;
-  box-sizing: border-box;
 }
 
 /* =============================================================
@@ -3131,7 +3109,7 @@ html .system-authorization-page .ldg-section-card:has(> .system-authorization-sc
      改为靠表格自身的列宽控制 + 滚动条，不再叠渐变。 */
   background: none;
 }
-.panel-heading h3::before, .an-panel-head h2::before, .ldg-drawer-body h3::before, .v6-block-head h2::before { display: none !important; content: none !important; }
+.panel-heading h3::before, .ldg-drawer-body h3::before, .v6-block-head h2::before { display: none !important; content: none !important; }
 .v6-row-arrow { color: var(--text-muted); opacity: 0.6; }
 .data-table tbody tr:hover .v6-row-arrow { color: var(--accent); opacity: 1; }
 
@@ -4470,21 +4448,6 @@ html[data-paper-texture] .settings-window::after { display: block; }
    不需要页内再吸顶，这里改回 static。 */
 .settings-content .sys-split-side { position: static; top: auto; }
 .settings-content .sys-split-side .panel { max-width: none; }
-/* 设置窗内的 panel-detached：卡头收进卡内
-   ---------------------------------------------------------
-   卡头在卡外（::before 从 --panel-head-h 处开始）是 hana 的 tile 设计，
-   但那是给「一张卡占满内容区」的形态用的。设置窗里内容区背景是 --bg（纸色），
-   卡片是 --bg-card（更白），卡头区域露出 --bg，
-   在多卡密集排列时表现为一条横贯整行的浅色带（实测 y331-386、y540-580，
-   色值 246,243,236，与卡片白 252,250,245 差 6）。
-   这里让卡片从卡头顶部开始画，卡头落进卡内。 */
-.settings-content .panel.panel-detached::before {
-  top: 0;
-}
-/* 卡头在卡内后，需要自己的内边距（原来卡头在卡外，靠 margin 控制）。 */
-.settings-content .panel.panel-detached > .panel-heading {
-  padding: 14px var(--space-16) 0;
-}
 .settings-content .table-scroll { width: 100%; }
 .settings-content .data-table { min-width: 640px; }
 .settings-content .app-footer { display: none; }
@@ -5107,13 +5070,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .system-overview-metric { height: 100%; }
 
 /* 通知中心：概览与工作事项 */
-.panel.panel-detached > .notice-list-heading { padding: 0 2px 10px; border: 0; align-items: flex-end; }
-.panel.panel-detached > .notice-list-heading h2 { font-size: 16px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
-.panel.panel-detached > .notice-list-heading h2 svg { width: 16px; height: 16px; color: var(--text-muted); }
-.panel.panel-detached > .notice-list-heading p { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); }
-.panel.panel-detached > .notice-list-heading .notice-filter-group { border: 1px solid var(--overlay-light); border-radius: var(--radius-action); background: var(--overlay-subtle); padding: var(--space-2); gap: var(--space-2); }
-.panel.panel-detached > .notice-list-heading .notice-filter-group button { min-height: 24px; border: 0; border-radius: var(--radius-action); padding: 0 8px; font-size: var(--fs-hint); color: var(--text-muted); background: transparent; }
-.panel.panel-detached > .notice-list-heading .notice-filter-group button.active { background: var(--bg-card); color: var(--text); box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 10%, transparent); }
 .notice-open-link { border: 0; background: transparent; color: var(--text-muted); }
 .notice-open-link:hover { background: var(--overlay-subtle); color: var(--text); }
 
@@ -5178,75 +5134,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .settings-content .system-dictionary-item-create { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .settings-content .system-dictionary-item-create > button { grid-column: 1 / -1; justify-self: start; }
 
-/* 旧业务 panel：标题测量后移到卡片外，卡片只包正文 */
-.panel.panel-detached {
-  position: relative;
-  /* 卡头在卡外，所以卡头上方需要真实间距（不是 padding，因为 ::before 从卡头底部算起）。
-     之前只有下间距，卡头会紧贴上方的卡（实测间距 0）。 */
-  margin: var(--space-24) 0;
-  padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
-/* 相邻两个 panel-detached 的间距由容器（flex gap / 块 margin）负责，
-   这里不再单独加大 margin-top。 */
-.panel.panel-detached::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  /* 卡头在卡外，所以卡片从卡头高度以下开始。 */
-  top: var(--panel-head-h, 0px);
-  bottom: 0;
-  z-index: 0;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  corner-shape: squircle;
-  background: var(--bg-card);
-  pointer-events: none;
-}
-.panel.panel-detached > * { position: relative; z-index: 1; }
-/* 卡片内容区内缩：除了卡头、分隔线、通栅表格与通栅行，其余子元素统一 16px 左右边距。
-   注意：通栅行（自己带 padding 且 width:100%）不能再加 margin，否则右边溢出。
-
-   2026-10-26 修正：原规则把 [class*="-list"] 也排除了，
-   但 -list 是「容器」不是「行」，它本身不带 padding，
-   被排除后 system-overview-event-list / system-dictionary-card-list /
-   account-rows 全部贴到卡片边框（设置窗里 9 个页签中招）。
-   同理 [class*="-row"] 会连带匹配 -rows（复数，是容器），
-   所以 -rows 也单独排除。
-   排除项：-row（单行，自带 padding）与 -item（单项）。 */
-.panel.panel-detached > :not(.panel-heading):not(.notice-list-heading):not(.audit-filter-heading):not(.table-scroll):not(.table-toolbar):not([class*="-row"]):not([class*="-item"]) {
-  margin-left: var(--space-16);
-  margin-right: var(--space-16);
-}
-/* -rows 是容器（装多行），不是行本身，需要和 -list 一样内缩。
-   [class*="-row"] 会误伤 -rows，这里把被误伤的补回来。 */
-.panel.panel-detached > [class*="-rows"] {
-  margin-left: var(--space-16);
-  margin-right: var(--space-16);
-}
-.panel.panel-detached > :not(.panel-heading):last-child {
-  margin-bottom: var(--space-16);
-}
-/* =============================================================
-   卡片底部留白（2026-10-26）
-   -------------------------------------------------------------
-   问题：panel-detached 自身 padding: 0，子元素的 margin-bottom
-   会穿透（margin 塔陷），落到 ::before 画出的卡片外面，
-   导致最后一行/最后一个内容块与卡片底边零间距。
-   实测 23 个卡片里有 11 个受影响：表格、空状态、加载更多、日志列表。
-
-   hana 的 ._cardScroll 是 padding: 12px 16px 16px，底部始终留 16px。
-   这里把 margin-bottom 换成 padding-bottom，计入卡片高度。
-   ============================================================= */
-.panel.panel-detached > :last-child:not(.panel-heading) {
-  margin-bottom: 0;
-  padding-bottom: var(--space-16);
-}
 /* v6-block 自己就是卡片（border + radius + bg + overflow: hidden），
    但自身无 padding。它的最后一个子元素若是 table-scroll / v6-log-list，
    也会贴到卡片下边框。同理补上底部留白。 */
@@ -5255,54 +5142,6 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .v6-block > .v6-table-scroll:last-child {
   padding-bottom: var(--space-16);
 }
-/* security-panel 是 panel-detached，已被上面的通用规则覆盖；
-   这里只处理它内部 load-more-row 之后的额外空隙。 */
-/* 通栅元素自己已有内边距，不重复叠加（否则双重留白）。 */
-.panel.panel-detached > .table-toolbar:last-child,
-.panel.panel-detached > .panel-heading:last-child {
-  margin-bottom: 0;
-}
-/* 卡内空状态：虚线框内要有内边距，否则文字贴边。 */
-.panel.panel-detached > [class*="-empty"],
-.panel.panel-detached > .empty-state {
-  padding: var(--space-24) var(--space-16);
-}
-.panel.panel-detached > .panel-heading {
-  align-items: flex-end;
-  /* 卡头在卡外，卡片（::before）从 --panel-head-h 开始。
-     该变量由 JS 读 offsetHeight 写入（不含 margin），
-     所以间距必须用 padding-bottom，不能用 margin。
-     对齐 hana 的 ._cardTop padding-bottom 8px + ._sectionHeader margin-bottom 12px ≈ 18px。 */
-  padding: 0 var(--space-2) var(--space-16);
-  border: 0;
-  background: transparent;
-}
-.panel.panel-detached > .panel-heading h3 {
-  color: var(--text);
-  font-family: var(--font-ui);
-  /* 对齐 hana 的 ._sectionTitle：--fs-body（14px）/ 600。
-     之前是 16px / letter-spacing .04em，比卡内指标值还重。 */
-  font-size: var(--fs-body, 14px);
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-.panel.panel-detached > .panel-heading h3 svg { width: 16px; height: 16px; color: var(--text-muted); }
-.panel.panel-detached > .panel-heading p { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); line-height: 1.55; }
-.panel.panel-detached > .panel-heading .panel-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-md);
-  corner-shape: squircle;
-  color: var(--text-muted);
-  background: var(--overlay-subtle);
-}
-.panel.panel-detached > .panel-heading .system-overview-readiness-tag { flex-shrink: 0; }
-.panel.panel-detached > .table-scroll { border-radius: var(--radius-card); }
-.panel.panel-detached > .table-scroll .data-table { width: calc(100% - 36px); margin: 0 18px; }
-.panel.panel-detached > .system-expansion-form { padding: var(--space-16); }
-.panel.panel-detached > .data-note:last-child,
-.panel.panel-detached > .inline-notice:last-child { margin: var(--space-12) var(--space-16); }
 
 /* 审计筛选：670px 内容区下改为两列，避免五列挤压 */
 .settings-content .audit-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -5321,57 +5160,12 @@ html[data-motion="reduced"] *, html[data-motion="reduced"] *::before, html[data-
 .settings-content .audit-search-field { grid-column: span 1; }
 
 /* 审计筛选：标题外置 */
-.panel.panel-detached > .audit-filter-heading { padding: 0 2px 10px; margin: 0; border: 0; align-items: flex-end; }
 /* 设置窗内：卡头已经收进卡内（::before 从 top:0 开始），
    卡头需要自己的完整内边距，2px 会让标题贴到卡片边框。 */
-.settings-content .panel.panel-detached > .audit-filter-heading {
-  padding: 14px var(--space-16) 0;
-}
-.panel.panel-detached > .audit-filter-heading h3 { font-size: 16px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
-.panel.panel-detached > .audit-filter-heading h3 svg { width: 16px; height: 16px; color: var(--text-muted); }
-.panel.panel-detached > .audit-filter-heading p { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); }
-.panel.panel-detached > .audit-filter-heading > span { border: 1px solid var(--border); border-radius: var(--radius-action); color: var(--text-muted); font-size: var(--fs-hint); }
-.panel.panel-detached.audit-filter-panel > :not(.audit-filter-heading) { margin-left: var(--space-16); margin-right: var(--space-16); }
-.panel.panel-detached.audit-filter-panel > :not(.audit-filter-heading):last-child { margin-bottom: var(--space-14); }
 
 /* 分析页与报表中心：同样把标题移到卡片外 */
 /* 2026-11-04：壳内几何向台账卡靠齐——卡头 14.4/600、卡头到卡 16、卡内 18、
    区块间距 24。原来是 h2 16 / 间距 10 / 卡内 16，比台账页重一档。 */
-.analysis-page .an-panel.panel-detached {
-  position: relative;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow: visible;
-}
-.analysis-page .an-panel.panel-detached::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: var(--panel-head-h, 0px);
-  bottom: 0;
-  z-index: 0;
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  background: var(--bg-card);
-  pointer-events: none;
-  corner-shape: squircle;
-}
-.analysis-page .an-panel.panel-detached > * { position: relative; z-index: 1; }
-.analysis-page .an-panel.panel-detached > .an-panel-head { margin: 0; padding: 0 2px var(--space-16); align-items: flex-end; }
-.analysis-page .an-panel.panel-detached > .an-panel-head h2 { font-size: var(--fs-body, 14px); font-weight: 600; letter-spacing: 0; color: var(--text); }
-.analysis-page .an-panel.panel-detached > .an-panel-head p { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); }
-.analysis-page .an-panel.panel-detached > :not(.an-panel-head) { margin-left: 18px; margin-right: 18px; }
-.analysis-page .an-panel.panel-detached > :nth-child(2) { margin-top: var(--space-16); }
-.analysis-page .an-panel.panel-detached > :last-child { margin-bottom: 18px; }
-
-.panel.panel-detached > .report-standard-heading { padding: 0 2px 10px; border: 0; align-items: flex-end; }
-.panel.panel-detached > .report-standard-heading h2 { font-size: 16px; font-weight: 600; letter-spacing: 0.04em; color: var(--text); }
-.panel.panel-detached > .report-standard-heading h2 svg { width: 16px; height: 16px; color: var(--text-muted); }
-.panel.panel-detached > .report-standard-heading p { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); }
-.panel.panel-detached > .report-standard-layout { padding: var(--space-14) var(--space-16) var(--space-16); }
 
 /* 表格内操作统一为轻量 ghost */
 .data-table .button-secondary,
@@ -5596,11 +5390,8 @@ html .table-count {
 .system-authorization-review-form::before,
 .system-policy-form::before,
 .ldg-toolbar::after,
-.panel.data-table-panel.panel-detached > .table-toolbar::after,
 .table-toolbar::after { left: var(--card-divider-inset); right: var(--card-divider-inset); }
 
-.panel.panel-detached > .table-scroll .data-table,
-.panel.data-table-panel.panel-detached > .table-scroll .data-table,
 .ldg-table,
 .projects-table { width: calc(100% - (var(--card-divider-inset) + var(--card-divider-inset))); margin-left: var(--card-divider-inset); margin-right: var(--card-divider-inset); }
 .owner-contract-detail-grid > div:nth-child(4)::before,
@@ -5750,13 +5541,9 @@ html .table-count {
 /* 表格卡内缩统一使用 Hana --space-16 */
 .ldg-toolbar { padding-left: var(--space-16); padding-right: var(--space-16); }
 .ldg-toolbar::after,
-.panel.data-table-panel.panel-detached > .table-toolbar::after,
 .table-toolbar::after { left: var(--space-16); right: var(--space-16); }
-.panel.data-table-panel.panel-detached > .table-toolbar { padding-left: var(--space-16); padding-right: var(--space-16); }
 .ldg-table,
-.projects-table,
-.panel.panel-detached > .table-scroll .data-table,
-.panel.data-table-panel.panel-detached > .table-scroll .data-table { width: calc(100% - 32px); margin-left: var(--space-16); margin-right: var(--space-16); }
+.projects-table { width: calc(100% - 32px); margin-left: var(--space-16); margin-right: var(--space-16); }
 
 /* Hana：radius token × 1.84 + squircle；不支持时回退标准圆角 */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
@@ -6036,10 +5823,6 @@ select { corner-shape: squircle !important; }
 .cost-type-card strong { margin-top: var(--space-4); color: var(--text); font-family: var(--font-num, var(--num)); font-size: 20px; font-weight: 600; line-height: 1.2; }
 .cost-type-card small { margin-top: var(--space-4); color: var(--text-muted); font-size: var(--fs-hint); }
 .cost-type-symbol { display: none; }
-
-.panel.data-table-panel.panel-detached > .table-toolbar { position: relative; padding: var(--space-12) 18px; border-bottom: 0; }
-.panel.data-table-panel.panel-detached > .table-toolbar::after { content: ''; position: absolute; right: 18px; bottom: 0; left: 18px; height: 1px; background: color-mix(in srgb, var(--border) 60%, transparent); pointer-events: none; }
-.panel.data-table-panel.panel-detached > .table-scroll .data-table { width: calc(100% - 36px); margin: 0 18px; }
 .table-toolbar .toolbar-search { width: min(390px, 70%); height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); }
 .table-toolbar .toolbar-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent); }
 .table-toolbar .toolbar-search input { height: 30px; font-size: var(--fs-ui); }
@@ -7541,9 +7324,6 @@ html[data-paper-texture] .assistant-modal::after { display: block; }
 .form-alert,
 .error-block { padding-left: var(--card-inset); padding-right: var(--card-inset); }
 .data-note { margin-top: var(--card-inset); }
-
-.panel.panel-detached > .notice-list { padding: 0 var(--card-inset) 10px; }
-.panel.panel-detached > .empty-state { margin: 0 var(--card-inset) var(--card-inset); }
 .notice-list-panel { padding: 0; }
 .notice-item {
   border-bottom: 0;
@@ -9493,7 +9273,7 @@ html .button-ghost.button-toolbar.is-active {
   margin-bottom: 0;
 }
 
-/* 卡片（panel-detached）已有自己的 24px margin，这里不动 */
+/* 卡片（ldg-section）已有自己的 24px margin，这里不动 */
 
 /* 2026-11-04：原来这里有一条 .page-wrap > [class*="_section_"] 的 24px 兼底，
    专为 SettingsSection 的 CSS Modules 分区而设。该组件已退役（最后一个使用者
@@ -9517,7 +9297,7 @@ html .page-wrap.business-party-detail-page {
 
      ① .page-wrap > *            margin-bottom: 24px      （主机制）
      ② 8 个页面 .xxx-page        display:flex + gap 16/14 （已删，见 legacy.css）
-     ③ panel-detached            margin: 24px 0
+     ③ panel-detached            margin: 24px 0           （已删，2026-11-04 拆掉测卡头的 hook）
      ④ 各页面自己改 page-header  margin-bottom 17/18/19/20/22
 
    ②③ 与 ① 叠加，实际间距变成 40~65px；④ 让首项间距变成 18px。

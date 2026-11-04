@@ -99,8 +99,9 @@ export default function AnalysisPage() {
     ]} />
 
     <div className="an-grid">
-      <section className="an-panel" aria-label="清单偏差">
-        <div className="an-panel-head"><div><h2>清单偏差</h2><p>目标成本为细框，实际为实条；按实际发生额取前 {topRows.length} 项</p></div><span className="an-legend"><i className="is-target" />目标<i className="is-actual" />已发生</span></div>
+      <section className="ldg-section" aria-label="清单偏差">
+        <div className="ldg-section-head"><div><h2>清单偏差</h2><p>按实际发生额取前 {topRows.length} 项</p></div><span className="an-legend"><i className="is-target" />目标<i className="is-actual" />已发生</span></div>
+        <div className="ldg-section-card an-panel">
         {topRows.length ? <div className="an-variance-list">
           {topRows.map((row) => {
             const variance = row.actualCost - row.targetCost;
@@ -117,28 +118,34 @@ export default function AnalysisPage() {
           })}
         </div> : <div className="an-empty">还没有末级清单数据。</div>}
         <div className="an-scale"><span>0</span>{ticks.slice(1).map((tick) => <span key={tick}>{tick >= 10000 ? `${(tick / 10000).toFixed(0)}万` : tick}</span>)}</div>
+        </div>
       </section>
 
-      <section className="an-panel" aria-label="成本构成">
-        <div className="an-panel-head"><div><h2>成本构成</h2><p>按已录入成本类型统计</p></div><span className="an-mini">按费用类型</span></div>
+      <section className="ldg-section" aria-label="成本构成">
+        <div className="ldg-section-head"><div><h2>成本构成</h2><p>按已录入成本类型统计</p></div><span className="an-mini">按费用类型</span></div>
+        <div className="ldg-section-card an-panel">
         {costTotal > 0 ? <>
           <div className="an-comp-bar">{costEntries.map((entry) => <span key={entry.type} style={{ width: `${(entry.value / costTotal) * 100}%`, background: entry.color }} title={`${entry.label} ${formatMoney(entry.value, 0)}`} />)}</div>
           <div className="an-comp-list">{costEntries.map((entry) => <div key={entry.type}><i style={{ background: entry.color }} /><span>{entry.label}</span><strong>{formatMoney(entry.value, 0)}</strong><small>{((entry.value / costTotal) * 100).toFixed(1)}%</small></div>)}</div>
           <div className="an-comp-total"><span>已发生合计</span><strong>{formatMoney(costTotal, 0)}</strong></div>
         </> : <div className="an-empty">还没有已录入成本。</div>}
         <div className="an-comp-foot">颜色只区分费用类型，不表达风险高低。</div>
+        </div>
       </section>
 
-      <section className="an-panel" aria-label="月度成本">
-        <div className="an-panel-head"><div><h2>月度成本</h2><p>最近六个月 · 按成本发生日期统计</p></div><span className="an-mini">万元</span></div>
+      <section className="ldg-section" aria-label="月度成本">
+        <div className="ldg-section-head"><div><h2>月度成本</h2><p>最近六个月 · 按成本发生日期统计</p></div><span className="an-mini">万元</span></div>
+        <div className="ldg-section-card an-panel">
         {monthly.length ? <div className="an-month-chart">
           <div className="an-month-axis">{monthTicks.map((tick) => <span key={tick}>{tick}</span>)}</div>
           <div className="an-month-plot">{monthly.map((row) => <div className="an-month-col" key={row.month}><span className="an-month-value">{row.amount > 0 ? (row.amount / 10000).toFixed(1) : ''}</span><span className="an-month-bar" style={{ height: `${row.amount > 0 ? Math.max(2, (row.amount / (monthTop * 10000)) * 100) : 1}%` }} /><small>{row.month.slice(5)}</small></div>)}</div>
         </div> : <div className="an-empty">最近六个月没有成本发生。</div>}
+        </div>
       </section>
 
-      <section className="an-panel" aria-label="完工估算与口径">
-        <div className="an-panel-head"><div><h2>完工估算</h2><p>EAC · 已发生成本按核定产值折算</p></div><span className="an-mini">{eac.method === 'CERTIFIED_REVENUE_RATIO' ? '产值折算' : '待建立'}</span></div>
+      <section className="ldg-section" aria-label="完工估算与口径">
+        <div className="ldg-section-head"><div><h2>完工估算</h2><p>EAC · 已发生成本按核定产值折算</p></div><span className="an-mini">{eac.method === 'CERTIFIED_REVENUE_RATIO' ? '产值折算' : '待建立'}</span></div>
+        <div className="ldg-section-card an-panel">
         {eac.status === 'READY' && eac.valuation && eac.margin ? <>
           <div className="an-eac-range">
             <div><span>剩余按目标成本</span><strong>{formatMoney(eac.budgetEfficiencyCost ?? 0, 0)}</strong><small>剩余工作回到预算效率</small></div>
@@ -161,6 +168,7 @@ export default function AnalysisPage() {
           <div><dt>数据时间</dt><dd>{asOf}</dd></div>
         </dl>
         {data.downstreamContractSummary && <p className="an-basis-note">分供合同：执行中/待结算 {formatMoney(data.downstreamContractSummary.activeAndPendingSettlementContractAmount, 0)}，已关联实际成本 {formatMoney(data.downstreamContractSummary.linkedActualCost, 0)}，累计净付款 {formatMoney(data.downstreamContractSummary.paidAmount, 0)}；承诺、成本、付款不直接相加。</p>}
+        </div>
       </section>
       <CashflowPanel projectId={projectId} />
     </div>
@@ -177,8 +185,8 @@ function CashflowPanel({ projectId }: { projectId: string }) {
     enabled: Boolean(bucketKey),
     staleTime: 30_000,
   });
-  if (query.isLoading) return <div className="an-panel is-full"><div className="an-panel-head"><div><h2>资金计划</h2><p>按到期日统计未来现金进出</p></div></div><LoadingBlock /></div>;
-  if (query.error) return <div className="an-panel is-full"><div className="an-panel-head"><div><h2>资金计划</h2></div></div><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div>;
+  if (query.isLoading) return <section className="ldg-section is-full" aria-label="资金计划"><div className="ldg-section-head"><div><h2>资金计划</h2><p>按到期日统计未来现金进出</p></div></div><div className="ldg-section-card an-panel"><LoadingBlock /></div></section>;
+  if (query.error) return <section className="ldg-section is-full" aria-label="资金计划"><div className="ldg-section-head"><div><h2>资金计划</h2></div></div><div className="ldg-section-card an-panel"><ErrorBlock error={query.error} retry={() => void query.refetch()} /></div></section>;
   const plan = query.data!;
   const peak = Math.max(1, ...plan.buckets.flatMap((bucket) => [bucket.inflow, bucket.outflow]));
   const hasCurve = plan.buckets.some((bucket) => bucket.inflow > 0 || bucket.outflow > 0);
@@ -187,11 +195,12 @@ function CashflowPanel({ projectId }: { projectId: string }) {
   const activeBucket = bucketKey ? plan.buckets.find((bucket) => bucket.key === bucketKey) : undefined;
   const detail = bucketQuery.data?.bucket;
 
-  return <section className="an-panel is-full" aria-label="资金计划">
-    <div className="an-panel-head">
+  return <section className="ldg-section is-full" aria-label="资金计划">
+    <div className="ldg-section-head">
       <div><h2>资金计划</h2><p>未来 {plan.months} 个月 · 只算已经确定到期日的金额 · 点月份看明细</p></div>
       <span className="an-legend"><i className="is-inflow" />应收<i className="is-outflow" />应付</span>
     </div>
+    <div className="ldg-section-card an-panel">
     <Metrics columns={3} className="cf-metrics" items={[
       { label: `未来 ${plan.months} 个月应收`, value: formatMoney(plan.window.inflow, 0), detail: '已到期与未到期的应收单，按分期到期日' },
       { label: `未来 ${plan.months} 个月应付`, value: formatMoney(plan.window.outflow, 0), detail: '已过账应付与付款计划，另含已开票的销项税额', emphasis: true },
@@ -236,5 +245,6 @@ function CashflowPanel({ projectId }: { projectId: string }) {
       {uncoveredTotal > 0 && <div><dt>尚未纳入计划</dt><dd>{plan.uncovered.unplannedContractCount} 份分供合同既无应付也无付款计划，剩余合同额 {formatMoney(uncoveredTotal, 0)}，这部分支出还没排进任何月份</dd></div>}
     </dl>
     {plan.uncovered.receivableWithoutDueDate > 0 && <p className="an-basis-note">有 {plan.uncovered.receivableWithoutDueDate} 张应收单没有到期日（多数是进度款应收），它们的金额只能统计在“没有到期日”里，不会被安排到某个月。给应收单补录到期安排后就会进入曲线。</p>}
+    </div>
   </section>;
 }
