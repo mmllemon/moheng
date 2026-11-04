@@ -10073,6 +10073,41 @@ textarea {
 /* 卡头是 flex-end，旧规则的 flex-start 会把胶囊顶到卡头上边。 */
 .report-standard-workspace .report-format-pill { align-self: flex-end; }
 
+/* =============================================================
+   2026-11-04 第三方 Univer 画布豁免
+   =============================================================
+   全站的输入皮肤写在 `html input:not(...)` 上，一其串 :not([type]) 把特异度
+   抬到 c=6。它会压过 Univer 自己的 univer-h-6 / univer-border-none /
+   univer-rounded-md，把工具栏的字体、字号下拉和名称框撑成 Hana 输入框：
+   实测 96×32、内距 0 10、1px 边框、圆角 11.0454、背景 --bg-card、曲率 squircle。
+   Univer 是第三方组件，改动在升级时会丢（见 docs/组件不变量.md），
+   这里把画布内的表单控件交回组件自己。
+   ============================================================= */
+.report-studio-univer-root input,
+html .report-studio-univer-root input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
+html .report-studio-univer-root textarea,
+html .report-studio-univer-root select {
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 2px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  corner-shape: round !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: inherit !important;
+  outline: 0 !important;
+}
+.report-studio-univer-root input:focus,
+.report-studio-univer-root textarea:focus,
+.report-studio-univer-root select:focus {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 /* --- 项目驾驶舱 ------------------------------------------------------ */
 /* 两列工作区里的 ldg-section 不能带 24px 底距，否则两张卡顶不平。 */
 .project-cockpit-main > .ldg-section { margin: 0; }
