@@ -39,6 +39,18 @@ test('isolated PostgreSQL assistant recovery + injected fake provider success co
   const conversationIds: string[] = [];
   const jobIds: string[] = [];
   const runIds: string[] = [];
+  // 只读边界的事实核对基准：助手整段场景跑完（含真实只读工具调用、失败恢复、取消）后，
+  // 六张业务表必须零变化。2026-11-04 从路线图的「待验证」项补齐。
+  const businessTables = ['mainContract', 'change', 'costEntry', 'downstreamContract', 'progressBill', 'ownerReceivable'] as const;
+  const countBusinessRows = async () => {
+    const entries = await Promise.all(businessTables.map(async (table) => {
+      const delegate = (prisma as unknown as Record<string, { count: () => Promise<number> }>)[table];
+      assert.ok(delegate, `missing prisma delegate for ${table}`);
+      return [table, await delegate.count()] as const;
+    }));
+    return Object.fromEntries(entries);
+  };
+  const businessRowsBefore = await countBusinessRows();
   try {
     const user = await prisma.user.create({ data: { name: `Assistant Gate ${suffix}`, email: `assistant-gate-${suffix}@example.invalid`, passwordHash: 'test-only-not-a-login-password', role: 'ADMIN' } });
     userId = user.id;
@@ -234,6 +246,9 @@ test('isolated PostgreSQL assistant recovery + injected fake provider success co
     assert.equal(staleOrphanRun.errorCode, 'ASSISTANT_ORPHAN_RUN');
     assert.equal(await prisma.assistantRunEvent.count({ where: { runId: staleOrphan.run.id, type: 'run.failed' } }), 1);
     assert.equal(await prisma.auditLog.count({ where: { entityId: staleOrphan.run.id, action: 'ASSISTANT_RUN_FAILED' } }), 1);
+
+    // 只读边界：整段场景跑完（含真实只读工具调用、失败恢复与取消）后，六张业务表必须零变化。
+    assert.deepEqual(await countBusinessRows(), businessRowsBefore, 'assistant runs must not write business tables');
   } finally {
     restoreEnv();
     if (userId) {

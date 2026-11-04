@@ -23,4 +23,9 @@ export const ASSISTANT_SAFE_SOURCE_SCOPES: readonly string[] = [
   'deletedAt = null; leaf items only',
   'deletedAt = null; projectId = requested project',
   'deletedAt = null; current project; most recently updated first; max 200 rows',
+  // 2026-11-04：project_operating_overview 的分供付款/退款那条来源用的是这句，
+  // 但白名单里没有它，导致每次调用该工具都在写 tool.completed 事件时抛
+  // ASSISTANT_EVENT_SOURCE_SCOPE_INVALID，模型只能告诉用户“工具返回错误”。
+  // 实测（真供应商 E2E）：cost_variance 正常，project_operating_overview 必失败。
+  'downstreamContract.projectId = requested authorized project; downstream contract deletedAt = null; scan capped at 10000 rows',
 ];

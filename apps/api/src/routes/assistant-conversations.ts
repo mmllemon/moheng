@@ -9,15 +9,9 @@ import { appendAssistantRunEvent } from '../lib/assistant-run-events.js';
 import { enqueueBackgroundJob, hashJobRequest } from '../lib/background-jobs.js';
 import { isAssistantBaseUrlValid } from '../lib/assistant-config.js';
 import { loadAssistantRuntimeConfig } from '../lib/assistant-provider-config.js';
+import { createAssistantFeatureGate, type AssistantConfigLoader } from '../lib/assistant-feature-gate.js';
 import { assertAssistantUserRunAdmission, MAX_ACTIVE_ASSISTANT_RUNS_PER_USER, MAX_ASSISTANT_SUBMISSIONS_PER_USER_PER_MINUTE } from '../lib/assistant-submission-policy.js';
 import { buildAssistantUsageSummary, ASSISTANT_USAGE_SUMMARY_WINDOW_DAYS } from '../lib/assistant-usage-summary.js';
-
-const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
-  const runtime = await loadAssistantRuntimeConfig();
-  if (!runtime.enabled) {
-    return reply.code(404).send(failure(reply, 404, 'ROUTE_NOT_FOUND', '接口不存在'));
-  }
-};
 
 const conversationIdSchema = z.string().trim().min(1).max(100);
 const createConversationSchema = z.strictObject({
@@ -66,7 +60,8 @@ function parseAfterSequence(request: FastifyRequest): number | null {
 
 const sleep = (milliseconds: number) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
 
-export async function assistantConversationRoutes(app: FastifyInstance) {
+export async function assistantConversationRoutes(app: FastifyInstance, options: { loadConfig?: AssistantConfigLoader } = {}) {
+  const featureGate = createAssistantFeatureGate(options.loadConfig);
   app.get('/usage-summary', {
     preHandler: [featureGate, authRequired],
     config: { rateLimit: { max: 30, timeWindow: '1 minute' } },

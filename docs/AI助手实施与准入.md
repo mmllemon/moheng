@@ -70,6 +70,7 @@ checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKP
 5. 不能写入合同额、成本、应收应付、收付款、审批/外部确认状态。
 6. 回答应说明工具、数据范围、生成时间与限制；不得夸大证据精确度。
 7. Prompt/模型输出/API key 不进入普通日志；持久化内容遵守数据最小化与保留政策。
+8. 数据库会话时区必须是 UTC。2026-11-04 在非 UTC 实例（本机 PostgreSQL 为 `Asia/Shanghai`）上实测：Node 写 `2026-11-04T11:28:29.070Z`，库里落成 `11:28:29.07+08`，真实时点偏早 8 小时。Prisma 读回来又是 11:28Z，应用内部自洽，但所有与 `NOW()` 比较的地方都偏：助手孤儿任务回收会把刚创建的运行判成过期，每用户每分钟 6 次与近 30 天用量窗口同样偏。现已在 `apps/api/src/lib/prisma.ts` 里把会话钉为 `options: '-c timezone=UTC'`，并由 `validate-prisma7-migration` 守住这条断言。代码中没有依赖会话时区的 `date_trunc` / `CURRENT_DATE` / `::date` SQL，因此该固定只影响落库时的解释。
 
 ## 5. 当前开发状态与待办
 
@@ -81,13 +82,16 @@ checkpoint 需在受控部署过程中显式初始化：设置 `ASSISTANT_CHECKP
 - [x] 只读业务工具、服务端项目权限复核、事件/日志敏感信息契约。
 - [x] 供应商报告 token 的 COMPLETE/PARTIAL/UNAVAILABLE 分类；未知值不按字符估算。
 - [x] 项目范围近 30 天用量摘要：按当前认证用户及授权项目读取；展示活动/终态任务数和完整/部分/未知用量，不计算或虚构费用。
+- [x] 隔离 PostgreSQL + 注入 fake provider 的端到端回归（`npm run test:assistant-recovery:postgres -w @cms/api`，CI 见 `assistant-runtime-gates.yml`）：成功路径、取消、失败重试、陈旧 run 收敛，并在整段场景结束后断言 `MainContract`、`Change`、`CostEntry`、`DownstreamContract`、`ProgressBill`、`OwnerReceivable` 六张业务表零变化（2026-11-04 补）。
+- [x] 浏览器级验收（2026-11-04，Chromium + 已配置供应商）：会话创建、流式回答、工具卡与来源面板、单轮用量与 30 天用量摘要、项目越权 404、`requestId` 幂等重放、单会话运行互斥 409、刷新后会话与运行状态恢复、提示注入被拒绝且不泄露系统提示与其它项目数据。
+- [x] SSE `Last-Event-ID` 断点续传：断开后带 last id 重连只收到后续事件，事件 id 单调、无重复，终态 `run.completed` 必达。
+- [x] `project_operating_overview` 每次调用失败的缺陷已修：它的分供付款/退款来源用了一句白名单外的 scope，写 `tool.completed` 时抛 `ASSISTANT_EVENT_SOURCE_SCOPE_INVALID`；已补白名单，并新增用例把工具实现里的 scope 字面量与白名单对齐。
 
 ### 仍需在开发阶段继续验证
 
-- [ ] 浏览器中覆盖配置未就绪、空结果、错误/限流、取消、失败重试、断线重连、来源面板和用量摘要。
-- [ ] 在隔离数据库中补齐会话/项目隔离与业务表无写入的运行态回归；使用 fake provider 验证工具调用与恢复边界，并断言 `MainContract`、`Change`、`CostEntry`、`DownstreamContract`、`ProgressBill`、`OwnerReceivable` 六张业务表零变化。
-- [ ] 在授权测试环境连接真实模型供应商，核验 token 元数据格式、真实取消/超时行为与费用/账单边界；不在聊天中传递密钥。
+- [ ] 在授权测试环境连接真实模型供应商，核验 token 元数据格式、真实取消/超时行为与费用/账单边界；不在聊天中传递密钥。（上面那轮浏览器验收用的是本机已配置的供应商，不构成生产供应商准入。）
 - [ ] 完成中文输入法、长消息滚动、窄屏、键盘导航和错误引导等体验检查。
+- [ ] 断线重连只验到事件层与「刷新后恢复会话」，未做弱网/长时间断线下的 UI 重连提示复现。
 
 生产/正式启用仍须独立准入：生产默认关闭，且应先完成真实 provider E2E、安全/隐私准入和只读内测；以上自动化通过不等于生产启用批准。
 

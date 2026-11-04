@@ -26,8 +26,8 @@ check('module registry is the only server-side route registration entry point',
   server.includes('await registerApiModules(app)') && registry.includes('export async function registerApiModules') &&
   !/app\.register\(\w+Routes,\s*\{\s*prefix:/.test(server));
 check('all API route plugins are represented in the registry',
-  existingRouteFiles.every((file) => registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) || (file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) || (integratedRouteFiles.has(file) && assistantPocRoutesSource.includes('assistantConversationRoutes(app)'))),
-  existingRouteFiles.filter((file) => !registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) && !(file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) && !(integratedRouteFiles.has(file) && assistantPocRoutesSource.includes('assistantConversationRoutes(app)'))).join(', '));
+  existingRouteFiles.every((file) => registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) || (file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) || (integratedRouteFiles.has(file) && /assistantConversationRoutes\(app(?:,\s*\{[^)]*\})?\)/.test(assistantPocRoutesSource))),
+  existingRouteFiles.filter((file) => !registry.includes(`../routes/${file.replace(/\.ts$/, '.js')}`) && !(file === 'system-config.ts' && systemManagementRoutesSource.includes('systemConfigRoutes')) && !(integratedRouteFiles.has(file) && /assistantConversationRoutes\(app(?:,\s*\{[^)]*\})?\)/.test(assistantPocRoutesSource))).join(', '));
 const moduleIds = [...registry.matchAll(/\{ id: '([^']+)'/g)].map((match) => match[1]);
 // 原先这里硬编码 19 / 16 两个数，模块从 19 增到 21（workspace、project-artifacts）后
 // 门禁一直红着——新增模块的人没同步魔法数，而门禁不在 CI 也没人看见。

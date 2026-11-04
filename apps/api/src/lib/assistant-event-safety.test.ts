@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import type { Prisma } from '../generated/prisma/client.js';
 import { appendAssistantRunEvent, assertSafeAssistantEventPayload } from './assistant-run-events.js';
-import { ASSISTANT_LIMITATION_COPY as LIMITATION } from './assistant-safe-copy.js';
+import { ASSISTANT_LIMITATION_COPY as LIMITATION, ASSISTANT_SAFE_SOURCE_SCOPES } from './assistant-safe-copy.js';
 
 const safeToolEvent = {
   toolId: 'cost_variance', durationMs: 3, sourceCount: 2, generatedAt: '2026-10-17T00:00:00.000Z',
@@ -49,4 +50,16 @@ test('tool event rejects field values masquerading as source metadata', () => {
     sources: [{ entity: 'Project', fields: ['contractAmount'], rowCount: 1, scope: 'projectId = SECRET-BUSINESS-TEST-ONLY' }],
     sourceCount: 1,
   }), /ASSISTANT_EVENT_SOURCE_SCOPE_INVALID/);
+});
+
+// 2026-11-04：真供应商 E2E 暴露出 project_operating_overview 每次调用都失败 —— 它的
+// 分供付款/退款来源用了一句白名单里没有的 scope，写 tool.completed 事件时抛
+// ASSISTANT_EVENT_SOURCE_SCOPE_INVALID。白名单与工具实现分居两个文件，谁都没发现。
+// 这里把两边的字符串对齐钉住，新增来源范围必须先补进白名单。
+test('every source scope emitted by the read-only tools is on the safe allowlist', async () => {
+  const source = await readFile(new URL('./assistant-read-only-tools.ts', import.meta.url), 'utf8');
+  const used = [...new Set([...source.matchAll(/scope:\s*'([^']+)'/g)].map((match) => match[1]))].filter((scope): scope is string => typeof scope === 'string');
+  assert.ok(used.length >= 5, 'expected the tools to declare their fixed query scopes');
+  const missing = used.filter((scope) => !ASSISTANT_SAFE_SOURCE_SCOPES.includes(scope));
+  assert.deepEqual(missing, [], `safe scope allowlist is missing: ${missing.join(' | ')}`);
 });

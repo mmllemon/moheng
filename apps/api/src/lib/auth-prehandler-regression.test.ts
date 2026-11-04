@@ -26,10 +26,13 @@ test('unauthenticated preHandler sends a 401 and never enters the protected hand
 });
 
 test('ASSISTANT_POC_ENABLED=false sends ROUTE_NOT_FOUND before any POC handler runs', async () => {
-  const previous = process.env.ASSISTANT_POC_ENABLED;
-  process.env.ASSISTANT_POC_ENABLED = 'false';
+  // 运行时配置以数据库行优先，测试里把开关注入成“关闭”，不读真实数据库：
+  // 本机一旦配了启用的供应商，环境变量=false 也拦不住请求。
   const app = Fastify();
-  await app.register(assistantPocRoutes, { prefix: '/api/assistant-poc' });
+  await app.register(assistantPocRoutes, {
+    prefix: '/api/assistant-poc',
+    loadConfig: async () => ({ enabled: false, source: 'none' as const }),
+  });
   try {
     await app.ready();
     const response = await app.inject({ method: 'GET', url: '/api/assistant-poc/tools' });
@@ -44,7 +47,5 @@ test('ASSISTANT_POC_ENABLED=false sends ROUTE_NOT_FOUND before any POC handler r
     assert.doesNotMatch(conversationsResponse.body, /conversation|runId|projectId|assistantMessages/);
   } finally {
     await app.close();
-    if (previous === undefined) delete process.env.ASSISTANT_POC_ENABLED;
-    else process.env.ASSISTANT_POC_ENABLED = previous;
   }
 });

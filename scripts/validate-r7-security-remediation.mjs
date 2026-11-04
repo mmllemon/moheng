@@ -38,9 +38,14 @@ const authStart = auth.indexOf('export const authRequired:');
 const authBlock = auth.slice(authStart, auth.indexOf('\n};', authStart));
 verify('all six auth rejection paths explicitly send 401', () => assert.equal((authBlock.match(/return reply\.code\(401\)\.send\(failure\(reply, 401,/g) ?? []).length, 6));
 verify('auth preHandler has no non-terminating 401 returns', () => assert.doesNotMatch(authBlock, /return failure\(reply, 401,/));
-for (const [name, source] of [['assistant-poc', pocRoute], ['assistant-conversations', conversations]]) {
-  verify(`${name} feature gate explicitly sends 404`, () => assert.match(source, /return reply\.code\(404\)\.send\(failure\(reply, 404, 'ROUTE_NOT_FOUND'/));
+const featureGate = await readFile(join(root, 'apps/api/src/lib/assistant-feature-gate.ts'), 'utf8');
+for (const name of ['assistant-poc', 'assistant-conversations']) {
+  verify(`${name} feature gate explicitly sends 404`, () => assert.match(featureGate, /return reply\.code\(404\)\.send\(failure\(reply, 404, 'ROUTE_NOT_FOUND'/));
 }
+verify('both assistant route modules delegate to the shared 404 gate', () => {
+  assert.match(pocRoute, /createAssistantFeatureGate\(options\.loadConfig\)/);
+  assert.match(conversations, /createAssistantFeatureGate\(options\.loadConfig\)/);
+});
 verify('system-management unauthenticated requests explicitly send 401', () => assert.match(systemRoutes, /if \(!request\.user\) return reply\.code\(401\)\.send\(failure\(reply, 401, 'UNAUTHORIZED'/));
 verify('system-management non-admin requests explicitly send 403', () => assert.match(systemRoutes, /return reply\.code\(403\)\.send\(failure\(reply, 403, 'ADMIN_REQUIRED'/));
 

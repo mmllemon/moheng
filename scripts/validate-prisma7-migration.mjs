@@ -51,7 +51,9 @@ check('Prisma config supplies datasource URL via env', () => {
 check('Prisma Client instance uses PostgreSQL driver adapter', () => {
   assert.match(prismaClient, /from '@prisma\/adapter-pg'/);
   assert.match(prismaClient, /from '\.\.\/generated\/prisma\/client\.js'/);
-  assert.match(prismaClient, /new PrismaPg\(\{ connectionString \}\)/);
+  assert.match(prismaClient, /new PrismaPg\(\{ connectionString/);
+  // 2026-11-04：会话时区钉在 UTC，否则非 UTC 实例上 DateTime 落地会偏区时（实测 +8 小时）。
+  assert.match(prismaClient, /options: '-c timezone=UTC'/);
   assert.match(prismaClient, /new PrismaClient\(\{[\s\S]*?adapter,/);
 });
 check('Docker build installs from root lock with npm ci', () => {

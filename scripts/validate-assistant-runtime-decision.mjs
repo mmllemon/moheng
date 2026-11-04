@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFile(join(root, path), 'utf8');
-const [decision, acceptance, rootPackage, apiPackage, webPackage, server, routes, registry, releaseScript] = await Promise.all([
+const [decision, acceptance, rootPackage, apiPackage, webPackage, server, routes, registry, releaseScript, featureGateSource] = await Promise.all([
   read('docs/AI助手实施与准入.md'),
   read('docs/后续四阶段开发路线图.md'),
   read('package.json').then(JSON.parse),
@@ -15,12 +15,16 @@ const [decision, acceptance, rootPackage, apiPackage, webPackage, server, routes
   read('apps/api/src/routes/assistant-poc.ts'),
   read('apps/api/src/platform/module-registry.ts'),
   read('package.json'),
+  // 2026-11-04：开关判定从两个路由模块各自内联，改为 lib/assistant-feature-gate.ts 里的工厂。
+  // 断言跟着指向真实实现处，守卫本身不变：未启用时 404 + ROUTE_NOT_FOUND。
+  read('apps/api/src/lib/assistant-feature-gate.ts'),
 ]);
 
 assert.equal(rootPackage.version, apiPackage.version, 'root/API versions must match');
 assert.equal(rootPackage.version, webPackage.version, 'root/Web versions must match');
 assert.match(server, /ASSISTANT_POC_ENABLED: z\.enum\(\['true', 'false'\]\)\.default\('false'\)/, 'server-side PoC flag must default to off');
-assert.match(routes, /if \(!runtime\.enabled\)[\s\S]{0,120}'ROUTE_NOT_FOUND'/, 'PoC route must be hidden unless explicitly enabled');
+assert.match(featureGateSource, /if \(!runtime\.enabled\)[\s\S]{0,120}'ROUTE_NOT_FOUND'/, 'PoC route must be hidden unless explicitly enabled');
+assert.match(routes, /createAssistantFeatureGate\(options\.loadConfig\)/, 'PoC routes must use the shared feature gate');
 assert.match(routes, /preHandler: \[featureGate, authRequired\]/, 'PoC endpoints must require auth and feature gate');
 assert.match(registry, /id: 'assistant-poc'[\s\S]*?integrationVisible: false/, 'assistant PoC must stay hidden from the public integration catalog');
 assert.match(decision, /LangGraph\.js \+ PostgreSQL `PostgresSaver`/, 'the adopted next-stage runtime/storage path must be documented');

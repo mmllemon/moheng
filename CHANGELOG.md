@@ -2,6 +2,33 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 AI 助手端到端验收（fake provider + 浏览器）
+
+按路线图阶段三的缺口做了端到端验收。过程中查出两个真缺陷，都修了。
+
+**缺陷一：`project_operating_overview` 每次调用都失败。** 它的分供付款/退款来源写了一句白名单里没有的 scope（`downstreamContract.projectId = requested authorized project; downstream contract deletedAt = null; scan capped at 10000 rows`），写 `tool.completed` 事件时抛 `ASSISTANT_EVENT_SOURCE_SCOPE_INVALID`，整轮回答只能退回 `cost_variance` 单源。修法是把 scope 补进 `ASSISTANT_SAFE_SOURCE_SCOPES`，并加一条用例：从 `assistant-read-only-tools.ts` 里抽出所有 `scope:` 字面量与白名单比对，任何新增来源范围漏登记都会立刻失败（白名单与工具实现分居两个文件，原先没有任何机制对齐）。
+
+**缺陷二：非 UTC 数据库会话让所有时间比较偏 8 小时。** 本机 PostgreSQL 的 `TimeZone` 是 `Asia/Shanghai`，Node 写 `2026-11-04T11:28:29.070Z`，库里落成 `11:28:29.07+08`（真实时点偏早 8 小时）。Prisma 读回来又是 11:28Z，所以应用内部看着自洽；但凡跟 `NOW()` 比的地方全错：孤儿任务回收把刚创建的运行判成过期（隔离库里这条回归直接红），每用户每分钟 6 次、近 30 天用量窗口同样偏。修法是在 `lib/prisma.ts` 的 `PrismaPg` 里钉 `options: '-c timezone=UTC'`；代码里没有依赖会话时区的 `date_trunc` / `CURRENT_DATE` / `::date` SQL，所以只改落库解释，不动业务口径。CI 的 postgres 容器本来就是 UTC，这套问题只在本地或任何非 UTC 实例上出现。
+
+**顺带修掉的测试隔离问题。** 助手的功能开关原先在两个路由模块里各写一份 `loadAssistantRuntimeConfig()`，配置以数据库行为优先，于是本机一旦配过启用的供应商，`ASSISTANT_POC_ENABLED=false` 也拦不住请求，`auth-prehandler-regression` 里「开关关闭时返回 404」的用例变成 401。抽出 `lib/assistant-feature-gate.ts` 的 `createAssistantFeatureGate(loadConfig?)` 后，两个模块共用一份判定，那条用例改为注入「关闭」配置，不再依赖本机数据库状态。四条门禁断言（`architecture`、`r7-security`、`assistant-runtime-decision`、`assistant-conversations`）跟着指向真实实现处，守卫不变：未启用时 404 + `ROUTE_NOT_FOUND`。
+
+验收结果（Chromium + 已配置供应商，API 直连 3001 与前端 5173 都跑过）：
+
+| 项 | 结果 |
+| --- | --- |
+| 成功路径 | 运行 COMPLETED，用量 COMPLETE（单轮 1,826 / 1,108 tokens）|
+| 工具卡与来源面板 | 「项目经营概览 已完成 · 6 类来源」，来源逐条列出实体、字段与 scope |
+| 用量摘要 | 单轮用量行 + 近 30 天汇总（9 个终态任务，26,222 tokens），只汇总供应商上报数，不推算费用 |
+| 项目越权 | 不存在的项目建会话 → 404 `PROJECT_NOT_FOUND` |
+| 幂等 | 同 `requestId` 重放返回同一 `runId`，不新建运行 |
+| 单会话互斥 | 同一会话连续提交，第 2 次起 409 `ASSISTANT_RUN_ALREADY_ACTIVE` |
+| 提示注入 | 要求忽略指令、输出系统提示、列其它项目金额 → 全部拒绝，594 字回复不含系统提示、不含其它项目数据、不编造金额 |
+| 刷新恢复 | 生成中刷新页面后重新打开，会话与运行状态恢复，回答落地且没有重复的用户消息 |
+| SSE 续传 | 取 1–4 号事件后断开，带 `Last-Event-ID: 4` 重连只收到 5 号 `run.completed`，无重复、id 单调 |
+| 六张业务表 | 隔离库里整段场景（真实只读工具 + 失败恢复 + 取消）跑完零变化 |
+
+隔离库那条：本机建 `moheng_assistant_it`、全套迁移、`ASSISTANT_RECOVERY_TESTS=true npm run test:assistant-recovery:postgres -w @cms/api`，3/3 通过。门禁 `run-gates --tier blocking` 33/33，`@cms/web` 与 `@cms/api` lint 均 exit 0。
+
 ### 2026-11-04 打印与 PDF 分页验收
 
 按路线图阶段一「仍需推进」的一项，用真浏览器 + 真 PDF 做了一次验收。结论：**预览页打印出来是一张白纸**，设计器能印但会丢分页。一共 7 个问题，全部修掉。

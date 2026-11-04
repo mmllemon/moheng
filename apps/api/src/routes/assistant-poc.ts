@@ -1,17 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerHookHandler } from 'fastify';
 import { z } from 'zod';
 import { authRequired, authUser } from '../lib/auth.js';
-import { getAssistantRuntimeStatus, loadAssistantRuntimeConfig } from '../lib/assistant-provider-config.js';
+import { getAssistantRuntimeStatus } from '../lib/assistant-provider-config.js';
+import { createAssistantFeatureGate, type AssistantConfigLoader } from '../lib/assistant-feature-gate.js';
 import { failure, success } from '../lib/http.js';
 import { ASSISTANT_READ_ONLY_TOOL_IDS, AssistantReadOnlyToolError, runAssistantReadOnlyTool } from '../lib/assistant-read-only-tools.js';
 import { assistantConversationRoutes } from './assistant-conversations.js';
-
-const featureGate: preHandlerHookHandler = async (_request: FastifyRequest, reply: FastifyReply) => {
-  const runtime = await loadAssistantRuntimeConfig();
-  if (!runtime.enabled) {
-    return reply.code(404).send(failure(reply, 404, 'ROUTE_NOT_FOUND', '接口不存在'));
-  }
-};
 
 const runSchema = z.strictObject({
   toolId: z.enum(ASSISTANT_READ_ONLY_TOOL_IDS),
@@ -28,10 +22,19 @@ function asToolFailure(reply: FastifyReply, error: unknown) {
  * exposes no arbitrary SQL, shell, filesystem, HTTP, financial write, or approval tool.
  * Production AgentRuntime integration should call the same service only after binding a
  * server-verified conversation owner and project scope.
+ *
+ * 2026-11-04：开关判定改成可注入。它读的是运行时配置（数据库行优先于环境变量），
+ * 而 `ASSISTANT_POC_ENABLED=false` 只代表环境变量；库里一旦存在启用的供应商配置，
+ * 门禁就会放行，`auth-prehandler-regression` 里那条「开关关闭时返回 404」的用例
+ * 在本机会变成 401。给了注入点后，那条用例不再依赖本机数据库状态。
  */
-export async function assistantPocRoutes(app: FastifyInstance) {
+export async function assistantPocRoutes(
+  app: FastifyInstance,
+  options: { loadConfig?: AssistantConfigLoader } = {},
+) {
+  const featureGate = createAssistantFeatureGate(options.loadConfig);
   // Availability is intentionally distinct from the gated tool/run APIs so the UI can hide the entry point when disabled.
-  // This reports the feature switch and configuration-presence booleans only; it never returns secrets, raw model IDs, URLs, or database connection strings. It does not probe provider reachability.
+  // It reports the feature switch and configuration-presence booleans only: no secrets, model IDs, URLs or database URLs, and it does not probe provider reachability.
   app.get('/status', { preHandler: [authRequired], config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async () =>
     success(await getAssistantRuntimeStatus()),
   );
@@ -61,5 +64,5 @@ export async function assistantPocRoutes(app: FastifyInstance) {
   });
 
   // Conversation/session routes inherit this module's same hidden prefix and feature gate.
-  await assistantConversationRoutes(app);
+  await assistantConversationRoutes(app, { loadConfig: options.loadConfig });
 }

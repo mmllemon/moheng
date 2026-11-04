@@ -3,9 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const read = (path) => readFile(join(process.cwd(), path), 'utf8');
-const [routes, pocRoutes, jobHandler, runtime, eventService, queue, registry, schema, migration, rootPkg, apiPkg, webPkg, setup, decision] = await Promise.all([
+const [routes, pocRoutes, gateSource, jobHandler, runtime, eventService, queue, registry, schema, migration, rootPkg, apiPkg, webPkg, setup, decision] = await Promise.all([
   read('apps/api/src/routes/assistant-conversations.ts'),
   read('apps/api/src/routes/assistant-poc.ts'),
+  read('apps/api/src/lib/assistant-feature-gate.ts'),
   read('apps/api/src/lib/assistant-agent-run-job.ts'),
   read('apps/api/src/assistant/runtime/langgraph-adapter.ts'),
   read('apps/api/src/lib/assistant-run-events.ts'),
@@ -30,8 +31,8 @@ for (const endpoint of [
 // 开关判断已从本文件里的 `!== 'true'` 内联写法，改为 featureGate 读 runtime.enabled（env→enabled
 // 的映射在 assistant-provider-config / assistant-config，并由 assistant-config.test.ts 与
 // auth-prehandler-regression.test.ts 断言“关闭时 404 + ROUTE_NOT_FOUND”）。守卫不变：默认不开启。
-check(pocRoutes.includes('if (!runtime.enabled)') && pocRoutes.includes("'ROUTE_NOT_FOUND'"), 'assistant must remain feature-gated off by default');
-check(pocRoutes.includes('await assistantConversationRoutes(app)'), 'conversation routes must stay under the hidden PoC module');
+check(pocRoutes.includes('createAssistantFeatureGate(options.loadConfig)') && gateSource.includes('if (!runtime.enabled)') && gateSource.includes("'ROUTE_NOT_FOUND'"), 'assistant must remain feature-gated off by default');
+check(/assistantConversationRoutes\(app, \{ loadConfig: options\.loadConfig \}\)/.test(pocRoutes), 'conversation routes must stay under the hidden PoC module');
 check(pocRoutes.includes('await assistantConversationRoutes') && !pocRoutes.includes('integrationVisible: true'), 'PoC must not be published as a public module');
 check(routes.includes("preHandler: [featureGate, authRequired]"), 'session routes must require auth and the feature gate');
 check(routes.includes("where: { id: conversationId, ownerUserId, project: { deletedAt: null } }"), 'conversation lookup must be owner-scoped');
