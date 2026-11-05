@@ -175,6 +175,9 @@ export async function registerSettlementRoutes(app: FastifyInstance) {
         const contract = await lockContract(tx, projectId, contractId);
         const settlement = await tx.downstreamContractSettlement.findFirst({ where: { id: settlementId, downstreamContractId: contractId }, include: { lines: true } });
         if (!settlement) throw new Error('SETTLEMENT_NOT_FOUND');
+        // 已过账的单子再点一次，旧逻辑会落到 SETTLEMENT_NOT_CONFIRMED（“必须先完成外部确认”），
+        // 对已经过账的单子这句话是错的，单独给一个明确的拒绝。
+        if (settlement.status === 'POSTED') throw new Error('SETTLEMENT_ALREADY_POSTED');
         if (settlement.status !== 'COUNTERPARTY_CONFIRMED' || settlement.confirmedAmount == null) throw new Error('SETTLEMENT_NOT_CONFIRMED');
         if (settlement.type === 'PROGRESS' && !['ACTIVE', 'COMPLETED'].includes(contract.status)) throw new Error('PROGRESS_SETTLEMENT_STATUS_INVALID');
         if (settlement.type === 'FINAL' && contract.status !== 'COMPLETED') throw new Error('FINAL_SETTLEMENT_REQUIRES_COMPLETED');
@@ -240,6 +243,7 @@ export async function registerSettlementRoutes(app: FastifyInstance) {
         DOWNSTREAM_CONTRACT_NOT_FOUND: [404, 'DOWNSTREAM_CONTRACT_NOT_FOUND', '分供合同不存在'],
         SETTLEMENT_NOT_FOUND: [404, 'SETTLEMENT_NOT_FOUND', '结算单不存在'],
         SETTLEMENT_NOT_CONFIRMED: [409, 'SETTLEMENT_NOT_CONFIRMED', '必须先完成公司内部审核和外部对方确认，才能过账'],
+        SETTLEMENT_ALREADY_POSTED: [409, 'SETTLEMENT_ALREADY_POSTED', '该结算单已过账，不能重复过账；需要更正时请使用结算调整单'],
         PROGRESS_SETTLEMENT_STATUS_INVALID: [409, 'PROGRESS_SETTLEMENT_STATUS_INVALID', '阶段结算仅适用于执行中或完工待结算合同'],
         PROGRESS_AMOUNT_MUST_BE_POSITIVE: [400, 'PROGRESS_AMOUNT_MUST_BE_POSITIVE', '阶段结算确认金额必须大于 0'],
         FINAL_AMOUNT_MUST_BE_POSITIVE: [400, 'FINAL_AMOUNT_MUST_BE_POSITIVE', '最终累计结算确认金额必须大于 0'],

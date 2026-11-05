@@ -95,6 +95,7 @@ jobs:
       MONEY_ROUNDTRIP_TESTS: 'true'
       OWNER_RECEIPT_TESTS: 'true'
       DOWNSTREAM_PAYMENT_TESTS: 'true'
+      DOWNSTREAM_SETTLEMENT_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -129,3 +130,5 @@ jobs:
         run: npm run test:owner-receipt:postgres -w @cms/api
       - name: Downstream payment integration (real PostgreSQL)
         run: npm run test:downstream-payment:postgres -w @cms/api
+      - name: Downstream settlement to payable integration (real PostgreSQL)
+        run: npm run test:downstream-settlement:postgres -w @cms/api

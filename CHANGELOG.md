@@ -2,6 +2,28 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-05 分供结算→应付→付款核销的路由级回归（含一处错误码修正）
+
+接在分供付款回归后面，把「结算过账怎么变成应付、付款怎么必须核销应付」这段也钉住。新增 `downstream-settlement-payable.integration.test.ts`，真实路由 + 真实 PostgreSQL：
+
+| 场景 | 断言 |
+| --- | --- |
+| 提交人自己审批 | 403 `SUBMITTER_CANNOT_APPROVE` |
+| 未外部确认就过账 | 409 `SETTLEMENT_NOT_CONFIRMED`，不生成应付 |
+| 阶段结算 30 万过账 | POSTED，`postedDeltaAmount` 30 万，生成应付 gross/net 均 30 万 |
+| 已过账再点一次 | 409 `SETTLEMENT_ALREADY_POSTED`（本轮新增的错误码，修掉旧文案误说“未确认”） |
+| 第二笔 20 万带预付款 5 万、质保金 1 万、其它扣款 5 千 | 应付净额 13.5 万，预付款余额归 0，生成 `RETAIN` 质保金留置记录 |
+| 扣款合计超过确认额 | 409 `SETTLEMENT_DEDUCTIONS_EXCEED_AMOUNT`，不生成应付 |
+| 已有应付时付款不带核销 | 409 `PAYABLE_ALLOCATION_REQUIRED` |
+| 核销额超过应付余额 | 409 `PAYMENT_EXCEEDS_OPEN_PAYABLE` |
+| 应付已结清再分配 | 409 `PAYABLE_ALREADY_CLEARED` |
+| 最终结算（累计确认额 56 万） | 差额 6 万，过账记录累计 56 万，合同自动进 `SETTLED` |
+| 合同 SETTLED 后付款 | 仍可登记，但继续要求核销应付（结算确认 ≠ 已付清） |
+
+写这条时改了产品代码一处：已过账的结算单再点过账，原来落到 `SETTLEMENT_NOT_CONFIRMED`（“必须先完成外部确认”），对已过账的单子这句话是错的。现在先判 `POSTED` 并返回 `SETTLEMENT_ALREADY_POSTED`（“已过账，不能重复过账；需要更正请使用结算调整单”）。
+
+已接进 CI 的 db-integration（`test:downstream-settlement:postgres` + `DOWNSTREAM_SETTLEMENT_TESTS=true`），本机隔离库连跑 4 次通过。
+
 ### 2026-11-05 分供付款链路的路由级回归
 
 分供这条链此前只有纯函数测试（`downstream-payment-math`），而它是唯一同时带「累计不超合同额」「退款冲回原付款」「凭证号唯一」「Serializable 重试」四个约束的写路径。新增 `downstream-payment.integration.test.ts`，真实 Fastify 路由 + 真实 PostgreSQL：
