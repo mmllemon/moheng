@@ -100,10 +100,9 @@ export async function contractRoutes(app: FastifyInstance) {
       // Older records may predate mainContractId. Once the project's main contract
       // exists, link only those unlinked historical revenue-side records; never
       // move rows already linked to a specific contract.
-      const [linkedBills, linkedChanges] = await Promise.all([
-        tx.progressBill.updateMany({ where: { projectId, mainContractId: null }, data: { mainContractId: saved.id } }),
-        tx.change.updateMany({ where: { projectId, mainContractId: null }, data: { mainContractId: saved.id } }),
-      ]);
+      // 事务只有一个连接，并发查会与 pg 适配器的 client.query 抢同一条连接，改为顺序 await。
+      const linkedBills = await tx.progressBill.updateMany({ where: { projectId, mainContractId: null }, data: { mainContractId: saved.id } });
+      const linkedChanges = await tx.change.updateMany({ where: { projectId, mainContractId: null }, data: { mainContractId: saved.id } });
       if (linkedBills.count > 0 || linkedChanges.count > 0) {
         await tx.auditLog.create({ data: {
           projectId, userId: user.sub, entity: 'MainContract', entityId: saved.id,

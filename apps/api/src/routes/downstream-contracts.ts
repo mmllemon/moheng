@@ -282,10 +282,11 @@ export async function downstreamContractRoutes(app: FastifyInstance) {
         const currentAmount = calculateEffectiveContractAmount(contract.originalAmount, existing.map((item) => ({ direction: item.direction, amount: item.amount })));
         const nextAmount = calculateDownstreamCurrentAmount(currentAmount, [{ direction: parsed.data.direction, amount: parsed.data.amount }]);
         const nextCents = moneyToCents(nextAmount);
-        const [paymentsBefore, plansBefore] = await Promise.all([
-          tx.downstreamContractPayment.findMany({ where: { downstreamContractId: contractId }, select: { type: true, amount: true } }),
-          tx.downstreamPaymentPlan.findMany({ where: { downstreamContractId: contractId }, select: { plannedAmount: true } }),
-        ]);
+        // 事务客户端只有一个连接，不能用 Promise.all 并发：pg 适配器会报
+        // “client.query() when the client is already executing a query”，
+        // 且出错时事务会进入不可预测状态。顺序 await。
+        const paymentsBefore = await tx.downstreamContractPayment.findMany({ where: { downstreamContractId: contractId }, select: { type: true, amount: true } });
+        const plansBefore = await tx.downstreamPaymentPlan.findMany({ where: { downstreamContractId: contractId }, select: { plannedAmount: true } });
         if (netPaymentCents(paymentsBefore) > nextCents) throw new Error('AMENDMENT_BELOW_PAID');
         if (sumCents(plansBefore.map((item) => item.plannedAmount)) > nextCents) throw new Error('AMENDMENT_BELOW_PLAN');
         const adjustment = await tx.downstreamContractAdjustment.create({ data: {

@@ -122,10 +122,9 @@ export async function projectRoutes(app: FastifyInstance) {
         }
         let baselineChanged = false;
         if (parsed.data.contractAmount !== undefined) {
-          const [main, externalConfirmation] = await Promise.all([
-            tx.mainContract.findUnique({ where: { projectId: id }, select: { id: true } }),
-            tx.change.findFirst({ where: { projectId: id, deletedAt: null, externalConfirmedAmount: { not: null } }, select: { id: true } }),
-          ]);
+          // 事务只有一个连接，并发查会与 pg 适配器的 client.query 抢同一条连接，改为顺序 await。
+          const main = await tx.mainContract.findUnique({ where: { projectId: id }, select: { id: true } });
+          const externalConfirmation = await tx.change.findFirst({ where: { projectId: id, deletedAt: null, externalConfirmedAmount: { not: null } }, select: { id: true } });
           const decision = classifyOriginalAmountUpdate({
             currentAmount: current.originalContractAmount,
             requestedAmount: parsed.data.contractAmount,
