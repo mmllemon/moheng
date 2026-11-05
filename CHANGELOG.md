@@ -2,6 +2,25 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-05 分供付款链路的路由级回归
+
+分供这条链此前只有纯函数测试（`downstream-payment-math`），而它是唯一同时带「累计不超合同额」「退款冲回原付款」「凭证号唯一」「Serializable 重试」四个约束的写路径。新增 `downstream-payment.integration.test.ts`，真实 Fastify 路由 + 真实 PostgreSQL：
+
+| 场景 | 断言 |
+| --- | --- |
+| 草稿阶段付款 | 409 `DOWNSTREAM_CONTRACT_NOT_PAYABLE`，库中无付款行 |
+| 激活后付款 40 万 | 201，金额与录入一致 |
+| 同凭证号重复入账 | 409 `PAYMENT_REFERENCE_DUPLICATE` |
+| 累计超合同额（再付 70 万 / 100 万） | 409 `PAYMENT_EXCEEDS_CONTRACT`，不留半条付款 |
+| 退款 10 万 | 201，净付款 30 万 |
+| 退款超原付款剩余额度 | 409 `REFUND_EXCEEDS_ORIGINAL_PAYMENT` |
+| 审计 | `PAYMENT_RECORDED` + `PAYMENT_REFUND_RECORDED` 各 1 条，累计净额 400000.00 |
+| 两笔 60 万并发抢 100 万 | 只成功一笔，失败方为 `PAYMENT_EXCEEDS_CONTRACT` 或 `PAYMENT_CONFLICT`，净付款仍 60 万 |
+| ACTIVE 直跳 SETTLED | 409 `INVALID_STATUS_TRANSITION` |
+| COMPLETED 跳 SETTLED | 409 `FINAL_SETTLEMENT_REQUIRED` |
+
+已接进 CI 的 db-integration（`test:downstream-payment:postgres` + `DOWNSTREAM_PAYMENT_TESTS=true`）。本机隔离库连跑 4 次稳定通过。
+
 ### 2026-11-05 往来单位身份冲突的浏览器交互验证（含一个布局修复）
 
 把文档里挂了很久的「主体冲突 UI 测试」做完，走的是真实浏览器与真实接口，不是读代码推测：
