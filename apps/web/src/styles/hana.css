@@ -3830,6 +3830,24 @@ html[data-paper-texture] .dialog::after {
 }
 .dialog-header p { margin: 0; font-size: var(--fs-caption, 12.48px) !important; line-height: 1.55; color: var(--text-muted); }.dialog-body { font-size: var(--fs-ui); line-height: 1.65; color: var(--text-light); }
 .dialog form { padding: var(--space-10) 22px 0 !important; }
+/* 2026-11-05：sticky 底栏会盖住表单末尾的错误提示。实测「新增分供合同」提交遇到
+   409 BUSINESS_PARTY_IDENTITY_UNVERIFIED 时，.form-alert 与 .dialog-footer 重叠 32px，
+   错误文字压在按钮上。给表单内的错误条留出底栏高度（footer 实测 65px），
+   内容滚到底时提示完整可见，而不是被当成“透过去的背景文字”。 */
+.dialog .form-alert {
+  /* 2026-11-05：sticky 底栏会盖住表单末尾的错误提示。实测「新增分供合同」提交遇到
+     409 BUSINESS_PARTY_IDENTITY_UNVERIFIED 时，.form-alert 与 .dialog-footer 重叠 32px，
+     错误文字压在按钮上；而报告错误后内容变高、滚动位置不变，提示恰好落在底栏下面。
+     处理：错误条吸在底栏上方（底栏实测 65px），并补上底色与描边，
+     让它无论滚到哪里都能完整读到，而不是被当成“透过去的背景文字”。 */
+  position: sticky;
+  bottom: 65px;
+  z-index: 2;
+  margin-bottom: 68px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: var(--radius-action);
+  background: var(--bg-card);
+}
 /* 按钮区：对齐 hana 的 ._cronConfirmActions { display: flex; gap: 4px }
    与 ._confirmDialog_da969 { padding: 16px } 的紧凑间距。 */
 .dialog-footer {
@@ -3842,8 +3860,7 @@ html[data-paper-texture] .dialog::after {
   border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent) !important;
   background: transparent !important;
 }
-.dialog .form-section-title { padding: var(--space-16) 0 var(--space-10); color: var(--text-muted); font-size: var(--fs-hint, 11.2px); font-weight: 600; letter-spacing: 0.08em; }
-.dialog .form-section-title span { display: none; }
+.dialog .form-section-title { padding: var(--space-16) 0 var(--space-10); color: var(--text-muted); font-size: var(--fs-hint, 11.2px); font-weight: 600; letter-spacing: 0.08em; }.dialog .form-section-title span { display: none; }
 .dialog .field label { color: var(--text-muted); font-size: var(--fs-hint, 11.2px); }
 .dialog .field input, .dialog .field select, .dialog .field textarea { border-radius: var(--radius-control); }
 
