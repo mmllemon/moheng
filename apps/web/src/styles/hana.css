@@ -6432,6 +6432,15 @@ select { corner-shape: squircle !important; }
 }
 .inline-notice.is-warning > svg,
 .inline-notice.settlement-closed-notice > svg { color: var(--warning, var(--bronze)); }
+/* 2026-11-05：结算类动作失败（例如重复过账、提交人自批）需要在页面上直接说明原因，
+   不能只留在浏览器控制台。 */
+.inline-notice.is-danger {
+  border-color: color-mix(in srgb, var(--danger) 22%, transparent);
+  border-left-color: color-mix(in srgb, var(--danger) 22%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+  color: var(--danger);
+}
+.inline-notice.is-danger > svg { color: var(--danger); }
 .system-expansion-notice {
   align-items: center;
   padding: var(--space-8) var(--space-12);
