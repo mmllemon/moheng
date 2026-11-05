@@ -25,6 +25,10 @@
 | 用进度款去核销质保金应付 | 409 `RETENTION_RELEASE_REQUIRES_RETENTION_PAYMENT` |
 | 按期次用 `RETENTION` 付款 | 201，应付结清 |
 | 释放额超出质保金余额 | 409 `RETENTION_AMOUNT_EXCEEDS_BALANCE` |
+| 剩余质保金没收 6 千 | 201，不生成应付；释放 4 千 + 没收 6 千后余额归 0，再多释放 1 元被拒 |
+| 应付分期重排（两期合计等于净额） | 200 |
+| 分期合计不等于净额 | 400 `PAYABLE_SCHEDULE_TOTAL_MISMATCH` |
+| 已发生付款后再改分期 | 409 `PAYABLE_SCHEDULE_LOCKED_AFTER_PAYMENT` |
 | 未核验的发票去核销应付 | 409 `INVOICE_MUST_BE_VERIFIED` |
 | 发票全额核销到某张应付 | 201；同一应付再开票超额 409 `INVOICE_ALLOCATION_EXCEEDS_PAYABLE` |
 | 核销额超过发票金额 | 409 `INVOICE_ALLOCATION_EXCEEDS_INVOICE` |

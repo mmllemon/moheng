@@ -23,7 +23,7 @@ import { normalizeBusinessPartyName } from './business-party.js';
 const enabled = process.env.DOWNSTREAM_SETTLEMENT_TESTS === 'true';
 const TEST_SECRET = 'test-only-jwt-secret-that-is-not-a-credential-32';
 
-test('分供结算到应付：审批分离、未确认不过账、应付与质保金、付款必须核销、质保金释放、发票核销与最终结算收口', { skip: !enabled }, async () => {
+test('分供结算到应付：审批分离、未确认不过账、应付与质保金、付款必须核销、质保金释放与没收、分期调整、发票核销与最终结算收口', { skip: !enabled }, async () => {
   const testDatabaseUrl = process.env.DATABASE_URL;
   assert.ok(testDatabaseUrl, 'DATABASE_URL must point to an isolated, migrated PostgreSQL test database');
   assert.ok(testDatabaseUrl !== process.env.PRODUCTION_DATABASE_URL, 'test database must not equal PRODUCTION_DATABASE_URL');
@@ -52,7 +52,7 @@ test('分供结算到应付：审批分离、未确认不过账、应付与质�
     return { userId: user.id, headers: { authorization: `Bearer ${token}` } };
   }
 
-  const call = async (actor: { headers: Record<string, string> }, method: 'GET' | 'POST' | 'PATCH', url: string, payload?: Record<string, unknown>) => {
+  const call = async (actor: { headers: Record<string, string> }, method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, payload?: Record<string, unknown>) => {
     const response = await app.inject({ method, url, headers: actor.headers, ...(payload === undefined ? {} : { payload }) });
     return { status: response.statusCode, body: response.json() };
   };
@@ -237,19 +237,19 @@ test('分供结算到应付：审批分离、未确认不过账、应付与质�
     assert.equal(afterSettled.status, 409);
     assert.equal(afterSettled.body.error.code, 'PAYABLE_ALLOCATION_REQUIRED', '结算收口后仍未付的应付还在，付款必须继续明确核销');
 
-    // —— 11. 质保金释放：结算确认后释放，释放生成带一期的应付 ——
-    const released = await call(clerk, 'POST', `${base}/retention/release`, { amount: 10000, effectiveAt: '2026-05-01T00:00:00.000Z', reference: `RET-${suffix}` });
+    // —— 11. 质保金释放与没收：结算确认后才能处置，释放生成带一期的应付 ——
+    const released = await call(clerk, 'POST', `${base}/retention/release`, { amount: 4000, effectiveAt: '2026-05-01T00:00:00.000Z', reference: `RET-${suffix}` });
     assert.equal(released.status, 201, `质保金释放应成功：${JSON.stringify(released.body).slice(0, 200)}`);
     const releasePayable = released.body.data.payable;
     assert.ok(releasePayable, '释放质保金应生成应付单');
     assert.equal(releasePayable.type, 'RETENTION_RELEASE');
-    assert.equal(toCents(releasePayable.netAmount), 1000000n);
+    assert.equal(toCents(releasePayable.netAmount), 400000n);
     assert.equal(releasePayable.schedules.length, 1, '释放应自动建一期到期安排');
 
     // 分期存在时，付款必须选择分期
     const noSchedule = await call(clerk, 'POST', `${base}/payments`, {
-      type: 'RETENTION', amount: 10000, paidAt: '2026-05-02T00:00:00.000Z',
-      allocations: [{ payableId: releasePayable.id, amount: 10000 }],
+      type: 'RETENTION', amount: 4000, paidAt: '2026-05-02T00:00:00.000Z',
+      allocations: [{ payableId: releasePayable.id, amount: 4000 }],
     });
     assert.equal(noSchedule.status, 409);
     assert.equal(noSchedule.body.error.code, 'PAYABLE_SCHEDULE_REQUIRED', '应付已设分期时，付款必须指明本期次');
@@ -263,20 +263,50 @@ test('分供结算到应付：审批分离、未确认不过账、应付与质�
     assert.equal(wrongType.body.error.code, 'RETENTION_RELEASE_REQUIRES_RETENTION_PAYMENT');
 
     const withSchedule = await call(clerk, 'POST', `${base}/payments`, {
-      type: 'RETENTION', amount: 10000, paidAt: '2026-05-03T00:00:00.000Z', referenceNo: `RETP-${suffix}`,
-      allocations: [{ payableId: releasePayable.id, payableScheduleId: releasePayable.schedules[0].id, amount: 10000 }],
+      type: 'RETENTION', amount: 4000, paidAt: '2026-05-03T00:00:00.000Z', referenceNo: `RETP-${suffix}`,
+      allocations: [{ payableId: releasePayable.id, payableScheduleId: releasePayable.schedules[0].id, amount: 4000 }],
     });
     assert.equal(withSchedule.status, 201, `按期次核销应成功：${JSON.stringify(withSchedule.body).slice(0, 240)}`);
 
-    // 释放额不能超过质保金余额（已释放 1 万，余额 0）
-    const overRelease = await call(clerk, 'POST', `${base}/retention/release`, { amount: 1, effectiveAt: '2026-05-04T00:00:00.000Z', reference: `RET2-${suffix}` });
+    // 剩余的 6 千走没收，不生成应付
+    const forfeited = await call(clerk, 'POST', `${base}/retention/forfeit`, { amount: 6000, effectiveAt: '2026-05-05T00:00:00.000Z', reference: `FORF-${suffix}` });
+    assert.equal(forfeited.status, 201, `质保金没收应成功：${JSON.stringify(forfeited.body).slice(0, 200)}`);
+    assert.equal(forfeited.body.data.payable, null, '没收不生成应付');
+
+    // 释放额不能超过剩余质保金（4 千释放 + 6 千没收后余额为 0）
+    const overRelease = await call(clerk, 'POST', `${base}/retention/release`, { amount: 1, effectiveAt: '2026-05-06T00:00:00.000Z', reference: `RET2-${suffix}` });
     assert.equal(overRelease.status, 409);
     assert.equal(overRelease.body.error.code, 'RETENTION_AMOUNT_EXCEEDS_BALANCE');
 
     const retentionRows = await prisma.downstreamRetentionMovement.findMany({ where: { downstreamContractId: contractId } });
-    assert.deepEqual(retentionRows.map((row) => row.type).sort(), ['RELEASE', 'RETAIN'], '应各有一条留置与一条释放记录');
+    assert.deepEqual(retentionRows.map((row) => row.type).sort(), ['FORFEIT', 'RELEASE', 'RETAIN'], '应各有一条留置、释放与没收记录');
 
-    // —— 12. 供应商发票与应付核销 ——
+    // —— 12. 应付分期调整：未发生付款前可重排，合计必须等于净额，发生付款后锁定 ——
+    const finalPayable = postedFinal.body.data.payable;
+    const reschedule = (schedules: { scheduleNo: string; dueAt: string; amount: number }[]) => call(clerk, 'PUT', `${base}/payables/${finalPayable.id}/schedules`, { schedules });
+    const twoInstallments = await reschedule([
+      { scheduleNo: '01', dueAt: '2026-06-01T00:00:00.000Z', amount: 30000 },
+      { scheduleNo: '02', dueAt: '2026-07-01T00:00:00.000Z', amount: 30000 },
+    ]);
+    assert.equal(twoInstallments.status, 200, `重排分期应成功：${JSON.stringify(twoInstallments.body).slice(0, 200)}`);
+
+    const wrongTotal = await reschedule([{ scheduleNo: '01', dueAt: '2026-06-01T00:00:00.000Z', amount: 59999 }]);
+    assert.equal(wrongTotal.status, 400);
+    assert.equal(wrongTotal.body.error.code, 'PAYABLE_SCHEDULE_TOTAL_MISMATCH', '各期合计必须等于应付净额');
+
+    const firstInstallment = (twoInstallments.body.data.schedules as { id: string }[])[0];
+    assert.ok(firstInstallment, '重排后应返回两期分期');
+    const payFirst = await call(clerk, 'POST', `${base}/payments`, {
+      type: 'PROGRESS', amount: 30000, paidAt: '2026-06-02T00:00:00.000Z', referenceNo: `FP-${suffix}`,
+      allocations: [{ payableId: finalPayable.id, payableScheduleId: firstInstallment.id, amount: 30000 }],
+    });
+    assert.equal(payFirst.status, 201, `分期付款应成功：${JSON.stringify(payFirst.body).slice(0, 200)}`);
+
+    const lockedReschedule = await reschedule([{ scheduleNo: '01', dueAt: '2026-08-01T00:00:00.000Z', amount: 30000 }]);
+    assert.equal(lockedReschedule.status, 409);
+    assert.equal(lockedReschedule.body.error.code, 'PAYABLE_SCHEDULE_LOCKED_AFTER_PAYMENT', '已发生付款后不得重排分期');
+
+    // —— 13. 供应商发票与应付核销 ——
     const invoice = await call(clerk, 'POST', `${base}/invoices`, { invoiceNo: `INV-${suffix}`, invoiceDate: '2026-05-10T00:00:00.000Z', amount: 400000, taxAmount: 0, taxIncluded: true });
     assert.equal(invoice.status, 201, `发票登记应成功：${JSON.stringify(invoice.body).slice(0, 200)}`);
     assert.equal(invoice.body.data.status, 'RECEIVED');
