@@ -28,7 +28,8 @@ const ADVISORY = 'advisory';
 
 const GATES = [
   // ---- advisory：基线即红的既有债 ----
-  { name: 'source-bundle', cmd: 'node scripts/validate-source-bundle-completeness.mjs', tier: ADVISORY, reason: '【owner 决定保持 advisory】封版记录里的 lock SHA 与当前 lock 不一致（基线 575F… 亦不等于期望 A6F8…）。这是证据缺口而非代码缺陷；解除条件：重新 clean install → npm audit → 两次 npm ci → 同时更新两个脚本的期望值与 docs/发布与迁移验收.md 的记录' },
+  // ---- 2026-11-05：最后一条 advisory 债务（source-bundle）已重封转绿并升为 blocking ----
+  { name: 'source-bundle', cmd: 'node scripts/validate-source-bundle-completeness.mjs', tier: BLOCKING, reason: '2026-11-05 升为 blocking：门禁自 2026-10-18 起一直红（期望的 lock 哈希停在 a6f8a53a…，而 c253948 的 zod 4 升级已改过 lock）。按门禁自己的流程重封：先升 vite 6.4.5 / @fastify/static 10.1.10 并 npm audit fix（高危归零），再连跑两次 npm ci（720 包，均成功且树无变化），新哈希 ad1ca6a5… 已写入；本地与 3d0ebb5 的 Source gates 均绿。清单变更时仍需按同一流程重封，不得直接改数字' },
   { name: 'release-candidate', cmd: 'node scripts/validate-release-candidate.mjs', tier: BLOCKING, reason: '78/78 全绿。按现行实现定案：分析页口径改为“实际成本口径 + 偏差列”；下游工作台断言路由级 view 切换与启动页双入口；页脚版本改为“API 唯一提供 + web 壳不硬编码版本”；偏好体系改为两套纸面主题 + 密度/对比度/纹理/图标色板/减动效；偏好入口改为设置页' },
   { name: 'system-config-v2', cmd: 'node scripts/validate-system-config-v2.mjs', tier: BLOCKING, reason: '21/21 全绿。版本断言改为“三处 package 版本一致 + APP_VERSION 一致 + web 壳不硬编码版本”，不再要求界面出现版本串' },
   { name: 'gate-ui-parity', cmd: 'node scripts/gate-ui-parity.mjs', tier: BLOCKING, reason: '2026-11-05 升为 blocking：第二 target 改为 legacy（另一个 Chromium 构建），基线 web.json/legacy.json 已提交，判等只读 JSON 不启浏览器；本地 14 项全过、selftest 8/8。UI 改动导致指标变化时需本地重跑 `npm run ui:parity` 并提交新基线' },
@@ -140,8 +141,15 @@ if (opts.list) {
 
 const chosen = selectGates(opts);
 if (!chosen.length) {
-  console.error('没有匹配的门禁');
-  process.exit(2);
+  // `--only` 点名一个不存在的门禁必须报错：否则会让人以为跑过了。
+  if (opts.only) {
+    console.error(`没有匹配的门禁：${opts.only}`);
+    process.exit(2);
+  }
+  // 2026-11-05：advisory 债务清零后按分级跑会得到空集。空集不是失败，
+  // 否则 CI 里那条 continue-on-error 的 advisory 步骤会一直显示成红的。
+  console.log('该分级当前没有门禁：没有需要运行的项，按通过处理。');
+  process.exit(0);
 }
 const results = [];
 console.log(`\n▶ running ${chosen.length} gate(s)${opts.tier ? ` [tier=${opts.tier}]` : ''}\n`);
