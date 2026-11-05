@@ -23,7 +23,7 @@ import { normalizeBusinessPartyName } from './business-party.js';
 const enabled = process.env.DOWNSTREAM_SETTLEMENT_TESTS === 'true';
 const TEST_SECRET = 'test-only-jwt-secret-that-is-not-a-credential-32';
 
-test('分供结算到应付：审批分离、未确认不过账、应付与质保金、付款必须核销、最终结算收口', { skip: !enabled }, async () => {
+test('分供结算到应付：审批分离、未确认不过账、应付与质保金、付款必须核销、质保金释放与最终结算收口', { skip: !enabled }, async () => {
   const testDatabaseUrl = process.env.DATABASE_URL;
   assert.ok(testDatabaseUrl, 'DATABASE_URL must point to an isolated, migrated PostgreSQL test database');
   assert.ok(testDatabaseUrl !== process.env.PRODUCTION_DATABASE_URL, 'test database must not equal PRODUCTION_DATABASE_URL');
@@ -209,6 +209,10 @@ test('分供结算到应付：审批分离、未确认不过账、应付与质�
     // —— 9. 最终结算：最终确认额是“累计确认额”（前面阶段结算已累计 50 万），本次过账差额为 6 万 ——
     //       合同先收口为 COMPLETED，最终结算过账后自动推到 SETTLED。
     assert.equal((await call(clerk, 'PATCH', `${base}/status`, { status: 'COMPLETED' })).status, 200);
+    // 完工待结算但未过账最终结算时，质保金不允许处置
+    const earlyRelease = await call(clerk, 'POST', `${base}/retention/release`, { amount: 1000, effectiveAt: '2026-03-20T00:00:00.000Z', reference: `RETE-${suffix}` });
+    assert.equal(earlyRelease.status, 409);
+    assert.equal(earlyRelease.body.error.code, 'RETENTION_REQUIRES_FINAL_SETTLEMENT');
     const finalId = await prepareSettlement({ type: 'FINAL', submittedAmount: 560000, lines: [] }, 560000);
     const postedFinal = await act(clerk, finalId, 'post');
     assert.equal(postedFinal.status, 200, `最终结算过账应成功：${JSON.stringify(postedFinal.body).slice(0, 240)}`);
@@ -232,6 +236,45 @@ test('分供结算到应付：审批分离、未确认不过账、应付与质�
     const afterSettled = await call(clerk, 'POST', `${base}/payments`, { type: 'PROGRESS', amount: 100, paidAt: '2026-04-01T00:00:00.000Z' });
     assert.equal(afterSettled.status, 409);
     assert.equal(afterSettled.body.error.code, 'PAYABLE_ALLOCATION_REQUIRED', '结算收口后仍未付的应付还在，付款必须继续明确核销');
+
+    // —— 11. 质保金释放：结算确认后释放，释放生成带一期的应付 ——
+    const released = await call(clerk, 'POST', `${base}/retention/release`, { amount: 10000, effectiveAt: '2026-05-01T00:00:00.000Z', reference: `RET-${suffix}` });
+    assert.equal(released.status, 201, `质保金释放应成功：${JSON.stringify(released.body).slice(0, 200)}`);
+    const releasePayable = released.body.data.payable;
+    assert.ok(releasePayable, '释放质保金应生成应付单');
+    assert.equal(releasePayable.type, 'RETENTION_RELEASE');
+    assert.equal(toCents(releasePayable.netAmount), 1000000n);
+    assert.equal(releasePayable.schedules.length, 1, '释放应自动建一期到期安排');
+
+    // 分期存在时，付款必须选择分期
+    const noSchedule = await call(clerk, 'POST', `${base}/payments`, {
+      type: 'RETENTION', amount: 10000, paidAt: '2026-05-02T00:00:00.000Z',
+      allocations: [{ payableId: releasePayable.id, amount: 10000 }],
+    });
+    assert.equal(noSchedule.status, 409);
+    assert.equal(noSchedule.body.error.code, 'PAYABLE_SCHEDULE_REQUIRED', '应付已设分期时，付款必须指明本期次');
+
+    // 普通进度款不能用于核销质保金释放应付（要在应付未结清前验，否则会先报“已结清”）
+    const wrongType = await call(clerk, 'POST', `${base}/payments`, {
+      type: 'PROGRESS', amount: 100, paidAt: '2026-05-04T00:00:00.000Z',
+      allocations: [{ payableId: releasePayable.id, payableScheduleId: releasePayable.schedules[0].id, amount: 100 }],
+    });
+    assert.equal(wrongType.status, 409);
+    assert.equal(wrongType.body.error.code, 'RETENTION_RELEASE_REQUIRES_RETENTION_PAYMENT');
+
+    const withSchedule = await call(clerk, 'POST', `${base}/payments`, {
+      type: 'RETENTION', amount: 10000, paidAt: '2026-05-03T00:00:00.000Z', referenceNo: `RETP-${suffix}`,
+      allocations: [{ payableId: releasePayable.id, payableScheduleId: releasePayable.schedules[0].id, amount: 10000 }],
+    });
+    assert.equal(withSchedule.status, 201, `按期次核销应成功：${JSON.stringify(withSchedule.body).slice(0, 240)}`);
+
+    // 释放额不能超过质保金余额（已释放 1 万，余额 0）
+    const overRelease = await call(clerk, 'POST', `${base}/retention/release`, { amount: 1, effectiveAt: '2026-05-04T00:00:00.000Z', reference: `RET2-${suffix}` });
+    assert.equal(overRelease.status, 409);
+    assert.equal(overRelease.body.error.code, 'RETENTION_AMOUNT_EXCEEDS_BALANCE');
+
+    const retentionRows = await prisma.downstreamRetentionMovement.findMany({ where: { downstreamContractId: contractId } });
+    assert.deepEqual(retentionRows.map((row) => row.type).sort(), ['RELEASE', 'RETAIN'], '应各有一条留置与一条释放记录');
   } finally {
     await app.close().catch(() => undefined);
     try {

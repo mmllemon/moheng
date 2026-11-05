@@ -19,6 +19,12 @@
 | 应付已结清再分配 | 409 `PAYABLE_ALREADY_CLEARED` |
 | 最终结算（累计确认额 56 万） | 差额 6 万，过账记录累计 56 万，合同自动进 `SETTLED` |
 | 合同 SETTLED 后付款 | 仍可登记，但继续要求核销应付（结算确认 ≠ 已付清） |
+| 完工但未过账最终结算时释放质保金 | 409 `RETENTION_REQUIRES_FINAL_SETTLEMENT` |
+| 结算后释放 1 万质保金 | 201，生成 `RETENTION_RELEASE` 应付并自动建一期到期安排 |
+| 该应付带分期时付款不给期次 | 409 `PAYABLE_SCHEDULE_REQUIRED` |
+| 用进度款去核销质保金应付 | 409 `RETENTION_RELEASE_REQUIRES_RETENTION_PAYMENT` |
+| 按期次用 `RETENTION` 付款 | 201，应付结清 |
+| 释放额超出质保金余额 | 409 `RETENTION_AMOUNT_EXCEEDS_BALANCE` |
 
 写这条时改了产品代码一处：已过账的结算单再点过账，原来落到 `SETTLEMENT_NOT_CONFIRMED`（“必须先完成外部确认”），对已过账的单子这句话是错的。现在先判 `POSTED` 并返回 `SETTLEMENT_ALREADY_POSTED`（“已过账，不能重复过账；需要更正请使用结算调整单”）。
 
