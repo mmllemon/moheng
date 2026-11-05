@@ -25,7 +25,8 @@
     "prisma:validate": "prisma validate",
     "pretest": "npm run prisma:generate",
     "test:owner-settlement-posting:postgres": "tsx --test src/lib/owner-settlement-posting.integration.test.ts",
-    "test:money-roundtrip:postgres": "tsx --test src/lib/money-roundtrip.integration.test.ts"
+    "test:money-roundtrip:postgres": "tsx --test src/lib/money-roundtrip.integration.test.ts",
+    "test:owner-receipt:postgres": "tsx --test src/lib/owner-receipt-allocation.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",
