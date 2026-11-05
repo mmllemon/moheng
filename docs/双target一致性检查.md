@@ -51,7 +51,9 @@ node scripts/gate-ui-parity.mjs
 node scripts/selftest-ui-parity.mjs
 ```
 
-legacy 的浏览器解析顺序：`LEGACY_CHROME_PATH` → 本机 `ms-playwright/chromium-*` 里构建号最大的一个 → 交给 Playwright 自行解析。当前本机实际是 Chromium 149（系统 Chrome 156）。
+legacy 的浏览器解析顺序：`LEGACY_CHROME_PATH` → 本机 `ms-playwright/chromium-*` 里构建号最大的一个 → 交给 Playwright 自行解析。
+
+**2026-11-05 起基线里的 legacy 是 Chromium 138**（Chrome for Testing 138.0.7204.183，用 `LEGACY_CHROME_PATH` 指过去生成），目的就是让「旧内核不认识 `corner-shape`」这条退化分支真的跑一次，而不是拿两个都支持 squircle 的构建互相比较。要重新生成这份基线，必须先拿到一份 <139 的构建；随手重跑 `npm run ui:parity` 会退回本机最新的 Playwright Chromium（149），基线会变回“两侧都支持”，退化分支就又被跳过了。
 
 两台机器/两个开发者的 Chrome 版本可能不同，所以**基线必须由同一个环境生成并提交**；换机器重跑会产生版本差异，需要重新生成并说明。
 
@@ -130,7 +132,11 @@ docs/gates/ui-parity/both.json      两 target + 比对报告合集（人读，�
 
 ## 9. 尚未完成的部分
 
-1. **真正的退化路径还没跑过。** 今天 legacy 是 Chromium 149（仍支持 squircle），比对的是跨版本渲染一致性。要覆盖 <139 的静默退化，需要一份旧构建并按 `LEGACY_CHROME_PATH` 指向它重跑。
+1. ~~真正的退化路径还没跑过。~~ **2026-11-05 已跑。** 用 Chrome for Testing `138.0.7204.183`（`CSS.supports('corner-shape','squircle')` 为 false）重生成基线，legacy 的 26 条路由 `cornerShapeAccepted` 全部为 false，门禁 14 项全过。这一跑同时抓出两个真问题：
+   - 探针写成了 `probe.style.cornerShape = 'squircle'`。在不认识该属性的内核里，这句只是给 CSSStyleDeclaration 挂了个普通 JS 属性，读回来仍是 `'squircle'`，于是 Chromium 138 也被判成“支持”。改成 `CSS.supports(...)` 加 `setProperty` 双重判定。
+   - `ui-visual-regression.mjs` 把「内核 <139」当成目标自身失败，legacy target 于是永远红。改为只在 web target 上强制 ≥139；legacy 本来就是为了验旧的。
+
+   同时看清了退化的真实形态：`--radius-*` 那组 token 的 1.84 倍缩放写在 `@supports (corner-shape: squircle)` 里，所以旧内核拿到的只是未缩放的小半径（卡片 8px 而非 14.73px）。视觉上是圆角偏小而不是归零，`border-radius` 未消失；但因为量测口径是“半径 > 4px”，部分小控件（`--radius-xs` 3px）在旧内核上低于阀值得不到计数，所以 `/parties` 等页的 `rounded` 会少几个。这也是为什么门禁在退化分支上只要求 `cornerShapeAccepted` 全为 false、tabs/面板/骨架相等，而不要求 `rounded` 逐项相等。
 2. **基线不能由 CI 生成。** 生成基线需要本机浏览器与 dev server，CI 只跑比对。UI 改动导致指标变化时，需开发者本地重跑 `npm run ui:parity` 并提交新基线。
 3. **`desktop/` 仍不存在。** 桌面壳属于后续阶段；引入后把 legacy target 换回真壳，并补窗口控制键/拖拽区/原生对话框/打印这几项差异说明。
 4. **截图比对未纳入。** 当前全部是计算样式与几何断言，不依赖截图，因此容器无关。若将来需要像素级比对，需先解决字体渲染与 DPR 差异。

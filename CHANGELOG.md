@@ -2,6 +2,21 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-05 真正跑了一次 squircle 退化路径（抓到两个门禁自己的 bug）
+
+从 Chrome for Testing 下了 `138.0.7204.183`（海外源在本机拉不动，走 npmmirror 镜像），实测 `CSS.supports('corner-shape','squircle')` 为 false，再用 `LEGACY_CHROME_PATH` 指过去重生成双 target 基线。
+
+这一跑直接暴露两个真问题：
+
+1. **探针假阳。** `ui-visual-regression.mjs` 用 `probe.style.cornerShape = 'squircle'` 判支持。在不认识该属性的内核里，这句只是给 CSSStyleDeclaration 挂了个普通 JS 属性，读回来仍是 `'squircle'`，于是 Chromium 138 也被记录为“支持 squircle”，退化断言永远无法成立。改成 `CSS.supports` 加 `setProperty` 双重判定。
+2. **legacy 永远红。** 脚本把“内核 <139”当成 target 自身失败，而 legacy 就是为了验旧内核。改为只在 web target 上强制 ≥139。
+
+顺带把 `npm run ui:parity` 的退出码改成能识别“只有圆角类差异且 legacy 不支持 squircle”这种预期退化，不再把基线生成命令判成失败（其余字段的差异仍然算失败，权威判定仍在 `validate-ui-parity`）。
+
+退化的真实形态：`--radius-*` 的 1.84 倍缩放写在 `@supports (corner-shape: squircle)` 里，旧内核拿到的只是未缩放半径（卡片 8px 而非 14.73px），圆角偏小但不归零；量测口径是“半径 > 4px”，所以小控件在旧内核上会少计，`/parties` 的 `rounded` 从 41 降到 28。
+
+结果：`gate-ui-parity` 14/14 全过，`selftest-ui-parity` 8/8，blocking 门禁 34/34。基线 `legacy.json` 里 `engine.signature = chromium:138`、26 条路由 `cornerShapeAccepted` 全为 false。
+
 ### 2026-11-05 结算动作失败改成页面可见（含一次浏览器复验）
 `/cost/downstream-finance` 的结算动作（提交 / 审核 / 过账 / 退回）走的是同一个 mutation，成功时写下方提示，失败时**没有任何可见反应**：`onError` 没写，错误只落在控制台。也就是说，重复过账、自批、状态已变这类拒绝，用户看到的是“点了没反应”。
 

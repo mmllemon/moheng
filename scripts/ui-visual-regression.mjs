@@ -82,7 +82,9 @@ async function runTarget(kind) {
       executable: target.executablePath,
     };
 
-    if (!env.cornerShapeSupported) {
+    if (!env.cornerShapeSupported && kind !== 'legacy') {
+      // legacy target 本来就是用来验旧内核退化那条路的，它不支持 squircle 是预期，不是环境事故。
+      // web target 才必须跑在 >=139 的内核上，否则基线本身就已经退化了。
       failures.push({
         check: 'chromium-too-old-for-squircle',
         chromiumMajor: major,
@@ -111,10 +113,11 @@ async function runTarget(kind) {
           return parseFloat(style.borderRadius) > 4;
         }).length;
 
-        // squircle 是否真的被浏览器接受：getComputedStyle 对未支持属性返回空串
-        const probe = document.createElement('div');
-        probe.style.cornerShape = 'squircle';
-        const accepted = probe.style.cornerShape === 'squircle';
+        // squircle 是否真的被浏览器接受。旧写法 `probe.style.cornerShape = 'squircle'` 在
+        // 不认识该属性的内核里会给 CSSStyleDeclaration 挂一个普通 JS 属性，读回来仍是 'squircle'，
+        // 于是 Chromium 138 也被误判为“支持”。改成 CSS.supports 与 setProperty 双重判定。
+        const accepted = CSS.supports('corner-shape', 'squircle')
+          || (() => { const probe = document.createElement('div'); probe.style.setProperty('corner-shape', 'squircle'); return probe.style.getPropertyValue('corner-shape') === 'squircle'; })();
 
         return {
           viewport: window.innerWidth,
@@ -397,9 +400,20 @@ if (report.compare) {
     for (const note of report.compare.envNotes) console.log('  ' + JSON.stringify(note));
   }
   if (report.compare.diffs.length) {
+    // 2026-11-05：legacy 指向 <139 的构建时，“圆角计数 + corner-shape 支持”两类差异是
+    // 被跟踪的退化本身（旧内核不认 squircle，缩放后的 token 也不会生效），不应把基线生成
+    // 命令判成失败。其余字段的差异仍然算失败。权威判定在 validate-ui-parity。
+    const webEnv = report.summarize?.web ?? {};
+    const legacyEnv = report.summarize?.legacy ?? {};
+    const squircleGap = webEnv.cornerShapeSupported === true && legacyEnv.cornerShapeSupported === false;
+    const onlyRadiusFields = report.compare.diffs.every((diff) => diff.field === 'rounded' || diff.field === 'cornerShapeAccepted');
     console.log(`指标体系差异 ${report.compare.diffs.length} 项：`);
     for (const diff of report.compare.diffs.slice(0, 40)) console.log('  ' + JSON.stringify(diff));
-    exitCode = 1;
+    if (squircleGap && onlyRadiusFields) {
+      console.log(`以上差异全部来自 squircle 降级（web Chromium ${webEnv.chromiumMajor} / legacy Chromium ${legacyEnv.chromiumMajor}），属预期，不算失败。`);
+    } else {
+      exitCode = 1;
+    }
   } else if (report.compare.comparable) {
     console.log('两个 target 的全部指标逐项相等。');
   } else {

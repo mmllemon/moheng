@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T05:31:49.363Z",
+  "generatedAt": "2026-11-05T10:55:50.859Z",
   "target": "both",
   "summarize": {
     "web": {
@@ -21,13 +21,13 @@
     },
     "legacy": {
       "target": "legacy",
-      "chromiumMajor": 149,
-      "cornerShapeSupported": true,
+      "chromiumMajor": 138,
+      "cornerShapeSupported": false,
       "engine": {
         "requested": "legacy",
         "runtime": "chromium",
-        "signature": "chromium:149",
-        "executable": "C:\\Users\\leema\\AppData\\Local\\ms-playwright\\chromium-1228\\chrome-win64\\chrome.exe"
+        "signature": "chromium:138",
+        "executable": "C:\\Users\\leema\\AppData\\Local\\cft-legacy-138b\\extracted\\chrome-win64\\chrome.exe"
       },
       "innerWidth": 1440,
       "innerHeight": 900,
@@ -365,18 +365,18 @@
     "legacy": {
       "target": "legacy",
       "env": {
-        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36",
+        "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/138.0.0.0 Safari/537.36",
         "dpr": 1,
         "innerWidth": 1440,
         "innerHeight": 900,
         "cornerShapeAccepted": true,
-        "chromiumMajor": 149,
-        "cornerShapeSupported": true,
+        "chromiumMajor": 138,
+        "cornerShapeSupported": false,
         "engine": {
           "requested": "legacy",
           "runtime": "chromium",
-          "signature": "chromium:149",
-          "executable": "C:\\Users\\leema\\AppData\\Local\\ms-playwright\\chromium-1228\\chrome-win64\\chrome.exe"
+          "signature": "chromium:138",
+          "executable": "C:\\Users\\leema\\AppData\\Local\\cft-legacy-138b\\extracted\\chrome-win64\\chrome.exe"
         }
       },
       "routes": [
@@ -384,8 +384,8 @@
           "route": "/",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 32,
-          "cornerShapeAccepted": true,
+          "rounded": 31,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -395,7 +395,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 31,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -404,8 +404,8 @@
           "route": "/notifications",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 38,
-          "cornerShapeAccepted": true,
+          "rounded": 33,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -415,7 +415,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 47,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -425,7 +425,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 28,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -434,8 +434,8 @@
           "route": "/cost",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 42,
-          "cornerShapeAccepted": true,
+          "rounded": 40,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -444,8 +444,8 @@
           "route": "/cost/contracts",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 38,
-          "cornerShapeAccepted": true,
+          "rounded": 36,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -454,8 +454,8 @@
           "route": "/cost/budget",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 49,
-          "cornerShapeAccepted": true,
+          "rounded": 42,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -464,8 +464,8 @@
           "route": "/cost/progress-bills",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 40,
-          "cornerShapeAccepted": true,
+          "rounded": 39,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -474,8 +474,8 @@
           "route": "/cost/changes",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 41,
-          "cornerShapeAccepted": true,
+          "rounded": 40,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -484,8 +484,8 @@
           "route": "/cost/owner-finance",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 47,
-          "cornerShapeAccepted": true,
+          "rounded": 45,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -494,8 +494,8 @@
           "route": "/cost/costs",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 46,
-          "cornerShapeAccepted": true,
+          "rounded": 44,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -504,8 +504,8 @@
           "route": "/cost/analysis",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 38,
-          "cornerShapeAccepted": true,
+          "rounded": 37,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -515,7 +515,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 52,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -525,7 +525,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 47,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -534,8 +534,8 @@
           "route": "/system/assistant",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 48,
-          "cornerShapeAccepted": true,
+          "rounded": 47,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -545,7 +545,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 42,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 2,
           "visiblePanels": 0,
           "errors": []
@@ -555,7 +555,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 45,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 2,
           "visiblePanels": 0,
           "errors": []
@@ -565,7 +565,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 42,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 2,
           "visiblePanels": 0,
           "errors": []
@@ -575,7 +575,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 56,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 4,
           "visiblePanels": 0,
           "errors": []
@@ -585,7 +585,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 53,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -595,7 +595,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 52,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 3,
           "visiblePanels": 0,
           "errors": []
@@ -605,7 +605,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 42,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -614,8 +614,8 @@
           "route": "/audit-logs",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 55,
-          "cornerShapeAccepted": true,
+          "rounded": 49,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -625,7 +625,7 @@
           "viewport": 1440,
           "scrollWidth": 1440,
           "rounded": 39,
-          "cornerShapeAccepted": true,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -634,8 +634,8 @@
           "route": "/parties",
           "viewport": 1440,
           "scrollWidth": 1440,
-          "rounded": 41,
-          "cornerShapeAccepted": true,
+          "rounded": 28,
+          "cornerShapeAccepted": false,
           "tabs": 0,
           "visiblePanels": 0,
           "errors": []
@@ -688,8 +688,289 @@
     }
   },
   "compare": {
-    "comparable": true,
-    "envNotes": [],
-    "diffs": []
+    "comparable": false,
+    "envNotes": [
+      {
+        "field": "cornerShape",
+        "web": true,
+        "legacy": false,
+        "note": "两个容器的 corner-shape 支持不同（Chromium 156 vs 138）。round 计数与几何相关的断言不可比。"
+      }
+    ],
+    "diffs": [
+      {
+        "route": "/",
+        "field": "rounded",
+        "web": 32,
+        "legacy": 31,
+        "delta": -1
+      },
+      {
+        "route": "/",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/projects",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/notifications",
+        "field": "rounded",
+        "web": 38,
+        "legacy": 33,
+        "delta": -5
+      },
+      {
+        "route": "/notifications",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/settings/appearance",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/account/security",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost",
+        "field": "rounded",
+        "web": 42,
+        "legacy": 40,
+        "delta": -2
+      },
+      {
+        "route": "/cost",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost/contracts",
+        "field": "rounded",
+        "web": 38,
+        "legacy": 36,
+        "delta": -2
+      },
+      {
+        "route": "/cost/contracts",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost/budget",
+        "field": "rounded",
+        "web": 49,
+        "legacy": 42,
+        "delta": -7
+      },
+      {
+        "route": "/cost/budget",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost/progress-bills",
+        "field": "rounded",
+        "web": 40,
+        "legacy": 39,
+        "delta": -1
+      },
+      {
+        "route": "/cost/progress-bills",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost/changes",
+        "field": "rounded",
+        "web": 41,
+        "legacy": 40,
+        "delta": -1
+      },
+      {
+        "route": "/cost/changes",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost/owner-finance",
+        "field": "rounded",
+        "web": 47,
+        "legacy": 45,
+        "delta": -2
+      },
+      {
+        "route": "/cost/owner-finance",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost/costs",
+        "field": "rounded",
+        "web": 46,
+        "legacy": 44,
+        "delta": -2
+      },
+      {
+        "route": "/cost/costs",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/cost/analysis",
+        "field": "rounded",
+        "web": 38,
+        "legacy": 37,
+        "delta": -1
+      },
+      {
+        "route": "/cost/analysis",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/accounts",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/assistant",
+        "field": "rounded",
+        "web": 48,
+        "legacy": 47,
+        "delta": -1
+      },
+      {
+        "route": "/system/assistant",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/security",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/authorization",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/policies",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/governance",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/dictionaries",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/parameters",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/system/operations",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/audit-logs",
+        "field": "rounded",
+        "web": 55,
+        "legacy": 49,
+        "delta": -6
+      },
+      {
+        "route": "/audit-logs",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/reports",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      },
+      {
+        "route": "/parties",
+        "field": "rounded",
+        "web": 41,
+        "legacy": 28,
+        "delta": -13
+      },
+      {
+        "route": "/parties",
+        "field": "cornerShapeAccepted",
+        "web": true,
+        "legacy": false,
+        "delta": null
+      }
+    ]
   }
 }
