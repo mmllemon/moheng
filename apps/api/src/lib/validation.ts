@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MAX_AMOUNT_CENTS } from './contract-amount-math.js';
+import { MAX_TRANSPORT_SAFE_CENTS } from './contract-amount-math.js';
 
 /** Currency inputs are stored at DECIMAL(18,2); reject extra fractional digits instead of silently rounding them in PostgreSQL. */
 const hasAtMostTwoDecimals = (value: number): boolean =>
@@ -14,7 +14,7 @@ const hasAtMostTwoDecimals = (value: number): boolean =>
  * 所以校验在这里就把超出安全范围的值拒掉，而不是让它静默取整。
  */
 const withinTransportSafeRange = (value: number): boolean =>
-  Math.abs(Math.round(value * 100)) <= Number(MAX_AMOUNT_CENTS);
+  Math.abs(Math.round(value * 100)) <= Number(MAX_TRANSPORT_SAFE_CENTS);
 
 export const nonNegativeMoney = z.number().refine(
   (value) => value >= 0 && hasAtMostTwoDecimals(value) && withinTransportSafeRange(value),
@@ -31,3 +31,4 @@ export const roundMoney = (value: number): number => Math.round((value + Number.
 export const toCents = (value: number): number => Math.round((value + Number.EPSILON) * 100);
 
 export const fromCents = (value: number): number => value / 100;
+

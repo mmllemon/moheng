@@ -11,7 +11,8 @@
 
 改法：
 
-- `MAX_AMOUNT_CENTS` 改为 `9007199254740991`，新增 `transportSafeCents()` 作为写入路径统一入口；`nonNegativeMoney` / `positiveMoney` / 分供财务的 `nonNegativeMoneyInput`、`signedMoneyInput` 同步拒绝越界值。读取不受限，`moneyToCents()` 仍能精确解析已有数据。
+- `MAX_AMOUNT_CENTS` 保留 DECIMAL(18,2) 的界限给字符串路径（报表、XLSX、助手），新增 `MAX_TRANSPORT_SAFE_CENTS = 2^53-1` 与 `transportSafeCents()` 给接口写入路径；`nonNegativeMoney` / `positiveMoney` / 分供财务的 `nonNegativeMoneyInput`、`signedMoneyInput` 按传输上限拒绝。读取不受限，`moneyToCents()` 仍能精确解析已有数据。
+  过程中踩到一次真实冲突：第一个版本把 `calculateEffectiveContractAmount()` 也收到 2^53-1，结果 CI 的 `report-studio-data` 集成回归红了——它拿 `90071992547410.00` 断报表精度，而这条路径输出的是字符串，本来不该受 JSON number 的限制。因此分成两档，并把这个反例写进测试。
 - 新增 `apps/web/src/lib/money.ts`：`toCents` / `fromCents` / `isZeroMoney` / `moneySign` / `compareMoney` / `sumMoney`，全部按整数分运算。改到的地方：经营总览（净额、资金桶、月份表）、资金计划下钻合计行、成本分析的净额与图表底部、成本台账合计、目标成本叶子合计、变更生效净额。
 
 测试：`apps/api/src/lib/money-contract.test.ts`（4 条，含 2^53 边界与 JSON 往返）、`apps/web/src/lib/money.test.ts`（4 条，含 0.3-0.1-0.2 与 5000 行 0.01 累加）。API 单测 271 → 275，web 单测 28 → 32。`money.test.ts` 已加入 `web-report-tests` 门禁与 `@cms/web` 的 test 脚本。
