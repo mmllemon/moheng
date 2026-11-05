@@ -23,7 +23,7 @@ import { normalizeBusinessPartyName } from './business-party.js';
 const enabled = process.env.DOWNSTREAM_SETTLEMENT_TESTS === 'true';
 const TEST_SECRET = 'test-only-jwt-secret-that-is-not-a-credential-32';
 
-test('分供结算到应付：审批分离、未确认不过账、应付与质保金、付款必须核销、质保金释放与最终结算收口', { skip: !enabled }, async () => {
+test('分供结算到应付：审批分离、未确认不过账、应付与质保金、付款必须核销、质保金释放、发票核销与最终结算收口', { skip: !enabled }, async () => {
   const testDatabaseUrl = process.env.DATABASE_URL;
   assert.ok(testDatabaseUrl, 'DATABASE_URL must point to an isolated, migrated PostgreSQL test database');
   assert.ok(testDatabaseUrl !== process.env.PRODUCTION_DATABASE_URL, 'test database must not equal PRODUCTION_DATABASE_URL');
@@ -275,6 +275,36 @@ test('分供结算到应付：审批分离、未确认不过账、应付与质�
 
     const retentionRows = await prisma.downstreamRetentionMovement.findMany({ where: { downstreamContractId: contractId } });
     assert.deepEqual(retentionRows.map((row) => row.type).sort(), ['RELEASE', 'RETAIN'], '应各有一条留置与一条释放记录');
+
+    // —— 12. 供应商发票与应付核销 ——
+    const invoice = await call(clerk, 'POST', `${base}/invoices`, { invoiceNo: `INV-${suffix}`, invoiceDate: '2026-05-10T00:00:00.000Z', amount: 400000, taxAmount: 0, taxIncluded: true });
+    assert.equal(invoice.status, 201, `发票登记应成功：${JSON.stringify(invoice.body).slice(0, 200)}`);
+    assert.equal(invoice.body.data.status, 'RECEIVED');
+    const invoiceId = invoice.body.data.id as string;
+    const allocateInvoice = (amount: number, payableId: string) => call(clerk, 'POST', `${base}/invoices/${invoiceId}/allocations`, { amount, payableId });
+
+    const beforeVerify = await allocateInvoice(50000, payable2.id);
+    assert.equal(beforeVerify.status, 409);
+    assert.equal(beforeVerify.body.error.code, 'INVOICE_MUST_BE_VERIFIED', '未核验的发票不能去核销应付');
+
+    const verified = await call(clerk, 'POST', `${base}/invoices/${invoiceId}/verify`, { status: 'VERIFIED' });
+    assert.equal(verified.status, 200);
+
+    const allocatePayable2 = await allocateInvoice(200000, payable2.id);
+    assert.equal(allocatePayable2.status, 201, `按应付全额核销发票应成功：${JSON.stringify(allocatePayable2.body).slice(0, 240)}`);
+
+    const exceedsPayable = await allocateInvoice(50000, payable2.id);
+    assert.equal(exceedsPayable.status, 409);
+    assert.equal(exceedsPayable.body.error.code, 'INVOICE_ALLOCATION_EXCEEDS_PAYABLE', '同一应付不能重复开票超过其毛额');
+
+    const exceedsInvoice = await allocateInvoice(250000, payable1.id);
+    assert.equal(exceedsInvoice.status, 409);
+    assert.equal(exceedsInvoice.body.error.code, 'INVOICE_ALLOCATION_EXCEEDS_INVOICE');
+
+    const finalOverview = await call(clerk, 'GET', `/api/projects/${project.id}/downstream-finance`);
+    const finalRow = (finalOverview.body.data.items as { id: string; invoiceAmount: number; verifiedInvoiceAmount: number }[]).find((item) => item.id === contractId);
+    assert.equal(toCents(finalRow?.invoiceAmount), 40000000n, '发票总额应计入合同汇总');
+    assert.equal(toCents(finalRow?.verifiedInvoiceAmount), 40000000n, '核验后的发票才计入已核验口径');
   } finally {
     await app.close().catch(() => undefined);
     try {
@@ -283,6 +313,8 @@ test('分供结算到应付：审批分离、未确认不过账、应付与质�
       const contractIds = contracts.map((row) => row.id);
       if (contractIds.length) {
         const settlementIds = (await prisma.downstreamContractSettlement.findMany({ where: { downstreamContractId: { in: contractIds } }, select: { id: true } })).map((row) => row.id);
+        await prisma.downstreamInvoiceAllocation.deleteMany({ where: { OR: [{ invoice: { downstreamContractId: { in: contractIds } } }, { payable: { downstreamContractId: { in: contractIds } } }] } }).catch(() => undefined);
+        await prisma.downstreamSupplierInvoice.deleteMany({ where: { downstreamContractId: { in: contractIds } } }).catch(() => undefined);
         await prisma.downstreamPaymentAllocation.deleteMany({ where: { OR: [{ payment: { downstreamContractId: { in: contractIds } } }, { payable: { downstreamContractId: { in: contractIds } } }] } }).catch(() => undefined);
         await prisma.downstreamPayableSchedule.deleteMany({ where: { payable: { downstreamContractId: { in: contractIds } } } }).catch(() => undefined);
         await prisma.downstreamPayable.deleteMany({ where: { downstreamContractId: { in: contractIds } } }).catch(() => undefined);
