@@ -2,6 +2,23 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-05 双 target 门禁重定：第二 target 换旧内核，门禁从 advisory 升为 blocking
+
+桌面壳属于后续阶段，所以不能靠引入 electron 来解这条债。改的是第二 target 的定义与测量方法，不动断言方向。
+
+**两层根因（之前只查到第一层）**：
+
+1. `launchTarget(kind)` 没分支，web 与 electron 启同一个 `CHROME_PATH`，且仓库无 electron 依赖；即便生成 `electron.json` 也是 Chrome 跟自己比。
+2. `TARGET=both` 只写 `both.json`，而门禁读 `web.json` + 第二 target 文件 —— “按文档命令生成基线”永远拿不到门禁要的输入。这才是“缺基线产物”的直接成因。
+
+**改动**：第二 target 改为 `legacy`（`LEGACY_CHROME_PATH` → 本机 `ms-playwright/chromium-*` 最大构建号 → Playwright 自解析；当前 Chromium 149 对 Chrome 156）；结果按 target 分写 `web.json` / `legacy.json`；判等改 squircle 感知（两侧都支持则圆角计数必须相等，legacy 不支持则断言退化被如实记录，tabs/面板/骨架/交互仍须相等）；引擎指纹守卫保留。
+
+**顺带修掉的测量缺陷**：`pushState` 后死等 450ms 在旧内核上不够，`/system`、`/system/governance`、`/system/operations` 三页量到的是上一页（36 圆角 / 0 tab）；直接访问这三页两端渲染完全一致。改成等 DOM 连续 350ms 不变后，两端 26 条路由全部逐项相等。
+
+**结果**：`gate-ui-parity` 14 项全过，`selftest-ui-parity` 8/8（新增“旧内核退化必须被记录”与“同引擎冒充必须失败”两个案子），门禁从 advisory **升为 blocking**，blocking 从 33 条增至 34 条。advisory 只剩 `source-bundle` 一条。
+
+未完成：真正跑一次 squircle 退化路径需要一份 Chromium <139 的构建（用 `LEGACY_CHROME_PATH` 指过去即可），本机现只有 149；基线只能本机生成，UI 改动后需重跑 `npm run ui:parity` 并提交。
+
 ### 2026-11-05 金额精度的端到端契约回归
 
 把「录入 → 存库 → 读出 → 汇总」这条链一次量完。服务端内部是 BigInt 分，前端已改成按分比较，中间那一跳仍是 JSON number，这层没人测过。

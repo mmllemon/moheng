@@ -19,6 +19,9 @@
  * Electron 43 = Chromium 150，满足要求。
  */
 
+import { existsSync, readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { chromium } from 'playwright-core';
 
 /** squircle 需要的最低 Chromium 主版本 */
@@ -28,6 +31,35 @@ const WEB_BASE = process.env.WEB_BASE_URL ?? 'http://localhost:5173';
 const API_BASE = process.env.API_BASE_URL ?? 'http://localhost:3001';
 const CHROME_PATH =
   process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+
+/**
+ * legacy target 用的旧内核。
+ *
+ * 优先 LEGACY_CHROME_PATH（例如指向一个 Chromium <139，专门验 squircle 退化）；
+ * 否则在本机 Playwright 浏览器目录里找已安装的 chromium 构建，取构建号最大的一个；
+ * 都找不到才交给 Playwright 自己解析（它会尝试下载新版 headless shell，离线环境下会失败）。
+ */
+function resolveLegacyChromePath() {
+  const explicit = process.env.LEGACY_CHROME_PATH?.trim();
+  if (explicit) return explicit;
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH?.trim() || join(homedir(), 'AppData', 'Local', 'ms-playwright');
+  try {
+    const builds = readdirSync(root)
+      .map((name) => /^chromium-(\d+)$/.exec(name))
+      .filter((match) => match !== null)
+      .map((match) => Number(match[1]))
+      .sort((a, b) => b - a);
+    for (const build of builds) {
+      const candidate = join(root, `chromium-${build}`, 'chrome-win64', 'chrome.exe');
+      if (existsSync(candidate)) return candidate;
+    }
+  } catch {
+    // 目录不存在就交给调用方兜底
+  }
+  return undefined;
+}
+
+const LEGACY_CHROME_PATH = resolveLegacyChromePath();
 
 /** 从 UA 里取 Chromium 主版本；取不到返回 null */
 export function chromiumMajor(ua) {
@@ -61,8 +93,14 @@ export async function assertApiUp() {
  * ui-visual-regression 会按路由切片（slice(before)）判断该路由是否有错。
  */
 export async function launchTarget(kind) {
+  // 2026-11-05：从 web/electron 改成 web/legacy。仓库里没有桌面壳（无 electron 依赖、无 main 进程），
+  // 原来的 electron 分支和 web 启的是同一个 CHROME_PATH，比对必然全等但什么都没验。
+  // 现在的第二 target 是**另一个 Chromium 构建**：默认 Playwright 自带（比系统 Chrome 旧），
+  // 也可以用 LEGACY_CHROME_PATH 指向一个 Chromium <139，专门覆盖 squircle 静默降级那条路。
+  const legacy = kind === 'legacy';
+  const executablePath = legacy ? LEGACY_CHROME_PATH : CHROME_PATH;
   const browser = await chromium.launch({
-    executablePath: CHROME_PATH,
+    ...(executablePath ? { executablePath } : {}),
     headless: true,
     args: ['--window-size=1500,950'],
   });  const context = await browser.newContext({
@@ -167,19 +205,9 @@ export async function launchTarget(kind) {
 
   return {
     kind,
-    /**
-     * 2026-11-04：引擎指纹。得把“到底启动了哪个容器”写进结果，否则没人看得出
-     * electron 那一份是不是真桌面壳。当前仓库没有 Electron 壳（无依赖、无 main 进程），
-     * 下面两个分支启动的是同一个 Chrome，于是 desktopShell 恒为 false、signature 相同。
-     * validate-ui-parity 会拿这两个字段判定“这份比对算不算桌面端验收”。
-     */
-    engine: {
-      requested: kind,
-      runtime: 'chrome',
-      executable: CHROME_PATH,
-      signature: `chrome:${CHROME_PATH}`,
-      desktopShell: false,
-    },
+    /** 引擎类型：web 用系统 Chrome，legacy 用另一个 Chromium 构建。签名在拿到 UA 后补齐。 */
+    runtime: legacy ? 'chromium' : 'chrome',
+    executablePath: executablePath ?? 'playwright-bundled-chromium',
     page,
     pageErrors,
     open,

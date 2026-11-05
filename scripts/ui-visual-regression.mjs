@@ -3,7 +3,7 @@
 // 用法：
 //   node scripts/ui-visual-regression.mjs                  # 只跑 web（与旧行为一致）
 //   TARGET=web      node scripts/ui-visual-regression.mjs   # 明确指定
-//   TARGET=electron node scripts/ui-visual-regression.mjs   # 跑桌面端
+//   TARGET=legacy node scripts/ui-visual-regression.mjs   # 跑旧内核 target（第二 target）
 //   TARGET=both     node scripts/ui-visual-regression.mjs   # 两个都跑并逐项比对
 //
 // 一致性判据（比"各自通过"强得多）：
@@ -19,7 +19,7 @@ import {
 } from './_targets.mjs';
 
 const TARGET = (process.env.TARGET ?? 'web').toLowerCase();
-const KNOWN = ['web', 'electron', 'both'];
+const KNOWN = ['web', 'legacy', 'both'];
 if (!KNOWN.includes(TARGET)) {
   throw new Error(`TARGET 只能是 ${KNOWN.join(' / ')}，收到: ${TARGET}`);
 }
@@ -42,17 +42,45 @@ async function runTarget(kind) {
   const failures = [];
   const routes = [];
 
+  /**
+   * 2026-11-05：路由内 pushState 切换后等 DOM 稳定，而不是死等 450ms。
+   * 起因：跨引擎比对时发现 /system、/system/governance、/system/operations 在旧内核上
+   * 只量到 36 个圆角、tab 为 0，直接访问却是正常的四个 tab。那三个页面的路由 chunk 更重，
+   * 450ms 内还没挂完，量到的是上一页/骨架。现在先等最小时长，再等到 DOM 连续 350ms 不变。
+   */
+  async function waitForRouteSettled(budget = 6000) {
+    const deadline = Date.now() + budget;
+    let lastSignature = '';
+    let stableSince = Date.now();
+    while (Date.now() < deadline) {
+      const signature = await page.evaluate(() => {
+        const transition = document.querySelector('.route-transition');
+        return `${document.querySelectorAll('body *').length}:${(transition?.textContent ?? '').length}`;
+      });
+      if (signature !== lastSignature) {
+        lastSignature = signature;
+        stableSince = Date.now();
+      } else if (Date.now() - stableSince > 350) {
+        return;
+      }
+      await page.waitForTimeout(120);
+    }
+  }
+
   let env = null;
   try {
     env = await target.open('/');
     const major = chromiumMajor(env.ua);
     env.chromiumMajor = major;
     env.cornerShapeSupported = major !== null && major >= CORNER_SHAPE_MIN_CHROMIUM;
-    // 2026-11-04：结果文件要能自己说明“比的是哪个引擎”。
-    // `launchTarget` 目前对 web / electron 都启动同一个 Chrome（仓库里还没有桌面壳），
-    // 所以两个 target 的 signature 会完全相同；validate-ui-parity 据此拒绝把
-    // “同一引擎对同一引擎”当成桌面端一致性证据。
-    env.engine = target.engine;
+    // 2026-11-05：引擎指纹进结果文件。validate-ui-parity 用它确认两个 target 真不是同一个浏览器，
+    // 以及 legacy 一侧确实比 web 旧。
+    env.engine = {
+      requested: kind,
+      runtime: target.runtime,
+      signature: `${target.runtime}:${major ?? 'unknown'}`,
+      executable: target.executablePath,
+    };
 
     if (!env.cornerShapeSupported) {
       failures.push({
@@ -71,6 +99,7 @@ async function runTarget(kind) {
         window.dispatchEvent(new PopStateEvent('popstate'));
       }, route);
       await page.waitForTimeout(ROUTE_SETTLE);
+      await waitForRouteSettled();
 
       const snapshot = await page.evaluate(() => {
         const rounded = Array.from(document.querySelectorAll('body *')).filter((element) => {
@@ -246,56 +275,56 @@ function summarize(result) {
  * 逐项比对两个 target。
  * 只比"同一路由同一指标"的数值，不比失败信息文本 —— 文本必然不同。
  */
-function compareTargets(web, electron) {
+function compareTargets(web, legacy) {
   const diffs = [];
 
   const byRoute = (result) => new Map(result.routes.map((row) => [row.route, row]));
 
   // 环境层差异（这些是可以解释的，但要显式列出）
   const envNotes = [];
-  if (web.env.innerWidth !== electron.env.innerWidth) {
+  if (web.env.innerWidth !== legacy.env.innerWidth) {
     envNotes.push({
       field: 'innerWidth',
       web: web.env.innerWidth,
-      electron: electron.env.innerWidth,
+      legacy: legacy.env.innerWidth,
       note: '视口内宽不同，所有尺寸类指标都不可直接比。',
     });
   }
-  if (web.env.dpr !== electron.env.dpr) {
-    envNotes.push({ field: 'dpr', web: web.env.dpr, electron: electron.env.dpr, note: 'DPR 不同会影响断言里的像素上限。' });
+  if (web.env.dpr !== legacy.env.dpr) {
+    envNotes.push({ field: 'dpr', web: web.env.dpr, legacy: legacy.env.dpr, note: 'DPR 不同会影响断言里的像素上限。' });
   }
-  if (web.env.cornerShapeSupported !== electron.env.cornerShapeSupported) {
+  if (web.env.cornerShapeSupported !== legacy.env.cornerShapeSupported) {
     envNotes.push({
       field: 'cornerShape',
       web: web.env.cornerShapeSupported,
-      electron: electron.env.cornerShapeSupported,
+      legacy: legacy.env.cornerShapeSupported,
       note:
         '两个容器的 corner-shape 支持不同（Chromium ' +
         web.env.chromiumMajor +
         ' vs ' +
-        electron.env.chromiumMajor +
+        legacy.env.chromiumMajor +
         '）。round 计数与几何相关的断言不可比。',
     });
   }
 
   const webMap = byRoute(web);
-  const electronMap = byRoute(electron);
+  const legacyMap = byRoute(legacy);
   const comparable = envNotes.length === 0;
 
   for (const [route, webRow] of webMap) {
-    const electronRow = electronMap.get(route);
-    if (!electronRow) {
-      diffs.push({ route, field: '*', note: 'electron 缺少该路由' });
+    const legacyRow = legacyMap.get(route);
+    if (!legacyRow) {
+      diffs.push({ route, field: '*', note: 'legacy 缺少该路由' });
       continue;
     }
     for (const field of ['rounded', 'tabs', 'visiblePanels', 'cornerShapeAccepted']) {
-      if (webRow[field] !== electronRow[field]) {
+      if (webRow[field] !== legacyRow[field]) {
         diffs.push({
           route,
           field,
           web: webRow[field],
-          electron: electronRow[field],
-          delta: typeof webRow[field] === 'number' ? electronRow[field] - webRow[field] : null,
+          legacy: legacyRow[field],
+          delta: typeof webRow[field] === 'number' ? legacyRow[field] - webRow[field] : null,
         });
       }
     }
@@ -304,8 +333,8 @@ function compareTargets(web, electron) {
   // 骨架度量：即使环境有差异，这四项是布局常量，应当相等
   for (const field of ['sidebar', 'titlebar', 'main', 'settings', 'settingsNav']) {
     const a = JSON.stringify(web.shell?.[field] ?? null);
-    const b = JSON.stringify(electron.shell?.[field] ?? null);
-    if (a !== b) diffs.push({ route: '/system', field: `shell.${field}`, web: web.shell?.[field], electron: electron.shell?.[field] });
+    const b = JSON.stringify(legacy.shell?.[field] ?? null);
+    if (a !== b) diffs.push({ route: '/system', field: `shell.${field}`, web: web.shell?.[field], legacy: legacy.shell?.[field] });
   }
 
   return { comparable, envNotes, diffs };
@@ -316,7 +345,7 @@ await assertApiUp();
 
 const results = {};
 if (TARGET === 'web' || TARGET === 'both') results.web = await runTarget('web');
-if (TARGET === 'electron' || TARGET === 'both') results.electron = await runTarget('electron');
+if (TARGET === 'legacy' || TARGET === 'both') results.legacy = await runTarget('legacy');
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -326,10 +355,23 @@ const report = {
 };
 
 if (TARGET === 'both') {
-  report.compare = compareTargets(results.web, results.electron);
+  report.compare = compareTargets(results.web, results.legacy);
 }
 
 mkdirSync(OUT_DIR, { recursive: true });
+// 2026-11-05：按 target 分别落盘 web.json / legacy.json。
+// 原来的实现只写 `${TARGET}.json`：TARGET=both 会产出 both.json，而门禁读的是
+// web.json + electron.json（现为 legacy.json），所以“按文档命令生成基线”永远拿不到门禁要的文件。
+// 这也是这条 advisory 债务里“缺双 target 基线产物”的真实成因之一。
+for (const [key, value] of Object.entries(results)) {
+  writeFileSync(`${OUT_DIR}/${key}.json`, JSON.stringify({
+    generatedAt: report.generatedAt,
+    target: key,
+    summarize: { [key]: report.summarize[key] },
+    raw: { [key]: value },
+  }, null, 2), 'utf8');
+}
+// 合并报告另存一份，便于人看跨 target 差异（不参与门禁判定）
 const outFile = `${OUT_DIR}/${TARGET}.json`;
 writeFileSync(outFile, JSON.stringify(report, null, 2), 'utf8');
 
@@ -367,3 +409,4 @@ if (report.compare) {
 
 console.log(`\n结果已写入 ${outFile}`);
 process.exitCode = exitCode;
+

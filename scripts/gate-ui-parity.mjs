@@ -10,38 +10,43 @@
 //     - 未就绪（SKIP）默认算失败
 //     - 只有显式声明 PARITY_NOT_REQUIRED=1 才放行，且必须打印醒目警告
 //
+// 2026-11-05：第二 target 从 electron 改成 legacy（另一个 Chromium 构建）。
+// 仓库里没有桌面壳，原先的 electron 产物与 web 同源，比对必然全等但什么都没验。
+//
 // 用法：
 //   node scripts/gate-ui-parity.mjs
 //   node scripts/gate-ui-parity.mjs --require          # 强制要求已跑过
-//   PARITY_NOT_REQUIRED=1 node scripts/gate-ui-parity.mjs   # 显式接受"桌面端未就绪"
+//   PARITY_NOT_REQUIRED=1 node scripts/gate-ui-parity.mjs   # 显式接受"跨内核一致性未验证"
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 
 const WEB = 'docs/gates/ui-parity/web.json';
-const ELECTRON = 'docs/gates/ui-parity/electron.json';
+const LEGACY = 'docs/gates/ui-parity/legacy.json';
 
 const explicitNotRequired = process.env.PARITY_NOT_REQUIRED === '1';
 
 // 先看输入齐不齐，避免 spawn 一个注定 SKIP 的子进程
-const missing = [WEB, ELECTRON].filter((path) => !existsSync(path));
+const missing = [WEB, LEGACY].filter((path) => !existsSync(path));
 
 if (missing.length) {
   console.log('双 target 一致性门禁：缺少结果文件');
   for (const path of missing) console.log('  - ' + path);
   console.log('');
-  console.log('生成结果：npm run ui:parity（需要 API 在 3001 上运行）');
+  console.log('生成结果：npm run ui:parity（需要 API 在 3001、Web 在 5173 上运行）');
+  console.log('legacy 一侧默认用 Playwright 自带 Chromium；要覆盖 squircle 退化路径，');
+  console.log('用 LEGACY_CHROME_PATH 指向一个 Chromium <139 的构建再跑一次。');
 
   if (explicitNotRequired) {
     console.log('');
     console.log('⚠ PARITY_NOT_REQUIRED=1 已设置，本次放行。');
-    console.log('⚠ 这意味着桌面端一致性**未经任何验证**。发布说明中必须写明这一点。');
+    console.log('⚠ 这意味着跨内核一致性**未经任何验证**。发布说明中必须写明这一点。');
     process.exit(0);
   }
 
   console.log('');
   console.log('判定：失败。');
   console.log('');
-  console.log('如果桌面端尚未开始、确实无法生成结果，请显式声明：');
+  console.log('如果确实无法生成结果，请显式声明：');
   console.log('  PARITY_NOT_REQUIRED=1 npm run validate:release-candidate');
   console.log('不要用删除检查的方式绕过 —— 那会让这条门禁永久失效。');
   process.exit(1);

@@ -41,11 +41,11 @@
     "validate:dependency-security": "node scripts/validate-dependency-security.mjs",
     "ui:axe": "node scripts/axe-audit.mjs",
     "ui:visual": "node scripts/ui-visual-regression.mjs",
-    "ui:visual:electron": "node scripts/run-with-env.mjs TARGET=electron node scripts/ui-visual-regression.mjs",
     "ui:parity": "node scripts/run-with-env.mjs TARGET=both node scripts/ui-visual-regression.mjs",
     "validate:ui-parity": "node scripts/validate-ui-parity.mjs",
     "selftest:ui-parity": "node scripts/selftest-ui-parity.mjs",
-    "verify:runtime-contract": "node scripts/verify-runtime-contract.mjs"
+    "verify:runtime-contract": "node scripts/verify-runtime-contract.mjs",
+    "ui:visual:legacy": "node scripts/run-with-env.mjs TARGET=legacy node scripts/ui-visual-regression.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.14.0",
