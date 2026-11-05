@@ -92,7 +92,7 @@ export async function assertApiUp() {
  * pageErrors 是一个持续收集的数组：页面 console error 与未捕获异常都计入。
  * ui-visual-regression 会按路由切片（slice(before)）判断该路由是否有错。
  */
-export async function launchTarget(kind) {
+export async function launchTarget(kind, viewport = { width: 1440, height: 900 }) {
   // 2026-11-05：从 web/electron 改成 web/legacy。仓库里没有桌面壳（无 electron 依赖、无 main 进程），
   // 原来的 electron 分支和 web 启的是同一个 CHROME_PATH，比对必然全等但什么都没验。
   // 现在的第二 target 是**另一个 Chromium 构建**：默认 Playwright 自带（比系统 Chrome 旧），
@@ -104,7 +104,7 @@ export async function launchTarget(kind) {
     headless: true,
     args: ['--window-size=1500,950'],
   });  const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
+    viewport: { width: viewport.width, height: viewport.height },
     locale: 'zh-CN',
     deviceScaleFactor: 1,
     storageState: process.env.AUTH_STATE ?? undefined,
@@ -148,9 +148,11 @@ export async function launchTarget(kind) {
       innerWidth: window.innerWidth,
       innerHeight: window.innerHeight,
       cornerShapeAccepted: (() => {
+        // 2026-11-05：旧写法 probe.style.cornerShape = 'squircle' 在不认识该属性的内核里会给
+        // CSSStyleDeclaration 挂个普通 JS 属性，读回来仍是 'squircle'，会误报“支持”。
         const probe = document.createElement('div');
-        probe.style.cornerShape = 'squircle';
-        return probe.style.cornerShape === 'squircle';
+        probe.style.setProperty('corner-shape', 'squircle');
+        return CSS.supports('corner-shape', 'squircle') || probe.style.getPropertyValue('corner-shape') === 'squircle';
       })(),
     }));
   }
