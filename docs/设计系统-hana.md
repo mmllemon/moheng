@@ -3,7 +3,7 @@
 本规范以 **Hana 1.1.35 安装版 renderer 的实际 DOM / CSS** 为基准，不引用未经验证的重绘稿。
 墨衡保留工程经营管理的业务密度，但外壳、纸张、排版、控件、弹层与设置工作区统一到 Hana 的设计语言。
 
-> 状态（2026-11-05）：当前唯一有效界面规范；当前主干基线 `4d54e81`（界面结构自 2026-11-04 起统一为台账三件套 `ldg-section` / `ldg-section-head` / `ldg-section-card`，见 §6）。落地与例外见 [UI 验收 Hana](UI-验收-hana.md)，V6/Pro-Tier 文档已移入 `docs/archive/`，不再作为实现依据。
+> 状态（2026-11-05）：当前唯一有效界面规范；当前主干基线 `8da1392`（界面结构自 2026-11-04 起统一为台账三件套 `ldg-section` / `ldg-section-head` / `ldg-section-card`，见 §6）。签认用的逐页清单见 [阶段二-逐页视觉签认清单](阶段二-逐页视觉签认清单.md)，清点工具 `npm run ui:inventory`。落地与例外见 [UI 验收 Hana](UI-验收-hana.md)，V6/Pro-Tier 文档已移入 `docs/archive/`，不再作为实现依据。
 > 同日按 `reference/hana-1.1.35/` 字节精确快照（renderer 可读层）逐条复校 §2/§3/§4/§6；口径标注见各行「依据」列，快照来源见其 README。✅ = CSS/HTML 快照内直接可证；⚠ = DOM 运行时实测值，快照中未检索到对应规则（多藏于压缩 chunk，无法复证）。
 
 ## 1. 设计北极星
