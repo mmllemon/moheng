@@ -8,6 +8,7 @@ import { Archive, Building2, Download, FilePlus2, Filter, Link2, Plus, Receipt, 
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
+import { sumMoney } from '../lib/money';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { BudgetItem, CostEntry, CostType } from '../types';
@@ -115,7 +116,7 @@ export default function CostsPage() {
   const archive = useMutation({ mutationFn: (id: string) => api.post(`/projects/${projectId}/costs/${id}/archive`), onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['costs', projectId] }); await queryClient.invalidateQueries({ queryKey: ['analysis', projectId] }); await queryClient.invalidateQueries({ queryKey: ['downstream-contracts', projectId] }); setNotice('成本记录已归档，可在审计流水中追溯。'); } });
   const rows = costsQuery.data ?? [];
   const filtered = useMemo(() => rows.filter((row) => (type === 'ALL' || row.type === type) && (!q || `${row.description} ${row.vendorName ?? ''} ${row.teamName ?? ''} ${row.budgetItem?.name ?? ''} ${row.downstreamContract?.contractNo ?? ''} ${row.downstreamContract?.counterpartyName ?? ''}`.toLowerCase().includes(q.toLowerCase()))), [rows, type, q]);
-  const total = filtered.reduce((sum, row) => sum + row.amount, 0);
+  const total = sumMoney(filtered.map((row) => row.amount));
   if (costsQuery.isLoading || budgetQuery.isLoading || downstreamQuery.isLoading) return <div className="page-wrap"><LoadingBlock /></div>;
   if (costsQuery.error || budgetQuery.error || downstreamQuery.error) return <div className="page-wrap"><ErrorBlock message={(costsQuery.error ?? budgetQuery.error ?? downstreamQuery.error as Error).toString()} retry={() => { void costsQuery.refetch(); void budgetQuery.refetch(); void downstreamQuery.refetch(); }} /></div>;
 

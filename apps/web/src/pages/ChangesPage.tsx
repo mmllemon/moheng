@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BadgeCheck, ClipboardCheck, Download, FileCheck2, FilePlus2, GitPullRequest, Plus, Send, ShieldAlert, X } from 'lucide-react';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
+import { sumMoney } from '../lib/money';
 import { useUiStore } from '../auth-store';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
 import type { ChangeRecord, ChangeStatus, EvidenceClass, ExternalConfirmationStatus } from '../types';
@@ -234,7 +235,7 @@ export default function ChangesPage() {
   if (query.error || projectQuery.error || mainContractQuery.error) return <div className="page-wrap"><ErrorBlock message={(query.error ?? projectQuery.error ?? mainContractQuery.error as Error).toString()} retry={() => { void query.refetch(); void projectQuery.refetch(); void mainContractQuery.refetch(); }} /></div>;
   const changes = query.data ?? [];
   const pending = changes.filter((c) => ['SUBMITTED', 'UNDER_REVIEW'].includes(c.status)).length;
-  const effectiveNet = changes.reduce((sum, c) => c.externalConfirmationStatus === 'EFFECTIVE' ? sum + (c.direction === 'DECREASE' ? -1 : 1) * (c.externalConfirmedAmount ?? 0) : sum, 0);
+  const effectiveNet = sumMoney(changes.map((c) => c.externalConfirmationStatus === 'EFFECTIVE' ? (c.direction === 'DECREASE' ? -1 : 1) * (c.externalConfirmedAmount ?? 0) : 0));
   const pendingEvidence = changes.filter((c) => c.externalConfirmationStatus === 'PENDING_VERIFICATION').length;
   const getActions = (record: ChangeRecord) => {
     const actions: { label: string; run: () => void; danger?: boolean; icon: typeof Send }[] = [];

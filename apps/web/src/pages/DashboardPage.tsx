@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, ChevronRight, CircleAlert, ClipboardCheck, Download, FolderKanban } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
+import { isZeroMoney, moneySign } from '../lib/money';
 import { useAuthStore, useUiStore } from '../auth-store';
 import { Button, EmptyState, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, StatusBadge } from '../components/Ui';
 import { CashflowDetail } from '../components/CashflowDetail';
@@ -55,7 +56,9 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
   const peak = Math.max(1, ...data.buckets.flatMap((bucket) => [bucket.inflow, bucket.outflow]));
   const hasCurve = data.buckets.some((bucket) => bucket.inflow > 0 || bucket.outflow > 0);
   const wan = (value: number) => (value / 10000).toFixed(1);
-  const signedWan = (value: number) => value === 0 ? '—' : `${value > 0 ? '+' : '−'}${wan(Math.abs(value))}万`;
+  // 2026-11-04：净额是多个金额相加而来，浮点尾差会让“恰好为 0”的判断落空（页面显示 −0.00万），
+  // 所以符号判定统一按分进行。
+  const signedWan = (value: number) => moneySign(value) === 0 ? '—' : `${value > 0 ? '+' : '−'}${wan(Math.abs(value))}万`;
   const overdues = data.overdue.inflow > 0 || data.overdue.outflow > 0;
   /* 全零项目不占表格行：一行 0 / 0 / — 只提供噪声，折叠成表下的一向提示，并保留点进项目补数据的入口。 */
   const hasCash = (row: PortfolioCashflow['projects'][number]) => row.window.inflow > 0 || row.window.outflow > 0
@@ -73,7 +76,7 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
     <Metrics columns={3} className="cf-metrics" items={[
       { label: `未来 ${data.months} 个月应收`, value: formatMoney(data.window.inflow, 0), detail: '各项目应收未收，按分期到期日' },
       { label: `未来 ${data.months} 个月应付`, value: formatMoney(data.window.outflow, 0), detail: '已过账应付与付款计划，另含已开票销项税', emphasis: true },
-      { label: '净额', value: data.window.net === 0 ? '—' : `${data.window.net > 0 ? '+' : '−'}${formatMoney(Math.abs(data.window.net), 0)}`, detail: '负数表示这个区间要集中调度资金' },
+      { label: '净额', value: isZeroMoney(data.window.net) ? '—' : `${moneySign(data.window.net) > 0 ? '+' : '−'}${formatMoney(Math.abs(data.window.net), 0)}`, detail: '负数表示这个区间要集中调度资金' },
     ]} />
     {hasCurve ? <div className="cf-chart">
       {data.buckets.map((bucket) => <button
@@ -90,7 +93,7 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
         </span>
         <span className="cf-values">{bucket.inflow > 0 || bucket.outflow > 0 ? <span>{wan(bucket.inflow)} / {wan(bucket.outflow)}</span> : <span className="is-blank">—</span>}</span>
         <small>{bucket.label}</small>
-        <em className={bucket.net < 0 ? 'text-danger' : bucket.net > 0 ? 'text-success' : ''}>{bucket.net === 0 ? '持平' : signedWan(bucket.net)}</em>
+        <em className={moneySign(bucket.net) < 0 ? 'text-danger' : moneySign(bucket.net) > 0 ? 'text-success' : ''}>{isZeroMoney(bucket.net) ? '持平' : signedWan(bucket.net)}</em>
       </button>)}
     </div> : <div className="an-empty">未来 {data.months} 个月没有带到期日的应收应付；先给应收单补录到期安排，或给分供合同维护付款计划。</div>}
     {bucketKey && <CashflowDetail
@@ -114,7 +117,7 @@ function PortfolioCashflowBlock({ data, loading, error, onRetry, onOpen }: { dat
           <td><strong className="table-primary-text">{row.name}</strong><small className="table-subtext">{row.unscheduled.inflow > 0 ? `${row.code} · 未设到期日应收 ${formatMoney(row.unscheduled.inflow, 0)}` : row.code}</small></td>
           <td className="align-right numeric">{formatMoney(row.window.inflow, 0)}</td>
           <td className="align-right numeric">{formatMoney(row.window.outflow, 0)}</td>
-          <td className={`align-right numeric ${row.window.net < 0 ? 'amount-negative' : ''}`}><strong>{row.window.net === 0 ? '—' : `${row.window.net > 0 ? '+' : '−'}${formatMoney(Math.abs(row.window.net), 0)}`}</strong></td>
+          <td className={`align-right numeric ${moneySign(row.window.net) < 0 ? 'amount-negative' : ''}`}><strong>{isZeroMoney(row.window.net) ? '—' : `${moneySign(row.window.net) > 0 ? '+' : '−'}${formatMoney(Math.abs(row.window.net), 0)}`}</strong></td>
           <td className="align-right numeric">{formatMoney(row.overdue.inflow, 0)} / {formatMoney(row.overdue.outflow, 0)}</td>
           <td className="align-right"><ChevronRight size={14} className="v6-row-arrow" /></td>
         </tr>)}</tbody>

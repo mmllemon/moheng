@@ -2,6 +2,24 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-04 金额契约：上限收到 JSON 能精确承载的范围，前端改按分比较
+
+先写会红的测试，再改代码。两个实测缺陷：
+
+1. **存储上限大于传输上限。** `contract-amount-math.ts` 把上限写成 DECIMAL(18,2) 的 `10^18-1` 分，但金额在接口与前端是 JSON number，真实天花板是 `2^53-1` 分。实测 `9999999999999999.99` 元经 `Number(centsToMoney(cents))` 变成 `10000000000000000`（丢 1 分）；`9007199254740993.01` 这输入能通过两位小数校验，落库成 `9007199254740994.00` 元。
+2. **前端拿浮点结果判断零/正负。** 实测 `0.3 - 0.1 - 0.2 = -2.7755575615628914e-17`，`=== 0` 判不出来。经营总览的净额、资金桶、明细合计行都可能把零差额标成负数或显示 `−0.00万`。
+
+改法：
+
+- `MAX_AMOUNT_CENTS` 改为 `9007199254740991`，新增 `transportSafeCents()` 作为写入路径统一入口；`nonNegativeMoney` / `positiveMoney` / 分供财务的 `nonNegativeMoneyInput`、`signedMoneyInput` 同步拒绝越界值。读取不受限，`moneyToCents()` 仍能精确解析已有数据。
+- 新增 `apps/web/src/lib/money.ts`：`toCents` / `fromCents` / `isZeroMoney` / `moneySign` / `compareMoney` / `sumMoney`，全部按整数分运算。改到的地方：经营总览（净额、资金桶、月份表）、资金计划下钻合计行、成本分析的净额与图表底部、成本台账合计、目标成本叶子合计、变更生效净额。
+
+测试：`apps/api/src/lib/money-contract.test.ts`（4 条，含 2^53 边界与 JSON 往返）、`apps/web/src/lib/money.test.ts`（4 条，含 0.3-0.1-0.2 与 5000 行 0.01 累加）。API 单测 271 → 275，web 单测 28 → 32。`money.test.ts` 已加入 `web-report-tests` 门禁与 `@cms/web` 的 test 脚本。
+
+浏览器复核：`/`、`/cost/analysis`、`/cost/budget`、`/cost/costs`、`/changes`、`/cost/downstream`、`/cost/owner-finance` 七页无控制台报错、横向溢出 0，金额显示与符号正常（经营总览净额仍为 `−¥5,810,706`）。门禁 33/33，`@cms/web` 与 `@cms/api` lint exit 0。
+
+尚未做：写路径的路由级 PostgreSQL 回归（业主结算负差额、应收过账、退款分配、审计原子性）。全仓目前只有两个 `.integration.test.ts`，财务链路一条路由级测试都没有，这是金额契约的下一步。
+
 ### 2026-11-04 UI 双 target 门禁：查清它为什么永远无法变绿，并加引擎守卫
 
 本来要清这条 advisory 债务，结果是：**它清不掉，而且原因比文档里写得更硬。**

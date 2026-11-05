@@ -48,7 +48,7 @@ const GATES = [
   { name: 'audit-coverage', cmd: 'node scripts/check-audit-coverage.mjs', tier: BLOCKING },
   { name: 'background-jobs', cmd: 'node scripts/validate-background-jobs.mjs', tier: BLOCKING },
   { name: 'gate-integrity', cmd: 'node scripts/validate-gate-integrity.mjs', tier: BLOCKING },
-  { name: 'web-report-tests', cmd: 'npx tsx --test apps/web/src/components/date-picker-utils.test.ts apps/web/src/report-export-job.test.ts apps/web/src/report-preview-format.test.ts apps/web/src/report-print.test.ts apps/web/src/report-preview-layout.test.ts apps/web/src/report-preview-data.test.ts', tier: BLOCKING },
+  { name: 'web-report-tests', cmd: 'npx tsx --test apps/web/src/components/date-picker-utils.test.ts apps/web/src/report-export-job.test.ts apps/web/src/report-preview-format.test.ts apps/web/src/report-print.test.ts apps/web/src/report-preview-layout.test.ts apps/web/src/report-preview-data.test.ts apps/web/src/lib/money.test.ts', tier: BLOCKING },
   { name: 'public-access-security', cmd: 'node scripts/validate-public-access-security.mjs', tier: BLOCKING },
   { name: 'defect-audit-v2', cmd: 'node scripts/validate-defect-audit-v2.mjs', tier: BLOCKING },
   { name: 'assistant-safety-contract', cmd: 'node scripts/validate-assistant-safety-contract.mjs', tier: BLOCKING },

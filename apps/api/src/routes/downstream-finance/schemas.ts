@@ -1,4 +1,4 @@
-import { centsToMoney, moneyToCents } from '../../lib/contract-amount-math.js';
+import { centsToMoney, MAX_AMOUNT_CENTS, moneyToCents } from '../../lib/contract-amount-math.js';
 import { positiveMoney } from '../../lib/validation.js';
 import { z } from 'zod';
 import { DownstreamSettlementType, ProjectRole } from '../../generated/prisma/client.js';
@@ -6,8 +6,10 @@ import { DownstreamSettlementType, ProjectRole } from '../../generated/prisma/cl
 export const writeRoles = [ProjectRole.OWNER, ProjectRole.MANAGER, ProjectRole.ESTIMATOR];
 export const money = (value: unknown) => Number(value ?? 0);
 export const hasAtMostTwoDecimals = (value: number) => Number.isFinite(value) && Math.abs(value - Math.round(value * 100) / 100) < 1e-8;
-export const nonNegativeMoneyInput = z.coerce.number().refine((value) => value >= 0 && hasAtMostTwoDecimals(value), '金额必须为非负数且最多保留两位小数');
-export const signedMoneyInput = z.coerce.number().refine((value) => value !== 0 && hasAtMostTwoDecimals(value), '金额必须非零且最多保留两位小数');
+/** 2026-11-04：与 lib/validation 同口径，金额不能超过 2^53-1 分（JSON number 能精确承载的范围）。 */
+export const withinTransportSafeRange = (value: number) => Math.abs(Math.round(value * 100)) <= Number(MAX_AMOUNT_CENTS);
+export const nonNegativeMoneyInput = z.coerce.number().refine((value) => value >= 0 && hasAtMostTwoDecimals(value) && withinTransportSafeRange(value), '金额必须为非负数且最多保留两位小数');
+export const signedMoneyInput = z.coerce.number().refine((value) => value !== 0 && hasAtMostTwoDecimals(value) && withinTransportSafeRange(value), '金额必须非零且最多保留两位小数');
 export const sumCents = (values: unknown[]) => values.reduce<bigint>((sum, value) => sum + moneyToCents(value), 0n);
 export const amountFromCents = (value: bigint) => Number(centsToMoney(value));
 export const hasAtMostDecimals = (value: number, places: number) => Number.isFinite(value) && Math.abs(value - Math.round(value * (10 ** places)) / (10 ** places)) < 1e-8;

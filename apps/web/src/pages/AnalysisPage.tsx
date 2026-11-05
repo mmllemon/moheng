@@ -7,6 +7,7 @@ import type { Analysis, Project, ProjectCashflow } from '../types';
 import { Button, ErrorBlock, formatMoney, LoadingBlock, Metrics, PageHeader, percentage, StatusBadge } from '../components/Ui';
 import { CashflowDetail } from '../components/CashflowDetail';
 import { eacCaption } from '../lib/eac-caption';
+import { isZeroMoney, moneySign, sumMoney } from '../lib/money';
 
 const typeLabels: Record<string, string> = { LABOR: '人工费', MATERIAL: '材料费', MACHINE: '机械费', SUBCONTRACT: '分包费', INDIRECT: '其他间接费' };
 const typeColors: Record<string, string> = { MATERIAL: '#2c5a51', LABOR: '#8b6a3e', MACHINE: '#6f7f6a', SUBCONTRACT: '#b08a52', INDIRECT: '#9aa39a' };
@@ -48,7 +49,7 @@ export default function AnalysisPage() {
     .map(([type, value]) => ({ type, label: typeLabels[type] ?? type, value, color: typeColors[type] ?? '#9aa39a' }))
     .filter((entry) => entry.value > 0)
     .sort((a, b) => b.value - a.value);
-  const costTotal = costEntries.reduce((sum, entry) => sum + entry.value, 0);
+  const costTotal = sumMoney(costEntries.map((entry) => entry.value));
 
   const monthly = data.monthlyActualCost.slice(-6);
   const monthMax = Math.max(2, Math.ceil(Math.max(1, ...monthly.map((row) => row.amount)) / 10000));
@@ -221,7 +222,7 @@ function CashflowPanel({ projectId }: { projectId: string }) {
         </span>
         <span className="cf-values">{bucket.inflow > 0 || bucket.outflow > 0 ? <span>{wan(bucket.inflow)} / {wan(bucket.outflow)}</span> : <span className="is-blank">—</span>}</span>
         <small>{bucket.label}</small>
-        <em className={bucket.net < 0 ? 'text-danger' : bucket.net > 0 ? 'text-success' : ''}>{bucket.net === 0 ? '持平' : `${bucket.net > 0 ? '+' : '−'}${wan(Math.abs(bucket.net))}万`}</em>
+        <em className={moneySign(bucket.net) < 0 ? 'text-danger' : moneySign(bucket.net) > 0 ? 'text-success' : ''}>{isZeroMoney(bucket.net) ? '持平' : `${moneySign(bucket.net) > 0 ? '+' : '−'}${wan(Math.abs(bucket.net))}万`}</em>
       </button>)}
     </div> : <div className="an-empty">未来 {plan.months} 个月没有带到期日的应收应付；先给应收单补录到期安排，或给分供合同维护付款计划。</div>}
     {bucketKey && <CashflowDetail

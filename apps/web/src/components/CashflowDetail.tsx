@@ -9,6 +9,7 @@
  */
 import { Fragment } from 'react';
 import { formatMoney } from './Ui';
+import { isZeroMoney, moneySign } from '../lib/money';
 import type { CashflowBucketDetail, CashflowDetailItem } from '../types';
 
 const SOURCE_LABEL: Record<CashflowDetailItem['source'], string> = {
@@ -66,7 +67,7 @@ export function CashflowDetail({ title, subtitle, groups, loading, error, onRetr
               <td colSpan={4} className="cf-detail-group-total">
                 {group.detail.items.length} 笔 · 应收 {formatMoney(group.detail.inflow, 0)} / 应付 {formatMoney(group.detail.outflow, 0)}
               </td>
-              <td className="align-right numeric"><strong>{group.detail.net === 0 ? '—' : `${group.detail.net > 0 ? '+' : '−'}${formatMoney(Math.abs(group.detail.net), 0)}`}</strong></td>
+              <td className="align-right numeric"><strong>{isZeroMoney(group.detail.net) ? '—' : `${moneySign(group.detail.net) > 0 ? '+' : '−'}${formatMoney(Math.abs(group.detail.net), 0)}`}</strong></td>
             </tr>}
             {group.detail.items.map((item, index) => <tr key={`${item.source}-${item.ref?.id ?? index}-${item.dueAt ?? 'none'}-${index}`}>
               {showProject && <td />}

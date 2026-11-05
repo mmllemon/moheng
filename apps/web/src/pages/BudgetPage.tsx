@@ -7,6 +7,7 @@ import { ChevronDown, Download, FileSpreadsheet, Import, MoreHorizontal, Pencil,
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { api, ApiError } from '../api';
+import { sumMoney } from '../lib/money';
 import { useUiStore } from '../auth-store';
 import type { Analysis, BudgetItem, Project } from '../types';
 import { ProjectLedgerReportButton } from '../components/ReportLaunchButton';
@@ -165,7 +166,7 @@ export default function BudgetPage() {
   const rootAndLeafStats = useMemo(() => {
     const idsWithChildren = new Set(rows.map((item) => item.parentId).filter(Boolean));
     const leaves = rows.filter((item) => !idsWithChildren.has(item.id));
-    return { targetCost: leaves.reduce((sum, item) => sum + item.totalPrice, 0), leafCount: leaves.length };
+    return { targetCost: sumMoney(leaves.map((item) => item.totalPrice)), leafCount: leaves.length };
   }, [rows]);
 
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: () => api.get<Project[]>('/projects') });
