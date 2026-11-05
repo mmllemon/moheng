@@ -24,7 +24,8 @@
     "test:assistant-recovery:postgres": "tsx --test src/lib/assistant-recovery.integration.test.ts",
     "prisma:validate": "prisma validate",
     "pretest": "npm run prisma:generate",
-    "test:owner-settlement-posting:postgres": "tsx --test src/lib/owner-settlement-posting.integration.test.ts"
+    "test:owner-settlement-posting:postgres": "tsx --test src/lib/owner-settlement-posting.integration.test.ts",
+    "test:money-roundtrip:postgres": "tsx --test src/lib/money-roundtrip.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",

@@ -92,6 +92,7 @@ jobs:
       REPORT_STUDIO_DATA_TESTS: 'true'
       ASSISTANT_RECOVERY_TESTS: 'true'
       OWNER_FINANCE_POSTING_TESTS: 'true'
+      MONEY_ROUNDTRIP_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -120,3 +121,5 @@ jobs:
         run: npm run test:assistant-recovery:postgres -w @cms/api
       - name: Owner settlement posting integration (real PostgreSQL)
         run: npm run test:owner-settlement-posting:postgres -w @cms/api
+      - name: Money precision round-trip integration (real PostgreSQL)
+        run: npm run test:money-roundtrip:postgres -w @cms/api
