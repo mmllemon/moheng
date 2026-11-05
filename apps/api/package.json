@@ -23,7 +23,8 @@
     "test:report-studio-data:postgres": "tsx --test src/lib/report-studio-data.integration.test.ts",
     "test:assistant-recovery:postgres": "tsx --test src/lib/assistant-recovery.integration.test.ts",
     "prisma:validate": "prisma validate",
-    "pretest": "npm run prisma:generate"
+    "pretest": "npm run prisma:generate",
+    "test:owner-settlement-posting:postgres": "tsx --test src/lib/owner-settlement-posting.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",
