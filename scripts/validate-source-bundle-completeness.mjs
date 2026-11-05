@@ -3,9 +3,12 @@ import { readFile, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
 
 // SHA-256 is re-sealed by the one-shot dependency-lock refresh workflow after approved dependency changes.
+// 2026-11-05 重封：zod 4 升级（c253948）与本次 vite 6.4.5 / @fastify/static 10.1.10 安全补丁改变了 lock，
+// 旧哈希自 2026-10-18 起就已过期。重封前的证据：npm ci 连续两次成功（717 → 720 包）、
+// npm audit 高危及严重漏洞 0 条（余 4 条 moderate，见 docs/发布与迁移验收.md）、web build 与 275 条 API 单测均通过。
 // The hash is computed over LF-normalized text so that the gate is byte-identical on Windows
 // (core.autocrlf=true checks the file out as CRLF) and on Linux/CI (checked out as LF).
-const expectedSha256 = 'a6f8a53a1ce8fb0a3313443ac3470ee23f1c3f43c5ae97545c12807d7ef93743';
+const expectedSha256 = 'ad1ca6a5624ad15edcb12c1476c8650ba7b97a95e549cf87f52388e64a139642';
 const lockPath = 'package-lock.json';
 try {
   await access(lockPath, constants.R_OK);

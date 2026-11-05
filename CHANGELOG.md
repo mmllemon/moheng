@@ -2,6 +2,18 @@
 
 > **当前状态读取说明（2026-10-20）：** 本文件下方按原日期保存历史变更记录；较早条目中的“待合并”“环境限制”或“未完成”描述只代表当时的提交与执行环境，不自动代表当前主干状态。当前集成/缺陷/开发待办以 [产品范围与当前状态](docs/产品范围与当前状态.md) 和 [四阶段开发路线图](docs/后续四阶段开发路线图.md) 为准。
 
+### 2026-11-05 依赖锁重封：清高危险、留 4 条 tracked moderate
+
+`source-bundle` 门禁从 2026-10-18 就一直红着：期望的 lock 哈希停在 `a6f8a53a…`，而 `c253948`（zod 3→4）已经改过 lock。按门禁自己的流程重封，而不是直接改数字：
+
+- 先升 `vite` 6.4.3 → **6.4.5**（高危公告）、`@fastify/static` 10.1.6 → **10.1.10**（glob/minimatch 链路），再 `npm audit fix`
+- `npm ci` 连续两次成功（720 包，44s / 46s），两次后工作树无变化
+- `npm audit`：高危及严重 **0**，剩 4 条 moderate，全部是同一条 minimatch globparts 放大公告
+- `npm run build -w @cms/web` 通过，两边 lint exit 0，API 单测 275/275，web 单测全绿
+- 新哈希 `ad1ca6a5624ad15edcb12c1476c8650ba7b97a95e549cf87f52388e64a139642` 已重封，`source-bundle` 转 PASS
+
+剩下的 moderate 在 `exceljs-hardened → archiver → readdir-glob@3 → minimatch@10.2.6`，10.x 无修复版。试过 override（npm 对已存在的锁不重解析）与删锁重生（会删掉 2747 行，主要是其他平台的 optional 二进制，会碎 Linux CI），两条都不采用，理由写进 `docs/发布与迁移验收.md` §2.1。
+
 ### 2026-11-05 真正跑了一次 squircle 退化路径（抓到两个门禁自己的 bug）
 
 从 Chrome for Testing 下了 `138.0.7204.183`（海外源在本机拉不动，走 npmmirror 镜像），实测 `CSS.supports('corner-shape','squircle')` 为 false，再用 `LEGACY_CHROME_PATH` 指过去重生成双 target 基线。

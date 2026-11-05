@@ -27,7 +27,7 @@ const uiComponents = await read('apps/web/src/components/Ui.tsx');
 const ciGateDoc = await read('docs/发布与迁移验收.md');
 
 verify('JWT plugin patched version', () => assert.equal(apiPackage.dependencies['@fastify/jwt'], '10.2.4'));
-verify('static plugin patched version', () => assert.equal(apiPackage.dependencies['@fastify/static'], '10.1.6'));
+verify('static plugin patched version', () => assert.equal(apiPackage.dependencies['@fastify/static'], '10.1.10'));
 verify('Swagger UI 6 removes vulnerable nested static tree', () => assert.equal(apiPackage.dependencies['@fastify/swagger-ui'], '6.1.2'));
 verify('Fastify patched version', () => assert.equal(apiPackage.dependencies.fastify, '5.12.7'));
 verify('React Router patched dependency pin', () => assert.equal(webPackage.dependencies['react-router-dom'], '7.18.4'));
@@ -80,7 +80,9 @@ for (const [pkg, version] of Object.entries({
 verify('protobufjs install script remains denied', () => assert.equal(rootPackage.allowScripts['protobufjs@7.6.6'], false));
 verify('ExcelJS hardened alias keeps unzipper without binary/buffers chain', () => {
   assert.doesNotMatch(lockfileText, /"node_modules\/(binary|buffers)"|"apps\/api\/node_modules\/(binary|buffers)"/);
-  assert.match(lockfileText, /"apps\/api\/node_modules\/unzipper": \{[\s\S]{0,80}?"version": "0\.12\./);
+  // 2026-11-05：重建锁后 unzipper 被提升到根 node_modules（不再是 apps/api 下的嵌套副本）。
+  // 不变量是「存在 0.12.x 且不带 binary/buffers 链」，位置随 hoisting 变，所以两种路径都接受。
+  assert.match(lockfileText, /"(?:apps\/api\/)?node_modules\/unzipper": \{[\s\S]{0,80}?"version": "0\.12\./);
 });
 verify('release-candidate command runs source-completeness preflight', () => assert.match(rootPackage.scripts['validate:release-candidate'], /validate-source-bundle-completeness\.mjs/));
 verify('release-candidate command runs R7 static contract', () => assert.match(rootPackage.scripts['validate:release-candidate'], /validate-r7-security-remediation\.mjs/));
