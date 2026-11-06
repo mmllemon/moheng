@@ -228,6 +228,7 @@ enum DownstreamRetentionMovementType {
   RETAIN
   RELEASE
   FORFEIT
+  DEDUCT
 }
 
 enum OwnerSettlementType {

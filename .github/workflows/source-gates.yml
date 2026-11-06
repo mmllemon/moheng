@@ -106,6 +106,7 @@ jobs:
       REPORT_TEMPLATE_VERSION_TESTS: 'true'
       REPORT_EXPORT_JOB_TESTS: 'true'
       ASSISTANT_CONVERSATION_TESTS: 'true'
+      RETENTION_DEDUCTION_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -162,3 +163,5 @@ jobs:
         run: npm run test:report-export-job:postgres -w @cms/api
       - name: Assistant conversation integration (real PostgreSQL)
         run: npm run test:assistant-conversation:postgres -w @cms/api
+      - name: Retention deduction integration (real PostgreSQL)
+        run: npm run test:retention-deduction:postgres -w @cms/api

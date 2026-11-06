@@ -1,6 +1,6 @@
 import { failure, success } from '../../lib/http.js';
 import { denyIfNoProjectAccess } from '../../lib/project-access.js';
-import { writeRoles, sumCents, amountFromCents, retentionInput } from './schemas.js';
+import { writeRoles, sumCents, amountFromCents, retentionInput, retentionDeductionInput } from './schemas.js';
 import { Prisma, UserRole } from '../../generated/prisma/client.js';
 import { authUser } from '../../lib/auth.js';
 import { calculatePayableOpenAmount, calculatePayableScheduleOpenAmount, calculateRetentionBalance } from '../../lib/downstream-settlement-math.js';
@@ -76,10 +76,11 @@ export async function transitionSettlement(request: any, reply: any, options: { 
     }
   }
 
-export async function retentionMovement(request: any, reply: any, type: 'RELEASE' | 'FORFEIT') {
+export async function retentionMovement(request: any, reply: any, type: 'RELEASE' | 'FORFEIT' | 'DEDUCT') {
     const user = authUser(request); const { projectId, contractId } = request.params as { projectId: string; contractId: string };
     if (await hasProjectWriteAccess(user.sub, user.role, projectId, reply)) return;
-    const parsed = retentionInput.safeParse(request.body);
+    const schema = type === 'DEDUCT' ? retentionDeductionInput : retentionInput;
+    const parsed = schema.safeParse(request.body);
     if (!parsed.success) return failure(reply, 400, 'VALIDATION_ERROR', '质保金处置资料填写有误', parsed.error.flatten());
     try {
       const result = await prisma.$transaction(async (tx) => {
@@ -88,7 +89,14 @@ export async function retentionMovement(request: any, reply: any, type: 'RELEASE
         const movements = await tx.downstreamRetentionMovement.findMany({ where: { downstreamContractId: contractId }, select: { type: true, amount: true } });
         const balance = moneyToCents(calculateRetentionBalance(movements as any));
         const amount = moneyToCents(parsed.data.amount);
-        if (amount > balance) throw new Error('RETENTION_AMOUNT_EXCEEDS_BALANCE');
+        if (amount > 0n && amount > balance) throw new Error('RETENTION_AMOUNT_EXCEEDS_BALANCE');
+        if (type === 'DEDUCT' && amount < 0n) {
+          // 冲回只能冲自己：累计扣回净额（正扣减冲回）是所有可冲回的上限。
+          const netDeducted = movements
+            .filter((movement) => movement.type === 'DEDUCT')
+            .reduce((total, movement) => total + moneyToCents(movement.amount), 0n);
+          if (-amount > netDeducted) throw new Error('RETENTION_DEDUCTION_REVERSES_EXCEEDED');
+        }
         const movement = await tx.downstreamRetentionMovement.create({ data: {
           downstreamContractId: contractId, type, amount: String(parsed.data.amount), effectiveAt: new Date(parsed.data.effectiveAt),
           reference: parsed.data.reference, notes: parsed.data.notes ?? null, createdById: user.sub,
@@ -102,7 +110,7 @@ export async function retentionMovement(request: any, reply: any, type: 'RELEASE
             schedules: { create: [{ scheduleNo: '01', dueAt: new Date(parsed.data.effectiveAt), amount: String(parsed.data.amount), notes: '质保金释放时自动建立的单期到期安排' }] },
           } });
         }
-        await writeAudit(tx, projectId, user.sub, 'DownstreamRetentionMovement', movement.id, type === 'RELEASE' ? 'RETENTION_RELEASED_TO_PAYABLE' : 'RETENTION_FORFEITED', { amount: String(parsed.data.amount), reference: parsed.data.reference, payableId: payable?.id ?? null, remainingBalance: String(centsToMoney(balance - amount)) });
+        await writeAudit(tx, projectId, user.sub, 'DownstreamRetentionMovement', movement.id, type === 'RELEASE' ? 'RETENTION_RELEASED_TO_PAYABLE' : type === 'FORFEIT' ? 'RETENTION_FORFEITED' : (amount > 0n ? 'RETENTION_DEDUCTED' : 'RETENTION_DEDUCTION_REVERSED'), { amount: String(parsed.data.amount), reference: parsed.data.reference, payableId: payable?.id ?? null, remainingBalance: String(centsToMoney(balance - amount)) });
         const payableWithSchedules = payable ? await tx.downstreamPayable.findUnique({ where: { id: payable.id }, include: { paymentAllocations: true, invoiceAllocations: true, schedules: { include: { allocations: true }, orderBy: { dueAt: 'asc' } } } }) : null;
         return { movement, payable: payableWithSchedules };
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
@@ -110,7 +118,8 @@ export async function retentionMovement(request: any, reply: any, type: 'RELEASE
     } catch (error) {
       if (error instanceof Error && error.message === 'DOWNSTREAM_CONTRACT_NOT_FOUND') return failure(reply, 404, 'DOWNSTREAM_CONTRACT_NOT_FOUND', '分供合同不存在');
       if (error instanceof Error && error.message === 'RETENTION_REQUIRES_FINAL_SETTLEMENT') return failure(reply, 409, 'RETENTION_REQUIRES_FINAL_SETTLEMENT', '只有完成最终结算的合同才能释放或核销质保金');
-      if (error instanceof Error && error.message === 'RETENTION_AMOUNT_EXCEEDS_BALANCE') return failure(reply, 409, 'RETENTION_AMOUNT_EXCEEDS_BALANCE', '本次质保金释放/核销金额超过当前可用留置余额');
+      if (error instanceof Error && error.message === 'RETENTION_AMOUNT_EXCEEDS_BALANCE') return failure(reply, 409, 'RETENTION_AMOUNT_EXCEEDS_BALANCE', '本次质保金释放/核销/扣回金额超过当前可用留置余额');
+      if (error instanceof Error && error.message === 'RETENTION_DEDUCTION_REVERSES_EXCEEDED') return failure(reply, 409, 'RETENTION_DEDUCTION_REVERSES_EXCEEDED', '冲回金额超过当前已扣回净额，请核对后重试');
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034') return failure(reply, 409, 'RETENTION_CONFLICT', '质保金操作发生并发冲突，请刷新后重试');
       throw error;
     }

@@ -48,6 +48,10 @@ export async function downstreamFinanceRoutes(app: FastifyInstance) {
       const advancedRecovered = sumCents(contract.settlements.filter((settlement) => settlement.status === 'POSTED').map((settlement) => settlement.advanceRecoveryAmount));
       const advanceBalance = grossAdvance - refundsOfAdvance - advancedRecovered;
       const retained = moneyToCents(calculateRetentionBalance(contract.retentionMovements));
+      // 专项扣回净额：只统计 DEDUCT。红字冲回会计入这里，所以它就是「最多还能冲回多少」的上限。
+      const deducted = contract.retentionMovements
+        .filter((movement) => movement.type === 'DEDUCT')
+        .reduce((sum, movement) => sum + moneyToCents(movement.amount), 0n);
       const payables = contract.payables.map(serializePayable);
       const openPayables = payables.reduce((sum, payable) => { const open = moneyToCents(payable.openAmount); return sum + (open > 0n ? open : 0n); }, 0n);
       const supplierCredit = payables.reduce((sum, payable) => { const open = moneyToCents(payable.openAmount); return sum + (open < 0n ? -open : 0n); }, 0n);
@@ -62,7 +66,7 @@ export async function downstreamFinanceRoutes(app: FastifyInstance) {
         totalSettledAmount: amountFromCents(sumCents(contract.settlements.filter((settlement) => settlement.status === 'POSTED').map((settlement) => settlement.postedDeltaAmount ?? 0))),
         pendingSettlementCount: contract.settlements.filter((settlement) => !['POSTED', 'REJECTED'].includes(settlement.status)).length,
         advancePaidAmount: amountFromCents(grossAdvance - refundsOfAdvance), advanceRecoveredAmount: amountFromCents(advancedRecovered), advanceBalanceAmount: amountFromCents(advanceBalance > 0n ? advanceBalance : 0n),
-        retentionBalanceAmount: amountFromCents(retained > 0n ? retained : 0n), openPayableAmount: amountFromCents(openPayables), supplierCreditAmount: amountFromCents(supplierCredit),
+        retentionBalanceAmount: amountFromCents(retained > 0n ? retained : 0n), retentionDeductedAmount: amountFromCents(deducted > 0n ? deducted : 0n), openPayableAmount: amountFromCents(openPayables), supplierCreditAmount: amountFromCents(supplierCredit),
         invoiceAmount: amountFromCents(sumCents(contract.supplierInvoices.map((invoice) => invoice.amount))),
         verifiedInvoiceAmount: amountFromCents(sumCents(contract.supplierInvoices.filter((invoice) => invoice.status === 'VERIFIED').map((invoice) => invoice.amount))),
       };

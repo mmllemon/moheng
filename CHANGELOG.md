@@ -8,6 +8,28 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 质保金专项扣回（业务口径已定并实现）
+
+业务口径确认后落地。定下的五条：
+
+| 决定 | 落地方式 |
+| --- | --- |
+| 扣回在账上是什么 | 新增 `DEDUCT` 动作，只减留置余额，不出应付、不出应收 |
+| 扣哪部分余额 | 只能扣未释放余额；已释放成应付的走应付调整，不两条路径改同一笔钱 |
+| 要不要凭据 | `reference` 必填（维修单、索赔函、审批单编号），保证每笔可追 |
+| 错扣怎么改 | 负数扣回冲回，不改历史行；冲回上限是当前已扣回净额 |
+| 影响不影响成本 | 不计入实际成本，只动留置余额与台账 |
+
+另外两处沿用现有规则：合同必须完成最终结算；并发冲突返回 409。
+
+**实现**：`POST /api/projects/:projectId/downstream-contracts/:contractId/retention/deduct`；校验用 `retentionDeductionInput`（金额非零、两位小数、传输安全上限）；审计分 `RETENTION_DEDUCTED` 与 `RETENTION_DEDUCTION_REVERSED`，都带剩余余额；台账 DTO ��增 `retentionDeductedAmount`（已扣回净额），前端用它做冲回上限提示。前端在结算状态且余额或已扣回额不为零时出现「专项扣回」按钮，弹窗里填负数即冲回，流水表分别显示「专项扣回」与「专项扣回冲回」。
+
+**踩到的数据库约束**：表上原有 `DownstreamRetentionMovement_amount_positive`（`CHECK (amount > 0)`），负数冲回直接被 Postgres 挡住（23514）。改成 `DownstreamRetentionMovement_amount_signed`：`amount > 0 OR (type = 'DEDUCT' AND amount < 0)`，只对扣回放行负数，留置、释放、没收仍强制正数。余额公式不用改：`RETAIN` 加、其余减，负数扣回自然把余额抬回。
+
+**验证**：新增 `test:retention-deduction:postgres`，隔离库连跑 4 次通过。覆盖扣回成功且不生成应付、超额拒绝、负数冲回与冲回超限拒绝、释放后不能再扣但能冲回、未最终结算拒绝、缺依据与零金额 400、并发两笔各 6 万抢 10 万只成功一笔、台账两个金额字段口径。原生库两个迁移都已 apply（`20261105120000_downstream_retention_deduction`、`20261105120500_downstream_retention_signed_amount`）。
+
+浏览器实测（开发库临时造了一个已结算且有 5 万留置的合同）：点「专项扣回」→ 弹窗显示当前余额与已扣回额 → 扣 12,000 后提示「质保金已专项扣回，不生成应付」→ 再冲回 2,000 提示「扣回已冲回，质保金余额已恢复」；库里流水为 RETAIN 50,000、DEDUCT 12,000、DEDUCT −2,000，审计剩余余额依次 38,000 与 40,000，应付单数量 0。验完演示数据已删除。
+
 ### 2026-11-05 成本助手会话的归档与并发回归
 
 新增 `assistant-conversation.integration.test.ts`。这条链路上有三种「同一时刻只能发生一件」的约束，全靠事务里的行锁与状态判定：

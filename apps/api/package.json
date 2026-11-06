@@ -38,7 +38,8 @@
     "test:workspace-files:postgres": "tsx --test src/lib/workspace-files.integration.test.ts",
     "test:report-template-version:postgres": "tsx --test src/lib/report-template-version.integration.test.ts",
     "test:report-export-job:postgres": "tsx --test src/lib/report-export-job.integration.test.ts",
-    "test:assistant-conversation:postgres": "tsx --test src/lib/assistant-conversation.integration.test.ts"
+    "test:assistant-conversation:postgres": "tsx --test src/lib/assistant-conversation.integration.test.ts",
+    "test:retention-deduction:postgres": "tsx --test src/lib/retention-deduction.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",

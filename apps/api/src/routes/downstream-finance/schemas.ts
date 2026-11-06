@@ -51,6 +51,11 @@ export const invoiceInput = z.object({
 export const invoiceVerifyInput = z.object({ status: z.enum(['VERIFIED', 'REJECTED']), verificationNote: z.string().trim().max(2000).optional().nullable() });
 export const allocationInput = z.object({ payableId: z.string().min(1), amount: positiveMoney, notes: z.string().max(1000).optional().nullable() });
 export const retentionInput = z.object({ amount: positiveMoney, effectiveAt: z.iso.datetime(), reference: z.string().trim().min(1).max(160), notes: z.string().max(2000).optional().nullable() });
+/**
+ * 质保金专项扣回：金额可正可负。正数为扣回（缺陷维修、第三方代修等），
+ * 负数为同一动作的红字冲回；不允许零。reference 必填，保证每笔扣回能追到维修单或索赔函。
+ */
+export const retentionDeductionInput = z.object({ amount: signedMoneyInput, effectiveAt: z.iso.datetime(), reference: z.string().trim().min(1).max(160), notes: z.string().max(2000).optional().nullable() });
 export const payableScheduleInput = z.object({ schedules: z.array(z.object({ scheduleNo: z.string().trim().min(1).max(30), dueAt: z.iso.datetime(), amount: positiveMoney, notes: z.string().max(1000).optional().nullable() })).min(1).max(50) }).superRefine((value, ctx) => { if (new Set(value.schedules.map((item) => item.scheduleNo)).size !== value.schedules.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['schedules'], message: '应付分期编号不能重复' }); });
 
 

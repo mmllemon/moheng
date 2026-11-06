@@ -1,7 +1,8 @@
 import { centsToMoney, moneyToCents } from './contract-amount-math.js';
 
 export type SettlementKind = 'PROGRESS' | 'FINAL' | 'ADJUSTMENT';
-export type RetentionEntry = { type: 'RETAIN' | 'RELEASE' | 'FORFEIT'; amount: unknown };
+/** 留置余额 = 计提 - 释放 - 没收 - 专项扣回（扣回为负数时即红字冲回，自然把余额抬回）。 */
+export type RetentionEntry = { type: 'RETAIN' | 'RELEASE' | 'FORFEIT' | 'DEDUCT'; amount: unknown };
 export type AdvanceCashEntry = { id: string; type: 'ADVANCE' | 'REFUND' | string; amount: unknown; refundOfPaymentId?: string | null };
 
 function sum(values: unknown[]): bigint {
