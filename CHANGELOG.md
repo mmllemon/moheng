@@ -8,6 +8,28 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 综合报表模板版本与发布回归
+
+新增 `report-template-version.integration.test.ts`。模板是「两个人同时改同一张报表」最容易丢工作的地方，接口用 `expectedVersion` 做乐观锁，先比对再 `updateMany` 再对影响行数，两道都真跑了一遍：
+
+| 场景 | 断言 |
+| --- | --- |
+| 系统模板权限 | 非管理员 403 `REPORT_TEMPLATE_ADMIN_REQUIRED`；管理员建档 version 1 / DRAFT |
+| 项目模板权限 | 非成员 403；`VIEWER` 403 `PROJECT_REPORT_TEMPLATE_EDIT_DENIED`；`OWNER` 可建 |
+| 正常更新 | 200，version → 2，写 1 条 `STUDIO_UPDATED` 修订 |
+| 过期版本号 | 409 `REPORT_TEMPLATE_VERSION_CONFLICT` |
+| 两人同时拿 version=2 提交 | 只有一条 200，另一条 409；版本号只推进一次（→3），不会被两个请求各加一次 |
+| 改报表范围 | 400 `REPORT_STUDIO_DOMAIN_MISMATCH`，项目级不能改成公司级 |
+| 非法定义 | 400 `REPORT_STUDIO_DEFINITION_INVALID` |
+| 发布 | `publishedVersion` 固化为 3，写 1 条 `STUDIO_PUBLISHED` |
+| 发布快照口径 | 无编辑权的人读到的是已发布定义，看不到发布后新改的草稿；有编辑权的人看到最新草稿 |
+| 归档后 | 编辑与发布都 409 `REPORT_TEMPLATE_ARCHIVED` |
+| 不存在 | 404 `REPORT_STUDIO_TEMPLATE_NOT_FOUND` |
+
+定义校验的第一道门也得实测：`workbook` 必须带 1–8 张工作表（`sheetOrder` + `sheets`），空对象会被 400 挡掉。这条是写测试时才发现的，不是读代码能直接看出来的。
+
+已接进 CI 的 db-integration（`test:report-template-version:postgres` + `REPORT_TEMPLATE_VERSION_TESTS=true`），隔离库连跑 4 次通过，模板、修订、账号、项目零残留。
+
 ### 2026-11-05 项目工作区文件操作回归（真实文件系统）
 
 新增 `workspace-files.integration.test.ts`。这是全仓唯一会对外部文件系统产生不可逆副作用的写路径，所以测试把 `WORKSPACE_STORAGE_DIR` 指到临时目录、每个项目给独立根，实测完再删。

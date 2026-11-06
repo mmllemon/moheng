@@ -103,6 +103,7 @@ jobs:
       BUDGET_THREE_WAY_TESTS: 'true'
       PROJECT_LIFECYCLE_TESTS: 'true'
       WORKSPACE_FILES_TESTS: 'true'
+      REPORT_TEMPLATE_VERSION_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -153,3 +154,5 @@ jobs:
         run: npm run test:project-lifecycle:postgres -w @cms/api
       - name: Workspace files integration (real PostgreSQL + real filesystem)
         run: npm run test:workspace-files:postgres -w @cms/api
+      - name: Report template version integration (real PostgreSQL)
+        run: npm run test:report-template-version:postgres -w @cms/api
