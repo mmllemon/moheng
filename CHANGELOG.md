@@ -8,6 +8,26 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 报表 XLSX 导出任务的幂等回归
+
+新增 `report-export-job.integration.test.ts`。导出是异步任务，用户点两次「导出」很常见，网络重试也会把同一请求发两遍。这条链路上最贵的错误不是导出失败，而是「同一次导出排两次队」或「不同范围的导出被当成同一次复用」。
+
+| 场景 | 断言 |
+| --- | --- |
+| 无幂等键 | 202，任务 QUEUED，payload 里的模板、版本、范围、项目正确，写 `REPORT_STUDIO_XLSX_EXPORT_QUEUED` 审计 |
+| 同键同请求 | 202 且返回同一个 id，`idempotentReplay: true`，库里只 1 条 |
+| 同键 + 不同模板 | 409 `IDEMPOTENCY_KEY_REUSED`，绝不把旧任务当成新请求的结果 |
+| 不同用户用同一键 | 各自排队，两条任务（唯一约束是 `ownerUserId + idempotencyKey`） |
+| 键里带换行 | 400 `IDEMPOTENCY_KEY_INVALID` |
+| 并发同键 | 只落一条任务，两个请求都 202 且指向同一个 id |
+| 项目模板拿去导别的项目 | 403 `REPORT_TEMPLATE_PROJECT_MISMATCH` |
+| 任务读取 | 本人 200；其他非管理员 404 `BACKGROUND_JOB_NOT_FOUND`；管理员可看 |
+| 未完成就下载 | 409 `BACKGROUND_JOB_RESULT_NOT_READY` |
+
+写的时候被一个真实规则纠正：草稿状态的**项目级**模板连只读成员都看不到（`canRead` 对未发布的项目模板只放行负责人/经理/管理员），所以「跨用户用同一幂等键」那一步必须先发布模板。这条限制本身是合理的，但它不在路由里，而藏在 canRead 的分支里，不实跑很难注意到。
+
+已接进 CI 的 db-integration（`test:report-export-job:postgres` + `REPORT_EXPORT_JOB_TESTS=true`），隔离库连跑 4 次通过，任务、模板、账号、项目、审计零残留。
+
 ### 2026-11-05 综合报表模板版本与发布回归
 
 新增 `report-template-version.integration.test.ts`。模板是「两个人同时改同一张报表」最容易丢工作的地方，接口用 `expectedVersion` 做乐观锁，先比对再 `updateMany` 再对影响行数，两道都真跑了一遍：

@@ -104,6 +104,7 @@ jobs:
       PROJECT_LIFECYCLE_TESTS: 'true'
       WORKSPACE_FILES_TESTS: 'true'
       REPORT_TEMPLATE_VERSION_TESTS: 'true'
+      REPORT_EXPORT_JOB_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -156,3 +157,5 @@ jobs:
         run: npm run test:workspace-files:postgres -w @cms/api
       - name: Report template version integration (real PostgreSQL)
         run: npm run test:report-template-version:postgres -w @cms/api
+      - name: Report export job integration (real PostgreSQL)
+        run: npm run test:report-export-job:postgres -w @cms/api
