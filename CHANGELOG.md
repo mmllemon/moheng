@@ -8,6 +8,26 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 成本助手会话的归档与并发回归
+
+新增 `assistant-conversation.integration.test.ts`。这条链路上有三种「同一时刻只能发生一件」的约束，全靠事务里的行锁与状态判定：
+
+| 约束 | 断言 |
+| --- | --- |
+| 单会话互斥 | 已有 QUEUED run 时再提问 `409 ASSISTANT_RUN_ALREADY_ACTIVE`，且不留下半个 run |
+| 归档前置 | 有活动 run 时归档 `409`；取消后才能归档 |
+| 归档后只读 | 新提问（含幂等重放）`409 ASSISTANT_CONVERSATION_ARCHIVED` |
+| requestId 幂等 | 同内容重放 `200` 复用同一 run；不同内容 `409 IDEMPOTENCY_KEY_REUSED` |
+| 取消 | QUEUED → CANCELLED，后台任务同步置 CANCELLED，写 `run.cancelled` 事件与审计；已终止再取消回报 `alreadyTerminal: true` |
+| 归档幂等 | 首次 `alreadyArchived: false`，重复归档 `true` |
+| 列表 | 默认不含归档；`includeArchived=true` 才出现 |
+| 会话隔离 | 非成员建会话 `404 PROJECT_NOT_FOUND`；他人读 404（按所有者隔离，不泄露存在性） |
+| 运行时未配置 | `503 ASSISTANT_RUNTIME_NOT_CONFIGURED`，且不产生 run |
+
+这条用例的运行时注入用两个入口：功能开关走 `createAssistantFeatureGate` 的可注入 `loadConfig`，提交消息走 `loadAssistantRuntimeConfig` 的环境变量分支（隔离库里先清掉 `assistantProviderConfig` 的 `default` 行，否则数据库行会盖掉环境变量）。
+
+已接进 CI 的 db-integration（`test:assistant-conversation:postgres` + `ASSISTANT_CONVERSATION_TESTS=true`），隔离库连跑 4 次通过，会话、消息、运行、任务、账号、项目零残留。
+
 ### 2026-11-05 报表 XLSX 导出任务的幂等回归
 
 新增 `report-export-job.integration.test.ts`。导出是异步任务，用户点两次「导出」很常见，网络重试也会把同一请求发两遍。这条链路上最贵的错误不是导出失败，而是「同一次导出排两次队」或「不同范围的导出被当成同一次复用」。
