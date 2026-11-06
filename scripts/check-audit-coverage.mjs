@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { readModuleSources } from './lib/module-sources.mjs';
+import { readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -34,8 +35,46 @@ const rules = [
   ['报表模板创建/修改/发布/归档/历史恢复', routes.reports.includes('REPORT_TEMPLATE_CREATED') && routes.reports.includes('REPORT_TEMPLATE_UPDATED') && routes.reports.includes('REPORT_TEMPLATE_PUBLISHED') && routes.reports.includes('REPORT_TEMPLATE_ARCHIVED') && routes.reports.includes('REPORT_TEMPLATE_REVISION_RESTORED')],
 ];
 let failed = 0;
-for (const [label, ok] of rules) {
-  console.log(`${ok ? 'PASS' : 'FAIL'} audit coverage contract: ${label}`);
+
+/**
+ * 审计动作的中文标签覆盖。
+ *
+ * 背景：2026-11-05 补质保金标签时发现，接口实际在用 89 个动作、审计页只映射了 32 个，
+ * 其余在「操作追溯」里直接显示英文码。静态契约只能靠这条门禁维持。
+ */
+async function collectAuditActions() {
+  const files = [];
+  async function walk(dir) {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) await walk(full);
+      else if (entry.name.endsWith('.ts') && !entry.name.includes('.test.')) files.push(full);
+    }
+  }
+  await walk(join(root, 'apps/api/src'));
+  const actions = new Set();
+  for (const file of files) {
+    const source = await readFile(file, 'utf8');
+    for (const match of source.matchAll(/auditLog\.create\(\{[\s\S]{0,600}?action:\s*'([A-Z][A-Z0-9_]{4,})'/g)) actions.add(match[1]);
+    // 助手函数是位置参数，动作码后面跟的是 changes 对象
+    for (const match of source.matchAll(/'([A-Z][A-Z0-9_]{4,})'(?=\s*\)?\s*,\s*\{)/g)) actions.add(match[1]);
+  }
+  return actions;
+}
+
+const auditPage = await read('apps/web/src/pages/AuditLogsPage.tsx');
+const labelBlock = auditPage.slice(auditPage.indexOf('const actionLabels'), auditPage.indexOf('};', auditPage.indexOf('const actionLabels')));
+const labelledActions = new Set([...labelBlock.matchAll(/([A-Z][A-Z0-9_]{3,}):\s*'/g)].map((match) => match[1]));
+const auditActions = await collectAuditActions();
+const unlabelled = [...auditActions].filter((code) => !labelledActions.has(code)).sort();
+
+rules.push(
+  ['审计页动作标签覆盖全部后端审计动作', unlabelled.length === 0, unlabelled.length ? `缺标签：${unlabelled.join(', ')}` : ''],
+  ['质保金四个动作与实体名有中文标签', ['RETENTION_RELEASED_TO_PAYABLE', 'RETENTION_FORFEITED', 'RETENTION_DEDUCTED', 'RETENTION_DEDUCTION_REVERSED'].every((code) => labelledActions.has(code)) && auditPage.includes("DownstreamRetentionMovement: '分供质保金'")],
+);
+
+for (const [label, ok, detail] of rules) {
+  console.log(`${ok ? 'PASS' : 'FAIL'} audit coverage contract: ${label}${ok || !detail ? '' : `（${detail}）`}`);
   if (!ok) failed += 1;
 }
 console.log(`\n${rules.length - failed}/${rules.length} static audit coverage contracts passed.`);
