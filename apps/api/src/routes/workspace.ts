@@ -153,7 +153,8 @@ export async function workspaceRoutes(app: FastifyInstance) {
       select: { id: true, workspaceRoot: true },
     });
     if (!project) {
-      failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
+      // 同样的问题：原来只设了状态码，没有把错误体发出去。
+      reply.code(404).send(failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在'));
       return null;
     }
 
@@ -165,7 +166,7 @@ export async function workspaceRoutes(app: FastifyInstance) {
         : action === 'delete'
           ? '只有项目负责人可以删除文件'
           : '当前角色只能查看，不能修改文件';
-      failure(reply, 403, 'WORKSPACE_FORBIDDEN', message);
+      reply.code(403).send(failure(reply, 403, 'WORKSPACE_FORBIDDEN', message));
       return null;
     }
 

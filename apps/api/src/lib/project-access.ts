@@ -48,7 +48,10 @@ export async function denyIfNoProjectAccess(
 ): Promise<boolean> {
   const hasAccess = await canAccessProject(userId, globalRole, projectId, allowedRoles, permissionKey);
   if (!hasAccess) {
-    failure(reply, 403, permissionKey ? 'PROJECT_PERMISSION_DENIED' : 'PROJECT_ACCESS_DENIED', permissionKey ? '当前项目角色未获此业务操作的授权；请联系系统管理员核查已发布权限策略' : '你没有访问或操作该项目的权限');
+    // 2026-11-05：这里原来只调 failure() 但没把返回体发出去，结果所有权限拒绝的响应
+    // 都是「403 + 空 body」，前端只能拿到 HTTP statusText，拿不到 PROJECT_PERMISSION_DENIED
+    // 这类错误码与中文提示。改为显式 send。
+    reply.code(403).send(failure(reply, 403, permissionKey ? 'PROJECT_PERMISSION_DENIED' : 'PROJECT_ACCESS_DENIED', permissionKey ? '当前项目角色未获此业务操作的授权；请联系系统管理员核查已发布权限策略' : '你没有访问或操作该项目的权限'));
     return true;
   }
   return false;

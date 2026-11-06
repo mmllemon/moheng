@@ -98,6 +98,7 @@ jobs:
       DOWNSTREAM_SETTLEMENT_TESTS: 'true'
       CHANGE_APPROVAL_TESTS: 'true'
       PROGRESS_BILL_TESTS: 'true'
+      COST_ENTRY_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -138,3 +139,5 @@ jobs:
         run: npm run test:change-approval:postgres -w @cms/api
       - name: Progress bill approval integration (real PostgreSQL)
         run: npm run test:progress-bill:postgres -w @cms/api
+      - name: Cost entry integration (real PostgreSQL)
+        run: npm run test:cost-entry:postgres -w @cms/api

@@ -30,7 +30,8 @@
     "test:downstream-payment:postgres": "tsx --test src/lib/downstream-payment.integration.test.ts",
     "test:downstream-settlement:postgres": "tsx --test src/lib/downstream-settlement-payable.integration.test.ts",
     "test:change-approval:postgres": "tsx --test src/lib/change-order-approval.integration.test.ts",
-    "test:progress-bill:postgres": "tsx --test src/lib/progress-bill-approval.integration.test.ts"
+    "test:progress-bill:postgres": "tsx --test src/lib/progress-bill-approval.integration.test.ts",
+    "test:cost-entry:postgres": "tsx --test src/lib/cost-entry.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",

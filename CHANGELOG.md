@@ -8,6 +8,30 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 成本台账写入回归（顺带修掉全站权限拒绝的空响应体）
+
+新增 `cost-entry.integration.test.ts`，覆盖实际成本的写入、关联修正与归档：
+
+| 场景 | 断言 |
+| --- | --- |
+| 含税口径 | 1130 含税 + 13% → 自动反算税额 130 |
+| 税额与税率不符 | 400 `COST_TAX_INCONSISTENT` |
+| 金额为 0 | 400 `VALIDATION_ERROR` |
+| 关联别的项目的预算项 | 400 `BUDGET_ITEM_INVALID` |
+| 新建时挂草稿合同 | 409 `DOWNSTREAM_CONTRACT_NOT_ACTIVE` |
+| 合同相对方与所选单位不一致 | 409 `COST_PARTY_CONTRACT_MISMATCH` |
+| 挂上合同后 | `vendorName` 自动取合同相对方、`businessPartyId` 同步 |
+| 历史成本改挂另一份生效合同 | 200，金额不变，审计 `LINK_DOWNSTREAM_CONTRACT` 记 from/to 与 `amountUnchanged` |
+| 改挂目标也是草稿合同 | 409 `DOWNSTREAM_CONTRACT_NOT_ACTIVE` |
+| 归档 | `deletedAt` 落库、审计 `ARCHIVE`、列表不再返回、重复归档 404 |
+| 项目编制人归档 | 403，且错误体带 `PROJECT_PERMISSION_DENIED` |
+
+**顺带修了一个全站范围的缺陷。** 写这条用例时发现：权限拒绝的响应是「403 + 空 body」。`lib/project-access.ts` 的 `denyIfNoProjectAccess` 只调了 `failure(reply, …)`，而 `failure()` 只设状态码、返回错误对象，不负责发送；调用方又把返回值丢了，于是响应里没有 `PROJECT_PERMISSION_DENIED` / `PROJECT_ACCESS_DENIED` 这类错误码与中文提示。前端 `api.ts` 只能拿到 HTTP statusText，用户在越权操作时看到的是通用「Forbidden」。`routes/workspace.ts` 里同样的写法还有两处（404 `PROJECT_NOT_FOUND`、403 `WORKSPACE_FORBIDDEN`）。三处一并改成显式 `send(failure(...))`。
+
+全仓扫过一遍，其余 `failure(` 调用都带 `return`，只有这三处丢包。
+
+已接进 CI 的 db-integration（`test:cost-entry:postgres` + `COST_ENTRY_TESTS=true`），隔离库连跑 4 次通过；API 单测 275/275，门禁 35/35。
+
 ### 2026-11-05 进度款申报→审批→到账的路由级回归
 
 一次到账横跳 `ProgressBill`、`OwnerReceivable`、`OwnerReceivableSchedule`、`OwnerReceipt`、`OwnerReceiptAllocation` 五张表，任何一步没在同一事务里就会留下半截账。新增 `progress-bill-approval.integration.test.ts`：
