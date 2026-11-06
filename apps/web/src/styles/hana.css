@@ -10123,3 +10123,26 @@ html .report-center-page .report-studio-entry-icon {
   .report-designer-page .report-preview-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
   .report-designer-page .report-preview-footer { font-size: 8pt !important; }
 }
+
+/* ==========================================================================
+   2026-11-05 触屏与窄屏的触摸目标
+   成本助手的发送/取消按钮原来固定按 --control-height 排（实测 30×32），
+   低于 44×44 的触摸目标建议值（WCAG 2.5.5 / Apple HIG）。桌面指针下这个尺寸
+   是刻意的紧凑档，只在窄屏或粗指针设备上放大，composer 其余间距不动。
+   ========================================================================== */
+@media (max-width: 768px), (pointer: coarse) {
+  html .assistant-workspace .assistant-send-button,
+  html .assistant-workspace .assistant-cancel-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  html .assistant-workspace .assistant-send-button svg,
+  html .assistant-workspace .assistant-cancel-button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
