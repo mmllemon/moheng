@@ -195,6 +195,7 @@ test('分供付款：草稿不可付、唯一凭证、超额与退款边界、�
       await prisma.project.deleteMany({ where: { id: projectId } }).catch(() => undefined);
     }
     await prisma.businessParty.deleteMany({ where: { name: { contains: `分供测试单位 ${suffix}` } } }).catch(() => undefined);
+      await prisma.auditLog.deleteMany({ where: { userId: { in: userIds } } }).catch(() => undefined);
     for (const userId of userIds) {
       await prisma.authSession.deleteMany({ where: { userId } }).catch(() => undefined);
       await prisma.user.deleteMany({ where: { id: userId } }).catch(() => undefined);

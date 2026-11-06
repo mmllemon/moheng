@@ -130,6 +130,7 @@ test('金额端到端：录入、存库、DTO 读出、服务端聚合逐分一�
       await prisma.project.deleteMany({ where: { id: projectId } }).catch(() => undefined);
     }
     if (userId) {
+      await prisma.auditLog.deleteMany({ where: { userId } }).catch(() => undefined);
       await prisma.authSession.deleteMany({ where: { userId } }).catch(() => undefined);
       await prisma.user.deleteMany({ where: { id: userId } }).catch(() => undefined);
     }

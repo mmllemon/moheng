@@ -101,6 +101,7 @@ jobs:
       COST_ENTRY_TESTS: 'true'
       MAIN_CONTRACT_TESTS: 'true'
       BUDGET_THREE_WAY_TESTS: 'true'
+      PROJECT_LIFECYCLE_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -147,3 +148,5 @@ jobs:
         run: npm run test:main-contract:postgres -w @cms/api
       - name: Budget and three-way integration (real PostgreSQL)
         run: npm run test:budget-three-way:postgres -w @cms/api
+      - name: Project lifecycle integration (real PostgreSQL)
+        run: npm run test:project-lifecycle:postgres -w @cms/api

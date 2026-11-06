@@ -219,6 +219,8 @@ test('变更签证审批：公司管理员不等于项目审批权、提交人�
         await prisma.mainContract.deleteMany({ where: { projectId } }).catch(() => undefined);
         await prisma.project.deleteMany({ where: { id: projectId } }).catch(() => undefined);
       }
+      // 测试账号自己产生的审计行会挡住 user 删除（AuditLog_userId_fkey），先按 userId 清掉。
+      await prisma.auditLog.deleteMany({ where: { userId: { in: userIds } } }).catch(() => undefined);
       for (const userId of userIds) {
         await prisma.authSession.deleteMany({ where: { userId } }).catch(() => undefined);
         await prisma.user.deleteMany({ where: { id: userId } }).catch(() => undefined);

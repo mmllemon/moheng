@@ -76,6 +76,9 @@ export async function projectRoutes(app: FastifyInstance) {
       return reply.code(201).send(success({ ...project, contractAmount: Number(project.contractAmount), originalContractAmount: Number(project.originalContractAmount) }));
     } catch (error) {
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      // 2026-11-05：resolveBusinessParty 会抛这个错误，但两个入口都没映射，
+      // 于是命名到未核验单位档案时接口返 500，前端只能看到服务器错误。
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选建设单位档案不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选建设单位已停用或归档');
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return failure(reply, 409, 'PROJECT_CODE_EXISTS', '项目编号已存在，或往来单位身份存在重复，请先核对档案');
@@ -101,6 +104,12 @@ export async function projectRoutes(app: FastifyInstance) {
     if (Object.keys(parsed.data).length === 0) return failure(reply, 400, 'EMPTY_UPDATE', '没有需要更新的字段');
     try {
       const data = { ...parsed.data } as Record<string, unknown>;
+      // 2026-11-05：projectInput.partial() 仍会带上带 default 的字段（type 默认 HOUSING），
+      // 于是“只改项目经理”的 PATCH 会把项目类型静默重置成住宅，空 body 也接不到
+      // EMPTY_UPDATE。PATCH 只该写调用方真正发过来的字段，所以按原始 body 做剥除。
+      const rawBody = (request.body ?? {}) as Record<string, unknown>;
+      for (const key of Object.keys(data)) if (!(key in rawBody)) delete data[key];
+      if (Object.keys(data).length === 0) return failure(reply, 400, 'EMPTY_UPDATE', '没有需要更新的字段');
       delete data.contractAmount;
       if (parsed.data.startDate) data.startDate = new Date(parsed.data.startDate);
       if (parsed.data.plannedEndDate !== undefined) data.plannedEndDate = parsed.data.plannedEndDate ? new Date(parsed.data.plannedEndDate) : null;
@@ -142,7 +151,7 @@ export async function projectRoutes(app: FastifyInstance) {
         const result = await tx.project.findUniqueOrThrow({ where: { id } });
         await tx.auditLog.create({ data: {
           projectId: id, userId: user.sub, entity: 'Project', entityId: id, action: 'UPDATE',
-          changes: { ...parsed.data, originalContractAmount: parsed.data.contractAmount, effectiveContractAmount: result.contractAmount.toString() },
+          changes: { ...data, originalContractAmount: parsed.data.contractAmount, effectiveContractAmount: result.contractAmount.toString() },
         } });
         return result;
       });
@@ -152,6 +161,7 @@ export async function projectRoutes(app: FastifyInstance) {
       if (error instanceof Error && error.message === 'ORIGINAL_CONTRACT_AMOUNT_IMMUTABLE') return failure(reply, 409, 'ORIGINAL_CONTRACT_AMOUNT_IMMUTABLE', '原始合同金额已锁定。合同调整请登记变更签证，不得直接改写原始金额');
       if (error instanceof Error && error.message === 'PROJECT_NOT_FOUND') return failure(reply, 404, 'PROJECT_NOT_FOUND', '项目不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NAME_AMBIGUOUS') return failure(reply, 409, 'BUSINESS_PARTY_NAME_AMBIGUOUS', '存在多个同名单位，请在表单中明确选择对应的单位档案');
+      if (error instanceof Error && error.message === 'BUSINESS_PARTY_IDENTITY_UNVERIFIED') return failure(reply, 409, 'BUSINESS_PARTY_IDENTITY_UNVERIFIED', '该名称仅匹配到未核验的单位档案；请先核验法律主体，或明确选择正确的单位档案');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_NOT_FOUND') return failure(reply, 400, 'BUSINESS_PARTY_NOT_FOUND', '所选建设单位档案不存在');
       if (error instanceof Error && error.message === 'BUSINESS_PARTY_INACTIVE') return failure(reply, 409, 'BUSINESS_PARTY_INACTIVE', '所选建设单位已停用或归档');
       if (error instanceof Error && error.message === 'CONTRACT_AMOUNT_WOULD_BE_NEGATIVE') return failure(reply, 409, 'CONTRACT_AMOUNT_WOULD_BE_NEGATIVE', '调整原始合同金额后会导致当前有效合同额为负数，已阻止保存');

@@ -185,6 +185,8 @@ test('目标成本清单：层级约束与自动重算；三算对比：叶子�
         await prisma.projectMember.deleteMany({ where: { projectId } });
         await prisma.project.deleteMany({ where: { id: projectId } }).catch(() => undefined);
       }
+      // 测试账号自己产生的审计行会挡住 user 删除（AuditLog_userId_fkey），先按 userId 清掉。
+      await prisma.auditLog.deleteMany({ where: { userId: { in: userIds } } }).catch(() => undefined);
       for (const userId of userIds) {
         await prisma.authSession.deleteMany({ where: { userId } }).catch(() => undefined);
         await prisma.user.deleteMany({ where: { id: userId } }).catch(() => undefined);

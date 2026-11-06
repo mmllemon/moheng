@@ -218,6 +218,8 @@ test('成本台账：含税口径、跨项目关联拒绝、草稿合同拒挂�
         await prisma.project.deleteMany({ where: { id: otherProjectId } }).catch(() => undefined);
       }
       await prisma.businessParty.deleteMany({ where: { name: { contains: `成本单位` } } }).catch(() => undefined);
+      // 测试账号自己产生的审计行会挡住 user 删除（AuditLog_userId_fkey），先按 userId 清掉。
+      await prisma.auditLog.deleteMany({ where: { userId: { in: userIds } } }).catch(() => undefined);
       for (const userId of userIds) {
         await prisma.authSession.deleteMany({ where: { userId } }).catch(() => undefined);
         await prisma.user.deleteMany({ where: { id: userId } }).catch(() => undefined);
