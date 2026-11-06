@@ -8,6 +8,12 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 审计日志补齐中文动作标签
+
+新增质保金四个动作时，先给审计页加了它们的中文标签，顺带发现这是一片成片的缺口：接口里实际在用 89 个审计动作，前端只映射了 32 个，其余在「操作追溯」页面直接显示英文码（`SETTLEMENT_SUBMITTED`、`DATABASE_BACKUP_CREATED`、`ASSISTANT_RUN_COMPLETED` 等）。
+
+这次补到全部覆盖，按域分组：分供结算与发票、登录与账号安全、报表与模板、助手、系统治理与运维，共 71 条新标签；同时给`DownstreamRetentionMovement`加了实体名「分供质保金」。校验方式不是数数：先扫 `apps/api/src` 里所有 `auditLog.create({ ... action: 'CODE' })` 与 `writeAudit(...)` 的调用，和前端映射做差集（剩两个匹配到的是状态值，不是审计动作），再在浏览器里打开 `/audit-logs` 按 `.audit-action-pill` 抓文本：修复前 12 个样本里有 10 个是英文码，现在 0 个。
+
 ### 2026-11-05 质保金专项扣回（业务口径已定并实现）
 
 业务口径确认后落地。定下的五条：
