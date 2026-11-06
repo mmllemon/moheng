@@ -8,7 +8,10 @@ import { constants } from 'node:fs';
 // npm audit 高危及严重漏洞 0 条（余 4 条 moderate，见 docs/发布与迁移验收.md）、web build 与 275 条 API 单测均通过。
 // The hash is computed over LF-normalized text so that the gate is byte-identical on Windows
 // (core.autocrlf=true checks the file out as CRLF) and on Linux/CI (checked out as LF).
-const expectedSha256 = 'ad1ca6a5624ad15edcb12c1476c8650ba7b97a95e549cf87f52388e64a139642';
+// 2026-11-05 重封（第二次）：包版本从 2.19.0-rc.2 改为 3.0.0，lock 里只改了四个 workspace 版本字段，
+// 依赖树未变；重封前仍连跑两次 npm ci 均成功，且跑完后 lock 内容与哈希不变。
+// 上一次重封：zod 4 升级（c253948）与 vite 6.4.5 / @fastify/static 10.1.10 安全补丁。
+const expectedSha256 = '5adbc173a357b00804bb25117fdf29f59da2b7b678e3acfa725c98f817a559e1';
 const lockPath = 'package-lock.json';
 try {
   await access(lockPath, constants.R_OK);

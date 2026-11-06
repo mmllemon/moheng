@@ -1,7 +1,7 @@
 {
   "name": "moheng-construction-cost-management",
   "private": true,
-  "version": "2.19.0-rc.2",
+  "version": "3.0.0",
   "workspaces": [
     "apps/api",
     "apps/web"
@@ -68,3 +68,4 @@
     "node": ">=24.0.0"
   }
 }
+

@@ -1,7 +1,7 @@
 {
   "name": "@cms/web",
   "private": true,
-  "version": "2.19.0-rc.2",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -37,3 +37,4 @@
     "vite": "6.4.5"
   }
 }
+

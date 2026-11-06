@@ -13,9 +13,9 @@ const dockerfile = await read('apps/api/Dockerfile');
 const checks = [];
 function check(name, fn) { fn(); checks.push(name); }
 
-check('root workspace version is rc.2', () => assert.equal(rootPackage.version, '2.19.0-rc.2'));
-check('API workspace version is rc.2', () => assert.equal(apiPackage.version, '2.19.0-rc.2'));
-check('Web workspace version is rc.2', () => assert.equal(webPackage.version, '2.19.0-rc.2'));
+check('root workspace version is 3.0.0', () => assert.equal(rootPackage.version, '3.0.0'));
+check('API workspace version is 3.0.0', () => assert.equal(apiPackage.version, '3.0.0'));
+check('Web workspace version is 3.0.0', () => assert.equal(webPackage.version, '3.0.0'));
 check('Prisma CLI is pinned to 7.10.1', () => assert.equal(apiPackage.devDependencies.prisma, '7.10.1'));
 check('Prisma Client is pinned to 7.10.1', () => assert.equal(apiPackage.dependencies['@prisma/client'], '7.10.1'));
 check('PostgreSQL driver adapter matches Prisma 7.10.1', () => assert.equal(apiPackage.dependencies['@prisma/adapter-pg'], '7.10.1'));

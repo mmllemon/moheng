@@ -1,7 +1,7 @@
 {
   "name": "@cms/api",
   "private": true,
-  "version": "2.19.0-rc.2",
+  "version": "3.0.0",
   "engines": {
     "node": ">=24.0.0"
   },
@@ -72,3 +72,4 @@
     "typescript": "5.9.2"
   }
 }
+

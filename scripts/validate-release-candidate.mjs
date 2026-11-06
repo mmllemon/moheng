@@ -93,8 +93,8 @@ const shippedMigration = await read('apps/api/prisma/migrations/20261013020000_c
 const migrationDirs = (await readdir(join(root, 'apps/api/prisma/migrations'), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 
-check('package, API and Web versions agree on 2.19.0-rc.2',
-  rootPackage.version === '2.19.0-rc.2' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '2.19.0-rc.2'") && server.includes('version: APP_VERSION'));
+check('package, API and Web versions agree on 3.0.0',
+  rootPackage.version === '3.0.0' && apiPackage.version === rootPackage.version && webPackage.version === rootPackage.version && appInfo.includes("APP_VERSION = '3.0.0'") && server.includes('version: APP_VERSION'));
 
 // Normalize Git's Windows autocrlf conversion before hashing. The migration guard is
 // meant to detect changes to the checked-in migration, not CRLF versus LF in the worktree.
