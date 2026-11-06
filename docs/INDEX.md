@@ -1,6 +1,6 @@
 # 墨衡文档总索引
 
-文档状态校准：2026-11-05。当前源码基线为 `8da1392`；根/API/Web 包版本仍为 `2.19.0-rc.2`，项目处于持续开发阶段，尚未正式发布。
+文档状态校准：2026-11-05。当前源码基线为 `f22a163`；根/API/Web 包版本仍为 `2.19.0-rc.2`，项目处于持续开发阶段，尚未正式发布。
 
 本文档用于导航，不重复每个阶段的全部现状。**当前产品状态以[产品范围与当前状态](产品范围与当前状态.md)、[后续四阶段开发路线图](后续四阶段开发路线图.md)和[更新日志](../CHANGELOG.md)为准；历史 Gate、归档设计系统和旧验收记录保留其执行时点与源码基线，不代表当前状态。**
 
@@ -134,3 +134,4 @@
 - [右侧浮层纸纹层](archive/右侧浮层纸纹层.md) — 卡片外那层是 tray（--bg + --paper-texture-surface + isolation:isolate），纸纹层 Hd 是它的首个子元素；原来自制的 ::before 用了未定义的 --paper-texture-mottle，只有平涂没纹理
 - [底栏纸纹](archive/底栏纸纹.md) — .cost-workspace-dock 的 linear-gradient 渐变底（z-index 40）盖住了纸纹层（-1）；hana 的 .input-area 是 background: transparent，已改
 - [弹窗按 hana token 精修](archive/弹窗按hana-token精修.md) — _cronConfirmCard 是死代码（CSS 28 条、JS 0 处渲染）；弹窗改 --bg-card + radius-lg×1.84 + squircle + shadow-2xl；overflow 保留纵向 auto 因 moheng 无 dialog-body 中间层
+
