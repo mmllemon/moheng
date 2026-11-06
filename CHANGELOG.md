@@ -8,6 +8,25 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 业主主合同基数回归
+
+新增 `main-contract-base.integration.test.ts`。主合同是收入侧所有计算的起点，这条路由上三条规则互相牵制，只有真库能验：
+
+| 场景 | 断言 |
+| --- | --- |
+| 首次建档 | 200，合同号自动生成，项目 `contractAmount` 与 `originalContractAmount` 均为录入额 |
+| 存量记录回填 | 未挂合同的进度款与变更被挂上新合同，写 1 条 `LEGACY_REVENUE_RECORDS_LINKED` 审计 |
+| 同金额重存 | 200，合同档案字段可改，回填审计不重复 |
+| 已有主合同时改原始金额 | 409 `ORIGINAL_CONTRACT_AMOUNT_IMMUTABLE`，合同金额不变 |
+| 项目原始额与主合同不一致 | 409 `BASE_CONTRACT_DATA_MISMATCH`，拒绝覆盖历史数据 |
+| 权限 | `VIEWER` 成员 403 `PROJECT_PERMISSION_DENIED`；`ESTIMATOR` 可写 |
+| 有效合同额口径 | 原始 200 万 + 已生效外部确认 50 万 = 250 万；未生效的 30 万不计入 |
+| 有效额会被算成负数 | 409 `CONTRACT_AMOUNT_WOULD_BE_NEGATIVE`，事务整体回滚，不留主合同 |
+
+审计口径也钉住了：`UPSERT` 里 `previousBaseAmount` / `originalContractAmount` 保持原始基数，`effectiveContractAmount` 是含变更的有效额，三个字段不会互相污染。
+
+已接进 CI 的 db-integration（`test:main-contract:postgres` + `MAIN_CONTRACT_TESTS=true`），隔离库连跑 4 次通过。
+
 ### 2026-11-05 成本台账写入回归（顺带修掉全站权限拒绝的空响应体）
 
 新增 `cost-entry.integration.test.ts`，覆盖实际成本的写入、关联修正与归档：
