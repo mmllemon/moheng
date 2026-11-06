@@ -8,6 +8,26 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 进度款申报→审批→到账的路由级回归
+
+一次到账横跳 `ProgressBill`、`OwnerReceivable`、`OwnerReceivableSchedule`、`OwnerReceipt`、`OwnerReceiptAllocation` 五张表，任何一步没在同一事务里就会留下半截账。新增 `progress-bill-approval.integration.test.ts`：
+
+| 场景 | 断言 |
+| --- | --- |
+| 没有主合同就申报 | 409 `MAIN_CONTRACT_REQUIRED` |
+| 同期次重复申报 | 409 `BILL_PERIOD_EXISTS` |
+| 未审批就登记到账 | 409 `BILL_NOT_APPROVED` |
+| 审批不填核定金额 | 按报审金额核定（50 万），并自动生成业主应收 + 一期收款计划 |
+| 到期日推算 | 主合同付款期 30 天时，应收到期日为今天 +30 天 |
+| 部分到账 20 万 | 账单仍 APPROVED，应收 PARTIALLY_RECEIVED，各生成 1 条收款与核销 |
+| 超额到账 40 万 | 400 `PAYMENT_EXCEEDS_APPROVED`，不留收款也不留核销 |
+| 两笔并发各 20 万（只剩 20 万额度） | 只成功一笔，另一笔 400/409 |
+| 收齐 10 万尾款 | 账单 PAID，应收 RECEIVED |
+| 审计 | `CREATE`、`STATUS_CHANGE`、`PAYMENT_REGISTERED` 齐全 |
+| 主合同已过账最终结算后再到账 | 409 `OWNER_SETTLEMENT_COLLECTION_REQUIRED`（必须走应收单） |
+
+已接进 CI 的 db-integration（`test:progress-bill:postgres` + `PROGRESS_BILL_TESTS=true`），本机隔离库连跑 4 次通过。
+
 ### 2026-11-05 变更签证审批链的路由级回归
 
 这条链是全仓唯一把「公司级角色」「项目成员角色」「已发布的治理规则」「本单状态」四件事叠在一起判权限的地方，代码里用 Serializable 事务加 `updateMany` 抢占来防「用过期策略批准」。这类分摊在四个查询里的判定，只有走真实路由 + 真实事务才能验证。
