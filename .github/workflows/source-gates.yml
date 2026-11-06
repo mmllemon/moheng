@@ -96,6 +96,7 @@ jobs:
       OWNER_RECEIPT_TESTS: 'true'
       DOWNSTREAM_PAYMENT_TESTS: 'true'
       DOWNSTREAM_SETTLEMENT_TESTS: 'true'
+      CHANGE_APPROVAL_TESTS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -132,3 +133,5 @@ jobs:
         run: npm run test:downstream-payment:postgres -w @cms/api
       - name: Downstream settlement to payable integration (real PostgreSQL)
         run: npm run test:downstream-settlement:postgres -w @cms/api
+      - name: Change order approval integration (real PostgreSQL)
+        run: npm run test:change-approval:postgres -w @cms/api

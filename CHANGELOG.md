@@ -8,6 +8,25 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 变更签证审批链的路由级回归
+
+这条链是全仓唯一把「公司级角色」「项目成员角色」「已发布的治理规则」「本单状态」四件事叠在一起判权限的地方，代码里用 Serializable 事务加 `updateMany` 抢占来防「用过期策略批准」。这类分摊在四个查询里的判定，只有走真实路由 + 真实事务才能验证。
+
+| 场景 | 断言 |
+| --- | --- |
+| 公司管理员无项目成员身份提交 | 403 `CHANGE_WORKFLOW_PROJECT_MEMBERSHIP_REQUIRED`（ADMIN 不等于项目审批权） |
+| DRAFT 直接跳到 CONFIRMED | 409 `INVALID_STATUS_TRANSITION` |
+| 提交 → 内部评审 → 通过 | 200，状态推进与审计齐全 |
+| 审批时不填核定金额 | 400 `APPROVED_AMOUNT_REQUIRED` |
+| 提交人本人审批 | 403 `SELF_APPROVAL_FORBIDDEN` |
+| 两位经理并发审批 | 只成功一条，另一条 409（读到新状态是 `INVALID_STATUS_TRANSITION`，读到旧状态但抢占失败是 `INTERNAL_CHANGE_STATE_CHANGED`） |
+| 落库结果 | 核定金额、`internalApprovedById`、`submittedById` 均与原操作人一致 |
+| 审计 | `INTERNAL_STATUS_CHANGE` 带 `workflowSource=BUILT_IN_DEFAULT` 与原提交人 |
+| 已确认后再审一次 | 409 `INVALID_STATUS_TRANSITION` |
+| 负数报审金额 | 400 `VALIDATION_ERROR` |
+
+已接进 CI 的 db-integration（`test:change-approval:postgres` + `CHANGE_APPROVAL_TESTS=true`），本机隔离库连跑 4 次通过。
+
 ### 2026-11-05 文档基线校准到 `8da1392`
 
 README、INDEX、产品范围、路线图、发布验收、架构、设计系统、AI 助手、报表中心这九处里“当前源码基线”一类的时间点式表述统一改到 `8da1392`，并把本轮新增事实补上：五组路由级 PostgreSQL 回归（业主结算、金额往返、业主到账、分供付款、分供结算→应付→核销）、squircle 退化路径真跑、依赖高危归零与 lock 重封、门禁债务清零（35/35，advisory 0）、逐页签认清单与 `npm run ui:inventory`。

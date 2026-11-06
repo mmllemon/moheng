@@ -28,7 +28,8 @@
     "test:money-roundtrip:postgres": "tsx --test src/lib/money-roundtrip.integration.test.ts",
     "test:owner-receipt:postgres": "tsx --test src/lib/owner-receipt-allocation.integration.test.ts",
     "test:downstream-payment:postgres": "tsx --test src/lib/downstream-payment.integration.test.ts",
-    "test:downstream-settlement:postgres": "tsx --test src/lib/downstream-settlement-payable.integration.test.ts"
+    "test:downstream-settlement:postgres": "tsx --test src/lib/downstream-settlement-payable.integration.test.ts",
+    "test:change-approval:postgres": "tsx --test src/lib/change-order-approval.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",
