@@ -28,6 +28,8 @@
 
 **顺带修了一个全站范围的缺陷。** 写这条用例时发现：权限拒绝的响应是「403 + 空 body」。`lib/project-access.ts` 的 `denyIfNoProjectAccess` 只调了 `failure(reply, …)`，而 `failure()` 只设状态码、返回错误对象，不负责发送；调用方又把返回值丢了，于是响应里没有 `PROJECT_PERMISSION_DENIED` / `PROJECT_ACCESS_DENIED` 这类错误码与中文提示。前端 `api.ts` 只能拿到 HTTP statusText，用户在越权操作时看到的是通用「Forbidden」。`routes/workspace.ts` 里同样的写法还有两处（404 `PROJECT_NOT_FOUND`、403 `WORKSPACE_FORBIDDEN`）。三处一并改成显式 `send(failure(...))`。
 
+浏览器复验（真实账号）：造一个 `USER` 角色 + 项目 `ESTIMATOR` 成员的账号，让它先成功录入一条成本，再点「归档」。页面弹出红色提示「当前项目角色未获此业务操作的授权；请联系系统管理员核查已发布权限策略」，控制台无 JS 报错。修之前这里显示的是浏览器给的通用 `Forbidden`。验证后把演示账号、成员关系、成本记录与对应审计行全部删掉。
+
 全仓扫过一遍，其余 `failure(` 调用都带 `return`，只有这三处丢包。
 
 已接进 CI 的 db-integration（`test:cost-entry:postgres` + `COST_ENTRY_TESTS=true`），隔离库连跑 4 次通过；API 单测 275/275，门禁 35/35。
