@@ -34,7 +34,8 @@
     "test:cost-entry:postgres": "tsx --test src/lib/cost-entry.integration.test.ts",
     "test:main-contract:postgres": "tsx --test src/lib/main-contract-base.integration.test.ts",
     "test:budget-three-way:postgres": "tsx --test src/lib/budget-three-way.integration.test.ts",
-    "test:project-lifecycle:postgres": "tsx --test src/lib/project-lifecycle.integration.test.ts"
+    "test:project-lifecycle:postgres": "tsx --test src/lib/project-lifecycle.integration.test.ts",
+    "test:workspace-files:postgres": "tsx --test src/lib/workspace-files.integration.test.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.0.2",

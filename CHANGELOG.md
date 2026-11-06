@@ -8,6 +8,26 @@
 
 顺手修了一个空集陷阱：advisory 清零后 `run-gates --tier advisory` 会选到空集，旧实现 exit 2，会让 CI 里那条 advisory 步骤一直显示成失败。现在空集按通过处理并打印说明；但 `--only <不存在的门禁>` 仍然 exit 2，避免“以为跑过了”。
 
+### 2026-11-05 项目工作区文件操作回归（真实文件系统）
+
+新增 `workspace-files.integration.test.ts`。这是全仓唯一会对外部文件系统产生不可逆副作用的写路径，所以测试把 `WORKSPACE_STORAGE_DIR` 指到临时目录、每个项目给独立根，实测完再删。
+
+| 场景 | 断言 |
+| --- | --- |
+| 建目录与列表 | 201，目录真落在 workspaceRoot 下，`tree` 能列到 |
+| 上传与预览 | 201，sha256/size 返回，盘上内容与预期一致；`GET file` 回同样内容 |
+| 同名上传 | 409 `WORKSPACE_EXISTS`，原文件不被覆盖（写盘用 `wx`） |
+| 扩展名白名单 | `.exe` → 400 `WORKSPACE_EXT_BLOCKED`；`.qqq` → 400 `WORKSPACE_EXT_NOT_ALLOWED` |
+| 路径越界 | `dir: '..'` 与 `sub/../../escape` 均 400 `WORKSPACE_PATH_INVALID`；存储根与 projects 层不得多出任何文件 |
+| 删根 | `path=.` → 400 `WORKSPACE_CANNOT_REMOVE_ROOT`；空 `path` → 400 `VALIDATION_ERROR` |
+| 四级权限 | OWNER 可写可删；MANAGER 可写、删除 403「只有项目负责人可以删除文件」；VIEWER 写 403「当前角色只能查看，不能修改文件」；非成员 403「无权访问该项目」 |
+| 跨项目 | A 的负责人读 B 403；A 的目录树不出现 B 的内容 |
+| 项目不存在 | 404 `PROJECT_NOT_FOUND`，带错误体 |
+
+两条行为记在这里，避免下次被当成缺陷重测：前导斜杠的 `dir`（如 `/etc`）会被退化成项目内相对路径而不是拒绝，文件仍落在项目根内；删除根只能靠 `path=.` 触发，空 `path` 先被查询 schema 拦成 `VALIDATION_ERROR`。
+
+已接进 CI 的 db-integration（`test:workspace-files:postgres` + `WORKSPACE_FILES_TESTS=true`），隔离库与临时目录连跑 4 次通过，临时目录零残留。
+
 ### 2026-11-05 项目档案生命周期回归（顺带修两处产品缺陷）
 
 新增 `project-lifecycle.integration.test.ts`，同时改了两处真实缺陷。
