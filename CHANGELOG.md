@@ -44,6 +44,9 @@
 | 审计 | `INTERNAL_STATUS_CHANGE` 带 `workflowSource=BUILT_IN_DEFAULT` 与原提交人 |
 | 已确认后再审一次 | 409 `INVALID_STATUS_TRANSITION` |
 | 负数报审金额 | 400 `VALIDATION_ERROR` |
+| 发布「只允许 MANAGER 核定」的审批规则后 | OWNER 角色核定 403 `CHANGE_APPROVAL_ROLE_REQUIRED`；MANAGER 通过，审计记下 `approvalRuleVersion=1` 与 `approvalRuleRoles=[MANAGER]` |
+
+最后一条是这套代码真正想防的事：审批角色不是写死的，而是读已发布的治理规则；审计里必须能看出当时用的是哪一版规则。
 
 已接进 CI 的 db-integration（`test:change-approval:postgres` + `CHANGE_APPROVAL_TESTS=true`），本机隔离库连跑 4 次通过。
 

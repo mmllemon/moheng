@@ -23,7 +23,7 @@ import { changeRoutes } from '../routes/changes.js';
 const enabled = process.env.CHANGE_APPROVAL_TESTS === 'true';
 const TEST_SECRET = 'test-only-jwt-secret-that-is-not-a-credential-32';
 
-test('变更签证审批：公司管理员不等于项目审批权、提交人不得自批、缺核定金额被拒、并发只成功一条', { skip: !enabled }, async () => {
+test('变更签证审批：公司管理员不等于项目审批权、提交人不得自批、缺核定金额被拒、并发只成功一条、发布规则后角色受限', { skip: !enabled }, async () => {
   const testDatabaseUrl = process.env.DATABASE_URL;
   assert.ok(testDatabaseUrl, 'DATABASE_URL must point to an isolated, migrated PostgreSQL test database');
   assert.ok(testDatabaseUrl !== process.env.PRODUCTION_DATABASE_URL, 'test database must not equal PRODUCTION_DATABASE_URL');
@@ -63,6 +63,7 @@ test('变更签证审批：公司管理员不等于项目审批权、提交人�
     const managerA = await makeActor('manager-a');
     const managerB = await makeActor('manager-b');
     const managerC = await makeActor('manager-c');
+    const owner = await makeActor('owner-role');
     const outsider = await makeActor('outsider');
 
     const project = await prisma.project.create({ data: {
@@ -86,6 +87,7 @@ test('变更签证审批：公司管理员不等于项目审批权、提交人�
       { projectId: project.id, userId: managerA.userId, role: 'MANAGER' },
       { projectId: project.id, userId: managerB.userId, role: 'MANAGER' },
       { projectId: project.id, userId: managerC.userId, role: 'MANAGER' },
+      { projectId: project.id, userId: owner.userId, role: 'OWNER' },
     ] });
 
     const base = `/api/projects/${project.id}/changes`;
@@ -179,11 +181,39 @@ test('变更签证审批：公司管理员不等于项目审批权、提交人�
     });
     assert.equal(negative.status, 400);
     assert.equal(negative.body.error.code, 'VALIDATION_ERROR');
+
+    // —— 9. 发布审批角色规则后，不在名单里的项目角色不得核定 ——
+    await prisma.governanceRuleVersion.create({ data: {
+      ruleKey: 'CHANGE_APPROVAL', name: '变更签发审批角色', version: 1, status: 'PUBLISHED',
+      definition: { allowedProjectRoles: ['MANAGER'] }, createdById: managerA.userId,
+      publishedById: managerA.userId, publishedAt: new Date('2026-04-01T00:00:00.000Z'),
+    } });
+    const second = await createChange(estimator, 80000);
+    assert.equal(second.status, 201);
+    const secondId = second.body.data.id as string;
+    assert.equal((await setStatus(managerA, secondId, 'SUBMITTED')).status, 200);
+    assert.equal((await setStatus(managerB, secondId, 'UNDER_REVIEW')).status, 200);
+
+    // OWNER 默认是默认规则里的审批角色，但发布后的规则只允许 MANAGER
+    const ownerRejected = await setStatus(owner, secondId, 'CONFIRMED', { approvedAmount: 80000 });
+    assert.equal(ownerRejected.status, 403, `发布规则后角色不匹配应被拦住，实际 ${JSON.stringify(ownerRejected.body).slice(0, 160)}`);
+    assert.equal(ownerRejected.body.error.code, 'CHANGE_APPROVAL_ROLE_REQUIRED');
+
+    const byRule = await setStatus(managerB, secondId, 'CONFIRMED', { approvedAmount: 79000 });
+    assert.equal(byRule.status, 200, `规则允许的角色应能通过：${JSON.stringify(byRule.body).slice(0, 200)}`);
+    const ruleAudit = await prisma.auditLog.findFirst({
+      where: { projectId: project.id, entity: 'Change', entityId: secondId, action: 'INTERNAL_STATUS_CHANGE', userId: managerB.userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const ruleChanges = ruleAudit?.changes as Record<string, unknown> | undefined;
+    assert.equal(ruleChanges?.approvalRuleVersion, 1, '审计应记录实际生效的审批规则版本');
+    assert.deepEqual(ruleChanges?.approvalRuleRoles, ['MANAGER']);
   } finally {
     await app.close();
     try {
       if (projectId) {
         await prisma.change.deleteMany({ where: { projectId } });
+        await prisma.governanceRuleVersion.deleteMany({ where: { ruleKey: 'CHANGE_APPROVAL', createdById: { in: userIds } } }).catch(() => undefined);
         await prisma.auditLog.deleteMany({ where: { projectId } });
         await prisma.projectMember.deleteMany({ where: { projectId } });
         await prisma.mainContract.deleteMany({ where: { projectId } }).catch(() => undefined);
